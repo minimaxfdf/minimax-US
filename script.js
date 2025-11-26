@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DUC LOIUS - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
-// @version      29.0
+// @version      28.0
 // @description  Tạo audio giọng nói clone theo ý của bạn. Không giới hạn. Thêm chức năng Ghép hội thoại, Đổi văn bản hàng loạt & Thiết lập dấu câu (bao gồm dấu xuống dòng).
 // @author       HUỲNH ĐỨC LỢI ( Zalo: 0835795597) - Đã chỉnh sửa
 // @match        https://www.minimax.io/audio*
@@ -1394,7 +1394,7 @@ button:disabled {
         
         // --- LOGIC MỚI: Xử lý -1 (Không giới hạn) ---
         if (remaining === -1) {
-            if (quotaDisplay) quotaDisplay.textContent = `Ký tự còn: Không giới hạn`;
+            if (quotaDisplay) quotaDisplay.textContent = `Characters remaining: Unlimited`;
             
             // Luôn bật nút (nếu có text)
             const mainTextarea = document.getElementById('gemini-main-textarea');
@@ -1404,15 +1404,15 @@ button:disabled {
             }
         } else if (remaining <= 0) {
             // Hết ký tự
-            if (quotaDisplay) quotaDisplay.textContent = "Ký tự còn: 0";
+            if (quotaDisplay) quotaDisplay.textContent = "Characters remaining: 0";
             if (startButton) {
                 startButton.disabled = true;
-                startButton.textContent = 'HẾT KÝ TỰ';
+                startButton.textContent = 'NO CHARACTERS LEFT';
             }
         } else {
             // Còn ký tự
             const formattedRemaining = new Intl.NumberFormat().format(remaining);
-            if (quotaDisplay) quotaDisplay.textContent = `Ký tự còn: ${formattedRemaining}`;
+            if (quotaDisplay) quotaDisplay.textContent = `Characters remaining: ${formattedRemaining}`;
             
             const mainTextarea = document.getElementById('gemini-main-textarea');
             if (startButton && startButton.disabled && mainTextarea && mainTextarea.value.trim() !== '') {
@@ -1923,9 +1923,9 @@ const aZpcvyD_mnWYN_qgEq=DHk$uTvcFuLEMnixYuADkCeA;let SI$acY=[],ZTQj$LF$o=[],ttu
 
     // Trả về tên file hoàn chỉnh với đuôi .mp3
     return fileName + '.mp3';
-}function nWHrScjZnIyNYzztyEWwM(RHDrdenxMcTQywSbrFGWcRi,supYmMedzDRWZEr){const j$DXl$iN=AP$u_huhInYfTj;if(supYmMedzDRWZEr===-parseInt(0x1)*-parseInt(0x9ff)+parseInt(0x4)*parseInt(0x6d7)+Math.trunc(0x49)*-parseInt(0x83))return;const W_gEcM_tWt=Math[j$DXl$iN(0x238)](RHDrdenxMcTQywSbrFGWcRi/supYmMedzDRWZEr*(Number(parseInt(0x24f2))*0x1+-parseInt(0x1af3)+parseInt(-0x99b)));pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0x273)]=W_gEcM_tWt+j$DXl$iN(0x1c3)+RHDrdenxMcTQywSbrFGWcRi+'/'+supYmMedzDRWZEr+')';}function NrfPVBbJv_Dph$tazCpJ(text, idealLength = 600, minLength = 500, maxLength = 700) {
-    // Mặc định chunk lớn 700 ký tự
-    const actualMaxLength = 700;
+}function nWHrScjZnIyNYzztyEWwM(RHDrdenxMcTQywSbrFGWcRi,supYmMedzDRWZEr){const j$DXl$iN=AP$u_huhInYfTj;if(supYmMedzDRWZEr===-parseInt(0x1)*-parseInt(0x9ff)+parseInt(0x4)*parseInt(0x6d7)+Math.trunc(0x49)*-parseInt(0x83))return;const W_gEcM_tWt=Math[j$DXl$iN(0x238)](RHDrdenxMcTQywSbrFGWcRi/supYmMedzDRWZEr*(Number(parseInt(0x24f2))*0x1+-parseInt(0x1af3)+parseInt(-0x99b)));pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0x273)]=W_gEcM_tWt+j$DXl$iN(0x1c3)+RHDrdenxMcTQywSbrFGWcRi+'/'+supYmMedzDRWZEr+')';}function NrfPVBbJv_Dph$tazCpJ(text, idealLength = 600, minLength = 500, maxLength = 850) {
+    // Mặc định chunk lớn 850 ký tự
+    const actualMaxLength = 850;
     const chunks = [];
     if (!text || typeof text !== 'string') {
         return chunks;
@@ -2080,9 +2080,9 @@ function normalizeChunkText(text) {
 }
 
 // Hàm tách chunk thông minh - luôn dùng hàm tách chunk cũ
-function smartSplitter(text, maxLength = 700) {
-    // Mặc định chunk lớn 700 ký tự
-    const actualMaxLength = 700;
+function smartSplitter(text, maxLength = 850) {
+    // Mặc định chunk lớn 850 ký tự
+    const actualMaxLength = 850;
 
     if (!text || typeof text !== 'string') {
         return [];
@@ -3816,7 +3816,7 @@ async function waitForVoiceModelReady() {
     return new Promise((resolve) => {
         const timeout = setTimeout(() => {
             console.error('[DUC LOI MOD] Lỗi: Chờ giọng mẫu quá 60 giây.');
-            addLogEntry('❌ Lỗi: Chờ giọng mẫu quá 60 giây. Vui lòng thử lại.', 'error');
+            addLogEntry('❌ Error: Waiting for voice sample exceeded 60 seconds. Please try again.', 'error');
             observer.disconnect();
             resolve(false);
         }, 60000); // Thời gian chờ tối đa 60 giây
@@ -3859,10 +3859,10 @@ async function waitForVoiceModelReady() {
     const languageSelected = await FqzIBEUdOwBt(RWknJOoz_W);
     if (!languageSelected) {
         console.error('[DUC LOI MOD] Không thể chọn ngôn ngữ: ' + RWknJOoz_W);
-        addLogEntry('❌ Lỗi: Không thể chọn ngôn ngữ.', 'error');
+        addLogEntry('❌ Error: Cannot select language.', 'error');
         return false; // Dừng nếu không chọn được ngôn ngữ
     }
-     addLogEntry(`🗣️ Đã chọn ngôn ngữ: ${RWknJOoz_W}.`, 'info');
+     addLogEntry(`🗣️ Language selected: ${RWknJOoz_W}.`, 'info');
 
 
     // ---- THAY ĐỔI QUAN TRỌNG NHẤT ----
@@ -3899,7 +3899,7 @@ async function waitForVoiceModelReady() {
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            text: 'Chỉ được phép tải lên 1 file duy nhất. Vui lòng chọn lại.',
+                            text: 'Only 1 file is allowed. Please select again.',
                             confirmButtonText: 'OK'
                         });
                         fileInput.value = '';
@@ -3933,7 +3933,7 @@ async function waitForVoiceModelReady() {
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            text: 'Không thể đọc file âm thanh. Vui lòng kiểm tra lại file.',
+                            text: 'Cannot read audio file. Please check the file again.',
                             confirmButtonText: 'OK'
                         });
                         fileInput.value = '';
@@ -5702,11 +5702,11 @@ async function waitForVoiceModelReady() {
             LrkOcBYz_$AGjPqXLWnyiATpCI.style.display = 'none';
             lraDK$WDOgsXHRO.style.display = 'block';
             OdKzziXLxtOGjvaBMHm.style.display = 'block';
-            lraDK$WDOgsXHRO.textContent = '⏸️ Tạm dừng'; // Đặt lại tên nút Pause
+            lraDK$WDOgsXHRO.textContent = '⏸️ Pause'; // Đặt lại tên nút Pause
 
             // Xóa log cũ
             clearLog();
-            addLogEntry(`Bắt đầu xử lý ${SI$acY.length} chunk (Hệ thống Legacy VÔ HẠN)...`, 'info');
+            addLogEntry(`Starting processing ${SI$acY.length} chunks (Legacy UNLIMITED system)...`, 'info');
 
             // 4. Gọi hàm xử lý VÔ HẠN (Hàm legacy)
             uSTZrHUt_IC();
@@ -5719,7 +5719,7 @@ async function waitForVoiceModelReady() {
     if (pauseBtn) {
         pauseBtn.addEventListener('click', () => {
             processingState.isPaused = !processingState.isPaused;
-            pauseBtn.textContent = processingState.isPaused ? '▶️ Tiếp tục' : '⏸️ Tạm dừng';
+            pauseBtn.textContent = processingState.isPaused ? '▶️ Resume' : '⏸️ Pause';
         });
     }
 
@@ -6097,10 +6097,10 @@ async function waitForVoiceModelReady() {
             const hours = Math.floor(diff / 3600000);
             const days = Math.floor(diff / 86400000);
 
-            if (minutes < 1) return 'Vừa xong';
-            if (minutes < 60) return `${minutes} phút trước`;
-            if (hours < 24) return `${hours} giờ trước`;
-            if (days < 7) return `${days} ngày trước`;
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes} minutes ago`;
+            if (hours < 24) return `${hours} hours ago`;
+            if (days < 7) return `${days} days ago`;
             return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
         }
 
@@ -6176,17 +6176,17 @@ async function waitForVoiceModelReady() {
                         currentPlayingAudio.play();
                         
                         // Cập nhật nút
-                        e.target.textContent = '⏸️ Dừng';
+                        e.target.textContent = '⏸️ Stop';
                         e.target.classList.add('playing');
                         
                         currentPlayingAudio.onended = () => {
-                            e.target.textContent = '▶️ Phát';
+                            e.target.textContent = '▶️ Play';
                             e.target.classList.remove('playing');
                             currentPlayingAudio = null;
                         };
                         
                         currentPlayingAudio.onpause = () => {
-                            e.target.textContent = '▶️ Phát';
+                            e.target.textContent = '▶️ Play';
                             e.target.classList.remove('playing');
                         };
                     });
