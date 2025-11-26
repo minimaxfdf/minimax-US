@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DUC LOIUS - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
-// @version      27.0
+// @version      28.0
 // @description  Tạo audio giọng nói clone theo ý của bạn. Không giới hạn. Thêm chức năng Ghép hội thoại, Đổi văn bản hàng loạt & Thiết lập dấu câu (bao gồm dấu xuống dòng).
 // @author       HUỲNH ĐỨC LỢI ( Zalo: 0835795597) - Đã chỉnh sửa
 // @match        https://www.minimax.io/audio*
@@ -1158,7 +1158,7 @@ button:disabled {
 
 <button id="gemini-start-queue-btn" disabled>Start generating audio</button> <button id="apply-punctuation-btn" style="display:none; background-color: #ffb86c; color: #282a36; margin-top: 10px;">Apply punctuation settings</button> <button id="gemini-pause-btn" style="display:none;">Pause</button> <button id="gemini-stop-btn" style="display:none;">Stop</button> <div id="gemini-progress-container" style="display:none;"><div id="gemini-progress-bar"></div><span id="gemini-progress-label">0%</span></div> <div id="gemini-final-result" style="display:none;"> <h4>Final result</h4> <div id="gemini-time-taken"></div> <div id="gemini-waveform"></div> <div id="waveform-controls" style="display:none;"><button id="waveform-play-pause">▶️</button><a id="gemini-download-merged-btn" href="#" download="merged_output.mp3">Download audio</a><button id="gemini-download-chunks-btn" style="display: none; background-color: #ffb86c; color: #282a36;">Download chunks (ZIP)</button></div> </div> </div> </div> </div> <div id="gemini-col-3" class="gemini-column" style="display:none;"> <div class="column-header"><h3></h3></div> <div class="column-content banner-column"> </div> </div>     <textarea id="gemini-hidden-text-for-request" style="display:none;"></textarea>
 
-    <!-- Modal Cài đặt -->
+    <!-- Settings Modal -->
     <div id="settings-modal" class="punctuation-modal" style="display:none;">
         <div class="punctuation-modal-card" style="width: 500px; max-width: 90vw; max-height: 85vh;">
             <div class="punctuation-modal-header">
@@ -1176,7 +1176,7 @@ button:disabled {
         </div>
     </div>
 
-    <!-- Modal Kho Âm Thanh Online -->
+    <!-- Online Audio Library Modal -->
     <div id="audio-manager-modal" class="punctuation-modal" style="display:none;">
         <div class="punctuation-modal-card" style="width: 80vw; height: 90vh; max-width: 1400px; max-height: 90vh;">
             <div class="punctuation-modal-header">
@@ -1189,7 +1189,7 @@ button:disabled {
         </div>
     </div>
 
-    <!-- Modal Lịch sử -->
+    <!-- History Modal -->
     <div id="history-modal" class="punctuation-modal" style="display:none;">
         <div class="punctuation-modal-card" style="width: 80vw; max-width: 900px; max-height: 85vh;">
             <div class="punctuation-modal-header">
@@ -1209,7 +1209,7 @@ button:disabled {
         </div>
     </div>
 
-    <!-- Modal phát hiện dấu câu -->
+    <!-- Punctuation Detection Modal -->
     <div id="punctuation-detection-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 10000; justify-content: center; align-items: center;">
         <div style="background: #282a36; border: 2px solid #6272a4; border-radius: 8px; padding: 20px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -1238,7 +1238,7 @@ button:disabled {
         </div>
     </div>
 
-    <!-- Modal thiết lập dấu câu -->
+    <!-- Punctuation Settings Modal -->
     <div id="punctuation-settings-modal" class="punctuation-modal" style="display:none;">
         <div class="punctuation-modal-card">
             <div class="punctuation-modal-header">
@@ -2291,6 +2291,12 @@ const BBNDYjhHoGkj_qbbbJu=URL[VCAHyXsrERcpXVhFPxmgdBjjh(0x1f0)](InRdxToeqTDyPgDG
             // =======================================================
             window.isMerging = false;
             addLogEntry(`✅ Hoàn tất merge file!`, 'success');
+            
+            // Override start button textContent to English after completion
+            const startBtnAfterMerge = document.getElementById('gemini-start-queue-btn');
+            if (startBtnAfterMerge) {
+                startBtnAfterMerge.textContent = 'Start generating audio';
+            }
 
 if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[VCAHyXsrERcpXVhFPxmgdBjjh(0x26c)]();typeof WaveSurfer===VCAHyXsrERcpXVhFPxmgdBjjh(0x24d)&&await new Promise(dyvridmApUsyBfpYIHkxv=>setTimeout(dyvridmApUsyBfpYIHkxv,parseInt(0xf61)+Math.ceil(-parseInt(0x1e0))+-parseInt(0xb8d))),n_WwsStaC$jzsWjOIjRqedTG=WaveSurfer[VCAHyXsrERcpXVhFPxmgdBjjh(0x240)]({'container':VCAHyXsrERcpXVhFPxmgdBjjh(0x274),'waveColor':VCAHyXsrERcpXVhFPxmgdBjjh(0x26a),'progressColor':VCAHyXsrERcpXVhFPxmgdBjjh(0x228),'cursorColor':VCAHyXsrERcpXVhFPxmgdBjjh(0x20c),'barWidth':0x3,'barRadius':0x3,'cursorWidth':0x1,'height':0x64,'barGap':0x3}),n_WwsStaC$jzsWjOIjRqedTG[VCAHyXsrERcpXVhFPxmgdBjjh(0x1d5)](BBNDYjhHoGkj_qbbbJu),n_WwsStaC$jzsWjOIjRqedTG['on'](VCAHyXsrERcpXVhFPxmgdBjjh(0x1d6),()=>{const Ipo_CDaCvNEfh=VCAHyXsrERcpXVhFPxmgdBjjh;XvyPnqSRdJtYjSxingI[Ipo_CDaCvNEfh(0x1c7)]='⏸️';}),n_WwsStaC$jzsWjOIjRqedTG['on'](VCAHyXsrERcpXVhFPxmgdBjjh(0x22d),()=>{const NdVplyNSVhdzFR=VCAHyXsrERcpXVhFPxmgdBjjh;XvyPnqSRdJtYjSxingI[NdVplyNSVhdzFR(0x1c7)]='▶️';});
 
@@ -4067,9 +4073,9 @@ async function waitForVoiceModelReady() {
                 const escapedFindVal = findVal.replace(/"/g, '&quot;');
                 const escapedReplaceVal = replaceVal.replace(/"/g, '&quot;');
                 row.innerHTML = `
-                    <input type="text" class="find-input" placeholder="Từ cần đổi" value="${escapedFindVal}">
-                    <input type="text" class="replace-input" placeholder="Từ thay thế" value="${escapedReplaceVal}">
-                    <button class="remove-pair-btn" title="Xóa cặp từ">×</button>
+                    <input type="text" class="find-input" placeholder="Word to replace" value="${escapedFindVal}">
+                    <input type="text" class="replace-input" placeholder="Replace with" value="${escapedReplaceVal}">
+                    <button class="remove-pair-btn" title="Remove pair">×</button>
                 `;
 
                 row.querySelector('.remove-pair-btn').addEventListener('click', () => {
@@ -4468,7 +4474,7 @@ async function waitForVoiceModelReady() {
             }
         })();
 
-        // --- 4. Audio Manager Modal (Kho Âm Thanh Online) ---
+        // --- 4. Audio Manager Modal (Online Audio Library) ---
         (function() {
             const openBtn = document.getElementById('open-audio-manager-btn');
             const closeBtn = document.getElementById('close-audio-manager-btn');
@@ -5745,6 +5751,7 @@ async function waitForVoiceModelReady() {
             // Reset giao diện
             startBtn.disabled = false;
             startBtn.style.display = 'block';
+            startBtn.textContent = 'Start generating audio'; // Ensure English text
             pauseBtn.style.display = 'none';
             stopBtn.style.display = 'none';
         });
