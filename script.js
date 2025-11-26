@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DUC LOIUS - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
-// @version      28.0
+// @version      29.0
 // @description  Tạo audio giọng nói clone theo ý của bạn. Không giới hạn. Thêm chức năng Ghép hội thoại, Đổi văn bản hàng loạt & Thiết lập dấu câu (bao gồm dấu xuống dòng).
 // @author       HUỲNH ĐỨC LỢI ( Zalo: 0835795597) - Đã chỉnh sửa
 // @match        https://www.minimax.io/audio*
@@ -496,14 +496,44 @@ body {
 
 /* Enhanced Logo */
 .logo {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    background: transparent !important;
     width: fit-content !important;
-    padding: 8px 12px !important;
-    border-radius: 12px !important;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
     color: white !important;
     font-weight: 700 !important;
     font-size: 18px !important;
+    border: none !important;
+    outline: none !important;
+}
+.logo img {
+    max-width: 150px !important;
+    max-height: 50px !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    border: none !important;
+    outline: none !important;
+}
+.logo-user a {
+    border: none !important;
+    outline: none !important;
+    text-decoration: none !important;
+    box-shadow: none !important;
+}
+.logo-user a:focus,
+.logo-user a:active,
+.logo-user a:hover,
+.logo-user a:focus-visible {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+.logo-user a * {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 /* Enhanced Main Container */
@@ -1086,7 +1116,7 @@ button:disabled {
 
 /* Sales Announcement Styles */
 `;
-    const APP_HTML = `<div id="gemini-col-1" class="gemini-column"> <div class="column-header"><div class="logo-user"><a href="" tager="_blank"><div class="logo"><img src="https://minimax.buhaseo.com/wp-content/uploads/2025/08/logo-minimax.png"></div></a><div id="gemini-user-info"></div></div>
+    const APP_HTML = `<div id="gemini-col-1" class="gemini-column"> <div class="column-header"><div class="logo-user"><a href="" tager="_blank" style="border:none!important;outline:none!important;box-shadow:none!important;"><div class="logo"><img src="https://cdn.jsdelivr.net/gh/kjfkshis/logo@5b0bb6a67fca8c8e73be6fdf701d7f523e4ecbb7/Adobe%20Express%20-%20file.png" style="border:none!important;outline:none!important;box-shadow:none!important;"></div></a><div id="gemini-user-info"></div></div>
         
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Loading quota...</div>
         </div> 
@@ -1352,10 +1382,10 @@ button:disabled {
 
         // Kiểm tra xem biến của main.py đã tiêm vào chưa
         if (typeof window.REMAINING_CHARS === 'undefined') {
-            if (quotaDisplay) quotaDisplay.textContent = "Lỗi: Không tìm thấy Quota";
+            if (quotaDisplay) quotaDisplay.textContent = "Error: Quota not found";
             if (startButton) {
                 startButton.disabled = true;
-                startButton.textContent = 'LỖI QUOTA';
+                startButton.textContent = 'QUOTA ERROR';
             }
             return;
         }
@@ -3074,7 +3104,7 @@ async function uSTZrHUt_IC() {
                     title: '🚨 Website đã phát hiện automation!',
                     html: `
                         <div style="text-align: left;">
-                            <p><strong>Lỗi 403:</strong> Website Minimax.io đã chặn tool automation.</p>
+                            <p><strong>Error 403:</strong> Website Minimax.io đã chặn tool automation.</p>
                             <hr>
                             <p><strong>💡 Giải pháp:</strong></p>
                             <ol>
@@ -3868,7 +3898,7 @@ async function waitForVoiceModelReady() {
                     if (files.length > 1) {
                         Swal.fire({
                             icon: 'error',
-                            title: 'Lỗi',
+                            title: 'Error',
                             text: 'Chỉ được phép tải lên 1 file duy nhất. Vui lòng chọn lại.',
                             confirmButtonText: 'OK'
                         });
@@ -3902,7 +3932,7 @@ async function waitForVoiceModelReady() {
                         URL.revokeObjectURL(audio.src);
                         Swal.fire({
                             icon: 'error',
-                            title: 'Lỗi',
+                            title: 'Error',
                             text: 'Không thể đọc file âm thanh. Vui lòng kiểm tra lại file.',
                             confirmButtonText: 'OK'
                         });
@@ -4611,7 +4641,7 @@ async function waitForVoiceModelReady() {
                             toast: true,
                             position: 'top-end',
                             icon: 'error',
-                            title: '❌ Lỗi tải file',
+                            title: '❌ Error loading file',
                             text: error.message || 'Không thể tải file từ kho âm thanh. Vui lòng thử lại.',
                             showConfirmButton: false,
                             timer: 3000,
@@ -5048,7 +5078,7 @@ async function waitForVoiceModelReady() {
                 const failedChunkIndex = (window.ttuo$y_KhCV || 0) + 1;
 
                 Swal.fire({
-                    title: '<strong>⚠️ Đã Xảy Ra Lỗi - Chế Độ Phục Hồi</strong>',
+                    title: '<strong>⚠️ Error Occurred - Recovery Mode</strong>',
                     icon: 'error',
                     html: `
                         <div style="text-align: left; font-size: 14px;">
@@ -5324,7 +5354,7 @@ async function waitForVoiceModelReady() {
                             console.error('Error parsing JSON:', error);
                             Swal.fire({
                                 icon: 'error',
-                                title: 'Lỗi đọc file JSON',
+                                title: 'Error reading JSON file',
                                 text: 'File JSON không hợp lệ hoặc bị lỗi.',
                                 confirmButtonText: 'OK'
                             });
@@ -5377,7 +5407,7 @@ async function waitForVoiceModelReady() {
                 reader.onerror = function() {
                     Swal.fire({
                         icon: 'error',
-                        title: 'Lỗi đọc file',
+                        title: 'Error reading file',
                         text: 'Không thể đọc nội dung file. Vui lòng thử lại.',
                         confirmButtonText: 'OK'
                     });
