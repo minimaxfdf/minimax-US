@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DUC LOI - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
-// @version      35.0
+// @version      36.0
 // @description  Tạo audio giọng nói clone theo ý của bạn. Không giới hạn. Thêm chức năng Ghép hội thoại, Đổi văn bản hàng loạt & Thiết lập dấu câu (bao gồm dấu xuống dòng).
 // @author       HUỲNH ĐỨC LỢI ( Zalo: 0835795597) - Đã chỉnh sửa
 // @match        https://www.minimax.io/audio*
@@ -1246,7 +1246,7 @@ button:disabled {
         
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Loading quota...</div>
         </div> 
-    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <h2>Activity Log</h2> <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;"> <button id="toggle-log-detail-btn" style="background-color: #6272a4; color: #f8f8f2; padding: 8px 15px; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; font-size: 12px;">🔒 Ẩn log chi tiết</button> <button id="clear-log-btn" class="clear-log-btn" style="flex: 1; margin: 0;">Clear Log</button> </div> <div id="log-container" class="log-container"> <div class="log-entry">Ready to monitor chunks...</div> </div> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 35.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div><button id="settings-toggle-btn">⚙️ Cài đặt</button></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
+    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <h2>Activity Log</h2> <div id="log-container" class="log-container"> <div class="log-entry">Ready to monitor chunks...</div> </div> <button id="clear-log-btn" class="clear-log-btn">Clear Log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 35.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div><button id="settings-toggle-btn">⚙️ Cài đặt</button></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
     <div class="text-input-options">
         <div class="input-tabs">
             <button id="text-tab" class="tab-btn active">Nhập trực tiếp</button>
@@ -1672,74 +1672,7 @@ button:disabled {
     }
     
     // Log functionality
-    // =======================================================
-    // BẢO MẬT: ẨN LOG CHI TIẾT MẶC ĐỊNH
-    // =======================================================
-    // QUAN TRỌNG: Mặc định LUÔN ẨN log chi tiết để bảo mật
-    // Chỉ hiển thị log thành công/thất bại, ẩn tất cả log debug/info/warning
-    // Người dùng có thể bật hiện log chi tiết qua nút toggle nếu cần debug
-    if (typeof window.hideDetailedLogs === 'undefined') {
-        window.hideDetailedLogs = true; // MẶC ĐỊNH LUÔN ẨN để bảo mật
-    }
-    
-    // Đảm bảo giá trị mặc định luôn là true (bảo mật)
-    // Nếu bị set về false hoặc undefined, tự động reset về true
-    if (window.hideDetailedLogs !== true && window.hideDetailedLogs !== false) {
-        window.hideDetailedLogs = true; // Reset về ẩn nếu giá trị không hợp lệ
-    }
-    
-    /**
-     * Kiểm tra xem log có nên được hiển thị không
-     * @param {string} message - Nội dung log
-     * @param {string} type - Loại log (success, error, info, warning)
-     * @returns {boolean} true nếu nên hiển thị
-     */
-    function shouldShowLog(message, type) {
-        // Nếu không ẩn log chi tiết, hiển thị tất cả
-        if (!window.hideDetailedLogs) {
-            return true;
-        }
-        
-        // Exception: Luôn hiển thị log về toggle chế độ ẩn
-        if (message.includes('chế độ ẩn log chi tiết') || message.includes('Hiển thị tất cả log')) {
-            return true;
-        }
-        
-        // Chế độ ẩn: chỉ hiển thị log thành công hoặc thất bại quan trọng
-        // Kiểm tra xem có phải log quan trọng không (thành công hoặc thất bại)
-        const importantPatterns = [
-            // Log thành công - chunk
-            /✅.*\[C#\d+\/.*\].*Thành công/i,
-            /✅.*\[C#\d+\].*Thành công/i,
-            // Log thành công - tổng kết
-            /✅.*TẤT CẢ.*chunks.*thành công/i,
-            /✅.*Hoàn tất/i,
-            /✅.*Đã xử lý xong.*chunks/i,
-            /✅.*Đã merge/i,
-            /✅.*Hoàn tất merge/i,
-            // Log thất bại - chunk
-            /❌.*\[C#\d+\].*thất bại/i,
-            /❌.*chunk.*thất bại/i,
-            /❌.*\[C#\d+\].*Timeout/i,
-            // Log thất bại - tổng kết
-            /❌.*chunks.*thất bại/i,
-            /❌.*Lỗi.*merge/i,
-            /❌.*Không có.*chunks/i
-        ];
-        
-        // Chỉ hiển thị nếu match pattern quan trọng
-        return importantPatterns.some(pattern => pattern.test(message));
-        
-        // Ẩn tất cả log khác (info, warning) khi ở chế độ ẩn
-        return false;
-    }
-    
     function addLogEntry(message, type = 'info') {
-        // Kiểm tra xem có nên hiển thị log không (chế độ ẩn log chi tiết)
-        if (!shouldShowLog(message, type)) {
-            return; // Không hiển thị log này
-        }
-        
         // Sanitize message trước khi hiển thị
         const sanitizedMessage = sanitizeLogMessage(message);
         
@@ -2424,37 +2357,6 @@ button:disabled {
         const clearLogBtn = document.getElementById('clear-log-btn');
         if (clearLogBtn) {
             clearLogBtn.addEventListener('click', clearLog);
-        }
-        
-        // Thêm event listener cho nút toggle ẩn/hiện log chi tiết
-        const toggleLogDetailBtn = document.getElementById('toggle-log-detail-btn');
-        if (toggleLogDetailBtn) {
-            // Cập nhật text ban đầu dựa trên trạng thái hiện tại
-            const updateToggleButtonText = () => {
-                if (window.hideDetailedLogs) {
-                    toggleLogDetailBtn.textContent = '🔓 Hiện log chi tiết';
-                    toggleLogDetailBtn.style.backgroundColor = '#50fa7b';
-                    toggleLogDetailBtn.style.color = '#282a36';
-                } else {
-                    toggleLogDetailBtn.textContent = '🔒 Ẩn log chi tiết';
-                    toggleLogDetailBtn.style.backgroundColor = '#6272a4';
-                    toggleLogDetailBtn.style.color = '#f8f8f2';
-                }
-            };
-            
-            updateToggleButtonText();
-            
-            toggleLogDetailBtn.addEventListener('click', () => {
-                window.hideDetailedLogs = !window.hideDetailedLogs;
-                updateToggleButtonText();
-                
-                // Thông báo cho người dùng
-                if (window.hideDetailedLogs) {
-                    addLogEntry('🔒 Đã bật chế độ ẩn log chi tiết. Chỉ hiển thị thành công/thất bại.', 'info');
-                } else {
-                    addLogEntry('🔓 Đã tắt chế độ ẩn log chi tiết. Hiển thị tất cả log.', 'info');
-                }
-            });
         }
     });
 
@@ -3396,6 +3298,30 @@ async function uSTZrHUt_IC() {
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
     if (MEpJezGZUsmpZdAgFRBRZW) return;
     
+    // =======================================================
+    // TỰ ĐỘNG XÓA 1 VOICE SLOT TRƯỚC KHI TẠO ÂM THANH
+    // =======================================================
+    // Mỗi lần tạo âm thanh sẽ tính 1 slot, nên cần xóa 1 voice cũ trước
+    // Chỉ xóa khi bắt đầu xử lý chunk đầu tiên (ttuo$y_KhCV = 0) để tránh xóa nhiều lần
+    if (ttuo$y_KhCV === 0 && (typeof window._hasDeletedVoiceForThisRun === 'undefined' || !window._hasDeletedVoiceForThisRun)) {
+        try {
+            console.log('[AUTO DELETE VOICE] Đang xóa 1 voice cũ trước khi bắt đầu tạo âm thanh (chunk đầu tiên)...');
+            const deleted = await autoDeleteOldVoices(1);
+            if (deleted > 0) {
+                console.log(`[AUTO DELETE VOICE] ✅ Đã xóa ${deleted} voice cũ trước khi tạo âm thanh`);
+                if (typeof addLogEntry === 'function') {
+                    addLogEntry(`🗑️ Đã tự động xóa ${deleted} voice cũ để giải phóng slot trước khi tạo âm thanh`, 'info');
+                }
+            } else {
+                console.log('[AUTO DELETE VOICE] ⚠️ Không tìm thấy voice nào để xóa (có thể đã hết voice hoặc chưa có voice)');
+            }
+            window._hasDeletedVoiceForThisRun = true; // Đánh dấu đã xóa cho lần chạy này
+        } catch (error) {
+            console.error('[AUTO DELETE VOICE] Lỗi khi xóa voice cũ:', error);
+            // Không chặn quá trình, chỉ log lỗi
+        }
+    }
+    
     // GUARD: Kiểm tra độ sâu recursive calls ở đầu hàm
     if (typeof window.recursiveCallDepth === 'undefined') {
         window.recursiveCallDepth = 0;
@@ -3417,6 +3343,8 @@ async function uSTZrHUt_IC() {
 
     // Logic xử lý khi đã hoàn thành tất cả các chunk
     if (ttuo$y_KhCV >= SI$acY[tQqGbytKzpHwhGmeQJucsrq(0x216)]) {
+        // Reset flag xóa voice cho lần chạy tiếp theo
+        window._hasDeletedVoiceForThisRun = false;
         // Kiểm tra xem tất cả chunk đã được xử lý đầy đủ chưa
         const totalChunks = SI$acY.length;
         const processedChunks = window.chunkStatus ? window.chunkStatus.filter(status => status === 'success' || status === 'failed').length : 0;
@@ -4985,7 +4913,7 @@ async function waitForVoiceModelReady() {
         (function() {
             const fileInput = document.getElementById('gemini-file-input');
             if (fileInput) {
-                fileInput.addEventListener('change', function(e) {
+                fileInput.addEventListener('change', async function(e) {
                     const files = e.target.files;
                     if (!files || files.length === 0) return;
 
@@ -4999,6 +4927,30 @@ async function waitForVoiceModelReady() {
                         });
                         fileInput.value = '';
                         return;
+                    }
+                    
+                    // =======================================================
+                    // TỰ ĐỘNG XÓA VOICE CŨ TRƯỚC KHI UPLOAD (Để tránh lỗi "You've used all of the voice slots")
+                    // =======================================================
+                    try {
+                        console.log('[AUTO DELETE VOICE] Kiểm tra và xóa voice cũ trước khi upload...');
+                        
+                        // Đảm bảo có ít nhất 1 slot trống trước khi upload
+                        const hasSlot = await ensureVoiceSlotsAvailable(1);
+                        
+                        if (!hasSlot) {
+                            // Nếu không có slot, thử xóa 1 voice cũ nhất
+                            console.log('[AUTO DELETE VOICE] Không có slot, đang xóa voice cũ...');
+                            await autoDeleteOldVoices(1);
+                        }
+                        
+                        // Đợi một chút để đảm bảo xóa hoàn tất
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        
+                        console.log('[AUTO DELETE VOICE] ✅ Đã kiểm tra và xóa voice cũ (nếu cần)');
+                    } catch (error) {
+                        console.error('[AUTO DELETE VOICE] Lỗi khi xóa voice cũ:', error);
+                        // Không chặn upload nếu có lỗi, chỉ log
                     }
 
                     // Check audio duration
@@ -5318,7 +5270,10 @@ async function waitForVoiceModelReady() {
 
             // Đơn giản: ẩn nút khi bấm "Tạo âm thanh"
             if (startQueueBtn) {
-                startQueueBtn.addEventListener('click', function() {
+                startQueueBtn.addEventListener('click', async function() {
+                    // Reset flag xóa voice để đảm bảo xóa voice trước khi tạo âm thanh
+                    window._hasDeletedVoiceForThisRun = false;
+                    
                     // Ẩn nút ngay khi bấm
                     startQueueBtn.style.display = 'none';
                 });
@@ -7371,31 +7326,68 @@ async function waitForVoiceModelReady() {
      * @returns {Promise<boolean>} true nếu có đủ slot hoặc đã xóa để có đủ slot
      */
     async function ensureVoiceSlotsAvailable(requiredSlots = 1) {
-        // Tìm thông tin về số slot
-        const slotInfo = Array.from(document.querySelectorAll('*')).find(el => {
+        console.log(`[ENSURE SLOTS] Đang kiểm tra slot còn lại (cần ${requiredSlots} slot)...`);
+        
+        // Cách 1: Tìm theo text "slots remaining" hoặc "Voice slots"
+        let slotInfo = Array.from(document.querySelectorAll('*')).find(el => {
             const text = el.textContent || '';
-            return text.includes('slots remaining') || 
+            return (text.includes('slots remaining') || 
                    text.includes('Voice slots') ||
-                   (text.includes('/') && text.match(/\d+\/\d+/));
+                   text.includes('voice slots')) && text.match(/\d+\/\d+/);
         });
+        
+        // Cách 2: Tìm theo pattern "X/Y" trong các element có text liên quan đến slot
+        if (!slotInfo) {
+            slotInfo = Array.from(document.querySelectorAll('*')).find(el => {
+                const text = el.textContent || '';
+                // Tìm pattern "X/Y" và có từ khóa liên quan đến slot
+                if (text.match(/\d+\/\d+/) && (text.includes('slot') || text.includes('voice'))) {
+                    return true;
+                }
+                return false;
+            });
+        }
+        
+        // Cách 3: Tìm trong phần "Uploaded Samples X/Y"
+        if (!slotInfo) {
+            slotInfo = Array.from(document.querySelectorAll('*')).find(el => {
+                const text = el.textContent || '';
+                return text.includes('Uploaded Samples') && text.match(/\d+\/\d+/);
+            });
+        }
         
         if (slotInfo) {
             const text = slotInfo.textContent || '';
-            const match = text.match(/(\d+)\/(\d+)/);
+            // Tìm pattern "X/Y" hoặc "X of Y"
+            const match = text.match(/(\d+)\s*[\/of]\s*(\d+)/i);
             if (match) {
                 const used = parseInt(match[1]);
                 const total = parseInt(match[2]);
                 const remaining = total - used;
                 
-                console.log(`[ENSURE SLOTS] Slot còn lại: ${remaining}/${total}`);
+                console.log(`[ENSURE SLOTS] Tìm thấy: ${used}/${total} (còn lại: ${remaining})`);
                 
                 if (remaining < requiredSlots) {
                     const needToDelete = requiredSlots - remaining;
-                    console.log(`[ENSURE SLOTS] Cần xóa ${needToDelete} voice để có đủ slot`);
-                    await autoDeleteOldVoices(needToDelete);
+                    console.log(`[ENSURE SLOTS] ⚠️ Không đủ slot! Cần xóa ${needToDelete} voice để có đủ slot`);
+                    const deleted = await autoDeleteOldVoices(needToDelete);
+                    if (deleted > 0) {
+                        console.log(`[ENSURE SLOTS] ✅ Đã xóa ${deleted} voice, có thể upload`);
+                        return true;
+                    } else {
+                        console.log(`[ENSURE SLOTS] ⚠️ Không thể xóa voice, nhưng vẫn tiếp tục upload`);
+                        return true; // Vẫn tiếp tục, có thể sẽ bị lỗi nhưng sẽ được xử lý bởi handleVoiceSlotFullError
+                    }
+                } else {
+                    console.log(`[ENSURE SLOTS] ✅ Có đủ slot (${remaining} slot trống)`);
                     return true;
                 }
             }
+        } else {
+            // Không tìm thấy thông tin slot, thử xóa 1 voice cũ để an toàn
+            console.log(`[ENSURE SLOTS] ⚠️ Không tìm thấy thông tin slot, xóa 1 voice cũ để an toàn`);
+            await autoDeleteOldVoices(1);
+            return true;
         }
         
         return true;
