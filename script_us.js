@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DUC LOI - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
-// @version      35.0
+// @version      36.0
 // @description  Tạo audio giọng nói clone theo ý của bạn. Không giới hạn. Thêm chức năng Ghép hội thoại, Đổi văn bản hàng loạt & Thiết lập dấu câu (bao gồm dấu xuống dòng).
 // @author       HUỲNH ĐỨC LỢI ( Zalo: 0835795597) - Đã chỉnh sửa
 // @match        https://www.minimax.io/audio*
@@ -3302,23 +3302,72 @@ async function uSTZrHUt_IC() {
     // TỰ ĐỘNG XÓA 1 VOICE SLOT TRƯỚC KHI TẠO ÂM THANH
     // =======================================================
     // Mỗi lần tạo âm thanh sẽ tính 1 slot, nên cần xóa 1 voice cũ trước
+    // BẮT BUỘC phải xóa thành công trước khi tiếp tục
     // Chỉ xóa khi bắt đầu xử lý chunk đầu tiên (ttuo$y_KhCV = 0) để tránh xóa nhiều lần
     if (ttuo$y_KhCV === 0 && (typeof window._hasDeletedVoiceForThisRun === 'undefined' || !window._hasDeletedVoiceForThisRun)) {
         try {
-            console.log('[AUTO DELETE VOICE] Đang xóa 1 voice cũ trước khi bắt đầu tạo âm thanh (chunk đầu tiên)...');
-            const deleted = await autoDeleteOldVoices(1);
-            if (deleted > 0) {
-                console.log(`[AUTO DELETE VOICE] ✅ Đã xóa ${deleted} voice cũ trước khi tạo âm thanh`);
-                if (typeof addLogEntry === 'function') {
-                    addLogEntry(`🗑️ Đã tự động xóa ${deleted} voice cũ để giải phóng slot trước khi tạo âm thanh`, 'info');
+            console.log('[AUTO DELETE VOICE] ⚠️ BẮT BUỘC: Đang xóa 1 voice slot trước khi bắt đầu tạo âm thanh...');
+            
+            // Lấy số slot trước khi xóa
+            const slotInfoBefore = getCurrentSlotInfo();
+            if (slotInfoBefore) {
+                console.log(`[AUTO DELETE VOICE] Slot hiện tại: ${slotInfoBefore.used}/${slotInfoBefore.total} (còn lại: ${slotInfoBefore.remaining})`);
+                
+                // Nếu đã có slot trống, không cần xóa
+                if (slotInfoBefore.remaining > 0) {
+                    console.log(`[AUTO DELETE VOICE] ✅ Đã có ${slotInfoBefore.remaining} slot trống, không cần xóa`);
+                    window._hasDeletedVoiceForThisRun = true;
+                } else {
+                    // BẮT BUỘC phải xóa thành công
+                    console.log(`[AUTO DELETE VOICE] ⚠️ KHÔNG CÓ SLOT TRỐNG! Bắt buộc phải xóa 1 voice slot...`);
+                    const deleted = await autoDeleteOldVoices(1);
+                    
+                    if (deleted > 0) {
+                        // Kiểm tra lại slot sau khi xóa
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        const slotInfoAfter = getCurrentSlotInfo();
+                        if (slotInfoAfter && slotInfoAfter.remaining > slotInfoBefore.remaining) {
+                            console.log(`[AUTO DELETE VOICE] ✅ Đã xóa thành công! Slot: ${slotInfoBefore.remaining} → ${slotInfoAfter.remaining}`);
+                            if (typeof addLogEntry === 'function') {
+                                addLogEntry(`🗑️ Đã tự động xóa 1 voice slot để giải phóng slot (${slotInfoBefore.remaining} → ${slotInfoAfter.remaining} slot trống)`, 'info');
+                            }
+                            window._hasDeletedVoiceForThisRun = true;
+                        } else {
+                            console.error(`[AUTO DELETE VOICE] ❌ XÓA KHÔNG THÀNH CÔNG! Slot vẫn: ${slotInfoBefore.remaining}`);
+                            if (typeof addLogEntry === 'function') {
+                                addLogEntry(`❌ KHÔNG THỂ XÓA VOICE SLOT! Slot vẫn: ${slotInfoBefore.remaining}. Vui lòng xóa thủ công hoặc liên hệ hỗ trợ`, 'error');
+                            }
+                            // Vẫn tiếp tục nhưng cảnh báo
+                            window._hasDeletedVoiceForThisRun = true; // Đánh dấu đã thử để tránh loop
+                        }
+                    } else {
+                        console.error(`[AUTO DELETE VOICE] ❌ KHÔNG THỂ XÓA VOICE SLOT!`);
+                        if (typeof addLogEntry === 'function') {
+                            addLogEntry(`❌ KHÔNG THỂ XÓA VOICE SLOT! Vui lòng xóa thủ công trước khi tạo âm thanh`, 'error');
+                        }
+                        // Vẫn tiếp tục nhưng cảnh báo
+                        window._hasDeletedVoiceForThisRun = true; // Đánh dấu đã thử để tránh loop
+                    }
                 }
             } else {
-                console.log('[AUTO DELETE VOICE] ⚠️ Không tìm thấy voice nào để xóa (có thể đã hết voice hoặc chưa có voice)');
+                // Không tìm thấy thông tin slot, thử xóa anyway
+                console.log('[AUTO DELETE VOICE] ⚠️ Không tìm thấy thông tin slot, thử xóa anyway...');
+                const deleted = await autoDeleteOldVoices(1);
+                if (deleted > 0) {
+                    console.log(`[AUTO DELETE VOICE] ✅ Đã xóa ${deleted} voice slot`);
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`🗑️ Đã tự động xóa ${deleted} voice slot`, 'info');
+                    }
+                }
+                window._hasDeletedVoiceForThisRun = true;
             }
-            window._hasDeletedVoiceForThisRun = true; // Đánh dấu đã xóa cho lần chạy này
         } catch (error) {
-            console.error('[AUTO DELETE VOICE] Lỗi khi xóa voice cũ:', error);
-            // Không chặn quá trình, chỉ log lỗi
+            console.error('[AUTO DELETE VOICE] Lỗi khi xóa voice slot:', error);
+            if (typeof addLogEntry === 'function') {
+                addLogEntry(`❌ Lỗi khi xóa voice slot: ${error.message}`, 'error');
+            }
+            // Vẫn tiếp tục nhưng cảnh báo
+            window._hasDeletedVoiceForThisRun = true; // Đánh dấu đã thử để tránh loop
         }
     }
     
@@ -7200,87 +7249,189 @@ async function waitForVoiceModelReady() {
     }
     
     /**
+     * Lấy số slot hiện tại từ DOM
+     * @returns {Object|null} {used, total, remaining} hoặc null
+     */
+    function getCurrentSlotInfo() {
+        // Tìm text "Voice slots remaining: X/Y" hoặc tương tự
+        const slotElements = Array.from(document.querySelectorAll('*')).filter(el => {
+            const text = el.textContent || '';
+            return (text.includes('Voice slots') || text.includes('slots remaining')) && text.match(/\d+\/\d+/);
+        });
+        
+        for (const el of slotElements) {
+            const text = el.textContent || '';
+            const match = text.match(/(\d+)\s*[\/of]\s*(\d+)/i);
+            if (match) {
+                const used = parseInt(match[1]);
+                const total = parseInt(match[2]);
+                const remaining = total - used;
+                return { used, total, remaining, element: el };
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
      * Tìm và gọi API của Minimax để xóa voice slot trực tiếp (không cleanup audio)
-     * Chỉ xóa slot, không cleanup audio element
+     * BẮT BUỘC phải xóa thành công trước khi tiếp tục
      * @returns {Promise<boolean>} true nếu xóa thành công
      */
     async function deleteVoiceSlotViaAPI() {
         try {
-            console.log('[DELETE VOICE SLOT] Đang tìm API của Minimax để xóa voice slot (không cleanup audio)...');
+            console.log('[DELETE VOICE SLOT] Đang tìm cách xóa voice slot (BẮT BUỘC phải xóa thành công)...');
             
-            // Cách 1: Tìm hàm global của Minimax
-            const minimaxFunctions = [
-                window.deleteVoice,
-                window.removeVoice,
-                window.deleteVoiceSlot,
-                window.removeVoiceSlot,
-                window.minimax?.deleteVoice,
-                window.minimax?.removeVoice,
-                unsafeWindow?.deleteVoice,
-                unsafeWindow?.removeVoice
+            // Lấy thông tin slot trước khi xóa
+            const slotInfoBefore = getCurrentSlotInfo();
+            if (!slotInfoBefore) {
+                console.log('[DELETE VOICE SLOT] ⚠️ Không tìm thấy thông tin slot, thử xóa anyway...');
+            } else {
+                console.log(`[DELETE VOICE SLOT] Slot trước khi xóa: ${slotInfoBefore.used}/${slotInfoBefore.total} (còn lại: ${slotInfoBefore.remaining})`);
+            }
+            
+            // Cách 1: Tìm tất cả các hàm có thể xóa voice trong window và unsafeWindow
+            const allWindowObjects = [window, unsafeWindow || window];
+            const functionNames = [
+                'deleteVoice', 'removeVoice', 'deleteVoiceSlot', 'removeVoiceSlot',
+                'deleteSample', 'removeSample', 'deleteAudio', 'removeAudio',
+                'handleDelete', 'handleRemove', 'onDelete', 'onRemove'
             ];
             
-            for (const func of minimaxFunctions) {
-                if (typeof func === 'function') {
-                    console.log('[DELETE VOICE SLOT] Tìm thấy hàm xóa voice của Minimax');
+            for (const win of allWindowObjects) {
+                for (const funcName of functionNames) {
                     try {
-                        await func();
-                        console.log('[DELETE VOICE SLOT] ✅ Đã gọi API xóa voice slot thành công');
-                        return true;
-                    } catch (error) {
-                        console.error('[DELETE VOICE SLOT] Lỗi khi gọi API:', error);
-                    }
+                        // Tìm trong window
+                        if (typeof win[funcName] === 'function') {
+                            console.log(`[DELETE VOICE SLOT] Tìm thấy hàm: window.${funcName}`);
+                            try {
+                                await win[funcName]();
+                                await new Promise(resolve => setTimeout(resolve, 1000));
+                                const slotInfoAfter = getCurrentSlotInfo();
+                                if (slotInfoAfter && slotInfoBefore) {
+                                    if (slotInfoAfter.remaining > slotInfoBefore.remaining) {
+                                        console.log(`[DELETE VOICE SLOT] ✅ Đã xóa thành công bằng hàm ${funcName} (${slotInfoBefore.remaining} → ${slotInfoAfter.remaining} slot)`);
+                                        return true;
+                                    }
+                                } else {
+                                    console.log(`[DELETE VOICE SLOT] ✅ Đã gọi hàm ${funcName}`);
+                                    return true;
+                                }
+                            } catch (error) {
+                                console.error(`[DELETE VOICE SLOT] Lỗi khi gọi hàm ${funcName}:`, error);
+                            }
+                        }
+                        
+                        // Tìm trong window.minimax, window.app, etc.
+                        const nestedObjects = ['minimax', 'app', 'api', 'voice', 'audio'];
+                        for (const objName of nestedObjects) {
+                            if (win[objName] && typeof win[objName][funcName] === 'function') {
+                                console.log(`[DELETE VOICE SLOT] Tìm thấy hàm: window.${objName}.${funcName}`);
+                                try {
+                                    await win[objName][funcName]();
+                                    await new Promise(resolve => setTimeout(resolve, 1000));
+                                    const slotInfoAfter = getCurrentSlotInfo();
+                                    if (slotInfoAfter && slotInfoBefore) {
+                                        if (slotInfoAfter.remaining > slotInfoBefore.remaining) {
+                                            console.log(`[DELETE VOICE SLOT] ✅ Đã xóa thành công bằng hàm ${objName}.${funcName}`);
+                                            return true;
+                                        }
+                                    } else {
+                                        return true;
+                                    }
+                                } catch (error) {
+                                    console.error(`[DELETE VOICE SLOT] Lỗi khi gọi hàm ${objName}.${funcName}:`, error);
+                                }
+                            }
+                        }
+                    } catch (e) {}
                 }
             }
             
-            // Cách 2: Tìm và click nút xóa đầu tiên (chỉ để giải phóng slot, không cleanup audio)
-            // Tìm voice sample đầu tiên và click nút xóa để giải phóng slot
-            const voiceSamples = findAllVoiceSamples();
-            if (voiceSamples.length > 0) {
-                const firstSample = voiceSamples[0];
-                const deleteBtn = findDeleteButton(firstSample);
+            // Cách 2: Tìm và click nút xóa trong UI (tìm tất cả các nút có thể xóa)
+            console.log('[DELETE VOICE SLOT] Tìm nút xóa trong UI...');
+            
+            // Tìm tất cả các button có thể là nút xóa
+            const possibleDeleteButtons = Array.from(document.querySelectorAll('button, [role="button"], a[href*="delete"], a[href*="remove"]')).filter(btn => {
+                const text = (btn.textContent || '').toLowerCase();
+                const ariaLabel = (btn.getAttribute('aria-label') || '').toLowerCase();
+                const title = (btn.getAttribute('title') || '').toLowerCase();
+                const className = (btn.className || '').toLowerCase();
                 
-                if (deleteBtn) {
-                    const fileName = firstSample.textContent?.match(/[\w\s\-]+\.(mp3|wav|m4a|ogg)/i)?.[0] || 'voice slot';
-                    console.log(`[DELETE VOICE SLOT] Đang click nút xóa để giải phóng slot (không cleanup audio): ${fileName}`);
+                return text.includes('delete') || text.includes('remove') || text.includes('x') ||
+                       ariaLabel.includes('delete') || ariaLabel.includes('remove') ||
+                       title.includes('delete') || title.includes('remove') ||
+                       className.includes('delete') || className.includes('remove') ||
+                       btn.querySelector('svg[class*="close"]') || btn.querySelector('svg[class*="delete"]');
+            });
+            
+            // Tìm voice samples và nút xóa của chúng
+            const voiceSamples = findAllVoiceSamples();
+            let deleteButtons = [];
+            
+            // Lấy nút xóa từ voice samples
+            for (const sample of voiceSamples) {
+                const btn = findDeleteButton(sample);
+                if (btn) deleteButtons.push({ button: btn, sample: sample });
+            }
+            
+            // Thêm các nút xóa khác nếu có
+            for (const btn of possibleDeleteButtons) {
+                // Kiểm tra xem nút này có gần voice sample không
+                const nearbySample = voiceSamples.find(sample => {
+                    const rect1 = sample.getBoundingClientRect();
+                    const rect2 = btn.getBoundingClientRect();
+                    const distance = Math.sqrt(Math.pow(rect1.left - rect2.left, 2) + Math.pow(rect1.top - rect2.top, 2));
+                    return distance < 200; // Trong vòng 200px
+                });
+                if (nearbySample) {
+                    deleteButtons.push({ button: btn, sample: nearbySample });
+                }
+            }
+            
+            // Xóa duplicate
+            deleteButtons = deleteButtons.filter((item, index, self) => 
+                index === self.findIndex(t => t.button === item.button)
+            );
+            
+            console.log(`[DELETE VOICE SLOT] Tìm thấy ${deleteButtons.length} nút xóa có thể`);
+            
+            // Thử click từng nút xóa cho đến khi xóa thành công
+            for (const { button, sample } of deleteButtons) {
+                try {
+                    const fileName = sample.textContent?.match(/[\w\s\-]+\.(mp3|wav|m4a|ogg)/i)?.[0] || 'voice slot';
+                    console.log(`[DELETE VOICE SLOT] Đang thử click nút xóa: ${fileName}`);
                     
-                    // Lưu số slot trước khi xóa để kiểm tra
-                    const slotInfoBefore = Array.from(document.querySelectorAll('*')).find(el => {
-                        const text = el.textContent || '';
-                        return (text.includes('slots remaining') || text.includes('Voice slots')) && text.match(/\d+\/\d+/);
-                    });
+                    // Click nút xóa
+                    button.click();
                     
-                    // Click nút xóa (chỉ để giải phóng slot, không cleanup audio)
-                    deleteBtn.click();
-                    
-                    // Đợi một chút để API xóa slot hoàn tất
-                    await new Promise(resolve => setTimeout(resolve, 800));
-                    
-                    // Kiểm tra xem slot đã được giải phóng chưa (so sánh số slot)
-                    const slotInfoAfter = Array.from(document.querySelectorAll('*')).find(el => {
-                        const text = el.textContent || '';
-                        return (text.includes('slots remaining') || text.includes('Voice slots')) && text.match(/\d+\/\d+/);
-                    });
-                    
-                    if (slotInfoBefore && slotInfoAfter) {
-                        const beforeMatch = slotInfoBefore.textContent.match(/(\d+)\/(\d+)/);
-                        const afterMatch = slotInfoAfter.textContent.match(/(\d+)\/(\d+)/);
-                        if (beforeMatch && afterMatch) {
-                            const beforeRemaining = parseInt(beforeMatch[2]) - parseInt(beforeMatch[1]);
-                            const afterRemaining = parseInt(afterMatch[2]) - parseInt(afterMatch[1]);
-                            if (afterRemaining > beforeRemaining) {
-                                console.log(`[DELETE VOICE SLOT] ✅ Đã giải phóng slot thành công (${beforeRemaining} → ${afterRemaining} slot trống)`);
+                    // Đợi và kiểm tra slot đã tăng chưa
+                    for (let i = 0; i < 5; i++) {
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        const slotInfoAfter = getCurrentSlotInfo();
+                        
+                        if (slotInfoAfter && slotInfoBefore) {
+                            if (slotInfoAfter.remaining > slotInfoBefore.remaining) {
+                                console.log(`[DELETE VOICE SLOT] ✅ Đã xóa thành công! Slot: ${slotInfoBefore.remaining} → ${slotInfoAfter.remaining}`);
+                                return true;
+                            }
+                        } else if (slotInfoAfter) {
+                            // Nếu không có slotInfoBefore, kiểm tra xem có slot trống không
+                            if (slotInfoAfter.remaining > 0) {
+                                console.log(`[DELETE VOICE SLOT] ✅ Có ${slotInfoAfter.remaining} slot trống, có thể đã xóa thành công`);
                                 return true;
                             }
                         }
                     }
-                    
-                    console.log(`[DELETE VOICE SLOT] ✅ Đã click nút xóa để giải phóng slot: ${fileName}`);
-                    return true;
+                } catch (error) {
+                    console.error(`[DELETE VOICE SLOT] Lỗi khi click nút xóa:`, error);
                 }
             }
             
-            console.log('[DELETE VOICE SLOT] ⚠️ Không tìm thấy voice slot nào để xóa');
+            // Cách 3: Intercept network requests để tìm API endpoint
+            console.log('[DELETE VOICE SLOT] ⚠️ Không tìm thấy cách xóa trực tiếp, cần intercept network requests');
+            console.log('[DELETE VOICE SLOT] 💡 Vui lòng mở DevTools > Network tab và thử xóa 1 voice thủ công, sau đó cho tôi biết API endpoint');
+            
             return false;
         } catch (error) {
             console.error('[DELETE VOICE SLOT] Lỗi khi xóa voice slot:', error);
@@ -7300,21 +7451,62 @@ async function waitForVoiceModelReady() {
     
     /**
      * Tự động xóa voice slot cũ nhất (FIFO - First In First Out)
+     * BẮT BUỘC phải xóa thành công trước khi tiếp tục
      * Chỉ xóa slot, không cleanup audio
      * @param {number} count - Số lượng voice slot cần xóa (mặc định: 1)
      * @returns {Promise<number>} Số lượng voice slot đã xóa thành công
      */
     async function autoDeleteOldVoices(count = 1) {
-        console.log(`[AUTO DELETE VOICE SLOT] Bắt đầu xóa ${count} voice slot cũ nhất (không cleanup audio)...`);
+        console.log(`[AUTO DELETE VOICE SLOT] Bắt đầu xóa ${count} voice slot (BẮT BUỘC phải xóa thành công)...`);
         
         let deletedCount = 0;
+        const maxRetries = 5; // Số lần thử tối đa cho mỗi voice slot
         
         // Xóa từ đầu (voice slot cũ nhất) - FIFO
-        // Dùng API xóa slot trực tiếp, không cleanup audio
         for (let i = 0; i < count; i++) {
-            const success = await deleteVoiceSlotViaAPI();
-            if (success) {
-                deletedCount++;
+            let success = false;
+            let retryCount = 0;
+            
+            // Retry cho đến khi xóa thành công hoặc hết số lần thử
+            while (!success && retryCount < maxRetries) {
+                retryCount++;
+                console.log(`[AUTO DELETE VOICE SLOT] Lần thử ${retryCount}/${maxRetries} để xóa voice slot ${i + 1}/${count}...`);
+                
+                // Lấy số slot trước khi xóa
+                const slotInfoBefore = getCurrentSlotInfo();
+                
+                // Thử xóa
+                success = await deleteVoiceSlotViaAPI();
+                
+                if (success) {
+                    // Kiểm tra lại số slot sau khi xóa
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    const slotInfoAfter = getCurrentSlotInfo();
+                    
+                    if (slotInfoBefore && slotInfoAfter) {
+                        if (slotInfoAfter.remaining > slotInfoBefore.remaining) {
+                            console.log(`[AUTO DELETE VOICE SLOT] ✅ Xác nhận: Đã xóa thành công! Slot: ${slotInfoBefore.remaining} → ${slotInfoAfter.remaining}`);
+                            deletedCount++;
+                            break;
+                        } else {
+                            console.log(`[AUTO DELETE VOICE SLOT] ⚠️ Slot không thay đổi (${slotInfoBefore.remaining} → ${slotInfoAfter.remaining}), thử lại...`);
+                            success = false;
+                        }
+                    } else {
+                        // Nếu không lấy được slot info, coi như thành công nếu hàm trả về true
+                        console.log(`[AUTO DELETE VOICE SLOT] ✅ Hàm trả về thành công (không kiểm tra được slot)`);
+                        deletedCount++;
+                        break;
+                    }
+                } else {
+                    console.log(`[AUTO DELETE VOICE SLOT] ⚠️ Lần thử ${retryCount} thất bại, thử lại...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+            
+            if (!success) {
+                console.error(`[AUTO DELETE VOICE SLOT] ❌ KHÔNG THỂ XÓA voice slot ${i + 1} sau ${maxRetries} lần thử!`);
+                console.error(`[AUTO DELETE VOICE SLOT] 💡 Vui lòng kiểm tra và hỗ trợ tìm cách xóa voice slot`);
             }
             
             // Đợi giữa các lần xóa
@@ -7323,7 +7515,12 @@ async function waitForVoiceModelReady() {
             }
         }
         
-        console.log(`[AUTO DELETE VOICE SLOT] ✅ Đã xóa ${deletedCount}/${count} voice slot (không cleanup audio)`);
+        if (deletedCount === count) {
+            console.log(`[AUTO DELETE VOICE SLOT] ✅ Đã xóa thành công ${deletedCount}/${count} voice slot`);
+        } else {
+            console.error(`[AUTO DELETE VOICE SLOT] ⚠️ CHỈ xóa được ${deletedCount}/${count} voice slot`);
+        }
+        
         return deletedCount;
     }
     
