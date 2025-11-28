@@ -1246,7 +1246,7 @@ button:disabled {
         
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Loading quota...</div>
         </div> 
-    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <h2>Activity Log</h2> <div id="log-container" class="log-container"> <div class="log-entry">Ready to monitor chunks...</div> </div> <button id="clear-log-btn" class="clear-log-btn">Clear Log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 35.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div><button id="settings-toggle-btn">⚙️ Cài đặt</button></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
+    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <h2>Activity Log</h2> <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;"> <button id="toggle-log-detail-btn" style="background-color: #6272a4; color: #f8f8f2; padding: 8px 15px; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; font-size: 12px;">🔒 Ẩn log chi tiết</button> <button id="clear-log-btn" class="clear-log-btn" style="flex: 1; margin: 0;">Clear Log</button> </div> <div id="log-container" class="log-container"> <div class="log-entry">Ready to monitor chunks...</div> </div> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 35.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div><button id="settings-toggle-btn">⚙️ Cài đặt</button></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
     <div class="text-input-options">
         <div class="input-tabs">
             <button id="text-tab" class="tab-btn active">Nhập trực tiếp</button>
@@ -1279,7 +1279,7 @@ button:disabled {
         </div>
     </div>
 
-    <button id="gemini-start-queue-btn" disabled style="width: 100%; margin-top: 15px;">Start generating audio</button>
+    <button id="gemini-start-queue-btn" disabled style="width: 100%; margin-top: 15px;">Bắt đầu tạo âm thanh</button>
 
     <div class="sales-announcement">
         <h3>🎉 CHƯƠNG TRÌNH SALE – HOA HỒNG VĨNH VIỄN 💰</h3>
@@ -1343,7 +1343,7 @@ button:disabled {
     </div>
     <div id="gemini-text-stats"><span>Characters: 0</span><span>Words: 0</span><span>Sentences: 0</span><span>Paragraphs: 0</span></div>
 
-<button id="gemini-merge-btn">Merge Dialogue</button> <button id="apply-punctuation-btn" style="display:none; background-color: #ffb86c; color: #282a36; margin-top: 10px;">Apply punctuation settings</button> <button id="gemini-pause-btn" style="display:none;">Pause</button> <button id="gemini-stop-btn" style="display:none;">Stop</button> <div id="gemini-progress-container" style="display:none;"><div id="gemini-progress-bar"></div><span id="gemini-progress-label">0%</span></div> <div id="gemini-final-result" style="display:none;"> <h4>Final result</h4> <div id="gemini-time-taken"></div> <div id="gemini-waveform"></div> <div id="waveform-controls" style="display:none;"><button id="waveform-play-pause">▶️</button><a id="gemini-download-merged-btn" href="#" download="merged_output.mp3">Download audio</a><button id="gemini-download-chunks-btn" style="display: none; background-color: #ffb86c; color: #282a36;">Download chunks (ZIP)</button></div> </div> </div> </div> </div> <div id="gemini-col-3" class="gemini-column"> <div class="column-header"><h3></h3></div> <div class="column-content banner-column"> <div class="section"> <button id="open-audio-manager-btn" style="background-color: #8be9fd; color: #282a36; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px;">📂 Mở Kho Âm Thanh (Online)</button> </div><div id="batch-replace-section"><h4>Đổi văn bản hàng loạt</h4><div id="batch-replace-pairs"></div><div id="batch-replace-actions"><button id="add-replace-pair-btn" title="Thêm cặp từ">+</button><button id="execute-replace-btn">Thực hiện đổi</button></div></div> <button id="open-punctuation-settings-btn">Thiết lập dấu câu</button> <div class="section" style="margin-top: 20px;"> <a href="https://zalo.me/g/vyajle175" target="_blank" style="display: block; background-color: #0068ff; color: #fff; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; text-align: center; text-decoration: none; cursor: pointer; transition: all 0.3s ease;">💬 Nhóm Zalo Hỗ Trợ</a> </div> </div> </div>     <textarea id="gemini-hidden-text-for-request" style="display:none;"></textarea>
+<button id="gemini-merge-btn">Ghép hội thoại</button> <button id="apply-punctuation-btn" style="display:none; background-color: #ffb86c; color: #282a36; margin-top: 10px;">Apply punctuation settings</button> <button id="gemini-pause-btn" style="display:none;">Pause</button> <button id="gemini-stop-btn" style="display:none;">Stop</button> <div id="gemini-progress-container" style="display:none;"><div id="gemini-progress-bar"></div><span id="gemini-progress-label">0%</span></div> <div id="gemini-final-result" style="display:none;"> <h4>Final result</h4> <div id="gemini-time-taken"></div> <div id="gemini-waveform"></div> <div id="waveform-controls" style="display:none;"><button id="waveform-play-pause">▶️</button><a id="gemini-download-merged-btn" href="#" download="merged_output.mp3">Download audio</a><button id="gemini-download-chunks-btn" style="display: none; background-color: #ffb86c; color: #282a36;">Download chunks (ZIP)</button></div> </div> </div> </div> </div> <div id="gemini-col-3" class="gemini-column"> <div class="column-header"><h3></h3></div> <div class="column-content banner-column"> <div class="section"> <button id="open-audio-manager-btn" style="background-color: #8be9fd; color: #282a36; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px;">📂 Mở Kho Âm Thanh (Online)</button> </div><div id="batch-replace-section"><h4>Đổi văn bản hàng loạt</h4><div id="batch-replace-pairs"></div><div id="batch-replace-actions"><button id="add-replace-pair-btn" title="Thêm cặp từ">+</button><button id="execute-replace-btn">Thực hiện đổi</button></div></div> <button id="open-punctuation-settings-btn">Thiết lập dấu câu</button> <div class="section" style="margin-top: 20px;"> <a href="https://zalo.me/g/vyajle175" target="_blank" style="display: block; background-color: #0068ff; color: #fff; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; text-align: center; text-decoration: none; cursor: pointer; transition: all 0.3s ease;">💬 Nhóm Zalo Hỗ Trợ</a> </div> </div> </div>     <textarea id="gemini-hidden-text-for-request" style="display:none;"></textarea>
 
     <!-- Modal Kho Âm Thanh Online -->
     <div id="audio-manager-modal" class="punctuation-modal" style="display:none;">
@@ -1569,7 +1569,7 @@ button:disabled {
             const mainTextarea = document.getElementById('gemini-main-textarea');
             if (startButton && startButton.disabled && mainTextarea && mainTextarea.value.trim() !== '') {
                  startButton.disabled = false;
-                 startButton.textContent = 'Start generating audio';
+                 startButton.textContent = 'Bắt đầu tạo âm thanh';
             }
         } else if (remaining <= 0) {
             // Hết ký tự
@@ -1586,7 +1586,7 @@ button:disabled {
             const mainTextarea = document.getElementById('gemini-main-textarea');
             if (startButton && startButton.disabled && mainTextarea && mainTextarea.value.trim() !== '') {
                  startButton.disabled = false;
-                 startButton.textContent = 'Start generating audio';
+                 startButton.textContent = 'Bắt đầu tạo âm thanh';
             }
         }
     }
@@ -1672,7 +1672,74 @@ button:disabled {
     }
     
     // Log functionality
+    // =======================================================
+    // BẢO MẬT: ẨN LOG CHI TIẾT MẶC ĐỊNH
+    // =======================================================
+    // QUAN TRỌNG: Mặc định LUÔN ẨN log chi tiết để bảo mật
+    // Chỉ hiển thị log thành công/thất bại, ẩn tất cả log debug/info/warning
+    // Người dùng có thể bật hiện log chi tiết qua nút toggle nếu cần debug
+    if (typeof window.hideDetailedLogs === 'undefined') {
+        window.hideDetailedLogs = true; // MẶC ĐỊNH LUÔN ẨN để bảo mật
+    }
+    
+    // Đảm bảo giá trị mặc định luôn là true (bảo mật)
+    // Nếu bị set về false hoặc undefined, tự động reset về true
+    if (window.hideDetailedLogs !== true && window.hideDetailedLogs !== false) {
+        window.hideDetailedLogs = true; // Reset về ẩn nếu giá trị không hợp lệ
+    }
+    
+    /**
+     * Kiểm tra xem log có nên được hiển thị không
+     * @param {string} message - Nội dung log
+     * @param {string} type - Loại log (success, error, info, warning)
+     * @returns {boolean} true nếu nên hiển thị
+     */
+    function shouldShowLog(message, type) {
+        // Nếu không ẩn log chi tiết, hiển thị tất cả
+        if (!window.hideDetailedLogs) {
+            return true;
+        }
+        
+        // Exception: Luôn hiển thị log về toggle chế độ ẩn
+        if (message.includes('chế độ ẩn log chi tiết') || message.includes('Hiển thị tất cả log')) {
+            return true;
+        }
+        
+        // Chế độ ẩn: chỉ hiển thị log thành công hoặc thất bại quan trọng
+        // Kiểm tra xem có phải log quan trọng không (thành công hoặc thất bại)
+        const importantPatterns = [
+            // Log thành công - chunk
+            /✅.*\[C#\d+\/.*\].*Thành công/i,
+            /✅.*\[C#\d+\].*Thành công/i,
+            // Log thành công - tổng kết
+            /✅.*TẤT CẢ.*chunks.*thành công/i,
+            /✅.*Hoàn tất/i,
+            /✅.*Đã xử lý xong.*chunks/i,
+            /✅.*Đã merge/i,
+            /✅.*Hoàn tất merge/i,
+            // Log thất bại - chunk
+            /❌.*\[C#\d+\].*thất bại/i,
+            /❌.*chunk.*thất bại/i,
+            /❌.*\[C#\d+\].*Timeout/i,
+            // Log thất bại - tổng kết
+            /❌.*chunks.*thất bại/i,
+            /❌.*Lỗi.*merge/i,
+            /❌.*Không có.*chunks/i
+        ];
+        
+        // Chỉ hiển thị nếu match pattern quan trọng
+        return importantPatterns.some(pattern => pattern.test(message));
+        
+        // Ẩn tất cả log khác (info, warning) khi ở chế độ ẩn
+        return false;
+    }
+    
     function addLogEntry(message, type = 'info') {
+        // Kiểm tra xem có nên hiển thị log không (chế độ ẩn log chi tiết)
+        if (!shouldShowLog(message, type)) {
+            return; // Không hiển thị log này
+        }
+        
         // Sanitize message trước khi hiển thị
         const sanitizedMessage = sanitizeLogMessage(message);
         
@@ -2357,6 +2424,37 @@ button:disabled {
         const clearLogBtn = document.getElementById('clear-log-btn');
         if (clearLogBtn) {
             clearLogBtn.addEventListener('click', clearLog);
+        }
+        
+        // Thêm event listener cho nút toggle ẩn/hiện log chi tiết
+        const toggleLogDetailBtn = document.getElementById('toggle-log-detail-btn');
+        if (toggleLogDetailBtn) {
+            // Cập nhật text ban đầu dựa trên trạng thái hiện tại
+            const updateToggleButtonText = () => {
+                if (window.hideDetailedLogs) {
+                    toggleLogDetailBtn.textContent = '🔓 Hiện log chi tiết';
+                    toggleLogDetailBtn.style.backgroundColor = '#50fa7b';
+                    toggleLogDetailBtn.style.color = '#282a36';
+                } else {
+                    toggleLogDetailBtn.textContent = '🔒 Ẩn log chi tiết';
+                    toggleLogDetailBtn.style.backgroundColor = '#6272a4';
+                    toggleLogDetailBtn.style.color = '#f8f8f2';
+                }
+            };
+            
+            updateToggleButtonText();
+            
+            toggleLogDetailBtn.addEventListener('click', () => {
+                window.hideDetailedLogs = !window.hideDetailedLogs;
+                updateToggleButtonText();
+                
+                // Thông báo cho người dùng
+                if (window.hideDetailedLogs) {
+                    addLogEntry('🔒 Đã bật chế độ ẩn log chi tiết. Chỉ hiển thị thành công/thất bại.', 'info');
+                } else {
+                    addLogEntry('🔓 Đã tắt chế độ ẩn log chi tiết. Hiển thị tất cả log.', 'info');
+                }
+            });
         }
     });
 
@@ -7053,6 +7151,260 @@ async function waitForVoiceModelReady() {
             throw error;
         });
     };
+    
+    // =================================================================
+    // == TỰ ĐỘNG XÓA VOICE CŨ ĐỂ NÉ LỖI "YOU'VE USED ALL OF THE VOICE SLOTS" ==
+    // =================================================================
+    
+    /**
+     * Tìm tất cả voice samples trong DOM
+     * @returns {Array} Mảng các element chứa voice sample
+     */
+    function findAllVoiceSamples() {
+        const voiceSamples = [];
+        
+        // Cách 1: Tìm theo text "Uploaded Samples" và các item bên trong
+        const uploadedSamplesSection = Array.from(document.querySelectorAll('*')).find(el => {
+            const text = el.textContent || '';
+            return text.includes('Uploaded Samples') || (text.includes('Uploaded') && text.includes('Samples'));
+        });
+        
+        if (uploadedSamplesSection) {
+            // Tìm tất cả các item trong section này
+            const items = uploadedSamplesSection.querySelectorAll('div, li, tr, [class*="sample"], [class*="voice"], [class*="item"]');
+            items.forEach(item => {
+                // Kiểm tra xem có nút xóa (X, delete, remove) không
+                const deleteBtn = item.querySelector('button[aria-label*="delete" i], button[aria-label*="remove" i], button[title*="delete" i], button[title*="remove" i], svg[class*="close"], svg[class*="delete"], [class*="close"], [class*="delete"], button:has(svg)');
+                if (deleteBtn || item.textContent.match(/\.(mp3|wav|m4a|ogg)/i)) {
+                    voiceSamples.push(item);
+                }
+            });
+        }
+        
+        // Cách 2: Tìm theo pattern chung (file audio trong danh sách)
+        if (voiceSamples.length === 0) {
+            const allElements = Array.from(document.querySelectorAll('div, li, tr'));
+            allElements.forEach(el => {
+                const text = el.textContent || '';
+                // Tìm element có chứa tên file audio và có nút xóa
+                if (text.match(/\.(mp3|wav|m4a|ogg|wma|flac)/i)) {
+                    const deleteBtn = el.querySelector('button, svg, [class*="close"], [class*="delete"], [class*="remove"], [aria-label*="delete" i], [aria-label*="remove" i]');
+                    if (deleteBtn) {
+                        voiceSamples.push(el);
+                    }
+                }
+            });
+        }
+        
+        return voiceSamples;
+    }
+    
+    /**
+     * Tìm nút xóa trong voice sample element
+     * @param {HTMLElement} sampleElement - Element chứa voice sample
+     * @returns {HTMLElement|null} Nút xóa hoặc null
+     */
+    function findDeleteButton(sampleElement) {
+        if (!sampleElement) return null;
+        
+        // Các selector có thể cho nút xóa
+        const deleteSelectors = [
+            'button[aria-label*="delete" i]',
+            'button[aria-label*="remove" i]',
+            'button[title*="delete" i]',
+            'button[title*="remove" i]',
+            'button[class*="delete"]',
+            'button[class*="remove"]',
+            'button[class*="close"]',
+            'svg[class*="close"]',
+            'svg[class*="delete"]',
+            '[class*="close-button"]',
+            '[class*="delete-button"]',
+            '[class*="remove-button"]',
+            'button:has(svg)',
+            'button:last-child',
+            'svg:last-child'
+        ];
+        
+        for (const selector of deleteSelectors) {
+            try {
+                const btn = sampleElement.querySelector(selector);
+                if (btn && (btn.offsetParent !== null || btn.style.display !== 'none')) {
+                    return btn;
+                }
+            } catch (e) {}
+        }
+        
+        // Nếu không tìm thấy, thử tìm button hoặc svg cuối cùng
+        const lastButton = sampleElement.querySelector('button:last-child, svg:last-child');
+        if (lastButton) {
+            return lastButton;
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Xóa một voice sample
+     * @param {HTMLElement} sampleElement - Element chứa voice sample cần xóa
+     * @returns {Promise<boolean>} true nếu xóa thành công
+     */
+    async function deleteVoiceSample(sampleElement) {
+        if (!sampleElement) return false;
+        
+        try {
+            const deleteBtn = findDeleteButton(sampleElement);
+            if (!deleteBtn) {
+                console.log('[DELETE VOICE] Không tìm thấy nút xóa');
+                return false;
+            }
+            
+            // Lấy tên file để log
+            const fileName = sampleElement.textContent?.match(/[\w\s\-]+\.(mp3|wav|m4a|ogg)/i)?.[0] || 'unknown';
+            console.log(`[DELETE VOICE] Đang xóa voice: ${fileName}`);
+            
+            // Click nút xóa
+            deleteBtn.click();
+            
+            // Đợi một chút để xóa hoàn tất
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Kiểm tra xem đã xóa chưa
+            if (!document.contains(sampleElement)) {
+                console.log(`[DELETE VOICE] ✅ Đã xóa thành công: ${fileName}`);
+                return true;
+            }
+            
+            // Nếu vẫn còn, thử click lại
+            await new Promise(resolve => setTimeout(resolve, 500));
+            if (!document.contains(sampleElement)) {
+                console.log(`[DELETE VOICE] ✅ Đã xóa thành công (sau retry): ${fileName}`);
+                return true;
+            }
+            
+            console.log(`[DELETE VOICE] ⚠️ Không chắc đã xóa: ${fileName}`);
+            return false;
+        } catch (error) {
+            console.error('[DELETE VOICE] Lỗi khi xóa voice:', error);
+            return false;
+        }
+    }
+    
+    /**
+     * Tự động xóa voice cũ nhất (FIFO - First In First Out)
+     * @param {number} count - Số lượng voice cần xóa (mặc định: 1)
+     * @returns {Promise<number>} Số lượng voice đã xóa thành công
+     */
+    async function autoDeleteOldVoices(count = 1) {
+        console.log(`[AUTO DELETE VOICE] Bắt đầu xóa ${count} voice cũ nhất...`);
+        
+        const voiceSamples = findAllVoiceSamples();
+        console.log(`[AUTO DELETE VOICE] Tìm thấy ${voiceSamples.length} voice samples`);
+        
+        if (voiceSamples.length === 0) {
+            console.log('[AUTO DELETE VOICE] Không tìm thấy voice nào để xóa');
+            return 0;
+        }
+        
+        let deletedCount = 0;
+        
+        // Xóa từ đầu (voice cũ nhất) - FIFO
+        for (let i = 0; i < Math.min(count, voiceSamples.length); i++) {
+            const sample = voiceSamples[i];
+            const success = await deleteVoiceSample(sample);
+            if (success) {
+                deletedCount++;
+            }
+            
+            // Đợi giữa các lần xóa
+            if (i < Math.min(count, voiceSamples.length) - 1) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+        }
+        
+        console.log(`[AUTO DELETE VOICE] ✅ Đã xóa ${deletedCount}/${count} voice`);
+        return deletedCount;
+    }
+    
+    /**
+     * Kiểm tra và xóa voice tự động khi phát hiện lỗi "You've used all of the voice slots"
+     * @returns {Promise<boolean>} true nếu đã xử lý thành công
+     */
+    async function handleVoiceSlotFullError() {
+        // Tìm thông báo lỗi
+        const errorMessages = Array.from(document.querySelectorAll('*')).filter(el => {
+            const text = el.textContent || '';
+            return text.includes('You\'ve used all of the voice slots') || 
+                   text.includes('used all of the voice slots') ||
+                   (text.includes('voice slots') && text.includes('all'));
+        });
+        
+        if (errorMessages.length === 0) {
+            return false;
+        }
+        
+        console.log('[HANDLE VOICE SLOT ERROR] Phát hiện lỗi "You\'ve used all of the voice slots"');
+        
+        // Đóng thông báo lỗi nếu có nút đóng
+        for (const errorMsg of errorMessages) {
+            const closeBtn = errorMsg.querySelector('button[aria-label*="close" i], button[class*="close"], svg[class*="close"], [aria-label*="dismiss" i]');
+            if (closeBtn) {
+                closeBtn.click();
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+        }
+        
+        // Tự động xóa 1 voice cũ nhất
+        const deleted = await autoDeleteOldVoices(1);
+        
+        if (deleted > 0) {
+            console.log('[HANDLE VOICE SLOT ERROR] ✅ Đã xóa voice cũ, có thể thử upload lại');
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Kiểm tra số slot còn lại và tự động xóa voice cũ nếu cần
+     * @param {number} requiredSlots - Số slot cần thiết (mặc định: 1)
+     * @returns {Promise<boolean>} true nếu có đủ slot hoặc đã xóa để có đủ slot
+     */
+    async function ensureVoiceSlotsAvailable(requiredSlots = 1) {
+        // Tìm thông tin về số slot
+        const slotInfo = Array.from(document.querySelectorAll('*')).find(el => {
+            const text = el.textContent || '';
+            return text.includes('slots remaining') || 
+                   text.includes('Voice slots') ||
+                   (text.includes('/') && text.match(/\d+\/\d+/));
+        });
+        
+        if (slotInfo) {
+            const text = slotInfo.textContent || '';
+            const match = text.match(/(\d+)\/(\d+)/);
+            if (match) {
+                const used = parseInt(match[1]);
+                const total = parseInt(match[2]);
+                const remaining = total - used;
+                
+                console.log(`[ENSURE SLOTS] Slot còn lại: ${remaining}/${total}`);
+                
+                if (remaining < requiredSlots) {
+                    const needToDelete = requiredSlots - remaining;
+                    console.log(`[ENSURE SLOTS] Cần xóa ${needToDelete} voice để có đủ slot`);
+                    await autoDeleteOldVoices(needToDelete);
+                    return true;
+                }
+            }
+        }
+        
+        return true;
+    }
+    
+    // Tự động kiểm tra và xử lý lỗi voice slot mỗi 2 giây
+    setInterval(async () => {
+        await handleVoiceSlotFullError();
+    }, 2000);
     
     // Kiểm tra nếu đang trong vòng lặp auto reset 403
     try {
