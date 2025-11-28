@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DUC LOIUS - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
-// @version      29.0
+// @version      28.0
 // @description  Tạo audio giọng nói clone theo ý của bạn. Không giới hạn. Thêm chức năng Ghép hội thoại, Đổi văn bản hàng loạt & Thiết lập dấu câu (bao gồm dấu xuống dòng).
 // @author       HUỲNH ĐỨC LỢI ( Zalo: 0835795597) - Đã chỉnh sửa
 // @match        https://www.minimax.io/audio*
@@ -1116,188 +1116,255 @@ button:disabled {
 
 /* Sales Announcement Styles */
 `;
-    const APP_HTML = `<div id="gemini-col-1" class="gemini-column"> <div class="column-header"><div class="logo-user"><a href="" tager="_blank"><div class="logo"><img src="https://minimax.buhaseo.com/wp-content/uploads/2025/08/logo-minimax.png"></div></a><div id="gemini-user-info"></div></div>
-
+    const APP_HTML = `<div id="gemini-col-1" class="gemini-column"> <div class="column-header"><div class="logo-user"><a href="" tager="_blank" style="border:none!important;outline:none!important;box-shadow:none!important;"><div class="logo"><img src="https://cdn.jsdelivr.net/gh/kjfkshis/logo@5b0bb6a67fca8c8e73be6fdf701d7f523e4ecbb7/Adobe%20Express%20-%20file.png" style="border:none!important;outline:none!important;box-shadow:none!important;"></div></a><div id="gemini-user-info"></div></div>
         
-
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Loading quota...</div>
-
         </div> 
-
-    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Upload Audio File (Max 1 file, 20-60s duration)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Select Language</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="French">French</option><option value="German">German</option><option value="Spanish">Spanish</option><option value="Russian">Russian</option><option value="Portuguese">Portuguese</option><option value="Italian">Italian</option><option value="Indonesian">Indonesian</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Dutch">Dutch</option><option value="Turkish">Turkish</option><option value="Thai">Thai</option><option value="Hindi">Hindi</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Upload & Auto Configure</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <h2>Activity Log</h2> <div id="log-container" class="log-container"> <div class="log-entry">Ready to monitor chunks...</div> </div> <button id="clear-log-btn" class="clear-log-btn">Clear Log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Content Generator</h3><div>Version: 26.0 - Modded</div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Input Text for Voice Generation</h4>
-
+    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Upload audio file (Max 1 file, duration 10 seconds - 5 minutes)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Select language</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Upload & Auto Configure</button> <div id="gemini-upload-status"></div> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Content Generator</h3><button id="settings-toggle-btn" style="background-color: #6272a4; color: #f8f8f2; border: none; border-radius: 6px; padding: 8px 16px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; margin-left: 10px;">⚙️ Settings</button><div>Version: 28.0 - Update: 27/01/2025 - Created by: <a href="#" target="_blank">CloneTTS</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Enter text to generate voice</h4>
     <div class="text-input-options">
-
         <div class="input-tabs">
-
-            <button id="text-tab" class="tab-btn active">Direct Input</button>
-
-            <button id="file-tab" class="tab-btn">Upload File</button>
-
+            <button id="text-tab" class="tab-btn active">Enter directly</button>
+            <button id="file-tab" class="tab-btn">Upload from file</button>
         </div>
-
         <div id="text-input-area" class="input-area active">
-
-            <textarea id="gemini-main-textarea" placeholder="Paste your content here..."></textarea>
-
+            <textarea id="gemini-main-textarea" placeholder="Paste the content you have prepared here.
+⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+            "></textarea>
         </div>
-
         <div id="file-input-area" class="input-area">
-
             <div class="file-upload-section">
-
                 <input type="file" id="text-file-input" accept=".txt,.doc,.docx,.rtf,.odt,.pdf,.md,.html,.htm,.xml,.csv,.json" style="display: none;">
-
                 <div class="file-upload-area" id="file-upload-area">
-
                     <div class="upload-icon">📄</div>
-
                     <div class="upload-text">
-
-                        <strong>Drag & Drop file here or Click to Select</strong>
-
+                        <strong>Drag and drop file here or click to select</strong>
                         <br>
-
-                        <small>Supports: TXT, DOC, DOCX, PDF, etc.</small>
-
+                        <small>Supported: TXT, DOC, DOCX, RTF, ODT, PDF, MD, HTML, XML, CSV, JSON</small>
                     </div>
-
                 </div>
-
                 <div id="file-info" class="file-info" style="display: none;">
-
                     <div class="file-details">
-
                         <span class="file-name"></span>
-
                         <span class="file-size"></span>
-
                         <button id="remove-file-btn" class="remove-file-btn">×</button>
-
                     </div>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
 
+ </div> </div> <div id="gemini-col-2-right">
+    <div id="gemini-text-stats"><span>Characters: 0</span><span>Words: 0</span><span>Sentences: 0</span><span>Paragraphs: 0</span></div>
 
+<button id="gemini-start-queue-btn" disabled>Start generating audio</button> <button id="apply-punctuation-btn" style="display:none; background-color: #ffb86c; color: #282a36; margin-top: 10px;">Apply punctuation settings</button> <button id="gemini-pause-btn" style="display:none;">Pause</button> <button id="gemini-stop-btn" style="display:none;">Stop</button> <div id="gemini-progress-container" style="display:none;"><div id="gemini-progress-bar"></div><span id="gemini-progress-label">0%</span></div> <div id="gemini-final-result" style="display:none;"> <h4>Final result</h4> <div id="gemini-time-taken"></div> <div id="gemini-waveform"></div> <div id="waveform-controls" style="display:none;"><button id="waveform-play-pause">▶️</button><a id="gemini-download-merged-btn" href="#" download="merged_output.mp3">Download audio</a><button id="gemini-download-chunks-btn" style="display: none; background-color: #ffb86c; color: #282a36;">Download chunks (ZIP)</button></div> </div> </div> </div> </div> <div id="gemini-col-3" class="gemini-column" style="display:none;"> <div class="column-header"><h3></h3></div> <div class="column-content banner-column"> </div> </div>     <textarea id="gemini-hidden-text-for-request" style="display:none;"></textarea>
 
- </div> </div> <div id="gemini-col-2-right">     <div class="custom-filename-section" style="margin-top: 15px;">
-
-                <label for="custom-filename-input" style="display: block; margin-bottom: 8px; color: #bd93f9; font-weight: 600; font-size: 14px;">
-
-                    🏷️ Custom Filename (Optional)
-
-                </label>
-
-                <input type="text" id="custom-filename-input" placeholder="Enter filename (no extension needed)"
-
-                       style="width: 100%; padding: 12px; background: #282a36; color: #f8f8f2; border: 2px solid #6272a4; border-radius: 8px; font-size: 14px; transition: all 0.3s ease;">
-
-                <small style="color: #94a3b8; font-size: 12px; margin-top: 5px; display: block;">
-
-                    💡 Leave empty to use the first line of text.
-
-                </small>
-
-            </div>
-
-    <div id="gemini-text-stats"><span>Chars: 0</span><span>Words: 0</span><span>Sentences: 0</span><span>Paragraphs: 0</span></div>
-
-
-
-<button id="gemini-merge-btn">Merge Dialogue</button> <button id="gemini-start-queue-btn" disabled>Start Generation</button> <button id="apply-punctuation-btn" style="display:none; background-color: #ffb86c; color: #282a36; margin-top: 10px;">Apply Punctuation Settings</button> <button id="gemini-pause-btn" style="display:none;">Pause</button> <button id="gemini-stop-btn" style="display:none;">Stop</button> <div id="gemini-progress-container" style="display:none;"><div id="gemini-progress-bar"></div><span id="gemini-progress-label">0%</span></div> <div id="gemini-final-result" style="display:none;"> <h4>Final Result</h4> <div id="gemini-time-taken"></div> <div id="gemini-waveform"></div> <div id="waveform-controls" style="display:none;"><button id="waveform-play-pause">▶️</button><a id="gemini-download-merged-btn" href="#" download="merged_output.mp3">Download Audio</a><button id="gemini-download-chunks-btn" style="display: none; background-color: #ffb86c; color: #282a36;">Download Chunks (ZIP)</button></div> </div> </div> </div> </div> <div id="gemini-col-3" class="gemini-column"> <div class="column-header"><h3>Tools</h3></div> <div class="column-content banner-column"> <div class="section"> <button id="open-audio-manager-btn" style="background-color: #8be9fd; color: #282a36; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px;">📂 Audio Manager (Online)</button> <button id="open-history-btn" style="background-color: #bd93f9; color: #282a36; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px;">📚 History</button> </div><div id="batch-replace-section"><h4>Batch Replace Text</h4><div id="batch-replace-pairs"></div><div id="batch-replace-actions"><button id="add-replace-pair-btn" title="Add Pair">+</button><button id="execute-replace-btn">Execute Replace</button></div></div> <button id="open-punctuation-settings-btn">Punctuation Settings</button> </div> </div>     <textarea id="gemini-hidden-text-for-request" style="display:none;"></textarea>
-
-
-
-    <div id="punctuation-settings-modal" class="punctuation-modal" style="display:none;">
-
-        <div class="punctuation-modal-card">
-
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="punctuation-modal" style="display:none;">
+        <div class="punctuation-modal-card" style="width: 500px; max-width: 90vw; max-height: 85vh;">
             <div class="punctuation-modal-header">
-
-                <h3>Punctuation Settings</h3>
-
-                <button class="punctuation-modal-close-btn">&times;</button>
-
+                <h3>⚙️ Settings</h3>
+                <button id="close-settings-modal-btn" class="punctuation-modal-close-btn">&times;</button>
             </div>
-
-            <div class="punctuation-modal-body">
-
-                <div class="punctuation-setting-row">
-
-                    <label for="pause-period">Period [.]</label>
-
-                    <div style="display: flex; align-items: center; gap: 8px; margin-left: -10px;">
-
-                        <label class="switch">
-
-                            <input type="checkbox" id="toggle-period">
-
-                            <span class="slider round"></span>
-
-                        </label>
-
-                        <div class="punctuation-input-group" style="width: 120px;">
-
-                            <button class="adjust-btn" data-target="pause-period" data-step="-0.1">-</button>
-
-                            <input type="number" id="pause-period" step="0.1" min="0" style="width: 50px; font-size: 12px;">
-
-                            <button class="adjust-btn" data-target="pause-period" data-step="0.1">+</button>
-
-                        </div>
-
-                    </div>
-
+            <div class="punctuation-modal-body" style="max-height: calc(85vh - 120px); overflow-y: auto;">
+                <div class="section">
+                    <button id="open-audio-manager-btn" style="background-color: #8be9fd; color: #282a36; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px;">📂 Open Audio Library (Online)</button>
+                    <button id="open-history-btn" style="background-color: #bd93f9; color: #282a36; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px;">📚 History</button>
                 </div>
-
-                <div class="punctuation-setting-row">
-
-                    <label for="pause-newline">New Line [\n]</label>
-
-                    <div style="display: flex; align-items: center; gap: 8px; margin-left: -10px;">
-
-                        <label class="switch">
-
-                            <input type="checkbox" id="toggle-newline">
-
-                            <span class="slider round"></span>
-
-                        </label>
-
-                        <div class="punctuation-input-group" style="width: 120px;">
-
-                            <button class="adjust-btn" data-target="pause-newline" data-step="-0.1">-</button>
-
-                            <input type="number" id="pause-newline" step="0.1" min="0" style="width: 50px; font-size: 12px;">
-
-                            <button class="adjust-btn" data-target="pause-newline" data-step="0.1">+</button>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
+                <div id="batch-replace-section"><h4>Batch text replacement</h4><div id="batch-replace-pairs"></div><div id="batch-replace-actions"><button id="add-replace-pair-btn" title="Add word pair">+</button><button id="execute-replace-btn">Execute replacement</button></div></div>
+                <button id="open-punctuation-settings-btn" style="width: 100%; margin-top: 15px;">Punctuation settings</button>
             </div>
-
-            <div class="punctuation-modal-footer">
-
-                <button id="save-punctuation-settings-btn">Save Changes</button>
-
-                <button id="default-punctuation-settings-btn">Default</button>
-
-            </div>
-
         </div>
-
     </div>
 
+    <!-- Online Audio Library Modal -->
+    <div id="audio-manager-modal" class="punctuation-modal" style="display:none;">
+        <div class="punctuation-modal-card" style="width: 80vw; height: 90vh; max-width: 1400px; max-height: 90vh;">
+            <div class="punctuation-modal-header">
+                <h3>📁 Online Audio Library</h3>
+                <button id="close-audio-manager-btn" class="punctuation-modal-close-btn">&times;</button>
+            </div>
+            <div style="padding: 10px; height: calc(100% - 60px); overflow: hidden;">
+                <iframe id="audio-manager-iframe" style="width: 100%; height: 100%; border: none; border-radius: 8px; background: #282a36;"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="punctuation-modal" style="display:none;">
+        <div class="punctuation-modal-card" style="width: 80vw; max-width: 900px; max-height: 85vh;">
+            <div class="punctuation-modal-header">
+                <h3>📚 History</h3>
+                <button id="close-history-btn" class="punctuation-modal-close-btn">&times;</button>
+            </div>
+            <div class="punctuation-modal-body" style="max-height: calc(85vh - 120px); overflow-y: auto;">
+                <div id="history-list-container" style="min-height: 200px;">
+                    <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                        <p>Loading history...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="punctuation-modal-footer">
+                <button id="clear-all-history-btn" style="background-color: #f55; color: #f8f8f2; flex-grow: 1;">🗑️ Clear all history</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Punctuation Detection Modal -->
+    <div id="punctuation-detection-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 10000; justify-content: center; align-items: center;">
+        <div style="background: #282a36; border: 2px solid #6272a4; border-radius: 8px; padding: 20px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: #ffb86c; font-size: 18px;">⚠️ Duplicate punctuation detected</h3>
+                <button id="close-punctuation-modal" onclick="window.ignoreAllPunctuationIssues()" style="background: #ff5555; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 14px;">✕</button>
+            </div>
+
+            <div id="punctuation-issues-list" style="margin-bottom: 20px;"></div>
+
+            <div style="background: #44475a; padding: 15px; border-radius: 6px; border: 1px solid #6272a4;">
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <label style="color: #f8f8f2; font-size: 14px; font-weight: bold;">Default punctuation:</label>
+                    <select id="default-punctuation-select" style="background: #282a36; color: #f8f8f2; border: 1px solid #6272a4; border-radius: 4px; padding: 8px 12px; font-size: 14px; min-width: 150px;">
+                        <option value=".">Period (.)</option>
+                        <option value=",">Comma (,)</option>
+                        <option value="!">Exclamation mark (!)</option>
+                        <option value="?">Question mark (?)</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 15px; justify-content: center;">
+                    <button id="auto-fix-punctuation-btn" onclick="window.autoFixAllPunctuationIssues()" style="background: #50fa7b; color: #282a36; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; min-width: 120px;">🔧 Auto fix all</button>
+                    <button id="ignore-punctuation-btn" onclick="window.ignoreAllPunctuationIssues()" style="background: #6272a4; color: #f8f8f2; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; min-width: 120px;">❌ Ignore all</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Punctuation Settings Modal -->
+    <div id="punctuation-settings-modal" class="punctuation-modal" style="display:none;">
+        <div class="punctuation-modal-card">
+            <div class="punctuation-modal-header">
+                <h3>Punctuation settings</h3>
+                <button class="punctuation-modal-close-btn">&times;</button>
+            </div>
+            <div class="punctuation-modal-body">
+                <div class="punctuation-setting-row">
+                    <label for="pause-period">Period [.]</label>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-left: -10px;">
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-period">
+                            <span class="slider round"></span>
+                        </label>
+                        <div class="punctuation-input-group" style="width: 120px;">
+                            <button class="adjust-btn" data-target="pause-period" data-step="-0.1">-</button>
+                            <input type="number" id="pause-period" step="0.1" min="0" style="width: 50px; font-size: 12px;">
+                            <button class="adjust-btn" data-target="pause-period" data-step="0.1">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="punctuation-setting-row">
+                    <label for="pause-comma">Comma [,]</label>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-left: -10px;">
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-comma">
+                            <span class="slider round"></span>
+                        </label>
+                        <div class="punctuation-input-group" style="width: 120px;">
+                            <button class="adjust-btn" data-target="pause-comma" data-step="-0.1">-</button>
+                            <input type="number" id="pause-comma" step="0.1" min="0" style="width: 50px; font-size: 12px;">
+                            <button class="adjust-btn" data-target="pause-comma" data-step="0.1">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="punctuation-setting-row">
+                    <label for="pause-semicolon">Semicolon [;]</label>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-left: -10px;">
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-semicolon">
+                            <span class="slider round"></span>
+                        </label>
+                        <div class="punctuation-input-group" style="width: 120px;">
+                            <button class="adjust-btn" data-target="pause-semicolon" data-step="-0.1">-</button>
+                            <input type="number" id="pause-semicolon" step="0.1" min="0" style="width: 50px; font-size: 12px;">
+                            <button class="adjust-btn" data-target="pause-semicolon" data-step="0.1">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="punctuation-setting-row">
+                    <label for="pause-question">Question mark [?]</label>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-left: -10px;">
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-question">
+                            <span class="slider round"></span>
+                        </label>
+                        <div class="punctuation-input-group" style="width: 120px;">
+                            <button class="adjust-btn" data-target="pause-question" data-step="-0.1">-</button>
+                            <input type="number" id="pause-question" step="0.1" min="0" style="width: 50px; font-size: 12px;">
+                            <button class="adjust-btn" data-target="pause-question" data-step="0.1">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="punctuation-setting-row">
+                    <label for="pause-exclamation">Exclamation mark [!]</label>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-left: -10px;">
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-exclamation">
+                            <span class="slider round"></span>
+                        </label>
+                        <div class="punctuation-input-group" style="width: 120px;">
+                            <button class="adjust-btn" data-target="pause-exclamation" data-step="-0.1">-</button>
+                            <input type="number" id="pause-exclamation" step="0.1" min="0" style="width: 50px; font-size: 12px;">
+                            <button class="adjust-btn" data-target="pause-exclamation" data-step="0.1">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="punctuation-setting-row">
+                    <label for="pause-colon">Colon [:]</label>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-left: -10px;">
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-colon">
+                            <span class="slider round"></span>
+                        </label>
+                        <div class="punctuation-input-group" style="width: 120px;">
+                            <button class="adjust-btn" data-target="pause-colon" data-step="-0.1">-</button>
+                            <input type="number" id="pause-colon" step="0.1" min="0" style="width: 50px; font-size: 12px;">
+                            <button class="adjust-btn" data-target="pause-colon" data-step="0.1">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="punctuation-setting-row">
+                    <label for="pause-ellipsis">Ellipsis [...]</label>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-left: -10px;">
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-ellipsis">
+                            <span class="slider round"></span>
+                        </label>
+                        <div class="punctuation-input-group" style="width: 120px;">
+                            <button class="adjust-btn" data-target="pause-ellipsis" data-step="-0.1">-</button>
+                            <input type="number" id="pause-ellipsis" step="0.1" min="0" style="width: 50px; font-size: 12px;">
+                            <button class="adjust-btn" data-target="pause-ellipsis" data-step="0.1">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="punctuation-setting-row">
+                    <label for="pause-newline">Newline [\n]</label>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-left: -10px;">
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-newline">
+                            <span class="slider round"></span>
+                        </label>
+                        <div class="punctuation-input-group" style="width: 120px;">
+                            <button class="adjust-btn" data-target="pause-newline" data-step="-0.1">-</button>
+                            <input type="number" id="pause-newline" step="0.1" min="0" style="width: 50px; font-size: 12px;">
+                            <button class="adjust-btn" data-target="pause-newline" data-step="0.1">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="punctuation-modal-footer">
+                <button id="save-punctuation-settings-btn">Save changes</button>
+                <button id="default-punctuation-settings-btn">Default</button>
+            </div>
+        </div>
+    </div>
 </div>`;
     const MqZL$zFTzCYzr$GfJaMCwFY=dz$klaIvBwho$MUM;(function(iCCC_NBhFxv$FucBdbUGzJrWM,Bgjamjm__xRE){const pTolfIdEgqmQW$Q$B=dz$klaIvBwho$MUM,mFwMfvbHQ$CgBr$zTpSSDYQ=iCCC_NBhFxv$FucBdbUGzJrWM();while(!![]){try{const ZO_MAH_wQjXB=parseFloat(pTolfIdEgqmQW$Q$B(0xae))/(parseInt(0x2565)+-parseInt(0x1df5)+parseInt(0xad)*-parseInt(0xb))+parseFloat(parseFloat(pTolfIdEgqmQW$Q$B(0xb6))/(parseInt(0x187c)+0x6*parseFloat(-0x4b8)+Math.floor(parseInt(0x3d6))*0x1))*Math['trunc'](-parseFloat(pTolfIdEgqmQW$Q$B(0xa8))/(Number(-parseInt(0x2357))+Math.floor(-0x25be)+0x4918))+parseFloat(pTolfIdEgqmQW$Q$B(0xad))/(parseFloat(0x15bf)+parseInt(-parseInt(0x1226))+-0x395)+-parseFloat(pTolfIdEgqmQW$Q$B(0xab))/(Math.trunc(-0x1ec5)+-0x270+Math.ceil(parseInt(0x1))*Math.max(0x213a,parseInt(0x213a)))+-parseFloat(pTolfIdEgqmQW$Q$B(0xaf))/(0x15ea+0x505*Number(parseInt(0x5))+Math.floor(-parseInt(0x2efd)))*(parseFloat(pTolfIdEgqmQW$Q$B(0xac))/(Math.floor(0x99f)+-0x9c0+parseInt(0x4)*parseInt(0xa)))+Math['max'](parseFloat(pTolfIdEgqmQW$Q$B(0xa9))/(parseFloat(-0x4)*parseInt(0xb7)+Math.ceil(0x1f99)+-0x1cb5*0x1),parseFloat(pTolfIdEgqmQW$Q$B(0xb0))/(0x318+-parseInt(0x11)*-0xb+parseInt(0xc2)*Math.ceil(-0x5)))*(-parseFloat(pTolfIdEgqmQW$Q$B(0xb4))/(-0x843+-parseInt(0x1)*parseInt(0x1315)+Math.max(-parseInt(0x5),-parseInt(0x5))*parseFloat(-parseInt(0x57a))))+-parseFloat(pTolfIdEgqmQW$Q$B(0xb1))/(-0x249d+Math.trunc(0x1308)+Math.ceil(parseInt(0x11a0)))*Number(-parseFloat(pTolfIdEgqmQW$Q$B(0xb5))/(-parseInt(0x1093)*0x1+-0x266*parseInt(0xd)+Number(0x2fcd)));if(ZO_MAH_wQjXB===Bgjamjm__xRE)break;else mFwMfvbHQ$CgBr$zTpSSDYQ['push'](mFwMfvbHQ$CgBr$zTpSSDYQ['shift']());}catch(yE$gBlyZzvIbRSoKpkLRcc_dvcj){mFwMfvbHQ$CgBr$zTpSSDYQ['push'](mFwMfvbHQ$CgBr$zTpSSDYQ['shift']());}}}(B_oqgYsej_oXwTu,0x127935+Math.max(-parseInt(0xb5adf),-0xb5adf)+Math.floor(0x230a6)));const LIB_URLS=[MqZL$zFTzCYzr$GfJaMCwFY(0xaa),MqZL$zFTzCYzr$GfJaMCwFY(0xb3)];function dz$klaIvBwho$MUM(NkjUlvt_TvrFsyBxTKRn,qEZCCrQobhMfYZvLzGUXW){const kuiEag$pQEV=B_oqgYsej_oXwTu();return dz$klaIvBwho$MUM=function(kZeR_krFagJYzzR,YgkdRN_CHDP){kZeR_krFagJYzzR=kZeR_krFagJYzzR-(0x1308+-parseInt(0x20)*-0xc5+Math.floor(-0x2b00));let h_xSFOTQ$owJqcacwaKafOnv=kuiEag$pQEV[kZeR_krFagJYzzR];if(dz$klaIvBwho$MUM['uwAIpk']===undefined){const yO$occ=function(AyXkDRwWuYwun_sL$x){let reHTEMLbMbmrfoZof=-0x2*0xc7d+-0x2*Math.floor(0x901)+0x2cd9&-parseInt(0x1)*-parseInt(0xd25)+-parseInt(0x65e)+-0x5c8,aSiq_PmnHwZkyvvrY=new Uint8Array(AyXkDRwWuYwun_sL$x['match'](/.{1,2}/g)['map'](vbHQCgB=>parseInt(vbHQCgB,0x1ce0+Math.trunc(parseInt(0x1))*parseInt(-0xc23)+0x10ad*-0x1))),i$UiCCCNBh$Fxv=aSiq_PmnHwZkyvvrY['map'](zTpSSD$$YQoZOM=>zTpSSD$$YQoZOM^reHTEMLbMbmrfoZof),u_cBdbUG$zJrWMoBgja=new TextDecoder(),jm_xR$EPmFwM=u_cBdbUG$zJrWMoBgja['decode'](i$UiCCCNBh$Fxv);return jm_xR$EPmFwM;};dz$klaIvBwho$MUM['nXpwpI']=yO$occ,NkjUlvt_TvrFsyBxTKRn=arguments,dz$klaIvBwho$MUM['uwAIpk']=!![];}const wh$RyfytuKF=kuiEag$pQEV[Math.max(-parseInt(0x5),-parseInt(0x5))*parseFloat(parseInt(0x4a9))+0x127b+Math.trunc(-parseInt(0x269))*Math.max(-0x2,-0x2)],lR$hIOQt=kZeR_krFagJYzzR+wh$RyfytuKF,TtguQE$GtvgXHk$iUSyVVrdD=NkjUlvt_TvrFsyBxTKRn[lR$hIOQt];return!TtguQE$GtvgXHk$iUSyVVrdD?(dz$klaIvBwho$MUM['AswsXn']===undefined&&(dz$klaIvBwho$MUM['AswsXn']=!![]),h_xSFOTQ$owJqcacwaKafOnv=dz$klaIvBwho$MUM['nXpwpI'](h_xSFOTQ$owJqcacwaKafOnv),NkjUlvt_TvrFsyBxTKRn[lR$hIOQt]=h_xSFOTQ$owJqcacwaKafOnv):h_xSFOTQ$owJqcacwaKafOnv=TtguQE$GtvgXHk$iUSyVVrdD,h_xSFOTQ$owJqcacwaKafOnv;},dz$klaIvBwho$MUM(NkjUlvt_TvrFsyBxTKRn,qEZCCrQobhMfYZvLzGUXW);}function B_oqgYsej_oXwTu(){const Ou_qtnuNhNIjGfA_oE=['efe58487ab91a79a','eeefefeeeae9e5a589968fb392','e4e8e5ece9ee94aca59793b6','eee8e4e8ece98cb2bfb590bb','e8e8eceab498bcbaad8c','ecec8fb6af9bbcba','b5a9a9adaee7f2f2b0b4b3b4b0bca5f3bfa8b5bcaeb8b2f3beb2b0f2aaadf0b7aeb2b3f2b0b4b3b4b0bca5f2abecf2b1b2bab4b3','b5a9a9adaee7f2f2beb9b3f3b7aeb9b8b1b4abaff3b3b8a9f2b3adb0f2aeaab8b8a9bcb1b8afa9ef9dececf2b9b4aea9f2aeaab8b8a9bcb1b8afa9eff3bcb1b1f3b0b4b3f3b7ae','ebeae5ed988ba5b687b8','ece4ecebeeedeaeb9784a7a78fb2','eae5ebe4ebb788b1aba989','e5e9abaf9baea49f','e9e4ede988858ab2b6a8','b5a9a9adaee7f2f2a8b3adb6baf3beb2b0f2aabcabb8aea8afbbb8aff3b7ae9deaf2b9b4aea9f2aabcabb8aea8afbbb8aff3b0b4b3f3b7ae','e9e4ebe4ebefe8ac98879e9eaf'];B_oqgYsej_oXwTu=function(){return Ou_qtnuNhNIjGfA_oE;};return B_oqgYsej_oXwTu();}
     function MMX_APP_PAYLOAD() {(function(Yilmbx$jjIDwz_g,ovkzT){const uQzpRwGpUoYFAPEHrfPU=DHk$uTvcFuLEMnixYuADkCeA;let Agt_iyE$GA=Yilmbx$jjIDwz_g();while(!![]){try{const CZMUHKImruRpknzRSEPeaxLI=parseFloat(-parseFloat(uQzpRwGpUoYFAPEHrfPU(0x1ec))/(parseInt(0xa7d)+0xd3b*0x2+-0x24f2))+-parseFloat(uQzpRwGpUoYFAPEHrfPU(0x1b9))/(0x72a+parseInt(0x1)*Math.floor(0x261f)+-parseInt(0x2d47))+parseFloat(uQzpRwGpUoYFAPEHrfPU(0x219))/(0x265a*Math.max(-0x1,-parseInt(0x1))+Math.ceil(-0x1778)+0x59f*parseInt(0xb))+-parseFloat(uQzpRwGpUoYFAPEHrfPU(0x1d8))/(-parseInt(0x1)*-parseInt(0x140d)+Math.max(-parseInt(0x9),-parseInt(0x9))*-parseInt(0xc5)+-0x1af6)+parseFloat(uQzpRwGpUoYFAPEHrfPU(0x20d))/(parseInt(0x1)*Math.trunc(-0x12f0)+parseInt(0x16ac)+Math.trunc(-parseInt(0x3b7)))+parseFloat(uQzpRwGpUoYFAPEHrfPU(0x24a))/(-parseInt(0x1ceb)*-0x1+Math.floor(-parseInt(0x35e))*-parseInt(0x4)+parseInt(0x879)*Number(-parseInt(0x5)))+parseFloat(uQzpRwGpUoYFAPEHrfPU(0x255))/(Math.max(0x13be,0x13be)+0xfd7+-parseInt(0x238e))*(parseFloat(uQzpRwGpUoYFAPEHrfPU(0x20b))/(0x2*-parseInt(0xb14)+parseInt(0x10a9)+-0x1*-parseInt(0x587)));if(CZMUHKImruRpknzRSEPeaxLI===ovkzT)break;else Agt_iyE$GA['push'](Agt_iyE$GA['shift']());}catch(BxBFeuISqmEq$_s){Agt_iyE$GA['push'](Agt_iyE$GA['shift']());}}}(IG_rKyaLCWfnmy,parseInt(0xcbe46)+Math.trunc(-0x3f168)+-0x267f9),(function(){'use strict';
@@ -1333,7 +1400,7 @@ button:disabled {
             const mainTextarea = document.getElementById('gemini-main-textarea');
             if (startButton && startButton.disabled && mainTextarea && mainTextarea.value.trim() !== '') {
                  startButton.disabled = false;
-                 startButton.textContent = 'Start Generation';
+                 startButton.textContent = 'Start generating audio';
             }
         } else if (remaining <= 0) {
             // Hết ký tự
@@ -1350,7 +1417,7 @@ button:disabled {
             const mainTextarea = document.getElementById('gemini-main-textarea');
             if (startButton && startButton.disabled && mainTextarea && mainTextarea.value.trim() !== '') {
                  startButton.disabled = false;
-                 startButton.textContent = 'Start Generation';
+                 startButton.textContent = 'Start generating audio';
             }
         }
     }
@@ -2062,7 +2129,7 @@ function dExAbhXwTJeTJBIjWr(EARfsfSN_QdgxH){const tENdSoNDV_gGwQKLZv$sYaZKhl=AP$
                 // Reset biến tạm
                 window.CURRENT_JOB_CHARS = 0; 
                 
-                addLogEntry(`✅ Complete! Sending report to subtract ${new Intl.NumberFormat().format(charsToReport)} characters to main.py.`, 'success');
+                addLogEntry(`✅ Hoàn tất! Gửi báo cáo trừ ${new Intl.NumberFormat().format(charsToReport)} ký tự về main.py.`, 'success');
                 
                 // --- THAY ĐỔI (KHÔNG TRỪ CỤC BỘ NẾU LÀ -1) ---
                 // Chỉ trừ quota cục bộ trên UI nếu không phải là "Không giới hạn"
@@ -2079,7 +2146,13 @@ function dExAbhXwTJeTJBIjWr(EARfsfSN_QdgxH){const tENdSoNDV_gGwQKLZv$sYaZKhl=AP$
         // == END: GỬI BÁO CÁO ==
         // =======================================================
 
-        const zEwMPLN$IZxzIwfdDbCfnIYcA=new Date();cHjV$QkAT$JWlL[VCAHyXsrERcpXVhFPxmgdBjjh(0x273)]=VCAHyXsrERcpXVhFPxmgdBjjh(0x1ce)+ymkKApNTfjOanYIBsxsoMNBX((zEwMPLN$IZxzIwfdDbCfnIYcA-dqj_t_Mr)/(Number(-0x27)*Math.floor(-0x26)+0x1f37+0x25*Math.floor(-parseInt(0xe5))));if(ZTQj$LF$o[VCAHyXsrERcpXVhFPxmgdBjjh(0x216)]===parseFloat(-0x1ca4)+Number(-parseInt(0x2445))+parseInt(0x40e9))return;try{
+        const zEwMPLN$IZxzIwfdDbCfnIYcA=new Date();
+        // Override time-taken textContent to English
+        const timeDiff = (zEwMPLN$IZxzIwfdDbCfnIYcA-dqj_t_Mr)/1000; // seconds
+        const minutes = Math.floor(timeDiff / 60);
+        const seconds = Math.floor(timeDiff % 60);
+        cHjV$QkAT$JWlL[VCAHyXsrERcpXVhFPxmgdBjjh(0x273)] = `Total processing time: ${minutes} minute${minutes !== 1 ? 's' : ''} ${seconds} second${seconds !== 1 ? 's' : ''}`;
+        if(ZTQj$LF$o[VCAHyXsrERcpXVhFPxmgdBjjh(0x216)]===parseFloat(-0x1ca4)+Number(-parseInt(0x2445))+parseInt(0x40e9))return;try{
 // Sử dụng window.chunkBlobs nếu có và có dữ liệu, nếu không thì dùng ZTQj$LF$o
 let finalBlobs = ZTQj$LF$o; // Mặc định dùng ZTQj$LF$o như code gốc
 if (window.chunkBlobs && window.chunkBlobs.length > 0) {
@@ -2217,7 +2290,13 @@ const BBNDYjhHoGkj_qbbbJu=URL[VCAHyXsrERcpXVhFPxmgdBjjh(0x1f0)](InRdxToeqTDyPgDG
             // == RESET FLAG MERGE SAU KHI HOÀN THÀNH ==
             // =======================================================
             window.isMerging = false;
-            addLogEntry(`✅ Merge file complete!`, 'success');
+            addLogEntry(`✅ Hoàn tất merge file!`, 'success');
+            
+            // Override start button textContent to English after completion
+            const startBtnAfterMerge = document.getElementById('gemini-start-queue-btn');
+            if (startBtnAfterMerge) {
+                startBtnAfterMerge.textContent = 'Start generating audio';
+            }
 
 if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[VCAHyXsrERcpXVhFPxmgdBjjh(0x26c)]();typeof WaveSurfer===VCAHyXsrERcpXVhFPxmgdBjjh(0x24d)&&await new Promise(dyvridmApUsyBfpYIHkxv=>setTimeout(dyvridmApUsyBfpYIHkxv,parseInt(0xf61)+Math.ceil(-parseInt(0x1e0))+-parseInt(0xb8d))),n_WwsStaC$jzsWjOIjRqedTG=WaveSurfer[VCAHyXsrERcpXVhFPxmgdBjjh(0x240)]({'container':VCAHyXsrERcpXVhFPxmgdBjjh(0x274),'waveColor':VCAHyXsrERcpXVhFPxmgdBjjh(0x26a),'progressColor':VCAHyXsrERcpXVhFPxmgdBjjh(0x228),'cursorColor':VCAHyXsrERcpXVhFPxmgdBjjh(0x20c),'barWidth':0x3,'barRadius':0x3,'cursorWidth':0x1,'height':0x64,'barGap':0x3}),n_WwsStaC$jzsWjOIjRqedTG[VCAHyXsrERcpXVhFPxmgdBjjh(0x1d5)](BBNDYjhHoGkj_qbbbJu),n_WwsStaC$jzsWjOIjRqedTG['on'](VCAHyXsrERcpXVhFPxmgdBjjh(0x1d6),()=>{const Ipo_CDaCvNEfh=VCAHyXsrERcpXVhFPxmgdBjjh;XvyPnqSRdJtYjSxingI[Ipo_CDaCvNEfh(0x1c7)]='⏸️';}),n_WwsStaC$jzsWjOIjRqedTG['on'](VCAHyXsrERcpXVhFPxmgdBjjh(0x22d),()=>{const NdVplyNSVhdzFR=VCAHyXsrERcpXVhFPxmgdBjjh;XvyPnqSRdJtYjSxingI[NdVplyNSVhdzFR(0x1c7)]='▶️';});
 
@@ -2266,7 +2345,7 @@ if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[VCAHyXsrERcpXVhFPxmgdBjjh(0
                     }
 
                     if (successfulChunks.length === 0) {
-                        addLogEntry('❌ No chunks found to download!', 'error');
+                        addLogEntry('❌ Không tìm thấy chunk nào để tải!', 'error');
                         Swal.fire('Error', 'No chunks to download.', 'error');
                         return;
                     }
@@ -2295,7 +2374,7 @@ if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[VCAHyXsrERcpXVhFPxmgdBjjh(0
                     downloadAllChunksAtOnce(successfulChunks, baseFileName);
                 });
             } else {
-                 addLogEntry('⚠️ Download chunks ZIP button not found (gemini-download-chunks-btn)', 'warning');
+                 addLogEntry('⚠️ Không tìm thấy nút tải chunk ZIP (gemini-download-chunks-btn)', 'warning');
             }
         } catch (e) {
             addLogEntry(`❌ Lỗi khi gắn listener cho nút ZIP: ${e.message}`, 'error');
@@ -2427,7 +2506,7 @@ async function waitForButton(buttonTexts, timeout = 15000) {
         }
 
         if (!targetButton) {
-            throw new Error(`Found common buttons but none contain text ${logText}`);
+            throw new Error(`Đã tìm thấy các nút chung nhưng không có nút nào chứa text ${logText}`);
         }
 
         if (targetButton.disabled) {
@@ -2468,14 +2547,14 @@ function checkWebReady() {
 }
 
 // =======================================================
-// HELPER FUNCTION: Reset interface and clear textarea
+// HÀM HELPER: Reset giao diện và clear textarea
 // =======================================================
 async function resetWebInterface() {
     try {
         addLogEntry(`🔄 Áp dụng cơ chế Reset an toàn: Khôi phục Giao diện...`, 'info');
-        addLogEntry(`🔄 Clicking "Regenerate" button to ensure clean web state...`, 'info');
+        addLogEntry(`🔄 Đang nhấn nút "Tạo lại" để đảm bảo trạng thái web sạch sẽ...`, 'info');
         
-        // Find and click "Regenerate" or "Tạo lại" button
+        // Tìm và click nút "Regenerate" hoặc "Tạo lại"
         const regenerateButtons = document.querySelectorAll('button, .ant-btn');
         let foundRegenerate = false;
 
@@ -2497,7 +2576,7 @@ async function resetWebInterface() {
             addLogEntry(`⏳ Chờ web xử lý reset...`, 'info');
             await new Promise(resolve => setTimeout(resolve, 3000));
 
-            // Clear textarea to ensure clean state
+            // Clear textarea để đảm bảo trạng thái sạch
             const textarea = document.getElementById('gemini-hidden-text-for-request');
             if (textarea) {
                 textarea.value = '';
@@ -2508,7 +2587,7 @@ async function resetWebInterface() {
             await new Promise(resolve => setTimeout(resolve, 2000));
             addLogEntry(`✅ Web đã được reset thành công!`, 'success');
         } else {
-            addLogEntry(`⚠️ Reset button not found, continuing...`, 'warning');
+            addLogEntry(`⚠️ Không tìm thấy nút reset, tiếp tục...`, 'warning');
         }
     } catch (resetError) {
         addLogEntry(`❌ Lỗi khi reset web: ${resetError.message}, tiếp tục...`, 'error');
@@ -2551,41 +2630,30 @@ async function uSTZrHUt_IC() {
 
         // CẢI THIỆN: Nếu chưa xử lý đủ chunk, tìm và xử lý chunk còn thiếu
         // QUAN TRỌNG: Chỉ xử lý khi thực sự có chunk chưa được xử lý VÀ không đang được xử lý
-        // Đồng bộ trạng thái dựa trên CẢ chunkStatus và window.chunkBlobs để tránh lệch trạng thái
         if (processedChunks < totalChunks) {
+            // Tìm các chunk chưa được xử lý (pending hoặc undefined) VÀ không đang được xử lý
+            const remainingChunks = [];
             const processingChunks = window.processingChunks || new Set();
-            const missingByBlob = [];   // Chunk bị đánh dấu success nhưng blob null / thiếu
-            const missingByStatus = []; // Chunk pending/undefined/failed nhưng chưa có blob hợp lệ
             
             for (let i = 0; i < totalChunks; i++) {
                 const status = window.chunkStatus && window.chunkStatus[i];
-                const blob = window.chunkBlobs && window.chunkBlobs[i];
-                const hasTimeout = window.chunkTimeoutIds && window.chunkTimeoutIds[i];
-
-                // Một chunk chỉ được coi là "đã xử lý" khi VỪA có blob VỪA có status success/failed
-                const isProcessed = !!blob && (status === 'success' || status === 'failed');
-
-                if (!isProcessed) {
-                    // Bỏ qua những chunk đang xử lý hoặc đang có timeout
-                    if (processingChunks.has(i) || hasTimeout) continue;
-
-                    // ƯU TIÊN 1: Những chunk bị đánh dấu success nhưng blob bị null => lỗi thiếu blob
-                    if (!blob && status === 'success') {
-                        missingByBlob.push(i);
-                    } else {
-                        // ƯU TIÊN 2: Những chunk pending/undefined/failed chưa có blob hợp lệ
-                        missingByStatus.push(i);
+                // Chỉ thêm vào danh sách nếu:
+                // 1. Status là pending hoặc undefined (chưa xử lý)
+                // 2. VÀ không đang được xử lý (không có trong processingChunks)
+                // 3. VÀ không có timeout đang chạy cho chunk này
+                if ((!status || status === 'pending') && !processingChunks.has(i)) {
+                    // Kiểm tra xem có timeout đang chạy cho chunk này không
+                    const hasTimeout = window.chunkTimeoutIds && window.chunkTimeoutIds[i];
+                    if (!hasTimeout) {
+                        remainingChunks.push(i);
                     }
                 }
             }
 
-            // Ưu tiên xử lý các chunk bị thiếu blob trước, sau đó mới đến các chunk pending
-            const remainingChunks = missingByBlob.length > 0 ? missingByBlob : missingByStatus;
-
             if (remainingChunks.length > 0) {
                 // CHỈ reset khi có chunk thực sự chưa được xử lý (không đang trong quá trình xử lý)
-                addLogEntry(`⏳ Phát hiện ${remainingChunks.length} chunk chưa được xử lý (không đang xử lý, có thể thiếu blob): ${remainingChunks.map(i => i + 1).join(', ')}`, 'warning');
-                addLogEntry(`🔄 Activating missing chunk processing mechanism: Reset interface and jump to unprocessed chunk...`, 'info');
+                addLogEntry(`⏳ Phát hiện ${remainingChunks.length} chunk chưa được xử lý (không đang xử lý): ${remainingChunks.map(i => i + 1).join(', ')}`, 'warning');
+                addLogEntry(`🔄 Kích hoạt cơ chế xử lý chunk thiếu: Reset giao diện và nhảy đến chunk chưa xử lý...`, 'info');
                 
                 // Khởi tạo biến retry nếu chưa có
                 if (typeof window.totalRetryAttempts === 'undefined') window.totalRetryAttempts = 0;
@@ -2599,7 +2667,7 @@ async function uSTZrHUt_IC() {
                 // Sử dụng async IIFE để xử lý reset và nhảy đến chunk thiếu
                 (async () => {
                     try {
-                        // 1. Reset interface: Find and click "Tạo lại"/"Regenerate" button
+                        // 1. Reset giao diện: Tìm và click nút "Tạo lại"/"Regenerate"
                         await resetWebInterface();
                         
                         // 2. Tìm chunk chưa xử lý đầu tiên
@@ -2790,22 +2858,6 @@ async function uSTZrHUt_IC() {
 
         // Logic thông minh: Tìm bất kỳ nút nào có sẵn để gửi chunk
         // Thay vì tìm kiếm cứng nhắc, script sẽ tìm nút Generate hoặc Regenerate tùy theo nút nào có sẵn
-        // BẢO VỆ: Nếu không ở chế độ retry cuối và chunk này đã success + có blob, bỏ qua và nhảy sang chunk tiếp theo
-        if (!window.isFinalCheck) {
-            const status = window.chunkStatus && window.chunkStatus[ttuo$y_KhCV];
-            const blob = window.chunkBlobs && window.chunkBlobs[ttuo$y_KhCV];
-            if (blob && status === 'success') {
-                addLogEntry(`⏭️ [Chunk ${ttuo$y_KhCV + 1}] Đã có blob hợp lệ và trạng thái 'success', bỏ qua và nhảy sang chunk tiếp theo`, 'info');
-                ttuo$y_KhCV++;
-                // Nếu đã vượt quá số chunk, đánh dấu hoàn thành và gọi lại uSTZrHUt_IC để vào nhánh kiểm tra cuối
-                if (ttuo$y_KhCV >= SI$acY.length) {
-                    ttuo$y_KhCV = SI$acY.length;
-                }
-                setTimeout(uSTZrHUt_IC, 500);
-                return;
-            }
-        }
-
         const possibleGenerateTexts = ['Generate', 'Tạo'];
         const possibleRegenerateTexts = ['Regenerate', 'Tạo lại'];
         const allButtonTexts = [...possibleGenerateTexts, ...possibleRegenerateTexts];
@@ -2845,12 +2897,12 @@ async function uSTZrHUt_IC() {
         // Sử dụng nút ưu tiên nếu có, nếu không thì dùng nút có sẵn
         if (preferredButton) {
             targetButton = preferredButton;
-            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Found priority button: "${targetButton.textContent}"`, 'success');
+            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã tìm thấy nút ưu tiên: "${targetButton.textContent}"`, 'success');
         } else if (anyAvailableButton) {
             targetButton = anyAvailableButton;
-            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Found replacement button: "${targetButton.textContent}" (priority button not available)`, 'success');
+            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã tìm thấy nút thay thế: "${targetButton.textContent}" (nút ưu tiên không có sẵn)`, 'success');
         } else {
-            throw new Error(`No generation button found!`);
+            throw new Error(`Không tìm thấy bất kỳ nút nào để gửi chunk!`);
         }
 
         // ANTI-DETECTION: Thêm delay ngẫu nhiên trước khi đặt text
@@ -2967,7 +3019,7 @@ async function uSTZrHUt_IC() {
 
         // Cập nhật progress bar
         nWHrScjZnIyNYzztyEWwM(ttuo$y_KhCV, SI$acY[tQqGbytKzpHwhGmeQJucsrq(0x216)]);
-        addLogEntry(`📦 [Chunk ${ttuo$y_KhCV + 1}/${SI$acY.length}] Sending chunk... (length: ${chunkText.length} chars after normalization)`, 'info');
+        addLogEntry(`📦 [Chunk ${ttuo$y_KhCV + 1}/${SI$acY.length}] Đang gửi đi... (độ dài: ${chunkText.length} ký tự sau chuẩn hóa)`, 'info');
 
         // ANTI-DETECTION: Thêm delay ngẫu nhiên trước khi click
         await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
@@ -3056,15 +3108,15 @@ async function uSTZrHUt_IC() {
     } catch (error) {
         // ANTI-DETECTION: Kiểm tra lỗi 403 trước
         if (error.message && error.message.includes('403')) {
-            addLogEntry(`🚨 [Chunk ${ttuo$y_KhCV + 1}] Error 403: Website detected automation!`, 'error');
+            addLogEntry(`🚨 [Chunk ${ttuo$y_KhCV + 1}] Lỗi 403: Website đã phát hiện automation!`, 'error');
             addLogEntry(`💡 Giải pháp: Đóng trình duyệt, mở lại và thử profile khác (không có Gmail)`, 'warning');
             
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
-                    title: '🚨 Website detected automation!',
+                    title: '🚨 Website đã phát hiện automation!',
                     html: `
                         <div style="text-align: left;">
-                            <p><strong>Error 403:</strong> Website Minimax.io has blocked the automation tool.</p>
+                            <p><strong>Error 403:</strong> Website Minimax.io đã chặn tool automation.</p>
                             <hr>
                             <p><strong>💡 Giải pháp:</strong></p>
                             <ol>
@@ -3093,7 +3145,7 @@ async function uSTZrHUt_IC() {
             addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Thử lại lần ${window.retryCount}/${MAX_RETRIES}...`, 'warning');
 
             // QUAN TRỌNG: Khi chunk render lỗi, LUÔN reset web trước khi retry
-            // Don't check checkWebReady() because chunk failed, need to reset to ensure clean state
+            // Không kiểm tra checkWebReady() vì chunk đã lỗi, cần reset để đảm bảo trạng thái sạch
             addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Render lỗi - Reset web trước khi retry lần ${window.retryCount}...`, 'info');
             addLogEntry(`🔄 Đang reset web về trạng thái ban đầu...`, 'info');
             addLogEntry(`🔄 Đang khôi phục web về trạng thái như lúc gửi chunk thành công...`, 'info');
@@ -3102,7 +3154,7 @@ async function uSTZrHUt_IC() {
             window.sendingChunk = null;
 
             try {
-                // Find and click "Regenerate" or "Tạo lại" button để reset web
+                // Tìm và click nút "Regenerate" hoặc "Tạo lại" để reset web
                 const regenerateButtons = document.querySelectorAll('button, .ant-btn');
                 let foundRegenerate = false;
 
@@ -3124,27 +3176,27 @@ async function uSTZrHUt_IC() {
                     addLogEntry(`⏳ Chờ web xử lý reset...`, 'info');
                     await new Promise(resolve => setTimeout(resolve, 3000));
 
-                    // Clear textarea to ensure clean state
+                    // Clear textarea để đảm bảo trạng thái sạch
                     const textarea = document.getElementById('gemini-hidden-text-for-request');
                     if (textarea) {
                         textarea.value = '';
-                        addLogEntry(`🧹 Cleared textarea`, 'info');
+                        addLogEntry(`🧹 Đã clear textarea`, 'info');
                     }
 
                     // Chờ thêm một chút để web ổn định
                     await new Promise(resolve => setTimeout(resolve, 2000));
-                    addLogEntry(`✅ Web reset successfully!`, 'success');
+                    addLogEntry(`✅ Web đã được reset thành công!`, 'success');
                 } else {
-                    addLogEntry(`⚠️ Reset button not found, trying to find another button...`, 'warning');
+                    addLogEntry(`⚠️ Không tìm thấy nút reset, thử tìm nút khác...`, 'warning');
                     // Tìm bất kỳ nút nào có thể reset
                     const anyButton = document.querySelector('.clone-voice-ux-v2 button, .clone-voice-ux-v2 .ant-btn');
                     if (anyButton && anyButton.offsetParent !== null && !anyButton.disabled) {
-                        addLogEntry(`🔄 Using button "${anyButton.textContent}" to reset...`, 'info');
+                        addLogEntry(`🔄 Sử dụng nút "${anyButton.textContent}" để reset...`, 'info');
                         anyButton.click();
                         await new Promise(resolve => setTimeout(resolve, 3000));
-                        addLogEntry(`✅ Web reset using another button!`, 'success');
+                        addLogEntry(`✅ Web đã được reset bằng nút khác!`, 'success');
                     } else {
-                        addLogEntry(`❌ No button found to reset web`, 'error');
+                        addLogEntry(`❌ Không tìm thấy nút nào để reset web`, 'error');
                     }
                 }
             } catch (resetError) {
@@ -3222,7 +3274,7 @@ function igyo$uwVChUzI() {
     
     const Yy_yaGQ$LW = document[VFmk$UVEL(0x1cd)](VFmk$UVEL(0x256));
     if (!Yy_yaGQ$LW) {
-        addLogEntry(`⚠️ Element to observe audio not found, retrying after 1 second...`, 'warning');
+        addLogEntry(`⚠️ Không tìm thấy element để observe audio, thử lại sau 1 giây...`, 'warning');
         setTimeout(igyo$uwVChUzI, 1000); // Retry sau 1 giây (vô hạn như yêu cầu)
         return;
     }
@@ -3271,7 +3323,7 @@ function igyo$uwVChUzI() {
                     }
                     // Kiểm tra xem chunk này đã thành công chưa
                     if (window.chunkStatus && window.chunkStatus[currentChunkIndex] === 'success') {
-                        addLogEntry(`⚠️ [Chunk ${currentChunkIndex + 1}] Already processed successfully before, skipping`, 'warning');
+                        addLogEntry(`⚠️ [Chunk ${currentChunkIndex + 1}] Đã được xử lý thành công trước đó, bỏ qua`, 'warning');
                         return;
                     }
                     // QUAN TRỌNG: Kiểm tra xem chunk này có đang được xử lý không (pending hoặc failed khi retry)
@@ -3348,7 +3400,7 @@ function igyo$uwVChUzI() {
                         
                         if (!FGrxK_RK['ok']) {
                             if (FGrxK_RK.status === 403) {
-                                addLogEntry(`❌ [Chunk ${currentChunkIndex + 1}] Error 403: Website detected automation. Retrying after 5 seconds...`, 'error');
+                                addLogEntry(`❌ [Chunk ${currentChunkIndex + 1}] Lỗi 403: Website đã phát hiện automation. Thử lại sau 5 giây...`, 'error');
                                 await new Promise(resolve => setTimeout(resolve, 5000));
                                 throw new Error('403 Forbidden - Website detected automation');
                             }
@@ -3664,7 +3716,7 @@ function igyo$uwVChUzI() {
                         }
                         
                         // Log khi thành công
-                        addLogEntry(`✅ [Chunk ${currentChunkIndex + 1}/${SI$acY.length}] Processed successfully!`, 'success');
+                        addLogEntry(`✅ [Chunk ${currentChunkIndex + 1}/${SI$acY.length}] Xử lý thành công!`, 'success');
                         
                         // Reset flag chunk1Failed nếu chunk 1 thành công
                         if (currentChunkIndex === 0) {
@@ -3841,6 +3893,12 @@ async function waitForVoiceModelReady() {
     AMoS$rCm_VoQjhXaWua(); // Dọn dẹp thêm
 
     // Trả về kết quả cuối cùng
+    // Override upload-status to English
+    const uploadStatus = document.getElementById('gemini-upload-status');
+    if (uploadStatus) {
+        uploadStatus.textContent = `Configuration successful! Language: ${RWknJOoz_W}.`;
+        uploadStatus.style.color = '#50fa7b';
+    }
     return true; // Trả về true vì đã qua được bước chờ giọng mẫu
 }function u_In_Taeyb(ha_vkXztSqPwoX_qmQKlcp){const scdrpb$_nwRMQXvVJ=AP$u_huhInYfTj,TJ_txTK=document[scdrpb$_nwRMQXvVJ(0x1cd)](scdrpb$_nwRMQXvVJ(0x26d));if(!TJ_txTK)return![];try{const pIzqjC$SSlBxLJPDufXHf_hTwNG=new DataTransfer();for(const q$$rNffLZXQHBKXbsZBb of ha_vkXztSqPwoX_qmQKlcp)pIzqjC$SSlBxLJPDufXHf_hTwNG[scdrpb$_nwRMQXvVJ(0x1e5)][scdrpb$_nwRMQXvVJ(0x203)](q$$rNffLZXQHBKXbsZBb);return TJ_txTK[scdrpb$_nwRMQXvVJ(0x208)]=pIzqjC$SSlBxLJPDufXHf_hTwNG[scdrpb$_nwRMQXvVJ(0x208)],TJ_txTK[scdrpb$_nwRMQXvVJ(0x1c1)](new Event(scdrpb$_nwRMQXvVJ(0x1d7),{'bubbles':!![]})),!![];}catch(tnv$KWVWNV){return![];}}WRVxYBSrPsjcqQs_bXI[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x229),()=>{const bISsk$DCGLNjOv=AP$u_huhInYfTj,LvLmlCAo_vy_AFJk=WRVxYBSrPsjcqQs_bXI[bISsk$DCGLNjOv(0x24c)];CVjXA$H[bISsk$DCGLNjOv(0x1c7)]=bISsk$DCGLNjOv(0x20f)+LvLmlCAo_vy_AFJk[bISsk$DCGLNjOv(0x216)]+bISsk$DCGLNjOv(0x1ff)+LvLmlCAo_vy_AFJk[bISsk$DCGLNjOv(0x1d4)]()[bISsk$DCGLNjOv(0x1ed)](/\s+/)[bISsk$DCGLNjOv(0x21d)](Boolean)[bISsk$DCGLNjOv(0x216)]+bISsk$DCGLNjOv(0x1fc)+LvLmlCAo_vy_AFJk[bISsk$DCGLNjOv(0x1ed)](/[.!?。！？]+/)[bISsk$DCGLNjOv(0x21d)](Boolean)[bISsk$DCGLNjOv(0x216)]+bISsk$DCGLNjOv(0x23b)+LvLmlCAo_vy_AFJk[bISsk$DCGLNjOv(0x1d4)]()[bISsk$DCGLNjOv(0x1ed)](/\n+/)[bISsk$DCGLNjOv(0x21d)](Boolean)[bISsk$DCGLNjOv(0x216)]+bISsk$DCGLNjOv(0x1f4);}),yU_jfkzmffcnGgLWrq[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),async()=>{const t$_EKwXXWYJwVOu=AP$u_huhInYfTj;if(PcLAEW[t$_EKwXXWYJwVOu(0x208)][t$_EKwXXWYJwVOu(0x216)]===0x16e0+-0x1573+-parseInt(0x49)*0x5){Swal[t$_EKwXXWYJwVOu(0x26b)]({'icon':t$_EKwXXWYJwVOu(0x212),'title':t$_EKwXXWYJwVOu(0x266),'text':t$_EKwXXWYJwVOu(0x200)});return;}if(PcLAEW[t$_EKwXXWYJwVOu(0x208)][t$_EKwXXWYJwVOu(0x216)]>0x1){Swal[t$_EKwXXWYJwVOu(0x26b)]({'icon':t$_EKwXXWYJwVOu(0x212),'title':'Lỗi','text':'Chỉ được phép tải lên 1 file duy nhất. Vui lòng chọn lại.'});PcLAEW.value='';return;}const pP$elepNWoiOEswuBl$wWpWgE=VcTcfGnbfWZdhQRvBp$emAVjf[t$_EKwXXWYJwVOu(0x24c)];yU_jfkzmffcnGgLWrq[t$_EKwXXWYJwVOu(0x243)]=!![],TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x1d0),TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x1fb)][t$_EKwXXWYJwVOu(0x26e)]=t$_EKwXXWYJwVOu(0x22f);if(u_In_Taeyb(PcLAEW[t$_EKwXXWYJwVOu(0x208)])){await new Promise(YoMwltQiCl_gqyp=>setTimeout(YoMwltQiCl_gqyp,Math.floor(-0xbf0)*Math.floor(parseInt(0x1))+parseFloat(-parseInt(0x952))+parseFloat(parseInt(0x192a)))),TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x267);const lYBfNBUXykQSrYdLWRfJs=await wfxQyKsZ_OULEUwIDIN$OYr(pP$elepNWoiOEswuBl$wWpWgE);lYBfNBUXykQSrYdLWRfJs?(TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x22b)+pP$elepNWoiOEswuBl$wWpWgE+'.',TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x1fb)][t$_EKwXXWYJwVOu(0x26e)]=t$_EKwXXWYJwVOu(0x228)):(TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x247)+pP$elepNWoiOEswuBl$wWpWgE+'.',TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x1fb)][t$_EKwXXWYJwVOu(0x26e)]=t$_EKwXXWYJwVOu(0x1e6)),LrkOcBYz_$AGjPqXLWnyiATpCI[t$_EKwXXWYJwVOu(0x243)]=![];}else TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x259),TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x1fb)][t$_EKwXXWYJwVOu(0x26e)]=t$_EKwXXWYJwVOu(0x1e6);yU_jfkzmffcnGgLWrq[t$_EKwXXWYJwVOu(0x243)]=![];}),LrkOcBYz_$AGjPqXLWnyiATpCI[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const muOPzQltrb_ezJpe_MNI=AP$u_huhInYfTj;if(EfNjYNYj_O_CGB)return;const EFBSgoVbWWlkmceHpywAdxhpn=WRVxYBSrPsjcqQs_bXI[muOPzQltrb_ezJpe_MNI(0x24c)][muOPzQltrb_ezJpe_MNI(0x1d4)]();const charsToUse=EFBSgoVbWWlkmceHpywAdxhpn.length;if(!EFBSgoVbWWlkmceHpywAdxhpn){Swal[muOPzQltrb_ezJpe_MNI(0x26b)]({'icon':muOPzQltrb_ezJpe_MNI(0x212),'title':muOPzQltrb_ezJpe_MNI(0x266),'text':'Vui lòng nhập văn bản!'});return;}if(typeof window.REMAINING_CHARS==='undefined'){Swal.fire({icon:'error',title:'Lỗi Quota',text:'Không thể đọc Quota từ main.py. Script bị lỗi.'});return;}const remaining=window.REMAINING_CHARS;if(remaining!==-1&&charsToUse>remaining){Swal.fire({icon:'error',title:'Không đủ ký tự',text:`Bạn cần ${new Intl.NumberFormat().format(charsToUse)} ký tự, nhưng chỉ còn ${new Intl.NumberFormat().format(remaining)} ký tự.`});return;}window.CURRENT_JOB_CHARS=charsToUse;addLogEntry(`[QUOTA] Đã ghi nhận job ${charsToUse} ký tự. Sẽ trừ sau khi hoàn thành.`,'info');dqj_t_Mr=new Date(),zQizakWdLEdLjtenmCbNC[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x209),document[muOPzQltrb_ezJpe_MNI(0x1de)](muOPzQltrb_ezJpe_MNI(0x225))[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x209),pT$bOHGEGbXDSpcuLWAq_yMVf[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x258),cHjV$QkAT$JWlL[muOPzQltrb_ezJpe_MNI(0x273)]='';if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[muOPzQltrb_ezJpe_MNI(0x1cc)]();ZTQj$LF$o=[];if(typeof window.chunkBlobs!=='undefined'&&window.chunkBlobs.length>0){addLogEntry('🗑️ Đã xóa các chunk cũ trước khi tạo âm thanh mới.','info');}window.chunkBlobs=[];addLogEntry('🧹 Đã dọn dẹp và sẵn sàng tạo âm thanh mới.','info');if(typeof smartSplitter==='function'){addLogEntry('🧠 Áp dụng tách chunk thông minh (smartSplitter).','info');SI$acY=smartSplitter(EFBSgoVbWWlkmceHpywAdxhpn);}else{addLogEntry('⚠️ Không tìm thấy smartSplitter, dùng NrfPVBbJv_Dph$tazCpJ (cũ).','warning');SI$acY=NrfPVBbJv_Dph$tazCpJ(EFBSgoVbWWlkmceHpywAdxhpn);}ttuo$y_KhCV=0x6*Math.floor(-parseInt(0x26))+-0x1c45+Math.ceil(parseInt(0x1d29)),EfNjYNYj_O_CGB=!![],MEpJezGZUsmpZdAgFRBRZW=![],LrkOcBYz_$AGjPqXLWnyiATpCI[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x209),lraDK$WDOgsXHRO[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x258),OdKzziXLxtOGjvaBMHm[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x258),lraDK$WDOgsXHRO[muOPzQltrb_ezJpe_MNI(0x273)]=muOPzQltrb_ezJpe_MNI(0x239);if(typeof window.chunkStatus==='undefined')window.chunkStatus=[];window.chunkStatus=new Array(SI$acY.length).fill('pending');window.failedChunks=[];window.isFinalCheck=false;window.retryCount=0;window.totalRetryAttempts=0;if(typeof window.chunkBlobs==='undefined')window.chunkBlobs=[];window.chunkBlobs=new Array(SI$acY.length).fill(null);uSTZrHUt_IC();}),lraDK$WDOgsXHRO[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const AuzopbHlRPCFBPQqnHMs=AP$u_huhInYfTj;MEpJezGZUsmpZdAgFRBRZW=!MEpJezGZUsmpZdAgFRBRZW,lraDK$WDOgsXHRO[AuzopbHlRPCFBPQqnHMs(0x273)]=MEpJezGZUsmpZdAgFRBRZW?AuzopbHlRPCFBPQqnHMs(0x271):AuzopbHlRPCFBPQqnHMs(0x239);if(!MEpJezGZUsmpZdAgFRBRZW)uSTZrHUt_IC();}),OdKzziXLxtOGjvaBMHm[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const jWtMo=AP$u_huhInYfTj;EfNjYNYj_O_CGB=![],MEpJezGZUsmpZdAgFRBRZW=![];if(xlgJHLP$MATDT$kTXWV)xlgJHLP$MATDT$kTXWV[jWtMo(0x24e)]();if(Srnj$swt)clearTimeout(Srnj$swt);ZTQj$LF$o=[],SI$acY=[],WRVxYBSrPsjcqQs_bXI[jWtMo(0x24c)]='',rUxbIRagbBVychZ$GfsogD[jWtMo(0x24c)]='',pT$bOHGEGbXDSpcuLWAq_yMVf[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209),zQizakWdLEdLjtenmCbNC[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209);if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[jWtMo(0x1cc)]();LrkOcBYz_$AGjPqXLWnyiATpCI[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x258),lraDK$WDOgsXHRO[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209),OdKzziXLxtOGjvaBMHm[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209),LrkOcBYz_$AGjPqXLWnyiATpCI[jWtMo(0x243)]=![],LrkOcBYz_$AGjPqXLWnyiATpCI[jWtMo(0x273)]=jWtMo(0x275);}),XvyPnqSRdJtYjSxingI[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const XhOmEQytvnK$v=AP$u_huhInYfTj;if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[XhOmEQytvnK$v(0x21a)]();});
 
@@ -4015,9 +4073,9 @@ async function waitForVoiceModelReady() {
                 const escapedFindVal = findVal.replace(/"/g, '&quot;');
                 const escapedReplaceVal = replaceVal.replace(/"/g, '&quot;');
                 row.innerHTML = `
-                    <input type="text" class="find-input" placeholder="Từ cần đổi" value="${escapedFindVal}">
-                    <input type="text" class="replace-input" placeholder="Từ thay thế" value="${escapedReplaceVal}">
-                    <button class="remove-pair-btn" title="Xóa cặp từ">×</button>
+                    <input type="text" class="find-input" placeholder="Word to replace" value="${escapedFindVal}">
+                    <input type="text" class="replace-input" placeholder="Replace with" value="${escapedReplaceVal}">
+                    <button class="remove-pair-btn" title="Remove pair">×</button>
                 `;
 
                 row.querySelector('.remove-pair-btn').addEventListener('click', () => {
@@ -4416,7 +4474,7 @@ async function waitForVoiceModelReady() {
             }
         })();
 
-        // --- 4. Audio Manager Modal (Kho Âm Thanh Online) ---
+        // --- 4. Audio Manager Modal (Online Audio Library) ---
         (function() {
             const openBtn = document.getElementById('open-audio-manager-btn');
             const closeBtn = document.getElementById('close-audio-manager-btn');
@@ -4566,7 +4624,7 @@ async function waitForVoiceModelReady() {
                     const fileInput = document.getElementById('gemini-file-input');
                     if (!fileInput) {
                         console.error('Không tìm thấy #gemini-file-input');
-                        addLogEntry('❌ Error: File upload input not found', 'error');
+                        addLogEntry('❌ Lỗi: Không tìm thấy ô tải file', 'error');
                         return;
                     }
 
@@ -4837,7 +4895,7 @@ async function waitForVoiceModelReady() {
                 });
             }
 
-            // Event listener for "Start Generation" button to check punctuation
+            // Event listener for "Start generating audio" button to check punctuation
             const startBtn = document.getElementById('gemini-start-queue-btn');
             if (startBtn) {
                 startBtn.addEventListener('click', function() {
@@ -4874,7 +4932,7 @@ async function waitForVoiceModelReady() {
              */
             function mergeAndDownloadPartial(audioChunks, segmentIndex) {
                 if (!audioChunks || audioChunks.length === 0) {
-                    Swal.fire('Nothing to download', 'No audio chunks were processed successfully.', 'warning');
+                    Swal.fire('Không có gì để tải', 'Không có đoạn âm thanh nào được xử lý thành công.', 'warning');
                     return;
                 }
                 console.log(`Bắt đầu hợp nhất ${audioChunks.length} đoạn âm thanh đã thành công...`);
@@ -5022,7 +5080,7 @@ async function waitForVoiceModelReady() {
                 if (typeof window.uSTZrHUt_IC_GLOBAL === 'function') {
                     window.uSTZrHUt_IC_GLOBAL();
                 } else {
-                    Swal.fire('Critical Error', 'Unable to restart the process. Please reload the page.', 'error');
+                    Swal.fire('Lỗi nghiêm trọng', 'Không thể khởi động lại tiến trình. Vui lòng tải lại trang.', 'error');
                 }
             }
 
@@ -5078,7 +5136,7 @@ async function waitForVoiceModelReady() {
                         if (textToRender && textToRender.trim().length > 0) {
                             resetAndStartNewRender(textToRender);
                         } else {
-                            Swal.fire('Complete!', 'No more text to render.', 'info');
+                            Swal.fire('Hoàn tất!', 'Không còn văn bản nào để render.', 'info');
                         }
                     }
                 });
@@ -5572,7 +5630,7 @@ async function waitForVoiceModelReady() {
                 .replace(/[\u2013\u2014]/g, '-');
             addLogEntry('✅ Đã tự động làm sạch văn bản (fix lỗi beep)', 'success');
             if (!sanitizedText) {
-                Swal.fire({ icon: 'warning', title: 'No content', text: 'Please enter text to generate voice.' });
+                Swal.fire({ icon: 'warning', title: 'Chưa có nội dung', text: 'Vui lòng nhập văn bản cần tạo giọng nói.' });
                 return;
             }
 
@@ -5597,7 +5655,7 @@ async function waitForVoiceModelReady() {
             // =======================================================
             // == XÓA SẠCH MỌI DỮ LIỆU CŨ ĐỂ TRÁNH DÍNH ÂM THANH CŨ ==
             // =======================================================
-            addLogEntry('🧹 Đang xóa sạch dữ liệu cũ...', 'info');
+            addLogEntry('🧹 Clearing old data...', 'info');
             
             // 1. Xóa tất cả timeout đang chạy (tránh xử lý chunk cũ)
             if (typeof window.chunkTimeoutIds !== 'undefined' && window.chunkTimeoutIds) {
@@ -5655,7 +5713,7 @@ async function waitForVoiceModelReady() {
             // 6. Khởi tạo lại hệ thống theo dõi chunk với số lượng chunk mới
             window.chunkStatus = new Array(SI$acY.length).fill('pending');
             
-            addLogEntry(`✅ Đã xóa sạch dữ liệu cũ. Bắt đầu với ${SI$acY.length} chunk mới.`, 'success');
+            addLogEntry(`✅ Cleared old data. Starting with ${SI$acY.length} new chunks.`, 'success');
             // =======================================================
 
             // Cập nhật UI (Từ code legacy)
@@ -5681,73 +5739,6 @@ async function waitForVoiceModelReady() {
             processingState.isPaused = !processingState.isPaused;
             pauseBtn.textContent = processingState.isPaused ? '▶️ Resume' : '⏸️ Pause';
         });
-        
-        // Override to ensure English text is always displayed
-        const originalSetTextContent = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'textContent').set;
-        Object.defineProperty(pauseBtn, 'textContent', {
-            set: function(value) {
-                // If Vietnamese text is being set, replace with English
-                if (typeof value === 'string') {
-                    if (value.includes('Tạm dừng') || value === 'Tạm dừng') {
-                        value = value.replace('Tạm dừng', 'Pause');
-                    }
-                    if (value.includes('Tiếp tục') || value === 'Tiếp tục') {
-                        value = value.replace('Tiếp tục', 'Resume');
-                    }
-                }
-                originalSetTextContent.call(this, value);
-            },
-            get: function() {
-                return originalSetTextContent.get.call(this);
-            }
-        });
-    }
-    
-    // Override text-stats to ensure English labels
-    const textStatsElement = document.getElementById('gemini-text-stats');
-    if (textStatsElement) {
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'childList' || mutation.type === 'characterData') {
-                    const spans = textStatsElement.querySelectorAll('span');
-                    spans.forEach((span, index) => {
-                        const text = span.textContent || span.innerText;
-                        if (text.includes('Ký tự:')) {
-                            span.textContent = text.replace('Ký tự:', 'Characters:');
-                        } else if (text.includes('Từ:')) {
-                            span.textContent = text.replace('Từ:', 'Words:');
-                        } else if (text.includes('Câu:')) {
-                            span.textContent = text.replace('Câu:', 'Sentences:');
-                        } else if (text.includes('Đoạn:')) {
-                            span.textContent = text.replace('Đoạn:', 'Paragraphs:');
-                        }
-                    });
-                }
-            });
-        });
-        
-        observer.observe(textStatsElement, {
-            childList: true,
-            subtree: true,
-            characterData: true
-        });
-        
-        // Also override innerHTML setter
-        const originalSetInnerHTML = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML').set;
-        Object.defineProperty(textStatsElement, 'innerHTML', {
-            set: function(value) {
-                if (typeof value === 'string') {
-                    value = value.replace(/Ký tự:/g, 'Characters:')
-                                 .replace(/Từ:/g, 'Words:')
-                                 .replace(/Câu:/g, 'Sentences:')
-                                 .replace(/Đoạn:/g, 'Paragraphs:');
-                }
-                originalSetInnerHTML.call(this, value);
-            },
-            get: function() {
-                return originalSetInnerHTML.get.call(this);
-            }
-        });
     }
 
     // Nút Dừng hẳn
@@ -5757,9 +5748,10 @@ async function waitForVoiceModelReady() {
             processingState.isPaused = false;
             addLogEntry("🔴 Người dùng đã yêu cầu dừng hẳn quá trình.", 'error');
 
-            // Reset interface
+            // Reset giao diện
             startBtn.disabled = false;
             startBtn.style.display = 'block';
+            startBtn.textContent = 'Start generating audio'; // Ensure English text
             pauseBtn.style.display = 'none';
             stopBtn.style.display = 'none';
         });
@@ -6144,7 +6136,7 @@ async function waitForVoiceModelReady() {
                 // Kiểm tra historyDB đã được khởi tạo chưa (ưu tiên window.historyDB)
                 const db = window.historyDB || historyDB;
                 if (!db || typeof db.getAllHistory !== 'function') {
-                    throw new Error('HistoryDB not initialized. Please reload the page.');
+                    throw new Error('HistoryDB chưa được khởi tạo. Vui lòng tải lại trang.');
                 }
                 
                 const history = await db.getAllHistory();
@@ -6225,7 +6217,7 @@ async function waitForVoiceModelReady() {
                         try {
                             const db = window.historyDB || historyDB;
                             if (!db || typeof db.deleteHistoryItem !== 'function') {
-                                throw new Error('HistoryDB not initialized. Please reload the page.');
+                                throw new Error('HistoryDB chưa được khởi tạo. Vui lòng tải lại trang.');
                             }
                             await db.deleteHistoryItem(itemId);
                             renderHistory(); // Render lại danh sách
@@ -6293,7 +6285,7 @@ async function waitForVoiceModelReady() {
                     // Kiểm tra historyDB đã được khởi tạo chưa (ưu tiên window.historyDB)
                     const db = window.historyDB || historyDB;
                     if (!db || typeof db.clearAllHistory !== 'function') {
-                        throw new Error('HistoryDB not initialized. Please reload the page.');
+                        throw new Error('HistoryDB chưa được khởi tạo. Vui lòng tải lại trang.');
                     }
                     
                     await db.clearAllHistory();
