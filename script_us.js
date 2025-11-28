@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DUC LOI - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
-// @version      33.0
+// @version      35.0
 // @description  Tạo audio giọng nói clone theo ý của bạn. Không giới hạn. Thêm chức năng Ghép hội thoại, Đổi văn bản hàng loạt & Thiết lập dấu câu (bao gồm dấu xuống dòng).
 // @author       HUỲNH ĐỨC LỢI ( Zalo: 0835795597) - Đã chỉnh sửa
 // @match        https://www.minimax.io/audio*
@@ -1246,7 +1246,7 @@ button:disabled {
         
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Loading quota...</div>
         </div> 
-    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <h2>Activity Log</h2> <div id="log-container" class="log-container"> <div class="log-entry">Ready to monitor chunks...</div> </div> <button id="clear-log-btn" class="clear-log-btn">Clear Log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 33.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div><button id="settings-toggle-btn">⚙️ Cài đặt</button></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
+    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <h2>Activity Log</h2> <div id="log-container" class="log-container"> <div class="log-entry">Ready to monitor chunks...</div> </div> <button id="clear-log-btn" class="clear-log-btn">Clear Log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 35.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div><button id="settings-toggle-btn">⚙️ Cài đặt</button></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
     <div class="text-input-options">
         <div class="input-tabs">
             <button id="text-tab" class="tab-btn active">Nhập trực tiếp</button>
@@ -1707,6 +1707,74 @@ button:disabled {
     }
     
     /**
+     * Cố gắng "đánh thức" tab bằng cách tạo các hoạt động
+     * Mặc dù không thể force activate tab, nhưng có thể tạo một số signals
+     * @param {number} chunkIndex - Index của chunk đang xử lý
+     */
+    function tryWakeUpTab(chunkIndex) {
+        if (isTabActive()) {
+            return; // Tab đã active, không cần đánh thức
+        }
+        
+        try {
+            // Phương pháp 1: Flash title bar để thu hút sự chú ý
+            const originalTitle = document.title;
+            let flashCount = 0;
+            const maxFlashes = 3;
+            
+            const flashTitle = setInterval(() => {
+                if (flashCount >= maxFlashes * 2) {
+                    document.title = originalTitle;
+                    clearInterval(flashTitle);
+                    return;
+                }
+                
+                if (flashCount % 2 === 0) {
+                    document.title = `🔔 Chunk ${chunkIndex + 1} đang xử lý...`;
+                } else {
+                    document.title = originalTitle;
+                }
+                flashCount++;
+            }, 500);
+            
+            // Phương pháp 2: Thử tạo notification (nếu được phép)
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(`Chunk ${chunkIndex + 1} đang xử lý`, {
+                    body: 'Tab đang bị ẩn. Vui lòng kích hoạt lại tab để đảm bảo tốc độ tối ưu.',
+                    icon: 'https://www.google.com/s2/favicons?sz=64&domain=minimax.io',
+                    tag: 'chunk-processing',
+                    requireInteraction: false
+                });
+            } else if ('Notification' in window && Notification.permission === 'default') {
+                // Yêu cầu quyền notification (chỉ một lần)
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        new Notification(`Chunk ${chunkIndex + 1} đang xử lý`, {
+                            body: 'Tab đang bị ẩn. Vui lòng kích hoạt lại tab để đảm bảo tốc độ tối ưu.',
+                            icon: 'https://www.google.com/s2/favicons?sz=64&domain=minimax.io',
+                            tag: 'chunk-processing'
+                        });
+                    }
+                });
+            }
+            
+            // Phương pháp 3: Tạo một số DOM events để "đánh thức" browser
+            // Dispatch một số events để browser biết có hoạt động
+            try {
+                window.dispatchEvent(new Event('focus'));
+                document.dispatchEvent(new Event('visibilitychange'));
+            } catch (e) {
+                // Bỏ qua nếu không thể dispatch
+            }
+            
+            addLogEntry(`🔔 [Chunk ${chunkIndex + 1}] Đã thử đánh thức tab (flash title, notification). Vui lòng kích hoạt lại tab để đảm bảo tốc độ tối ưu.`, 'info');
+            
+        } catch (error) {
+            // Bỏ qua nếu có lỗi
+        }
+    }
+    
+    /**
      * Hàm delay thông minh chống browser throttle
      * Sử dụng nhiều phương pháp kết hợp để đảm bảo delay chính xác kể cả khi tab ẩn
      * 
@@ -1815,25 +1883,68 @@ button:disabled {
     
     /**
      * Lắng nghe sự kiện visibility change để cảnh báo người dùng
+     * CẢI THIỆN: Thêm debounce và kiểm tra kỹ hơn để tránh cảnh báo sai
      */
     function setupVisibilityListener() {
         let lastVisibilityState = !document.hidden;
         let warningShown = false;
+        let visibilityCheckTimeout = null;
+        let hiddenStartTime = null;
         
         document.addEventListener('visibilitychange', () => {
-            const isNowVisible = !document.hidden;
+            // Clear timeout cũ nếu có
+            if (visibilityCheckTimeout) {
+                clearTimeout(visibilityCheckTimeout);
+                visibilityCheckTimeout = null;
+            }
             
-            if (!isNowVisible && !warningShown) {
-                addLogEntry(`⚠️ Tab đã bị ẩn! Script vẫn sẽ tiếp tục chạy nhưng có thể chậm hơn một chút.`, 'warning');
-                addLogEntry(`💡 Tool đã sử dụng MessageChannel để chống throttle, nhưng vẫn khuyến nghị giữ tab active để đảm bảo tốc độ tối ưu.`, 'info');
-                warningShown = true;
-            } else if (isNowVisible && warningShown) {
-                addLogEntry(`✅ Tab đã được kích hoạt lại. Tốc độ xử lý sẽ trở lại bình thường.`, 'success');
-                warningShown = false;
+            const isNowVisible = !document.hidden && document.visibilityState === 'visible';
+            
+            // Kiểm tra kỹ: Phải thực sự bị ẩn (hidden = true VÀ visibilityState = 'hidden')
+            const isReallyHidden = document.hidden && document.visibilityState === 'hidden';
+            
+            if (isReallyHidden && !isNowVisible) {
+                // Tab thực sự bị ẩn - lưu thời gian bắt đầu ẩn
+                hiddenStartTime = Date.now();
+                
+                // Chỉ cảnh báo sau 1 giây để tránh cảnh báo sai (debounce)
+                visibilityCheckTimeout = setTimeout(() => {
+                    // Kiểm tra lại xem tab vẫn còn ẩn không
+                    if (document.hidden && document.visibilityState === 'hidden' && !warningShown) {
+                        addLogEntry(`⚠️ Tab đã bị ẩn! Script vẫn sẽ tiếp tục chạy nhưng có thể chậm hơn một chút.`, 'warning');
+                        addLogEntry(`💡 Tool đã sử dụng MessageChannel để chống throttle, nhưng vẫn khuyến nghị giữ tab active để đảm bảo tốc độ tối ưu.`, 'info');
+                        warningShown = true;
+                    }
+                }, 1000); // Debounce 1 giây
+                
+            } else if (isNowVisible) {
+                // Tab đã được kích hoạt lại
+                hiddenStartTime = null;
+                
+                // Luôn log khi tab được kích hoạt lại (không chỉ khi đã cảnh báo)
+                // Điều này giúp người dùng biết tab đã active và script sẽ chạy nhanh hơn
+                if (lastVisibilityState === false || warningShown) {
+                    addLogEntry(`✅ Tab đã được kích hoạt lại. Tốc độ xử lý sẽ trở lại bình thường.`, 'success');
+                    warningShown = false;
+                }
             }
             
             lastVisibilityState = isNowVisible;
         });
+        
+        // CẢI THIỆN: Kiểm tra định kỳ để phát hiện khi tab được kích hoạt lại
+        // (Một số browser có thể không trigger visibilitychange đúng cách)
+        setInterval(() => {
+            const currentlyVisible = !document.hidden && document.visibilityState === 'visible';
+            if (currentlyVisible && !lastVisibilityState && warningShown) {
+                // Tab đã được kích hoạt lại nhưng event không được trigger
+                addLogEntry(`✅ Tab đã được kích hoạt lại. Tốc độ xử lý sẽ trở lại bình thường.`, 'success');
+                warningShown = false;
+                lastVisibilityState = true;
+            } else if (!currentlyVisible && lastVisibilityState) {
+                lastVisibilityState = false;
+            }
+        }, 2000); // Kiểm tra mỗi 2 giây
     }
     
     // Khởi tạo listener khi script load
@@ -3627,6 +3738,11 @@ async function uSTZrHUt_IC() {
         window.sendingChunk = ttuo$y_KhCV;
         addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Bắt đầu gửi chunk...`, 'info');
         
+        // CẢI THIỆN: Thử "đánh thức" tab nếu đang bị ẩn trước khi gửi chunk mới
+        if (!isTabActive()) {
+            tryWakeUpTab(ttuo$y_KhCV);
+        }
+        
         // Cập nhật progress bar
         nWHrScjZnIyNYzztyEWwM(ttuo$y_KhCV, SI$acY[tQqGbytKzpHwhGmeQJucsrq(0x216)]);
         addLogEntry(`📦 [Chunk ${ttuo$y_KhCV + 1}/${SI$acY.length}] Đang gửi đi...`, 'info');
@@ -3710,11 +3826,8 @@ async function uSTZrHUt_IC() {
         const MAX_SET_TEXT_TIME = 5000; // 5 giây tối đa cho việc set text (giảm từ 10s)
         const DELAY_BETWEEN_SETS = 50; // Giảm từ 100ms xuống 50ms
         
-        // Kiểm tra tab có đang active không
-        if (!isTabActive()) {
-            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] CẢNH BÁO: Tab đang bị ẩn! Trình duyệt sẽ throttle setTimeout, có thể làm chậm quá trình xử lý.`, 'warning');
-            addLogEntry(`💡 [Chunk ${ttuo$y_KhCV + 1}] Đề xuất: Giữ tab active để tránh browser throttle và đảm bảo tốc độ xử lý tối ưu.`, 'info');
-        }
+        // Kiểm tra tab có đang active không (chỉ log debug, không cảnh báo vì đã có visibility listener)
+        // Loại bỏ cảnh báo ở đây để tránh trùng lặp với visibility listener
         
         addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đang set text ${SET_TEXT_COUNT} lần liên tiếp để đảm bảo...`, 'info');
         
@@ -3860,7 +3973,7 @@ async function uSTZrHUt_IC() {
         
         // Thiết lập timeout 60 giây cho chunk này (BẮT BUỘC mỗi chunk < 1 phút)
         // Minimax render chỉ mất 8-15s, nên 60s là đủ cho cả script + render
-        addLogEntry(`⏱️ [Chunk ${ttuo$y_KhCV + 1}] Bắt đầu render - Timeout 60 giây (Bắt buộc < 1 phút/chunk)`, 'info');
+        addLogEntry(`⏱️ [Chunk ${ttuo$y_KhCV + 1}] Bắt đầu xử lý - Timeout 60 giây (Bắt buộc < 1 phút/chunk)`, 'info');
         
         // Thiết lập cảnh báo sớm ở 45 giây
         window.chunkTimeoutIds[`${ttuo$y_KhCV}_warning`] = setTimeout(() => {
@@ -3871,7 +3984,7 @@ async function uSTZrHUt_IC() {
             }
         }, 45000); // Cảnh báo ở 45 giây
         window.chunkTimeoutIds[ttuo$y_KhCV] = setTimeout(async () => {
-            // QUAN TRỌNG: Kiểm tra xem chunk đã thành công chưa trước khi trigger timeout
+            // QUAN TRỌNG: Kiểm tra xem chunk đã thành công chưa trước khi kích hoạt timeout
             if (window.chunkStatus && window.chunkStatus[ttuo$y_KhCV] === 'success') {
                 return; // Chunk đã thành công, không cần xử lý
             }
@@ -4198,11 +4311,12 @@ function igyo$uwVChUzI() {
                         if (status === 'pending') {
                             // OK, chunk đang pending
                         } else if (status === 'failed' && window.isFinalCheck) {
-                            // OK, chunk failed và đang trong chế độ retry
-                            addLogEntry(`🔄 [Chunk ${currentChunkIndex + 1}] Đang retry chunk failed...`, 'info');
+                            // OK, chunk thất bại và đang trong chế độ thử lại
+                            addLogEntry(`🔄 [Chunk ${currentChunkIndex + 1}] Đang thử lại chunk thất bại...`, 'info');
                         } else {
-                            // Không phải pending và không phải failed trong retry mode
-                            addLogEntry(`⚠️ [Chunk ${currentChunkIndex + 1}] Không phải trạng thái 'pending' hoặc 'failed' trong retry mode (${status}), bỏ qua`, 'warning');
+                            // Không phải đang chờ và không phải thất bại trong chế độ thử lại
+                            const statusText = status === 'pending' ? 'đang chờ' : status === 'failed' ? 'thất bại' : status === 'success' ? 'thành công' : status;
+                            addLogEntry(`⚠️ [Chunk ${currentChunkIndex + 1}] Không phải trạng thái 'đang chờ' hoặc 'thất bại' trong chế độ thử lại (${statusText}), bỏ qua`, 'warning');
                             return;
                         }
                     }
