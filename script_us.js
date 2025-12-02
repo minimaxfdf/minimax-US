@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DUC LOI - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
-// @version      38.0
+// @version      39.0
 // @description  Tạo audio giọng nói clone theo ý của bạn. Không giới hạn. Thêm chức năng Ghép hội thoại, Đổi văn bản hàng loạt & Thiết lập dấu câu (bao gồm dấu xuống dòng).
 // @author       HUỲNH ĐỨC LỢI ( Zalo: 0835795597) - Đã chỉnh sửa
 // @match        https://www.minimax.io/audio*
@@ -1701,6 +1701,73 @@ button:disabled {
             }
         }
         return params;
+    }
+    
+    // Hàm bắt config từ chunk 1 thành công (được gọi khi chunk 1 thành công)
+    function captureConfigFromChunk1(audioUrl) {
+        if (!PENDING_REQUEST_INFO) {
+            addLogEntry(`⚠️ [Chunk 1] Không có thông tin request đã lưu`, 'warning');
+            return;
+        }
+        
+        try {
+            // Tạo config từ thông tin đã lưu
+            const config = {
+                url: PENDING_REQUEST_INFO.url,
+                method: PENDING_REQUEST_INFO.method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                queryParams: extractQueryParams(PENDING_REQUEST_INFO.url),
+                payload: null,
+                timestamp: Date.now()
+            };
+            
+            // Lấy payload từ data đã lưu
+            if (PENDING_REQUEST_INFO.data) {
+                try {
+                    if (typeof PENDING_REQUEST_INFO.data === 'string') {
+                        config.payload = JSON.parse(PENDING_REQUEST_INFO.data);
+                    } else if (!(PENDING_REQUEST_INFO.data instanceof FormData)) {
+                        config.payload = PENDING_REQUEST_INFO.data;
+                    }
+                } catch (e) {
+                    addLogEntry(`⚠️ [Chunk 1] Lỗi khi parse payload: ${e.message}`, 'warning');
+                }
+            }
+            
+            // Nếu không có payload từ data, thử lấy từ textarea hoặc chunk text
+            if (!config.payload) {
+                const textarea = document.getElementById('gemini-hidden-text-for-request');
+                if (textarea && textarea.value) {
+                    config.payload = { text: textarea.value };
+                    addLogEntry(`💡 [Chunk 1] Đã lấy text từ textarea làm payload`, 'info');
+                } else if (SI$acY && SI$acY[0]) {
+                    config.payload = { text: SI$acY[0] };
+                    addLogEntry(`💡 [Chunk 1] Đã lấy text từ chunk đầu tiên làm payload`, 'info');
+                }
+            }
+            
+            // Lưu config
+            saveCapturedConfig(config);
+            addLogEntry('🎯 Đã bắt được cấu hình từ Chunk 1 thành công!', 'success');
+            addLogEntry('✅ Từ chunk tiếp theo, tool sẽ gửi API trực tiếp (không cần click button)', 'success');
+            
+            // Xóa thông tin tạm
+            PENDING_REQUEST_INFO = null;
+            
+            // Kích hoạt tiếp tục với chunk 2
+            if (typeof uSTZrHUt_IC === 'function') {
+                setTimeout(() => {
+                    addLogEntry(`🚀 Đã có config, tiếp tục với chunk 2...`, 'success');
+                    uSTZrHUt_IC();
+                }, 500);
+            }
+        } catch (error) {
+            addLogEntry(`❌ [Chunk 1] Lỗi khi bắt config: ${error.message}`, 'error');
+            console.error('[CAPTURE] Chi tiết lỗi:', error);
+        }
     }
     
     // Hàm bắt request clone_v2 thành công
@@ -3763,6 +3830,29 @@ async function resetWebInterface() {
 async function uSTZrHUt_IC() {
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
     if (MEpJezGZUsmpZdAgFRBRZW) return;
+    
+    // =======================================================
+    // == CHẶN CHUNK 2 TRỞ ĐI NẾU CHƯA CÓ CONFIG ==
+    // =======================================================
+    // QUAN TRỌNG: Chỉ cho phép chunk 1 chạy khi chưa có config
+    // Chunk 2 trở đi phải đợi chunk 1 thành công và bắt được config
+    if (!IS_CONFIG_READY && ttuo$y_KhCV > 0) {
+        addLogEntry(`⏸️ [Chunk ${ttuo$y_KhCV + 1}] Đang đợi chunk 1 thành công và bắt được cấu hình...`, 'info');
+        addLogEntry(`💡 Chỉ chunk 1 được phép chạy khi chưa có config. Chunk ${ttuo$y_KhCV + 1} sẽ đợi...`, 'info');
+        
+        // Kiểm tra lại sau 2 giây
+        setTimeout(() => {
+            if (!IS_CONFIG_READY) {
+                addLogEntry(`⏸️ [Chunk ${ttuo$y_KhCV + 1}] Vẫn chưa có config, tiếp tục đợi...`, 'info');
+                uSTZrHUt_IC();
+            } else {
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã có config! Tiếp tục xử lý...`, 'success');
+                uSTZrHUt_IC();
+            }
+        }, 2000);
+        return; // Dừng lại, không tiếp tục xử lý chunk này
+    }
+    // =======================================================
     
     // GUARD: Kiểm tra độ sâu recursive calls ở đầu hàm
     if (typeof window.recursiveCallDepth === 'undefined') {
@@ -5971,67 +6061,71 @@ function igyo$uwVChUzI() {
                         }
                         
                         // =======================================================
-                        // == PHẦN MỚI: BẮT CONFIG KHI CHUNK THÀNH CÔNG ==
+                        // == PHẦN MỚI: BẮT CONFIG KHI CHUNK 1 THÀNH CÔNG ==
                         // =======================================================
-                        // QUAN TRỌNG: Chỉ bắt config SAU KHI chunk thành công (có audio_url từ response)
+                        // QUAN TRỌNG: Chỉ bắt config SAU KHI chunk 1 thành công (có audio_url từ response)
                         if (currentChunkIndex === 0 && !IS_CONFIG_READY && PENDING_REQUEST_INFO) {
                             addLogEntry(`🎯 [Chunk 1] Đã thành công! Đang bắt cấu hình từ request đã lưu...`, 'info');
                             
                             try {
-                                // Lấy audio_url từ audio element
+                                // QUAN TRỌNG: Lấy audio_url từ audio element (src của audio tag)
+                                // Đây là cách chắc chắn nhất vì audio element đã được tạo với src chính xác
                                 const audioElement = TYRNWSSd$QOYZe;
-                                const audioUrl = audioElement ? (audioElement.src || audioElement.getAttribute('src')) : null;
+                                let audioUrl = null;
+                                
+                                if (audioElement) {
+                                    // Thử nhiều cách để lấy src
+                                    audioUrl = audioElement.src || 
+                                              audioElement.getAttribute('src') ||
+                                              audioElement.currentSrc ||
+                                              (audioElement.querySelector('source') && audioElement.querySelector('source').src);
+                                }
+                                
+                                // Fallback: Tìm audio element trong DOM
+                                if (!audioUrl) {
+                                    const allAudios = document.querySelectorAll('audio');
+                                    for (const audio of allAudios) {
+                                        const src = audio.src || audio.getAttribute('src') || audio.currentSrc;
+                                        if (src && (src.includes('.mp3') || src.includes('.wav') || src.includes('audio'))) {
+                                            audioUrl = src;
+                                            addLogEntry(`💡 [Chunk 1] Tìm thấy audio_url từ audio element khác trong DOM`, 'info');
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                // Fallback cuối: Lấy từ response đã lưu
+                                if (!audioUrl && PENDING_REQUEST_INFO.responseData) {
+                                    audioUrl = PENDING_REQUEST_INFO.responseData.audio_url || 
+                                              PENDING_REQUEST_INFO.responseData.data?.audio_url || 
+                                              PENDING_REQUEST_INFO.responseData.result?.audio_url ||
+                                              PENDING_REQUEST_INFO.audioUrl;
+                                }
                                 
                                 if (!audioUrl) {
-                                    addLogEntry(`⚠️ [Chunk 1] Không tìm thấy audio_url từ audio element`, 'warning');
+                                    addLogEntry(`⚠️ [Chunk 1] Không tìm thấy audio_url từ audio element hoặc response`, 'warning');
+                                    addLogEntry(`💡 [Chunk 1] Đang tìm lại audio element trong DOM...`, 'info');
+                                    
+                                    // Tìm lại sau 1 giây (có thể audio chưa được tạo)
+                                    setTimeout(() => {
+                                        const retryAudios = document.querySelectorAll('audio');
+                                        for (const audio of retryAudios) {
+                                            const src = audio.src || audio.getAttribute('src');
+                                            if (src && src.length > 0) {
+                                                addLogEntry(`✅ [Chunk 1] Tìm thấy audio_url sau khi retry: ${src.substring(0, 100)}...`, 'success');
+                                                // Gọi lại hàm bắt config với audio_url này
+                                                captureConfigFromChunk1(src);
+                                                return;
+                                            }
+                                        }
+                                        addLogEntry(`❌ [Chunk 1] Vẫn không tìm thấy audio_url sau khi retry`, 'error');
+                                    }, 1000);
+                                    return; // Dừng lại, chờ retry
                                 } else {
                                     addLogEntry(`✅ [Chunk 1] Tìm thấy audio_url: ${audioUrl.substring(0, 100)}...`, 'success');
                                     
-                                    // Tạo config từ thông tin đã lưu
-                                    const config = {
-                                        url: PENDING_REQUEST_INFO.url,
-                                        method: PENDING_REQUEST_INFO.method,
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'Accept': 'application/json'
-                                        },
-                                        queryParams: extractQueryParams(PENDING_REQUEST_INFO.url),
-                                        payload: null,
-                                        timestamp: Date.now()
-                                    };
-                                    
-                                    // Lấy payload từ data đã lưu
-                                    if (PENDING_REQUEST_INFO.data) {
-                                        try {
-                                            if (typeof PENDING_REQUEST_INFO.data === 'string') {
-                                                config.payload = JSON.parse(PENDING_REQUEST_INFO.data);
-                                            } else if (!(PENDING_REQUEST_INFO.data instanceof FormData)) {
-                                                config.payload = PENDING_REQUEST_INFO.data;
-                                            }
-                                        } catch (e) {
-                                            addLogEntry(`⚠️ [Chunk 1] Lỗi khi parse payload: ${e.message}`, 'warning');
-                                        }
-                                    }
-                                    
-                                    // Nếu không có payload từ data, thử lấy từ textarea hoặc chunk text
-                                    if (!config.payload) {
-                                        const textarea = document.getElementById('gemini-hidden-text-for-request');
-                                        if (textarea && textarea.value) {
-                                            config.payload = { text: textarea.value };
-                                            addLogEntry(`💡 [Chunk 1] Đã lấy text từ textarea làm payload`, 'info');
-                                        } else if (SI$acY && SI$acY[0]) {
-                                            config.payload = { text: SI$acY[0] };
-                                            addLogEntry(`💡 [Chunk 1] Đã lấy text từ chunk đầu tiên làm payload`, 'info');
-                                        }
-                                    }
-                                    
-                                    // Lưu config
-                                    saveCapturedConfig(config);
-                                    addLogEntry('🎯 Đã bắt được cấu hình từ Chunk 1 thành công!', 'success');
-                                    addLogEntry('✅ Từ chunk tiếp theo, tool sẽ gửi API trực tiếp (không cần click button)', 'success');
-                                    
-                                    // Xóa thông tin tạm
-                                    PENDING_REQUEST_INFO = null;
+                                    // Gọi hàm bắt config
+                                    captureConfigFromChunk1(audioUrl);
                                 }
                             } catch (error) {
                                 addLogEntry(`❌ [Chunk 1] Lỗi khi bắt config: ${error.message}`, 'error');
@@ -6140,6 +6234,30 @@ function igyo$uwVChUzI() {
                         // Không phải retry mode: XỬ LÝ TUẦN TỰ TUYỆT ĐỐI
                         // Chỉ chuyển sang chunk tiếp theo nếu chunk hiện tại đã hoàn toàn xong
                         if (isCurrentChunk) {
+                            // QUAN TRỌNG: Nếu chunk 1 thành công nhưng chưa có config, KHÔNG chuyển sang chunk 2
+                            // Phải đợi đến khi bắt được config mới tiếp tục
+                            if (currentChunkIndex === 0 && !IS_CONFIG_READY) {
+                                addLogEntry(`⏸️ [Chunk 1] Đã thành công nhưng chưa có config. Đang đợi bắt config...`, 'info');
+                                addLogEntry(`💡 Chunk 2 sẽ chỉ chạy sau khi đã bắt được config từ chunk 1`, 'info');
+                                // KHÔNG tăng ttuo$y_KhCV, giữ nguyên để đợi config
+                                // Kiểm tra lại sau 1 giây
+                                setTimeout(() => {
+                                    if (!IS_CONFIG_READY) {
+                                        addLogEntry(`⏸️ [Chunk 1] Vẫn chưa có config, tiếp tục đợi...`, 'info');
+                                        // Gọi lại để kiểm tra
+                                        uSTZrHUt_IC();
+                                    } else {
+                                        addLogEntry(`✅ [Chunk 1] Đã có config! Tiếp tục với chunk 2...`, 'success');
+                                        // Tiếp tục với chunk 2
+                                        if (ttuo$y_KhCV + 1 < SI$acY.length) {
+                                            ttuo$y_KhCV++;
+                                            uSTZrHUt_IC();
+                                        }
+                                    }
+                                }, 1000);
+                                return; // Dừng lại, không tiếp tục
+                            }
+                            
                             // Chunk hiện tại đã thành công, chuyển sang chunk tiếp theo
                             // QUAN TRỌNG: Kiểm tra không vượt quá số lượng chunks ban đầu
                             if (ttuo$y_KhCV + 1 < SI$acY.length) {
