@@ -69,6 +69,13 @@
 .log-entry.error{color:#f55}
 .clear-log-btn{width:100%;background-color:#f55;color:#f8f8f2;padding:8px;border:none;border-radius:4px;font-weight:700;cursor:pointer;transition:background-color .2s ease}
 .clear-log-btn:hover{background-color:#e44}
+/* Payload Display Section */
+.payload-display-section{background:#44475a;border:1px solid #27304a;border-radius:4px;padding:15px;margin-top:15px}
+.payload-display-section h4{margin:0 0 10px;color:#bd93f9;font-size:14px;border-bottom:1px solid #6272a4;padding-bottom:5px}
+.payload-textarea{width:100%;min-height:150px;max-height:300px;background:#282a36;color:#f8f8f2;border:1px solid #6272a4;border-radius:4px;padding:10px;font-size:11px;font-family:monospace;resize:vertical;box-sizing:border-box;margin-bottom:10px}
+.payload-textarea.success{border-color:#50fa7b}
+.payload-textarea.error{border-color:#f55}
+.payload-label{display:block;font-size:12px;color:#8be9fd;margin-bottom:5px;font-weight:700}
 
 /* START: Styles for Punctuation Settings Modal */
 #open-punctuation-settings-btn { margin-top: 20px; background-color: #6272a4; color: #f8f8f2; }
@@ -922,7 +929,7 @@ button:disabled {
         
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Đang tải quota...</div>
         </div> 
-    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 16.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
+    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> <div class="payload-display-section"> <h4>📦 Payload Debug</h4> <div style="margin-bottom: 15px;"> <label class="payload-label">✅ Payload gửi đi THÀNH CÔNG:</label> <textarea id="payload-success-textarea" class="payload-textarea success" readonly placeholder="Payload thành công sẽ hiển thị ở đây..."></textarea> </div> <div> <label class="payload-label">❌ Payload gửi đi THẤT BẠI:</label> <textarea id="payload-error-textarea" class="payload-textarea error" readonly placeholder="Payload lỗi sẽ hiển thị ở đây..."></textarea> </div> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 16.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
     <div class="text-input-options">
         <div class="input-tabs">
             <button id="text-tab" class="tab-btn active">Nhập trực tiếp</button>
@@ -1487,11 +1494,12 @@ button:disabled {
                 // QUAN TRỌNG: Luôn gán nội dung đầy đủ vào payload.text (không giới hạn)
                 payload.text = text;
                 
-                // THỬ NGHIỆM: Giữ cả preview_text (200 ký tự đầu) để xem server có chấp nhận không
-                // Nếu mẫu gốc có preview_text, chỉ cập nhật 200 ký tự đầu (để < 300 giới hạn)
-                if (typeof config.payloadTemplate.preview_text !== 'undefined') {
-                    payload.preview_text = text.substring(0, 200);
-                    addLogEntry(`💡 [Module 2] Giữ cả text (${text.length} ký tự) và preview_text (200 ký tự)`, 'info');
+                // QUAN TRỌNG: XÓA HOÀN TOÀN preview_text để tránh lỗi 400
+                // Server Minimax KHÔNG chấp nhận cả text và preview_text cùng lúc
+                // Nếu có preview_text, server sẽ ưu tiên nó và báo lỗi khi quá dài hoặc có cả 2 trường
+                if (payload.preview_text !== undefined) {
+                    delete payload.preview_text;
+                    addLogEntry(`💡 [Module 2] Đã xóa preview_text, chỉ dùng text (${text.length} ký tự)`, 'info');
                 }
                 
                 // Cập nhật language_tag từ selection của tool (nếu có)
@@ -1577,10 +1585,18 @@ button:disabled {
             delete headers['referer']; 
             delete headers['Referer'];
             
+            // ĐẢM BẢO CUỐI CÙNG: Xóa preview_text một lần nữa trước khi gửi (phòng trường hợp có code khác thêm vào)
+            if (payload.preview_text !== undefined) {
+                delete payload.preview_text;
+                console.warn('[MODULE 2 WARNING] Đã xóa preview_text lần cuối trước khi gửi');
+            }
+            
             // DEBUG: Log URL và headers trước khi gửi
             console.log('[MODULE 2 DEBUG] URL:', targetUrl);
             console.log('[MODULE 2 DEBUG] Headers:', JSON.stringify(headers, null, 2));
             console.log('[MODULE 2 DEBUG] Body (payload):', JSON.stringify(payload, null, 2));
+            console.log('[MODULE 2 DEBUG] Payload có preview_text:', typeof payload.preview_text !== 'undefined');
+            console.log('[MODULE 2 DEBUG] Payload có text:', typeof payload.text !== 'undefined');
             
             // Gọi API
             const response = await fetch(targetUrl, {
@@ -1619,6 +1635,31 @@ button:disabled {
                         timestamp: new Date().toISOString()
                     };
                     
+                    // Hiển thị payload lỗi vào textarea
+                    const errorTextarea = document.getElementById('payload-error-textarea');
+                    if (errorTextarea) {
+                        try {
+                            const errorData = JSON.parse(errorText);
+                            errorTextarea.value = JSON.stringify({
+                                chunk: chunkIndex + 1,
+                                status: response.status,
+                                url: targetUrl,
+                                payload: payload,
+                                error: errorData,
+                                timestamp: new Date().toISOString()
+                            }, null, 2);
+                        } catch (e) {
+                            errorTextarea.value = JSON.stringify({
+                                chunk: chunkIndex + 1,
+                                status: response.status,
+                                url: targetUrl,
+                                payload: payload,
+                                error: errorText,
+                                timestamp: new Date().toISOString()
+                            }, null, 2);
+                        }
+                    }
+                    
                     // So sánh với payload thành công (nếu có)
                     if (window.LAST_SUCCESS_PAYLOAD) {
                         console.log('[MODULE 2 COMPARE] ========== SO SÁNH PAYLOAD ==========');
@@ -1630,7 +1671,7 @@ button:disabled {
                     }
                     
                     addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Lỗi ${response.status}: ${errorText.substring(0, 50)}...`, 'error');
-                    addLogEntry(`🔍 [Debug] Xem console để xem payload chi tiết. Hoặc gõ: window.LAST_FAILED_PAYLOAD`, 'info');
+                    addLogEntry(`🔍 [Debug] Xem payload lỗi trong ô "Payload gửi đi THẤT BẠI" phía dưới`, 'info');
                     throw new Error(`API_ERROR_${response.status}`);
                 }
             }
@@ -1653,6 +1694,17 @@ button:disabled {
                 timestamp: new Date().toISOString()
             };
             console.log('[MODULE 2 SUCCESS] Payload thành công đã lưu vào window.LAST_SUCCESS_PAYLOAD');
+            
+            // Hiển thị payload thành công vào textarea
+            const successTextarea = document.getElementById('payload-success-textarea');
+            if (successTextarea) {
+                successTextarea.value = JSON.stringify({
+                    chunk: chunkIndex + 1,
+                    url: targetUrl,
+                    payload: payload,
+                    timestamp: new Date().toISOString()
+                }, null, 2);
+            }
             
             // Xử lý kết quả trả về
             let audioUrl = null;
