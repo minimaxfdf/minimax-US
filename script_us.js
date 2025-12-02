@@ -1798,22 +1798,44 @@ button:disabled {
                     addLogEntry(`🧹 [Chunk 1] Đã xóa preview_text khỏi payload`, 'info');
                 }
                 
-                // QUAN TRỌNG: Nếu payload có preview_text nhưng không có text
-                // => Đây là request preview, không phải request chunk 1
-                // => Cần lấy payload từ request thực tế của chunk 1
-                if (!config.payload.text && config.payload.preview_text) {
-                    addLogEntry(`⚠️ [Chunk 1] Phát hiện payload từ preview request! Đang tìm payload từ chunk 1...`, 'warning');
-                    // Thử lấy từ textarea (chứa text của chunk 1)
-                    const textarea = document.getElementById('gemini-hidden-text-for-request');
-                    if (textarea && textarea.value) {
-                        config.payload.text = textarea.value;
-                        delete config.payload.preview_text;
-                        addLogEntry(`✅ [Chunk 1] Đã lấy text từ textarea thay cho preview_text`, 'success');
-                    } else {
-                        // Fallback: Dùng preview_text làm text tạm thời
-                        config.payload.text = config.payload.preview_text;
-                        delete config.payload.preview_text;
-                        addLogEntry(`⚠️ [Chunk 1] Đã dùng preview_text làm text tạm thời`, 'warning');
+                // QUAN TRỌNG: Nếu là Voice Clone mode (có files), không thêm speed/vol/pitch
+                // Voice Clone mode chỉ có: language_tag, files, need_noise_reduction, preview_text
+                if (config.payload.files && config.payload.files.length > 0) {
+                    // Xóa speed, vol, pitch nếu có (Voice Clone mode không có)
+                    if (config.payload.speed !== undefined) {
+                        delete config.payload.speed;
+                        addLogEntry(`🧹 [Chunk 1] Đã xóa speed (Voice Clone mode không có)`, 'info');
+                    }
+                    if (config.payload.vol !== undefined) {
+                        delete config.payload.vol;
+                        addLogEntry(`🧹 [Chunk 1] Đã xóa vol (Voice Clone mode không có)`, 'info');
+                    }
+                    if (config.payload.pitch !== undefined) {
+                        delete config.payload.pitch;
+                        addLogEntry(`🧹 [Chunk 1] Đã xóa pitch (Voice Clone mode không có)`, 'info');
+                    }
+                    // Xóa text nếu có (Voice Clone mode dùng preview_text)
+                    if (config.payload.text !== undefined) {
+                        delete config.payload.text;
+                        addLogEntry(`🧹 [Chunk 1] Đã xóa text (Voice Clone mode dùng preview_text)`, 'info');
+                    }
+                    // Giữ nguyên preview_text (sẽ được thay thế khi gửi chunk tiếp theo)
+                } else {
+                    // Chế độ khác: Xử lý preview_text và text
+                    if (!config.payload.text && config.payload.preview_text) {
+                        addLogEntry(`⚠️ [Chunk 1] Phát hiện payload từ preview request! Đang tìm payload từ chunk 1...`, 'warning');
+                        // Thử lấy từ textarea (chứa text của chunk 1)
+                        const textarea = document.getElementById('gemini-hidden-text-for-request');
+                        if (textarea && textarea.value) {
+                            config.payload.text = textarea.value;
+                            delete config.payload.preview_text;
+                            addLogEntry(`✅ [Chunk 1] Đã lấy text từ textarea thay cho preview_text`, 'success');
+                        } else {
+                            // Fallback: Dùng preview_text làm text tạm thời
+                            config.payload.text = config.payload.preview_text;
+                            delete config.payload.preview_text;
+                            addLogEntry(`⚠️ [Chunk 1] Đã dùng preview_text làm text tạm thời`, 'warning');
+                        }
                     }
                 }
                 
@@ -1825,31 +1847,39 @@ button:disabled {
                 }
                 
                 // === [FIX LỖI 400] BỔ SUNG CÁC THAM SỐ THIẾU ===
-                // Request preview thường thiếu speed, vol, pitch
-                // Cần bổ sung các tham số này với giá trị mặc định
-                // QUAN TRỌNG: Kiểm tra xem có phải request preview không (thiếu các tham số này)
-                const isPreviewRequest = !config.payload.speed && !config.payload.vol && !config.payload.pitch;
+                // QUAN TRỌNG: Chỉ bổ sung speed/vol/pitch cho chế độ KHÔNG phải Voice Clone
+                // Voice Clone mode KHÔNG có speed, vol, pitch
+                const isVoiceCloneMode = config.payload.files && config.payload.files.length > 0;
                 
-                if (isPreviewRequest) {
-                    addLogEntry(`⚠️ [Chunk 1] Phát hiện payload từ preview request (thiếu speed/vol/pitch)`, 'warning');
-                }
-                
-                // Bổ sung speed nếu thiếu
-                if (typeof config.payload.speed === 'undefined' || config.payload.speed === null) {
-                    config.payload.speed = 1.0; // Tốc độ mặc định (1.0 = bình thường)
-                    addLogEntry(`➕ [Chunk 1] Đã bổ sung speed = 1.0 (thiếu trong payload)`, 'info');
-                }
-                
-                // Bổ sung vol nếu thiếu
-                if (typeof config.payload.vol === 'undefined' || config.payload.vol === null) {
-                    config.payload.vol = 1.0; // Âm lượng mặc định (1.0 = bình thường)
-                    addLogEntry(`➕ [Chunk 1] Đã bổ sung vol = 1.0 (thiếu trong payload)`, 'info');
-                }
-                
-                // Bổ sung pitch nếu thiếu
-                if (typeof config.payload.pitch === 'undefined' || config.payload.pitch === null) {
-                    config.payload.pitch = 1.0; // Cao độ mặc định (1.0 = bình thường)
-                    addLogEntry(`➕ [Chunk 1] Đã bổ sung pitch = 1.0 (thiếu trong payload)`, 'info');
+                if (!isVoiceCloneMode) {
+                    // Chế độ khác: Bổ sung speed, vol, pitch nếu thiếu
+                    const isPreviewRequest = !config.payload.speed && !config.payload.vol && !config.payload.pitch;
+                    
+                    if (isPreviewRequest) {
+                        addLogEntry(`⚠️ [Chunk 1] Phát hiện payload từ preview request (thiếu speed/vol/pitch)`, 'warning');
+                    }
+                    
+                    // Bổ sung speed nếu thiếu
+                    if (typeof config.payload.speed === 'undefined' || config.payload.speed === null) {
+                        config.payload.speed = 1.0;
+                        addLogEntry(`➕ [Chunk 1] Đã bổ sung speed = 1.0 (thiếu trong payload)`, 'info');
+                    }
+                    
+                    // Bổ sung vol nếu thiếu
+                    if (typeof config.payload.vol === 'undefined' || config.payload.vol === null) {
+                        config.payload.vol = 1.0;
+                        addLogEntry(`➕ [Chunk 1] Đã bổ sung vol = 1.0 (thiếu trong payload)`, 'info');
+                    }
+                    
+                    // Bổ sung pitch nếu thiếu
+                    if (typeof config.payload.pitch === 'undefined' || config.payload.pitch === null) {
+                        config.payload.pitch = 0;
+                        addLogEntry(`➕ [Chunk 1] Đã bổ sung pitch = 0 (thiếu trong payload)`, 'info');
+                    }
+                    
+                    addLogEntry(`✅ [Chunk 1] Đã bổ sung đầy đủ tham số cho payload từ preview request`, 'success');
+                } else {
+                    addLogEntry(`✅ [Chunk 1] Voice Clone mode - Không bổ sung speed/vol/pitch (không cần)`, 'success');
                 }
                 
                 // Kiểm tra các tham số khác có thể thiếu
@@ -5331,20 +5361,35 @@ async function uSTZrHUt_IC() {
                 addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Phát hiện Voice Clone mode - Fix lỗi 400...`, 'info');
                 addLogEntry(`🔍 [C#${ttuo$y_KhCV + 1}] need_noise_reduction TRƯỚC KHI SỬA: ${clonedPayload.need_noise_reduction}`, 'warning');
                 
-                // 1. BẮT BUỘC: need_noise_reduction phải là false (Log của bạn đang là true => gây lỗi)
+                // 1. BẮT BUỘC: need_noise_reduction phải là false
                 clonedPayload.need_noise_reduction = false;
                 
-                // 2. Gán nội dung chunk vào preview_text
-                clonedPayload.preview_text = chunkText;
-                
-                // 3. Đảm bảo language_tag tồn tại
-                if (!clonedPayload.language_tag) {
-                    clonedPayload.language_tag = "Vietnamese";
+                // 2. QUAN TRỌNG: Xóa speed, vol, pitch (Voice Clone mode không có các trường này)
+                if (Object.prototype.hasOwnProperty.call(clonedPayload, 'speed')) {
+                    delete clonedPayload.speed;
+                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa speed (Voice Clone mode không có)`, 'info');
+                }
+                if (Object.prototype.hasOwnProperty.call(clonedPayload, 'vol')) {
+                    delete clonedPayload.vol;
+                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa vol (Voice Clone mode không có)`, 'info');
+                }
+                if (Object.prototype.hasOwnProperty.call(clonedPayload, 'pitch')) {
+                    delete clonedPayload.pitch;
+                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa pitch (Voice Clone mode không có)`, 'info');
                 }
                 
-                // 4. Xóa trường 'text' thừa nếu có (để tránh server bị lẫn lộn giữa text và preview_text)
+                // 3. Xóa trường 'text' thừa nếu có (Voice Clone mode dùng preview_text)
                 if (Object.prototype.hasOwnProperty.call(clonedPayload, 'text')) {
                     delete clonedPayload.text;
+                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa text (Voice Clone mode dùng preview_text)`, 'info');
+                }
+                
+                // 4. Gán nội dung chunk vào preview_text
+                clonedPayload.preview_text = chunkText;
+                
+                // 5. Đảm bảo language_tag tồn tại
+                if (!clonedPayload.language_tag) {
+                    clonedPayload.language_tag = "Vietnamese";
                 }
                 
                 addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã force need_noise_reduction=false & gán preview_text`, 'success');
