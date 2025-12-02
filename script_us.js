@@ -6331,27 +6331,43 @@ async function waitForVoiceModelReady() {
 
     // CẢI THIỆN: Kích hoạt Auto-Sniff ngay khi bấm nút "Tải lên & Cấu hình tự động"
     // Đây là thời điểm các request API sẽ được gửi đi, nên sẽ bắt được cấu hình ngay lập tức
-    if (!window.MMX_CONFIG.isReady) {
-        addLogEntry(`🔍 [Auto-Sniff] Đang bắt cấu hình từ các request upload...`, 'info');
-        
-        // Đảm bảo sniffer đã được khởi động
-        if (!window.MMX_CONFIG.snifferActive) {
-            startSmartSniffer();
+    // Bọc trong try-catch để tránh lỗi khiến tool không hoạt động
+    try {
+        // Kiểm tra an toàn để tránh lỗi nếu MMX_CONFIG chưa được khởi tạo
+        if (typeof window.MMX_CONFIG !== 'undefined' && window.MMX_CONFIG && !window.MMX_CONFIG.isReady) {
+            if (typeof addLogEntry === 'function') {
+                addLogEntry(`🔍 [Auto-Sniff] Đang bắt cấu hình từ các request upload...`, 'info');
+            }
+            
+            // Đảm bảo sniffer đã được khởi động
+            if (!window.MMX_CONFIG.snifferActive && typeof startSmartSniffer === 'function') {
+                startSmartSniffer();
+            }
+            
+            // Đợi tối đa 5 giây để bắt được cấu hình từ các request upload
+            const maxWaitTime = 5000; // 5 giây
+            const checkInterval = 100; // Kiểm tra mỗi 100ms
+            const startTime = Date.now();
+            
+            while (window.MMX_CONFIG && !window.MMX_CONFIG.isReady && (Date.now() - startTime) < maxWaitTime) {
+                await hHnnogfbz$hHkQnbAxKfoWPG(checkInterval);
+            }
+            
+            if (window.MMX_CONFIG && window.MMX_CONFIG.isReady) {
+                if (typeof addLogEntry === 'function') {
+                    addLogEntry(`✅ [Auto-Sniff] Đã bắt được cấu hình từ request upload!`, 'success');
+                }
+            } else {
+                if (typeof addLogEntry === 'function') {
+                    addLogEntry(`⚠️ [Auto-Sniff] Chưa bắt được cấu hình sau 5 giây. Tiếp tục với quy trình bình thường...`, 'warning');
+                }
+            }
         }
-        
-        // Đợi tối đa 5 giây để bắt được cấu hình từ các request upload
-        const maxWaitTime = 5000; // 5 giây
-        const checkInterval = 100; // Kiểm tra mỗi 100ms
-        const startTime = Date.now();
-        
-        while (!window.MMX_CONFIG.isReady && (Date.now() - startTime) < maxWaitTime) {
-            await hHnnogfbz$hHkQnbAxKfoWPG(checkInterval);
-        }
-        
-        if (window.MMX_CONFIG.isReady) {
-            addLogEntry(`✅ [Auto-Sniff] Đã bắt được cấu hình từ request upload!`, 'success');
-        } else {
-            addLogEntry(`⚠️ [Auto-Sniff] Chưa bắt được cấu hình sau 5 giây. Tiếp tục với quy trình bình thường...`, 'warning');
+    } catch (error) {
+        // Nếu có lỗi, chỉ log và tiếp tục với quy trình bình thường
+        console.error('[Auto-Sniff] Lỗi khi bắt cấu hình:', error);
+        if (typeof addLogEntry === 'function') {
+            addLogEntry(`⚠️ [Auto-Sniff] Có lỗi khi bắt cấu hình. Tiếp tục với quy trình bình thường...`, 'warning');
         }
     }
 
