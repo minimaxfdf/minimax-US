@@ -1465,26 +1465,32 @@ button:disabled {
                 targetUrl = 'https://www.minimax.io/v1/api/audio/voice/clone_v2?device_platform=web&app_id=3001&version_code=22201&biz_id=1&unix=' + Math.floor(Date.now() / 1000);
             }
             
-            // [FIX 2] Xây dựng Payload thông minh (Tránh gửi thừa tham số gây lỗi 400)
+            // [FIX 2] Xây dựng Payload thông minh (Clone & Patch - Giữ nguyên cấu trúc mẫu gốc)
             let payload;
             if (config.payloadTemplate) {
-                // Copy nguyên xi mẫu gốc
+                // Copy nguyên xi mẫu gốc để giữ TẤT CẢ các tham số (timbre_weights, voice_id, ...)
                 payload = JSON.parse(JSON.stringify(config.payloadTemplate));
                 
-                // Logic thông minh: Chỉ sửa trường nào CÓ SẴN trong mẫu
-                // Minimax chỉ chấp nhận 'preview_text', nếu gửi thêm 'text' sẽ bị lỗi 400
-                if (typeof payload.preview_text !== 'undefined') {
+                // Logic: Cập nhật text/preview_text dựa trên mẫu gốc có gì
+                // QUAN TRỌNG: Giữ nguyên cấu trúc mẫu gốc, chỉ thay đổi giá trị text
+                if (typeof config.payloadTemplate.preview_text !== 'undefined') {
+                    // Mẫu gốc có preview_text → chỉ update preview_text
                     payload.preview_text = text;
-                } else if (typeof payload.text !== 'undefined') {
+                    // Nếu mẫu gốc KHÔNG có text → xóa text (nếu có) để tránh thừa tham số
+                    if (typeof config.payloadTemplate.text === 'undefined' && payload.text) {
+                        delete payload.text;
+                    }
+                } else if (typeof config.payloadTemplate.text !== 'undefined') {
+                    // Mẫu gốc chỉ có text → chỉ update text
                     payload.text = text;
+                    // Nếu mẫu gốc KHÔNG có preview_text → xóa preview_text (nếu có)
+                    if (typeof config.payloadTemplate.preview_text === 'undefined' && payload.preview_text) {
+                        delete payload.preview_text;
+                    }
                 } else {
-                    // Mặc định an toàn nhất
+                    // Mẫu gốc không có cả 2 → thêm preview_text (an toàn nhất)
                     payload.preview_text = text;
-                }
-
-                // Xóa trường 'text' nếu nó không có trong mẫu gốc (để tránh lỗi thừa tham số)
-                if (payload.text && !config.payloadTemplate.text) {
-                    delete payload.text;
+                    if (payload.text) delete payload.text;
                 }
                 
                 // Cập nhật language_tag từ selection của tool (nếu có)
@@ -1492,6 +1498,11 @@ button:disabled {
                 if (langSelect && langSelect.value) {
                     payload.language_tag = langSelect.value;
                 }
+                
+                // DEBUG: Log payload để kiểm tra
+                console.log('[MODULE 2 DEBUG] Payload sau khi clone & patch:', JSON.stringify(payload, null, 2));
+                console.log('[MODULE 2 DEBUG] Mẫu gốc có preview_text:', typeof config.payloadTemplate.preview_text !== 'undefined');
+                console.log('[MODULE 2 DEBUG] Mẫu gốc có text:', typeof config.payloadTemplate.text !== 'undefined');
             } else {
                 // Fallback cực kỳ cơ bản (ít dùng, chỉ khi không bắt được mẫu)
                 payload = {
