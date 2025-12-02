@@ -5264,28 +5264,35 @@ async function uSTZrHUt_IC() {
             // Log payload gốc trước khi sửa
             addLogEntry(`🔍 [C#${ttuo$y_KhCV + 1}] Payload gốc: ${JSON.stringify(clonedPayload).substring(0, 300)}...`, 'info');
             
-            // QUAN TRỌNG: Nếu có files (Voice Clone mode), payload phải đúng 100% theo mẫu
+            // QUAN TRỌNG: Nếu có files (Voice Clone mode)
             if (clonedPayload.files && clonedPayload.files.length > 0) {
-                addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Phát hiện Voice Clone mode - Đang tái tạo Payload chuẩn...`, 'info');
+                addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Phát hiện Voice Clone mode - Tái tạo Payload chuẩn...`, 'info');
                 
                 // 1. Lưu lại các giá trị quan trọng từ config cũ
                 const keepLanguage = clonedPayload.language_tag || "Vietnamese";
                 const keepFiles = clonedPayload.files;
+                // Giữ giá trị noise reduction nếu có, mặc định là false
+                const keepNoise = (typeof clonedPayload.need_noise_reduction !== 'undefined') ? clonedPayload.need_noise_reduction : false;
                 
-                // 2. Xóa sạch TẤT CẢ các trường trong object hiện tại để tránh rác
+                // 2. Xóa sạch TẤT CẢ các trường trong object hiện tại để tránh rác lạ (ví dụ preview_text)
                 for (const key in clonedPayload) {
                     if (Object.prototype.hasOwnProperty.call(clonedPayload, key)) {
                         delete clonedPayload[key];
                     }
                 }
                 
-                // 3. Xây dựng lại object sạch sẽ (Giống hệt mẫu Web của bạn)
+                // 3. Xây dựng lại object (BẮT BUỘC PHẢI CÓ CÁC THAM SỐ CƠ BẢN)
                 clonedPayload.language_tag = keepLanguage;
                 clonedPayload.files = keepFiles;
-                clonedPayload.need_noise_reduction = false; // Web mẫu của bạn là false
+                clonedPayload.need_noise_reduction = keepNoise;
+                
+                // === [FIX] THÊM LẠI CÁC THAM SỐ BẮT BUỘC MÀ SERVER YÊU CẦU ===
+                clonedPayload.speed = 1.0; // Tốc độ chuẩn
+                clonedPayload.vol = 1.0;   // Âm lượng chuẩn
+                clonedPayload.pitch = 0;   // Cao độ chuẩn
                 // Note: trường 'text' sẽ được gán ở dòng code phía dưới
                 
-                addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã làm sạch Payload hoàn toàn (chỉ giữ language, files, noise_reduction)`, 'success');
+                addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã tái tạo Payload: Files + Speed/Vol/Pitch`, 'success');
                 
             } else {
                 // CHẾ ĐỘ KHÁC (Text-to-Speech thường): Giữ logic cũ
