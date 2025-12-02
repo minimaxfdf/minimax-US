@@ -5274,65 +5274,30 @@ async function uSTZrHUt_IC() {
             // Log payload gốc trước khi sửa
             addLogEntry(`🔍 [C#${ttuo$y_KhCV + 1}] Payload gốc: ${JSON.stringify(clonedPayload).substring(0, 300)}...`, 'info');
             
-            // === [FIX LỖI 400] Giữ nguyên cấu trúc payload từ chunk 1 thành công ===
-            // QUAN TRỌNG: Không xóa sạch và xây dựng lại, chỉ thay đổi những gì cần thiết
-            // Vì chunk 1 đã thành công, cấu trúc của nó là "chuẩn" và có thể chứa các trường ẩn
+            // === [FIX LỖI 400] CHỈ THAY ĐỔI NỘI DUNG TEXT ===
+            // QUAN TRỌNG: Giữ nguyên 100% cấu trúc payload từ chunk 1 thành công
+            // Chỉ thay đổi nội dung của trường text/preview_text, không làm gì khác
             
             if (clonedPayload.files && clonedPayload.files.length > 0) {
-                // Voice Clone mode
-                addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Phát hiện Voice Clone mode - Giữ nguyên cấu trúc payload`, 'info');
-                
-                // 1. Xóa preview_text cũ (nếu có) để tránh conflict
-                if (clonedPayload.preview_text) {
-                    delete clonedPayload.preview_text;
-                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa preview_text cũ`, 'info');
+                // Voice Clone mode: Thay đổi preview_text
+                if (clonedPayload.preview_text !== undefined) {
+                    clonedPayload.preview_text = chunkText;
+                    addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã thay đổi preview_text (Voice Clone mode)`, 'info');
+                } else {
+                    // Nếu không có preview_text, thử dùng text
+                    clonedPayload.text = chunkText;
+                    addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã thay đổi text (Voice Clone mode, không có preview_text)`, 'info');
                 }
-                
-                // 2. Xóa text nếu có (tránh conflict với preview_text)
-                if (clonedPayload.text) {
-                    delete clonedPayload.text;
-                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa text (Voice Clone mode dùng preview_text)`, 'info');
-                }
-                
-                // 3. Đảm bảo need_noise_reduction = false (theo mẫu web)
-                clonedPayload.need_noise_reduction = false;
-                addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã đảm bảo need_noise_reduction=false`, 'info');
-                
-                // 4. Gán text vào preview_text (Voice Clone mode)
-                clonedPayload.preview_text = chunkText;
-                addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã gán text vào preview_text (Voice Clone mode)`, 'info');
-                
             } else {
-                // CHẾ ĐỘ KHÁC (Text-to-Speech thường)
-                addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Không phải Voice Clone mode`, 'info');
-                
-                // 1. Xóa preview_text nếu có (chế độ này dùng text)
-                if (clonedPayload.preview_text) {
-                    delete clonedPayload.preview_text;
-                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa preview_text`, 'info');
+                // Chế độ khác: Thay đổi text
+                if (clonedPayload.text !== undefined) {
+                    clonedPayload.text = chunkText;
+                    addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã thay đổi text`, 'info');
+                } else {
+                    // Nếu không có text, thử dùng preview_text
+                    clonedPayload.preview_text = chunkText;
+                    addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã thay đổi preview_text (không có text)`, 'info');
                 }
-                
-                // 2. Bổ sung các trường bắt buộc nếu thiếu (nhưng không xóa các trường khác)
-                if (typeof clonedPayload.speed === 'undefined') {
-                    clonedPayload.speed = 1.0;
-                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung speed=1.0`, 'info');
-                }
-                if (typeof clonedPayload.vol === 'undefined') {
-                    clonedPayload.vol = 1.0;
-                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung vol=1.0`, 'info');
-                }
-                if (typeof clonedPayload.pitch === 'undefined') {
-                    clonedPayload.pitch = 0;
-                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung pitch=0`, 'info');
-                }
-                if (!clonedPayload.voice_id) {
-                    clonedPayload.voice_id = "male-qn-01";
-                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung voice_id`, 'info');
-                }
-                
-                // 3. Gán text vào text
-                clonedPayload.text = chunkText;
-                addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã gán text vào text`, 'info');
             }
             // ====================================================
             
