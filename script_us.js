@@ -4780,27 +4780,222 @@ async function uSTZrHUt_IC() {
             addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set lại text trước khi click`, 'success');
         }
         
-        // ✅ NÂNG CẤP: Phân tích request và gửi trực tiếp qua payload (không click button)
-        // Phân tích request từ button/form
-        const requestInfo = analyzeRequestFromButton(targetButton, chunkText);
+        // ✅ NÂNG CẤP: Intercept XHR khi click button để lấy đúng request info, sau đó gửi trực tiếp
         
+        // Hàm xử lý sau khi gửi request thành công
+        const handleRequestSuccess = async (result) => {
+            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Request đã được gửi thành công!`, 'success');
+            
+            // Reset flag sendingChunk
+            window.sendingChunk = null;
+            
+            // Đánh dấu chunk đang pending (đang chờ audio xuất hiện)
+            if (typeof window.chunkStatus === 'undefined') {
+                window.chunkStatus = new Array(SI$acY.length).fill('pending');
+            }
+            window.chunkStatus[ttuo$y_KhCV] = 'pending';
+            
+            // QUAN TRỌNG: Gọi igyo$uwVChUzI() để tạo MutationObserver detect audio element
+            // MutationObserver sẽ tự động detect khi audio xuất hiện và xử lý
+            addLogEntry(`👁️ [Chunk ${ttuo$y_KhCV + 1}] Đang chờ audio element xuất hiện...`, 'info');
+            igyo$uwVChUzI();
+        };
+        
+        // Hàm xử lý sau khi gửi request thất bại
+        const handleRequestFailure = (error, status) => {
+            addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Request thất bại${status ? ` với status: ${status}` : ''}${error ? `: ${error.message}` : ''}`, 'error');
+            
+            // Reset flag sendingChunk
+            window.sendingChunk = null;
+            
+            // Đánh dấu chunk này là failed
+            if (typeof window.chunkStatus === 'undefined') {
+                window.chunkStatus = new Array(SI$acY.length).fill('pending');
+            }
+            window.chunkStatus[ttuo$y_KhCV] = 'failed';
+            if (!window.failedChunks.includes(ttuo$y_KhCV)) {
+                window.failedChunks.push(ttuo$y_KhCV);
+            }
+            
+            // Retry logic sẽ được xử lý bởi uSTZrHUt_IC() sau
+            addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Sẽ được retry sau...`, 'info');
+        };
+        
+        // Kiểm tra xem đã có request info từ lần intercept trước chưa
+        let requestInfo = null;
+        
+        if (typeof window.lastRequestInfo !== 'undefined' && window.lastRequestInfo && window.lastRequestInfo.url && window.lastRequestInfo.url !== window.location.href) {
+            // Đã có request info từ lần intercept trước -> dùng lại và chỉ cần thay text
+            addLogEntry(`♻️ [Chunk ${ttuo$y_KhCV + 1}] Dùng lại request info từ lần intercept trước`, 'info');
+            requestInfo = {
+                ...window.lastRequestInfo,
+                text: chunkText
+            };
+            
+            // Cập nhật payload với text mới
+            if (requestInfo.payload instanceof FormData) {
+                // Tìm và cập nhật text trong FormData
+                const textarea = document.getElementById('gemini-main-textarea') || document.querySelector('textarea');
+                const fieldName = textarea ? (textarea.name || textarea.id || 'text') : 'text';
+                // Tạo FormData mới với text mới
+                const newFormData = new FormData();
+                // Copy tất cả fields từ FormData cũ
+                for (let [key, value] of requestInfo.payload.entries()) {
+                    if (key === fieldName) {
+                        newFormData.set(key, chunkText);
+                    } else {
+                        newFormData.set(key, value);
+                    }
+                }
+                requestInfo.payload = newFormData;
+            } else if (typeof requestInfo.payload === 'string') {
+                try {
+                    const payloadObj = JSON.parse(requestInfo.payload);
+                    const textarea = document.getElementById('gemini-main-textarea') || document.querySelector('textarea');
+                    const fieldName = textarea ? (textarea.name || textarea.id || 'text') : 'text';
+                    payloadObj[fieldName] = chunkText;
+                    requestInfo.payload = JSON.stringify(payloadObj);
+                } catch (e) {
+                    // Nếu không phải JSON, thay thế toàn bộ bằng text
+                    requestInfo.payload = chunkText;
+                }
+            }
+        } else {
+            // Chưa có request info -> click button một lần để intercept XHR
+            addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] Chưa có request info, đang click button để intercept XHR...`, 'info');
+            
+            // Đặt flag để intercept XHR
+            window.interceptNextXHR = true;
+            window.interceptedRequestInfo = null;
+            
+            // Click button để trigger XHR (sẽ bị intercept)
+            setTimeout(() => {
+                try {
+                    KxTOuAJu(targetButton);
+                    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã click button để intercept XHR`, 'info');
+                } catch (e) {
+                    addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi click button: ${e.message}`, 'error');
+                    // Fallback: dùng analyzeRequestFromButton
+                    requestInfo = analyzeRequestFromButton(targetButton, chunkText);
+                    window.lastRequestInfo = requestInfo;
+                }
+            }, 500);
+            
+            // Chờ intercept XHR (tối đa 3 giây)
+            let interceptWaitCount = 0;
+            const interceptCheckInterval = setInterval(() => {
+                interceptWaitCount++;
+                if (window.interceptedRequestInfo) {
+                    clearInterval(interceptCheckInterval);
+                    window.lastRequestInfo = window.interceptedRequestInfo;
+                    const interceptedInfo = {
+                        ...window.interceptedRequestInfo,
+                        text: chunkText
+                    };
+                    // Cập nhật payload với text mới
+                    if (interceptedInfo.payload instanceof FormData) {
+                        const textarea = document.getElementById('gemini-main-textarea') || document.querySelector('textarea');
+                        const fieldName = textarea ? (textarea.name || textarea.id || 'text') : 'text';
+                        const newFormData = new FormData();
+                        for (let [key, value] of interceptedInfo.payload.entries()) {
+                            if (key === fieldName) {
+                                newFormData.set(key, chunkText);
+                            } else {
+                                newFormData.set(key, value);
+                            }
+                        }
+                        interceptedInfo.payload = newFormData;
+                    }
+                    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã intercept được request info`, 'success');
+                    
+                    // Tự động gửi request với info đã intercept
+                    setTimeout(() => {
+                        addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang gửi request trực tiếp với info đã intercept...`, 'info');
+                        sendRequestDirectly(interceptedInfo).then(result => {
+                            if (result.success) {
+                                handleRequestSuccess(result);
+                            } else {
+                                handleRequestFailure(null, result.status);
+                            }
+                        }).catch(error => {
+                            handleRequestFailure(error);
+                        });
+                    }, 1000);
+                } else if (interceptWaitCount >= 30) { // 3 giây (30 * 100ms)
+                    clearInterval(interceptCheckInterval);
+                    addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Timeout intercept XHR, dùng request info từ phân tích`, 'warning');
+                    const fallbackInfo = analyzeRequestFromButton(targetButton, chunkText);
+                    window.lastRequestInfo = fallbackInfo;
+                    
+                    // Gửi request với fallback info
+                    setTimeout(() => {
+                        sendRequestDirectly(fallbackInfo).then(result => {
+                            if (result.success) {
+                                handleRequestSuccess(result);
+                            } else {
+                                handleRequestFailure(null, result.status);
+                            }
+                        }).catch(error => {
+                            handleRequestFailure(error);
+                        });
+                    }, 1000);
+                }
+                // Nếu chưa intercept được, tiếp tục chờ
+            }, 100);
+            
+            return; // Dừng lại, chờ intercept
+        }
+        
+        // Nếu đã có requestInfo, gửi request trực tiếp (không cần modal)
+        if (requestInfo) {
+            // Log thông tin request
+            addLogEntry(`📊 [Chunk ${ttuo$y_KhCV + 1}] Request info:`, 'info');
+            addLogEntry(`   URL: ${requestInfo.url}`, 'info');
+            addLogEntry(`   Method: ${requestInfo.method}`, 'info');
+            addLogEntry(`   Text length: ${chunkText.length} ký tự`, 'info');
+            
+            // Tạo JSON để log
+            const requestJSON = {
+                url: requestInfo.url,
+                response: chunkText,
+                timestamp: new Date().toISOString()
+            };
+            addLogEntry(`📋 [Chunk ${ttuo$y_KhCV + 1}] JSON Request:`, 'info');
+            addLogEntry(JSON.stringify(requestJSON, null, 2), 'info');
+            
+            // Tự động gửi request sau 1 giây
+            setTimeout(() => {
+                addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang gửi request trực tiếp...`, 'info');
+                sendRequestDirectly(requestInfo).then(result => {
+                    if (result.success) {
+                        handleRequestSuccess(result);
+                    } else {
+                        handleRequestFailure(null, result.status);
+                    }
+                }).catch(error => {
+                    handleRequestFailure(error);
+                });
+            }, 1000);
+            
+            return; // Dừng lại, đã gửi request
+        }
+        
+        // Nếu chưa có requestInfo, hiển thị modal để chờ intercept
         // Tạo JSON theo format mẫu để hiển thị
         const requestJSON = {
-            url: requestInfo.url,
-            response: chunkText, // Text sẽ gửi đi
+            url: 'Đang intercept...',
+            response: chunkText,
             timestamp: new Date().toISOString()
         };
         
-        // Log thông tin phân tích
-        addLogEntry(`📊 [Chunk ${ttuo$y_KhCV + 1}] Đã phân tích request:`, 'info');
-        addLogEntry(`   URL: ${requestInfo.url}`, 'info');
-        addLogEntry(`   Method: ${requestInfo.method}`, 'info');
+        // Log thông tin
+        addLogEntry(`📊 [Chunk ${ttuo$y_KhCV + 1}] Đang chờ intercept XHR...`, 'info');
         addLogEntry(`   Text length: ${chunkText.length} ký tự`, 'info');
         addLogEntry(`   Button: ${targetButton ? targetButton.textContent : 'N/A'}`, 'info');
         
         // Hiển thị JSON để người dùng duyệt
         const jsonString = JSON.stringify(requestJSON, null, 2);
-        addLogEntry(`📋 [Chunk ${ttuo$y_KhCV + 1}] JSON Request (chờ duyệt):`, 'info');
+        addLogEntry(`📋 [Chunk ${ttuo$y_KhCV + 1}] JSON Request (chờ intercept):`, 'info');
         addLogEntry(jsonString, 'info');
         
         // Tạo modal để hiển thị JSON và cho phép người dùng duyệt
@@ -4882,66 +5077,6 @@ async function uSTZrHUt_IC() {
                 cursor: pointer;
                 font-weight: bold;
             `;
-            
-            // Hàm xử lý sau khi gửi request thành công
-            const handleRequestSuccess = async (result) => {
-                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Request đã được gửi thành công!`, 'success');
-                
-                // Reset flag sendingChunk
-                window.sendingChunk = null;
-                
-                // Đánh dấu chunk đang pending (đang chờ audio xuất hiện)
-                if (typeof window.chunkStatus === 'undefined') {
-                    window.chunkStatus = new Array(SI$acY.length).fill('pending');
-                }
-                window.chunkStatus[ttuo$y_KhCV] = 'pending';
-                
-                // QUAN TRỌNG: Gọi igyo$uwVChUzI() để tạo MutationObserver detect audio element
-                // MutationObserver sẽ tự động detect khi audio xuất hiện và xử lý
-                addLogEntry(`👁️ [Chunk ${ttuo$y_KhCV + 1}] Đang chờ audio element xuất hiện...`, 'info');
-                igyo$uwVChUzI();
-                
-                // Nếu response có chứa audio URL hoặc blob trực tiếp, xử lý ngay
-                if (result.json) {
-                    // Kiểm tra xem response có chứa audio URL không
-                    const audioUrl = result.json.audio_url || result.json.url || result.json.src || result.json.data;
-                    if (audioUrl && typeof audioUrl === 'string') {
-                        addLogEntry(`🎵 [Chunk ${ttuo$y_KhCV + 1}] Phát hiện audio URL trong response, đang tải...`, 'info');
-                        // Tạo audio element và xử lý như MutationObserver
-                        try {
-                            const audio = document.createElement('audio');
-                            audio.src = audioUrl;
-                            audio.onloadeddata = async () => {
-                                // Xử lý audio như MutationObserver callback
-                                // (Code này sẽ được thêm vào MutationObserver callback)
-                            };
-                            document.body.appendChild(audio);
-                        } catch (e) {
-                            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Không thể tạo audio element từ URL: ${e.message}`, 'warning');
-                        }
-                    }
-                }
-            };
-            
-            // Hàm xử lý sau khi gửi request thất bại
-            const handleRequestFailure = (error, status) => {
-                addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Request thất bại${status ? ` với status: ${status}` : ''}${error ? `: ${error.message}` : ''}`, 'error');
-                
-                // Reset flag sendingChunk
-                window.sendingChunk = null;
-                
-                // Đánh dấu chunk này là failed
-                if (typeof window.chunkStatus === 'undefined') {
-                    window.chunkStatus = new Array(SI$acY.length).fill('pending');
-                }
-                window.chunkStatus[ttuo$y_KhCV] = 'failed';
-                if (!window.failedChunks.includes(ttuo$y_KhCV)) {
-                    window.failedChunks.push(ttuo$y_KhCV);
-                }
-                
-                // Retry logic sẽ được xử lý bởi uSTZrHUt_IC() sau
-                addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Sẽ được retry sau...`, 'info');
-            };
             
             // Tự động approve sau 5 giây nếu người dùng không tương tác
             let autoApproveTimeout = setTimeout(() => {
@@ -8324,6 +8459,14 @@ async function waitForVoiceModelReady() {
         this._method = method;
         this._url = url;
         this._requestId = Date.now() + Math.random();
+        this._headers = {}; // Lưu headers để dùng sau
+        
+        // Override setRequestHeader để lưu headers
+        const originalSetRequestHeader = this.setRequestHeader;
+        this.setRequestHeader = function(name, value) {
+            this._headers[name] = value;
+            return originalSetRequestHeader.apply(this, arguments);
+        };
         
         // Lưu request info để intercept sau
         window.pendingXHRRequests.set(this._requestId, {
@@ -8338,6 +8481,47 @@ async function waitForVoiceModelReady() {
     XMLHttpRequest.prototype.send = function(data) {
         const xhr = this;
         const requestInfo = window.pendingXHRRequests.get(xhr._requestId);
+        
+        // QUAN TRỌNG: Intercept request để lưu lại thông tin
+        if (window.interceptNextXHR && requestInfo) {
+            console.log(`[XHR INTERCEPT] Đang intercept request:`, {
+                method: requestInfo.method,
+                url: requestInfo.url,
+                data: data
+            });
+            
+            // Lưu request info để dùng sau
+            const interceptedInfo = {
+                url: requestInfo.url,
+                method: requestInfo.method,
+                payload: data,
+                headers: {}
+            };
+            
+            // Lấy headers từ XHR
+            try {
+                // Lấy headers đã set trước đó
+                if (xhr._headers) {
+                    Object.assign(interceptedInfo.headers, xhr._headers);
+                }
+                
+                // Thêm headers mặc định
+                interceptedInfo.headers['Accept'] = 'application/json, text/plain, */*';
+                interceptedInfo.headers['X-Requested-With'] = 'XMLHttpRequest';
+                
+                // Lưu vào window để dùng sau
+                window.lastRequestHeaders = interceptedInfo.headers;
+            } catch (e) {
+                console.error('[XHR INTERCEPT] Lỗi khi lấy headers:', e);
+            }
+            
+            // Lưu request info
+            window.interceptedRequestInfo = interceptedInfo;
+            window.lastRequestInfo = interceptedInfo;
+            window.interceptNextXHR = false; // Tắt flag
+            
+            console.log(`[XHR INTERCEPT] Đã lưu request info:`, interceptedInfo);
+        }
         
         // Log request để debug
         if (requestInfo) {
