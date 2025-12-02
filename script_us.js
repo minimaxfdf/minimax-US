@@ -1246,34 +1246,7 @@ button:disabled {
         
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Loading quota...</div>
         </div> 
-    <div class="column-content"> 
-    <!-- API Configuration Section -->
-    <div class="section" style="margin-bottom: 10px!important; background: #44475a; border: 1px solid #27304a; border-radius: 8px; padding: 15px;">
-        <h4 style="color: #bd93f9; margin-bottom: 10px;">🔧 Cấu hình API (Tùy chọn)</h4>
-        <label style="display: block; margin-bottom: 5px; color: #f8f8f2; font-size: 12px;">Cookie (lấy từ Network Tab):</label>
-        <input type="text" id="api-cookie-input" placeholder="Paste cookie từ browser..." 
-               style="width: 100%; padding: 8px; background: #282a36; color: #f8f8f2; border: 1px solid #6272a4; border-radius: 4px; font-size: 12px; margin-bottom: 10px;">
-        <label style="display: block; margin-bottom: 5px; color: #f8f8f2; font-size: 12px;">Request Policy URL:</label>
-        <input type="text" id="api-policy-url-input" placeholder="https://www.minimax.io/v1/api/file/request_policy?..."
-               style="width: 100%; padding: 8px; background: #282a36; color: #f8f8f2; border: 1px solid #6272a4; border-radius: 4px; font-size: 11px; margin-bottom: 10px;">
-        <label style="display: block; margin-bottom: 5px; color: #f8f8f2; font-size: 12px;">Policy Callback URL:</label>
-        <input type="text" id="api-callback-url-input" placeholder="https://www.minimax.io/v1/api/files/policy_callback?..."
-               style="width: 100%; padding: 8px; background: #282a36; color: #f8f8f2; border: 1px solid #6272a4; border-radius: 4px; font-size: 11px; margin-bottom: 10px;">
-        <label style="display: block; margin-bottom: 5px; color: #f8f8f2; font-size: 12px;">Clone V2 URL:</label>
-        <input type="text" id="api-clone-url-input" placeholder="https://www.minimax.io/v1/api/audio/voice/clone_v2?..."
-               style="width: 100%; padding: 8px; background: #282a36; color: #f8f8f2; border: 1px solid #6272a4; border-radius: 4px; font-size: 11px; margin-bottom: 10px;">
-        <label style="display: flex; align-items: center; gap: 8px; color: #f8f8f2; font-size: 12px; cursor: pointer;">
-            <input type="checkbox" id="use-api-mode-checkbox" style="cursor: pointer;">
-            <span>✅ Sử dụng API Mode (thay vì click UI)</span>
-        </label>
-        <div id="auto-sniff-status" style="margin-top: 10px; padding: 8px; background: #282a36; border: 1px solid #6272a4; border-radius: 4px; font-size: 11px; color: #94a3b8;">
-            🕵️ Auto-Sniff: <span id="sniff-status-text">Đang chờ bắt cấu hình...</span>
-        </div>
-        <small style="color: #94a3b8; font-size: 11px; display: block; margin-top: 8px;">
-            💡 Tool sẽ tự động bắt cấu hình API từ các request nền của Minimax. Nếu bật API Mode, tool sẽ gọi API trực tiếp thay vì click nút trên web
-        </small>
-    </div>
-    <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <h2>Activity Log</h2> <div id="log-container" class="log-container"> <div class="log-entry">Ready to monitor chunks...</div> </div> <button id="clear-log-btn" class="clear-log-btn">Clear Log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 38.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div><button id="settings-toggle-btn">Nếu ren bị lỗi hãy liên hệ admin để cấp mail mới sẽ ren được</button></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
+    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <h2>Activity Log</h2> <div id="log-container" class="log-container"> <div class="log-entry">Ready to monitor chunks...</div> </div> <button id="clear-log-btn" class="clear-log-btn">Clear Log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 38.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div><button id="settings-toggle-btn">Nếu ren bị lỗi hãy liên hệ admin để cấp mail mới sẽ ren được</button></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
     <div class="text-input-options">
         <div class="input-tabs">
             <button id="text-tab" class="tab-btn active">Nhập trực tiếp</button>
@@ -1306,6 +1279,7 @@ button:disabled {
         </div>
     </div>
 
+    <div id="config-status-message" style="margin-top: 10px;"></div>
     <button id="gemini-start-queue-btn" disabled style="width: 100%; margin-top: 15px;">Bắt đầu tạo âm thanh</button>
 
     <div class="sales-announcement">
@@ -1636,6 +1610,270 @@ button:disabled {
     
     // =======================================================
     // == KẾT THÚC: KHỐI LOGIC QUOTA ==
+    // =======================================================
+
+    // =======================================================
+    // == PHẦN MỚI: AUTO-CAPTURE "MỒI & BẮT" ==
+    // =======================================================
+    
+    // Biến toàn cục để lưu trạng thái config
+    let IS_CONFIG_READY = false;
+    let CAPTURED_CONFIG = null;
+    const CONFIG_STORAGE_KEY = 'DUC_LOI_CAPTURED_CONFIG_V1';
+    
+    // Hàm load config từ localStorage
+    function loadCapturedConfig() {
+        try {
+            const savedConfig = localStorage.getItem(CONFIG_STORAGE_KEY);
+            if (savedConfig) {
+                CAPTURED_CONFIG = JSON.parse(savedConfig);
+                IS_CONFIG_READY = true;
+                addLogEntry('✅ Đã tải cấu hình đã lưu từ lần trước', 'success');
+                updateConfigUI();
+                return true;
+            }
+        } catch (error) {
+            console.error('Lỗi khi load config:', error);
+            addLogEntry('⚠️ Lỗi khi tải cấu hình đã lưu', 'warning');
+        }
+        return false;
+    }
+    
+    // Hàm lưu config vào localStorage
+    function saveCapturedConfig(config) {
+        try {
+            localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config));
+            CAPTURED_CONFIG = config;
+            IS_CONFIG_READY = true;
+            addLogEntry('✅ Đã lưu cấu hình thành công', 'success');
+            updateConfigUI();
+        } catch (error) {
+            console.error('Lỗi khi lưu config:', error);
+            addLogEntry('❌ Lỗi khi lưu cấu hình', 'error');
+        }
+    }
+    
+    // Hàm cập nhật UI dựa trên trạng thái config
+    function updateConfigUI() {
+        const startButton = document.getElementById('gemini-start-queue-btn');
+        const configStatusDiv = document.getElementById('config-status-message');
+        
+        if (IS_CONFIG_READY) {
+            if (startButton) {
+                // Enable nút nếu có text và quota OK
+                const mainTextarea = document.getElementById('gemini-main-textarea');
+                if (mainTextarea && mainTextarea.value.trim() !== '') {
+                    startButton.disabled = false;
+                }
+            }
+            if (configStatusDiv) {
+                configStatusDiv.innerHTML = '<div style="color: #50fa7b; padding: 10px; background: #44475a; border-radius: 4px; margin-top: 10px;">✅ Đã bắt được cấu hình! Bạn có thể bắt đầu tạo âm thanh.</div>';
+            }
+        } else {
+            if (startButton) {
+                startButton.disabled = true;
+            }
+            if (configStatusDiv) {
+                configStatusDiv.innerHTML = '<div style="color: #ffb86c; padding: 10px; background: #44475a; border-radius: 4px; margin-top: 10px;">⚠️ Vui lòng tạo thử 1 đoạn âm thanh trên web để Tool học cấu hình</div>';
+            }
+        }
+    }
+    
+    // Hàm trích xuất query parameters từ URL
+    function extractQueryParams(url) {
+        const params = {};
+        try {
+            const urlObj = new URL(url);
+            urlObj.searchParams.forEach((value, key) => {
+                params[key] = value;
+            });
+        } catch (e) {
+            // Nếu URL không hợp lệ, thử parse thủ công
+            const queryString = url.split('?')[1];
+            if (queryString) {
+                queryString.split('&').forEach(param => {
+                    const [key, value] = param.split('=');
+                    if (key) params[decodeURIComponent(key)] = decodeURIComponent(value || '');
+                });
+            }
+        }
+        return params;
+    }
+    
+    // Hàm bắt request clone_v2 thành công
+    function captureCloneV2Config(requestUrl, requestOptions, response) {
+        // Chỉ bắt một lần duy nhất
+        if (IS_CONFIG_READY) {
+            return;
+        }
+        
+        try {
+            // Kiểm tra response có hợp lệ không
+            if (!response || response.status !== 200) {
+                return;
+            }
+            
+            // Parse response body để kiểm tra có audio_url không
+            response.clone().json().then(data => {
+                // Kiểm tra có audio_url hoặc dữ liệu hợp lệ
+                if (!data || (!data.audio_url && !data.data?.audio_url)) {
+                    return;
+                }
+                
+                // Trích xuất config
+                const config = {
+                    url: requestUrl,
+                    method: requestOptions?.method || 'POST',
+                    headers: {},
+                    queryParams: extractQueryParams(requestUrl),
+                    payload: null,
+                    timestamp: Date.now()
+                };
+                
+                // Lấy headers từ requestOptions
+                if (requestOptions?.headers) {
+                    // Clone headers object
+                    if (requestOptions.headers instanceof Headers) {
+                        requestOptions.headers.forEach((value, key) => {
+                            config.headers[key] = value;
+                        });
+                    } else {
+                        Object.assign(config.headers, requestOptions.headers);
+                    }
+                }
+                
+                // Lấy payload từ requestOptions
+                if (requestOptions?.body) {
+                    try {
+                        if (typeof requestOptions.body === 'string') {
+                            config.payload = JSON.parse(requestOptions.body);
+                        } else {
+                            config.payload = requestOptions.body;
+                        }
+                    } catch (e) {
+                        // Nếu không parse được, lưu dạng string
+                        config.payload = requestOptions.body;
+                    }
+                }
+                
+                // Lưu config
+                saveCapturedConfig(config);
+                addLogEntry('🎯 Đã bắt được cấu hình từ request thành công!', 'success');
+                
+            }).catch(error => {
+                // Nếu không parse được JSON, có thể response không hợp lệ
+                console.log('[CAPTURE] Response không phải JSON hoặc lỗi:', error);
+            });
+            
+        } catch (error) {
+            console.error('[CAPTURE] Lỗi khi bắt config:', error);
+        }
+    }
+    
+    // Hook vào fetch để bắt request clone_v2
+    // Lưu ý: Có thể đã có originalFetch được định nghĩa ở phần khác (auto reset 403)
+    // Sử dụng wrapper để không conflict
+    (function() {
+        const existingFetch = window.fetch;
+        window.fetch = function(url, options) {
+            const urlString = typeof url === 'string' ? url : url.toString();
+            
+            // Kiểm tra có phải request clone_v2 không
+            if (urlString.includes('/voice/clone_v2') || urlString.includes('clone_v2')) {
+                return existingFetch.apply(this, arguments).then(response => {
+                    // Bắt config khi response thành công
+                    if (response.status === 200) {
+                        captureCloneV2Config(urlString, options, response);
+                    }
+                    return response;
+                });
+            }
+            
+            return existingFetch.apply(this, arguments);
+        };
+    })();
+    
+    // Hook vào XMLHttpRequest để bắt request clone_v2
+    // Lưu ý: Có thể đã có originalXHROpen/originalXHRSend được định nghĩa ở phần khác
+    // Sử dụng wrapper để không conflict
+    (function() {
+        const existingXHROpen = XMLHttpRequest.prototype.open;
+        const existingXHRSend = XMLHttpRequest.prototype.send;
+        
+        XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+            this._captureUrl = url;
+            this._captureMethod = method;
+            return existingXHROpen.apply(this, arguments);
+        };
+        
+        XMLHttpRequest.prototype.send = function(data) {
+            const xhr = this;
+            const urlString = this._captureUrl || '';
+            
+            // Kiểm tra có phải request clone_v2 không
+            if (urlString.includes('/voice/clone_v2') || urlString.includes('clone_v2')) {
+                const originalOnReadyStateChange = xhr.onreadystatechange;
+                xhr.onreadystatechange = function() {
+                    if (originalOnReadyStateChange) {
+                        originalOnReadyStateChange.apply(this, arguments);
+                    }
+                    
+                    // Bắt config khi response thành công
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        try {
+                            const responseData = JSON.parse(xhr.responseText);
+                            if (responseData && (responseData.audio_url || responseData.data?.audio_url)) {
+                                const config = {
+                                    url: urlString,
+                                    method: xhr._captureMethod || 'POST',
+                                    headers: {},
+                                    queryParams: extractQueryParams(urlString),
+                                    payload: null,
+                                    timestamp: Date.now()
+                                    // Note: XMLHttpRequest không dễ lấy headers, sẽ lấy từ request thực tế
+                                };
+                                
+                                // Lấy payload từ data
+                                if (data) {
+                                    try {
+                                        if (typeof data === 'string') {
+                                            config.payload = JSON.parse(data);
+                                        } else {
+                                            config.payload = data;
+                                        }
+                                    } catch (e) {
+                                        config.payload = data;
+                                    }
+                                }
+                                
+                                // Lưu config
+                                saveCapturedConfig(config);
+                                addLogEntry('🎯 Đã bắt được cấu hình từ XMLHttpRequest thành công!', 'success');
+                            }
+                        } catch (error) {
+                            console.error('[CAPTURE XHR] Lỗi khi bắt config:', error);
+                        }
+                    }
+                };
+            }
+            
+            return existingXHRSend.apply(this, arguments);
+        };
+    })();
+    
+    // Khởi tạo: Load config và cập nhật UI
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCapturedConfig();
+            updateConfigUI();
+        });
+    } else {
+        loadCapturedConfig();
+        setTimeout(updateConfigUI, 500);
+    }
+    
+    // =======================================================
+    // == KẾT THÚC: AUTO-CAPTURE "MỒI & BẮT" ==
     // =======================================================
 
     // =======================================================
@@ -2380,89 +2618,6 @@ button:disabled {
         }
     });
 
-    // Load API config từ localStorage khi script load
-    if (typeof Storage !== 'undefined') {
-        const savedCookie = localStorage.getItem('api_cookie');
-        const savedPolicyUrl = localStorage.getItem('api_policy_url');
-        const savedCallbackUrl = localStorage.getItem('api_callback_url');
-        const savedCloneUrl = localStorage.getItem('api_clone_url');
-        const savedUseApiMode = localStorage.getItem('use_api_mode');
-        
-        // Set vào API_CONFIG
-        if (savedCookie) API_CONFIG.COOKIE = savedCookie;
-        if (savedPolicyUrl) API_CONFIG.REQUEST_POLICY = savedPolicyUrl;
-        if (savedCallbackUrl) API_CONFIG.POLICY_CALLBACK = savedCallbackUrl;
-        if (savedCloneUrl) API_CONFIG.CLONE_V2 = savedCloneUrl;
-        if (savedUseApiMode === 'true') API_CONFIG.USE_API_MODE = true;
-    }
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        // Load API config vào UI khi DOM ready
-        setTimeout(() => {
-            const cookieInput = document.getElementById('api-cookie-input');
-            const policyUrlInput = document.getElementById('api-policy-url-input');
-            const callbackUrlInput = document.getElementById('api-callback-url-input');
-            const cloneUrlInput = document.getElementById('api-clone-url-input');
-            const useApiCheckbox = document.getElementById('use-api-mode-checkbox');
-            const sniffStatusText = document.getElementById('sniff-status-text');
-            
-            // Cập nhật status của auto-sniff
-            if (sniffStatusText) {
-                if (window.MMX_CONFIG && window.MMX_CONFIG.isReady) {
-                    sniffStatusText.textContent = '✅ Đã bắt được cấu hình!';
-                    sniffStatusText.style.color = '#50fa7b';
-                    const statusDiv = document.getElementById('auto-sniff-status');
-                    if (statusDiv) {
-                        statusDiv.style.borderColor = '#50fa7b';
-                        statusDiv.style.background = '#1a1d2e';
-                    }
-                } else {
-                    sniffStatusText.textContent = 'Đang chờ bắt cấu hình...';
-                    sniffStatusText.style.color = '#94a3b8';
-                }
-            }
-            
-            if (cookieInput && API_CONFIG.COOKIE) cookieInput.value = API_CONFIG.COOKIE;
-            if (policyUrlInput && API_CONFIG.REQUEST_POLICY) policyUrlInput.value = API_CONFIG.REQUEST_POLICY;
-            if (callbackUrlInput && API_CONFIG.POLICY_CALLBACK) callbackUrlInput.value = API_CONFIG.POLICY_CALLBACK;
-            if (cloneUrlInput && API_CONFIG.CLONE_V2) cloneUrlInput.value = API_CONFIG.CLONE_V2;
-            if (useApiCheckbox) useApiCheckbox.checked = API_CONFIG.USE_API_MODE;
-            
-            // Thêm event listeners để lưu cấu hình khi thay đổi
-            if (cookieInput) {
-                cookieInput.addEventListener('input', () => {
-                    API_CONFIG.COOKIE = cookieInput.value;
-                    if (cookieInput.value) localStorage.setItem('api_cookie', cookieInput.value);
-                });
-            }
-            if (policyUrlInput) {
-                policyUrlInput.addEventListener('input', () => {
-                    API_CONFIG.REQUEST_POLICY = policyUrlInput.value;
-                    if (policyUrlInput.value) localStorage.setItem('api_policy_url', policyUrlInput.value);
-                });
-            }
-            if (callbackUrlInput) {
-                callbackUrlInput.addEventListener('input', () => {
-                    API_CONFIG.POLICY_CALLBACK = callbackUrlInput.value;
-                    if (callbackUrlInput.value) localStorage.setItem('api_callback_url', callbackUrlInput.value);
-                });
-            }
-            if (cloneUrlInput) {
-                cloneUrlInput.addEventListener('input', () => {
-                    API_CONFIG.CLONE_V2 = cloneUrlInput.value;
-                    if (cloneUrlInput.value) localStorage.setItem('api_clone_url', cloneUrlInput.value);
-                });
-            }
-            if (useApiCheckbox) {
-                useApiCheckbox.addEventListener('change', () => {
-                    API_CONFIG.USE_API_MODE = useApiCheckbox.checked;
-                    localStorage.setItem('use_api_mode', useApiCheckbox.checked ? 'true' : 'false');
-                    addLogEntry(`🔧 API Mode đã được ${useApiCheckbox.checked ? 'BẬT' : 'TẮT'}`, 'info');
-                });
-            }
-        }, 500);
-    });
-
     document.addEventListener('DOMContentLoaded', function() {
         const clearLogBtn = document.getElementById('clear-log-btn');
         if (clearLogBtn) {
@@ -2470,12 +2625,7 @@ button:disabled {
         }
     });
 
-const aZpcvyD_mnWYN_qgEq=DHk$uTvcFuLEMnixYuADkCeA;let SI$acY=[],ZTQj$LF$o=[],ttuo$y_KhCV=Number(0x90d)+Number(0xdac)+parseFloat(-0x16b9),EfNjYNYj_O_CGB=![],MEpJezGZUsmpZdAgFRBRZW=![],xlgJHLP$MATDT$kTXWV=null,Srnj$swt=null,n_WwsStaC$jzsWjOIjRqedTG=null,dqj_t_Mr=null;const FMFjWZYZzPXRHIjRRnOwV_G=JSON[aZpcvyD_mnWYN_qgEq(0x1df)];JSON[aZpcvyD_mnWYN_qgEq(0x1df)]=function(o__htsdYW,...YxPU$_FEFzDUACWyi){const civchWuTNrKOGccx_eNld=aZpcvyD_mnWYN_qgEq;if(o__htsdYW&&typeof o__htsdYW===civchWuTNrKOGccx_eNld(0x231)&&o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]&&o__htsdYW[civchWuTNrKOGccx_eNld(0x208)]){const xlxXwB$xg_wWLUkKDoPeWvBcc=document[civchWuTNrKOGccx_eNld(0x1de)](civchWuTNrKOGccx_eNld(0x235));if(xlxXwB$xg_wWLUkKDoPeWvBcc&&EfNjYNYj_O_CGB){const guKwlTGjKUCtXQplrcc=xlxXwB$xg_wWLUkKDoPeWvBcc[civchWuTNrKOGccx_eNld(0x24c)];guKwlTGjKUCtXQplrcc&&(o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]=guKwlTGjKUCtXQplrcc);}}return FMFjWZYZzPXRHIjRRnOwV_G[civchWuTNrKOGccx_eNld(0x22c)](this,o__htsdYW,...YxPU$_FEFzDUACWyi);},window[aZpcvyD_mnWYN_qgEq(0x25f)](aZpcvyD_mnWYN_qgEq(0x1c9),()=>{const AP$u_huhInYfTj=aZpcvyD_mnWYN_qgEq;function spAghkbWog(){const DWWeZydubZoTFZs$ck_jg=DHk$uTvcFuLEMnixYuADkCeA;
-// CẢI THIỆN: Kiểm tra và xóa giao diện cũ trước khi inject lại
-const existingUI=document.getElementById('gemini-col-1');if(existingUI){existingUI.remove();console.log('🧹 Đã xóa giao diện cũ (gemini-col-1) trước khi inject lại');}
-const existingUI2=document.getElementById('gemini-col-2');if(existingUI2){existingUI2.remove();console.log('🧹 Đã xóa giao diện cũ (gemini-col-2) trước khi inject lại');}
-const existingUI3=document.getElementById('gemini-col-3');if(existingUI3){existingUI3.remove();console.log('🧹 Đã xóa giao diện cũ (gemini-col-3) trước khi inject lại');}
-GM_addStyle(SCRIPT_CSS);const UdJdhwBFovFArs=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));UdJdhwBFovFArs[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x250),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](UdJdhwBFovFArs);const sIzV_BK=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));sIzV_BK[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x1d2),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](sIzV_BK);const fCNFI$elNjn=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x215));fCNFI$elNjn['id']=DWWeZydubZoTFZs$ck_jg(0x25b),fCNFI$elNjn[DWWeZydubZoTFZs$ck_jg(0x1c7)]=APP_HTML,document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1eb)](fCNFI$elNjn),document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1d9)][DWWeZydubZoTFZs$ck_jg(0x203)](DWWeZydubZoTFZs$ck_jg(0x201)),BZr$GS$CqnCyt(),setTimeout(()=>{const lVvu_IZabWk=DWWeZydubZoTFZs$ck_jg,iItyHbcTDrfnQk=document[lVvu_IZabWk(0x1cd)](lVvu_IZabWk(0x21e));iItyHbcTDrfnQk&&(iItyHbcTDrfnQk[lVvu_IZabWk(0x24c)]=lVvu_IZabWk(0x1c4),iItyHbcTDrfnQk[lVvu_IZabWk(0x1c1)](new Event(lVvu_IZabWk(0x229),{'bubbles':!![]}))),s_BrlXXxPOJaBMKQX();},0x8*parseInt(0x182)+0x17*Math.trunc(parseInt(0xd3))+Math.max(-0x1541,-0x1541));}spAghkbWog();const LrkOcBYz_$AGjPqXLWnyiATpCI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x261)),lraDK$WDOgsXHRO=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1da)),OdKzziXLxtOGjvaBMHm=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23a)),WRVxYBSrPsjcqQs_bXI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x24f)),rUxbIRagbBVychZ$GfsogD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x235)),zQizakWdLEdLjtenmCbNC=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23f)),PEYtOIOW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x230)),PcLAEW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1e7)),yU_jfkzmffcnGgLWrq=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1ba)),VcTcfGnbfWZdhQRvBp$emAVjf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x223)),CVjXA$H=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x260)),pT$bOHGEGbXDSpcuLWAq_yMVf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x214)),pemHAD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1dc)),SCOcXEQXTPOOS=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x211)),XvyPnqSRdJtYjSxingI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x20a)),cHjV$QkAT$JWlL=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1bb)),TUlYLVXXZeP_OexmGXTd=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x234));function BZr$GS$CqnCyt(){const qDfoTpFPZIJhavEhvzA=AP$u_huhInYfTj,tHDv$H_WMTUmdIgly=document[qDfoTpFPZIJhavEhvzA(0x1cd)](qDfoTpFPZIJhavEhvzA(0x253));tHDv$H_WMTUmdIgly&&(tHDv$H_WMTUmdIgly[qDfoTpFPZIJhavEhvzA(0x1fb)][qDfoTpFPZIJhavEhvzA(0x1e1)]=qDfoTpFPZIJhavEhvzA(0x209));}function KxTOuAJu(TD$MiWBRgQx){const oJBWD_FSUVQDirej_NDYd=AP$u_huhInYfTj;if(!TD$MiWBRgQx)return![];try{if(TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)])TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)]();const SEv_hb=unsafeWindow||window,CvgA_TVH$Ae=TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1bf)]||document;return[oJBWD_FSUVQDirej_NDYd(0x1c5),oJBWD_FSUVQDirej_NDYd(0x218),oJBWD_FSUVQDirej_NDYd(0x242),oJBWD_FSUVQDirej_NDYd(0x1ee),oJBWD_FSUVQDirej_NDYd(0x1bd)][oJBWD_FSUVQDirej_NDYd(0x1dd)](nTTsQoPvqnqJrM=>{const hTykMlxVcfVO_SymRDte=oJBWD_FSUVQDirej_NDYd;let JhxaolNQUORsB_QxPsC;if(SEv_hb[hTykMlxVcfVO_SymRDte(0x233)]&&nTTsQoPvqnqJrM[hTykMlxVcfVO_SymRDte(0x20e)](hTykMlxVcfVO_SymRDte(0x1e2)))JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x233))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'pointerId':0x1,'isPrimary':!![]});else SEv_hb[hTykMlxVcfVO_SymRDte(0x206)]?JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x206))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'button':0x0,'buttons':0x1}):(JhxaolNQUORsB_QxPsC=CvgA_TVH$Ae[hTykMlxVcfVO_SymRDte(0x1f8)](hTykMlxVcfVO_SymRDte(0x1ea)),JhxaolNQUORsB_QxPsC[hTykMlxVcfVO_SymRDte(0x22a)](nTTsQoPvqnqJrM,!![],!![],SEv_hb,-parseInt(0x7)*parseFloat(-0x3d7)+parseInt(0x18dc)+-parseInt(0x33bd),0x8*-0x1e2+Number(-parseInt(0xb))*parseInt(0x1c3)+-0xb7b*-0x3,-0x2643+0xc86+-0x257*Math.floor(-0xb),parseInt(parseInt(0x159d))*-0x1+Math.max(parseInt(0x2240),parseInt(0x2240))*Math.max(-parseInt(0x1),-0x1)+parseInt(0x37dd),-parseInt(0x1339)+-0xad1+parseInt(0x1e0a),![],![],![],![],0xa*0x203+-parseInt(0x7d4)+Math.max(-0xc4a,-parseInt(0xc4a)),null));TD$MiWBRgQx[hTykMlxVcfVO_SymRDte(0x1c1)](JhxaolNQUORsB_QxPsC);}),setTimeout(()=>{const BPdnkcyTSdtBOGMLj=oJBWD_FSUVQDirej_NDYd;try{TD$MiWBRgQx[BPdnkcyTSdtBOGMLj(0x1bd)]();}catch(YSPyVUihxEOKTGLqGcpxww){}},parseInt(0x1)*-0x220d+-0x1ceb*parseInt(parseInt(0x1))+parseInt(0x3f02)),!![];}catch(wYZWjTdHsjGqS$TxW){return![];}}function ymkKApNTfjOanYIBsxsoMNBX(TQ$sjPfgYpRqekqYTKkMM$xsbq){const fZxoQbjOSjhtnzVVyV=AP$u_huhInYfTj,wZCCqPFq$YpVFMqx=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq/(0x61c+-0x1*-0x467+-parseInt(0x1)*0xa47)),IgThKNqdaOrPWvnnnfSK=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq%(parseInt(0x1)*Math.ceil(-parseInt(0x1675))+-0x1*parseFloat(parseInt(0x3f8))+Math.floor(parseInt(0x23))*Math.ceil(0xc3)));return wZCCqPFq$YpVFMqx+fZxoQbjOSjhtnzVVyV(0x1ef)+IgThKNqdaOrPWvnnnfSK+fZxoQbjOSjhtnzVVyV(0x25d);}function i_B_kZYD() {
+const aZpcvyD_mnWYN_qgEq=DHk$uTvcFuLEMnixYuADkCeA;let SI$acY=[],ZTQj$LF$o=[],ttuo$y_KhCV=Number(0x90d)+Number(0xdac)+parseFloat(-0x16b9),EfNjYNYj_O_CGB=![],MEpJezGZUsmpZdAgFRBRZW=![],xlgJHLP$MATDT$kTXWV=null,Srnj$swt=null,n_WwsStaC$jzsWjOIjRqedTG=null,dqj_t_Mr=null;const FMFjWZYZzPXRHIjRRnOwV_G=JSON[aZpcvyD_mnWYN_qgEq(0x1df)];JSON[aZpcvyD_mnWYN_qgEq(0x1df)]=function(o__htsdYW,...YxPU$_FEFzDUACWyi){const civchWuTNrKOGccx_eNld=aZpcvyD_mnWYN_qgEq;if(o__htsdYW&&typeof o__htsdYW===civchWuTNrKOGccx_eNld(0x231)&&o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]&&o__htsdYW[civchWuTNrKOGccx_eNld(0x208)]){const xlxXwB$xg_wWLUkKDoPeWvBcc=document[civchWuTNrKOGccx_eNld(0x1de)](civchWuTNrKOGccx_eNld(0x235));if(xlxXwB$xg_wWLUkKDoPeWvBcc&&EfNjYNYj_O_CGB){const guKwlTGjKUCtXQplrcc=xlxXwB$xg_wWLUkKDoPeWvBcc[civchWuTNrKOGccx_eNld(0x24c)];guKwlTGjKUCtXQplrcc&&(o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]=guKwlTGjKUCtXQplrcc);}}return FMFjWZYZzPXRHIjRRnOwV_G[civchWuTNrKOGccx_eNld(0x22c)](this,o__htsdYW,...YxPU$_FEFzDUACWyi);},window[aZpcvyD_mnWYN_qgEq(0x25f)](aZpcvyD_mnWYN_qgEq(0x1c9),()=>{const AP$u_huhInYfTj=aZpcvyD_mnWYN_qgEq;function spAghkbWog(){const DWWeZydubZoTFZs$ck_jg=DHk$uTvcFuLEMnixYuADkCeA;GM_addStyle(SCRIPT_CSS);const UdJdhwBFovFArs=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));UdJdhwBFovFArs[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x250),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](UdJdhwBFovFArs);const sIzV_BK=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));sIzV_BK[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x1d2),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](sIzV_BK);const fCNFI$elNjn=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x215));fCNFI$elNjn['id']=DWWeZydubZoTFZs$ck_jg(0x25b),fCNFI$elNjn[DWWeZydubZoTFZs$ck_jg(0x1c7)]=APP_HTML,document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1eb)](fCNFI$elNjn),document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1d9)][DWWeZydubZoTFZs$ck_jg(0x203)](DWWeZydubZoTFZs$ck_jg(0x201)),BZr$GS$CqnCyt(),setTimeout(()=>{const lVvu_IZabWk=DWWeZydubZoTFZs$ck_jg,iItyHbcTDrfnQk=document[lVvu_IZabWk(0x1cd)](lVvu_IZabWk(0x21e));iItyHbcTDrfnQk&&(iItyHbcTDrfnQk[lVvu_IZabWk(0x24c)]=lVvu_IZabWk(0x1c4),iItyHbcTDrfnQk[lVvu_IZabWk(0x1c1)](new Event(lVvu_IZabWk(0x229),{'bubbles':!![]}))),s_BrlXXxPOJaBMKQX();},0x8*parseInt(0x182)+0x17*Math.trunc(parseInt(0xd3))+Math.max(-0x1541,-0x1541));}spAghkbWog();const LrkOcBYz_$AGjPqXLWnyiATpCI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x261)),lraDK$WDOgsXHRO=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1da)),OdKzziXLxtOGjvaBMHm=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23a)),WRVxYBSrPsjcqQs_bXI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x24f)),rUxbIRagbBVychZ$GfsogD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x235)),zQizakWdLEdLjtenmCbNC=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23f)),PEYtOIOW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x230)),PcLAEW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1e7)),yU_jfkzmffcnGgLWrq=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1ba)),VcTcfGnbfWZdhQRvBp$emAVjf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x223)),CVjXA$H=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x260)),pT$bOHGEGbXDSpcuLWAq_yMVf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x214)),pemHAD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1dc)),SCOcXEQXTPOOS=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x211)),XvyPnqSRdJtYjSxingI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x20a)),cHjV$QkAT$JWlL=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1bb)),TUlYLVXXZeP_OexmGXTd=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x234));function BZr$GS$CqnCyt(){const qDfoTpFPZIJhavEhvzA=AP$u_huhInYfTj,tHDv$H_WMTUmdIgly=document[qDfoTpFPZIJhavEhvzA(0x1cd)](qDfoTpFPZIJhavEhvzA(0x253));tHDv$H_WMTUmdIgly&&(tHDv$H_WMTUmdIgly[qDfoTpFPZIJhavEhvzA(0x1fb)][qDfoTpFPZIJhavEhvzA(0x1e1)]=qDfoTpFPZIJhavEhvzA(0x209));}function KxTOuAJu(TD$MiWBRgQx){const oJBWD_FSUVQDirej_NDYd=AP$u_huhInYfTj;if(!TD$MiWBRgQx)return![];try{if(TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)])TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)]();const SEv_hb=unsafeWindow||window,CvgA_TVH$Ae=TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1bf)]||document;return[oJBWD_FSUVQDirej_NDYd(0x1c5),oJBWD_FSUVQDirej_NDYd(0x218),oJBWD_FSUVQDirej_NDYd(0x242),oJBWD_FSUVQDirej_NDYd(0x1ee),oJBWD_FSUVQDirej_NDYd(0x1bd)][oJBWD_FSUVQDirej_NDYd(0x1dd)](nTTsQoPvqnqJrM=>{const hTykMlxVcfVO_SymRDte=oJBWD_FSUVQDirej_NDYd;let JhxaolNQUORsB_QxPsC;if(SEv_hb[hTykMlxVcfVO_SymRDte(0x233)]&&nTTsQoPvqnqJrM[hTykMlxVcfVO_SymRDte(0x20e)](hTykMlxVcfVO_SymRDte(0x1e2)))JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x233))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'pointerId':0x1,'isPrimary':!![]});else SEv_hb[hTykMlxVcfVO_SymRDte(0x206)]?JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x206))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'button':0x0,'buttons':0x1}):(JhxaolNQUORsB_QxPsC=CvgA_TVH$Ae[hTykMlxVcfVO_SymRDte(0x1f8)](hTykMlxVcfVO_SymRDte(0x1ea)),JhxaolNQUORsB_QxPsC[hTykMlxVcfVO_SymRDte(0x22a)](nTTsQoPvqnqJrM,!![],!![],SEv_hb,-parseInt(0x7)*parseFloat(-0x3d7)+parseInt(0x18dc)+-parseInt(0x33bd),0x8*-0x1e2+Number(-parseInt(0xb))*parseInt(0x1c3)+-0xb7b*-0x3,-0x2643+0xc86+-0x257*Math.floor(-0xb),parseInt(parseInt(0x159d))*-0x1+Math.max(parseInt(0x2240),parseInt(0x2240))*Math.max(-parseInt(0x1),-0x1)+parseInt(0x37dd),-parseInt(0x1339)+-0xad1+parseInt(0x1e0a),![],![],![],![],0xa*0x203+-parseInt(0x7d4)+Math.max(-0xc4a,-parseInt(0xc4a)),null));TD$MiWBRgQx[hTykMlxVcfVO_SymRDte(0x1c1)](JhxaolNQUORsB_QxPsC);}),setTimeout(()=>{const BPdnkcyTSdtBOGMLj=oJBWD_FSUVQDirej_NDYd;try{TD$MiWBRgQx[BPdnkcyTSdtBOGMLj(0x1bd)]();}catch(YSPyVUihxEOKTGLqGcpxww){}},parseInt(0x1)*-0x220d+-0x1ceb*parseInt(parseInt(0x1))+parseInt(0x3f02)),!![];}catch(wYZWjTdHsjGqS$TxW){return![];}}function ymkKApNTfjOanYIBsxsoMNBX(TQ$sjPfgYpRqekqYTKkMM$xsbq){const fZxoQbjOSjhtnzVVyV=AP$u_huhInYfTj,wZCCqPFq$YpVFMqx=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq/(0x61c+-0x1*-0x467+-parseInt(0x1)*0xa47)),IgThKNqdaOrPWvnnnfSK=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq%(parseInt(0x1)*Math.ceil(-parseInt(0x1675))+-0x1*parseFloat(parseInt(0x3f8))+Math.floor(parseInt(0x23))*Math.ceil(0xc3)));return wZCCqPFq$YpVFMqx+fZxoQbjOSjhtnzVVyV(0x1ef)+IgThKNqdaOrPWvnnnfSK+fZxoQbjOSjhtnzVVyV(0x25d);}function i_B_kZYD() {
     // ƯU TIÊN 1: Kiểm tra tên file do người dùng nhập tùy chỉnh
     const customFilenameInput = document.getElementById('custom-filename-input');
     let fileName = 'audio_da_tao'; // Tên mặc định
@@ -2765,684 +2915,6 @@ function normalizeChunkText(text) {
 }
 
 // Hàm tách chunk thông minh - luôn dùng hàm tách chunk cũ
-// =================================================================
-// == API FUNCTIONS - GỌI API TRỰC TIẾP THAY VÌ CLICK UI ==
-// =================================================================
-
-// =================================================================
-// 🕵️ AUTO-CONFIG: TỰ ĐỘNG BẮT THAM SỐ VÀ CẤU HÌNH API
-// =================================================================
-
-// 1. Biến lưu trữ cấu hình chung (User không cần nhập)
-window.MMX_CONFIG = {
-    cookies: document.cookie,
-    commonParams: "", // Sẽ tự động bắt chuỗi ?device_platform=web&app_id=...
-    isReady: false,
-    snifferActive: false
-};
-
-// 2. Hàm kích hoạt chế độ "Nghe lén"
-function startSmartSniffer() {
-    if (window.MMX_CONFIG.snifferActive) {
-        console.log("🕵️ Sniffer đã được khởi động rồi, bỏ qua...");
-        return;
-    }
-    
-    console.log("🕵️ Đang khởi động bộ dò tìm tham số API...");
-    window.MMX_CONFIG.snifferActive = true;
-    
-    // Hook vào window.fetch
-    const originalFetch = window.fetch;
-    window.fetch = async function(url, options) {
-        const urlStr = url.toString();
-        
-        // DEBUG: Log tất cả request đến minimax.io để debug
-        if (!window.MMX_CONFIG.isReady && urlStr.includes('minimax.io')) {
-            console.log(`🕵️ [Auto-Sniff Debug] Phát hiện request: ${urlStr.substring(0, 150)}...`);
-            
-            if (urlStr.includes('?')) {
-                const queryParams = urlStr.split('?')[1];
-                console.log(`🔍 [Auto-Sniff Debug] Query params: ${queryParams.substring(0, 200)}...`);
-            }
-        }
-        
-        // CẢI THIỆN: Bắt từ các endpoint cụ thể hoặc bất kỳ request nào có query params
-        // Kiểm tra các endpoint quan trọng: request_policy, policy_callback, clone_v2, hoặc bất kỳ request nào có query params
-        const isImportantEndpoint = urlStr.includes('request_policy') || 
-                                    urlStr.includes('policy_callback') || 
-                                    urlStr.includes('clone_v2') ||
-                                    urlStr.includes('/act') ||
-                                    urlStr.includes('/user/info');
-        
-        // Chỉ cần bắt 1 lần duy nhất là đủ dùng cho cả phiên
-        if (!window.MMX_CONFIG.isReady && urlStr.includes('minimax.io') && urlStr.includes('?')) {
-            // Tách lấy phần tham số quan trọng sau dấu ?
-            const queryParams = urlStr.split('?')[1];
-            
-            // CẢI THIỆN: Mở rộng điều kiện để bắt được nhiều trường hợp hơn
-            // Nếu là endpoint quan trọng, chỉ cần có query params là đủ
-            // Nếu không phải endpoint quan trọng, cần có ít nhất 1 trong số các tham số quan trọng
-            const hasDevicePlatform = queryParams && queryParams.includes('device_platform');
-            const hasAppId = queryParams && queryParams.includes('app_id');
-            const hasUuid = queryParams && (queryParams.includes('uuid') || queryParams.includes('device_id'));
-            const hasBizId = queryParams && queryParams.includes('biz_id');
-            
-            // Nếu là endpoint quan trọng HOẶC có ít nhất 1 tham số quan trọng → hợp lệ
-            const validParamsCount = [hasDevicePlatform, hasAppId, hasUuid, hasBizId].filter(Boolean).length;
-            const isValidRequest = isImportantEndpoint || validParamsCount >= 1;
-            
-            if (queryParams && isValidRequest && queryParams.length > 10) { // Đảm bảo có query params thực sự
-                addLogEntry(`🔍 [Auto-Sniff] Phát hiện request hợp lệ${isImportantEndpoint ? ' (endpoint quan trọng)' : ` với ${validParamsCount} tham số quan trọng`}`, 'info');
-                window.MMX_CONFIG.commonParams = queryParams;
-                window.MMX_CONFIG.cookies = document.cookie; // Cập nhật cookie mới nhất
-                window.MMX_CONFIG.isReady = true;
-                
-                console.log("✅ ĐÃ BẮT ĐƯỢC CẤU HÌNH TỰ ĐỘNG!");
-                console.log("🔑 Params:", queryParams.substring(0, 100) + "...");
-                
-                // Cập nhật UI để User thấy đã kết nối
-                const statusDisplay = document.getElementById('gemini-upload-status');
-                if (statusDisplay) {
-                    statusDisplay.innerText = "✅ Đã kết nối API ngầm thành công!";
-                    statusDisplay.style.color = "#50fa7b";
-                }
-                
-                // Cập nhật các input trong UI nếu có
-                const policyUrlInput = document.getElementById('api-policy-url-input');
-                const callbackUrlInput = document.getElementById('api-callback-url-input');
-                const cloneUrlInput = document.getElementById('api-clone-url-input');
-                
-                if (policyUrlInput) {
-                    policyUrlInput.value = `https://www.minimax.io/v1/api/file/request_policy?${queryParams}`;
-                    policyUrlInput.style.borderColor = "#50fa7b";
-                }
-                if (callbackUrlInput) {
-                    callbackUrlInput.value = `https://www.minimax.io/v1/api/files/policy_callback?${queryParams}`;
-                    callbackUrlInput.style.borderColor = "#50fa7b";
-                }
-                if (cloneUrlInput) {
-                    cloneUrlInput.value = `https://www.minimax.io/v1/api/audio/voice/clone_v2?${queryParams}`;
-                    cloneUrlInput.style.borderColor = "#50fa7b";
-                }
-                
-                // Cập nhật cookie input
-                const cookieInput = document.getElementById('api-cookie-input');
-                if (cookieInput) {
-                    cookieInput.value = document.cookie;
-                    cookieInput.style.borderColor = "#50fa7b";
-                }
-                
-                addLogEntry(`✅ [Auto-Sniff] Đã tự động bắt được cấu hình API!`, 'success');
-                addLogEntry(`🔑 [Auto-Sniff] Params: ${queryParams.substring(0, 80)}...`, 'info');
-                
-                // Cập nhật status display
-                const sniffStatusText = document.getElementById('sniff-status-text');
-                if (sniffStatusText) {
-                    sniffStatusText.textContent = '✅ Đã bắt được cấu hình!';
-                    sniffStatusText.style.color = '#50fa7b';
-                    const statusDiv = document.getElementById('auto-sniff-status');
-                    if (statusDiv) {
-                        statusDiv.style.borderColor = '#50fa7b';
-                        statusDiv.style.background = '#1a1d2e';
-                    }
-                }
-            }
-        }
-        return originalFetch.apply(this, arguments);
-    };
-    
-    // Hook vào XMLHttpRequest (để bắt cả các request dùng XHR)
-    const originalXHROpen = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function(method, url, ...args) {
-        const urlStr = url.toString();
-        
-        if (!window.MMX_CONFIG.isReady && urlStr.includes('minimax.io') && urlStr.includes('?')) {
-            const queryParams = urlStr.split('?')[1];
-            
-            // CẢI THIỆN: Bắt từ các endpoint cụ thể hoặc bất kỳ request nào có query params
-            const isImportantEndpoint = urlStr.includes('request_policy') || 
-                                        urlStr.includes('policy_callback') || 
-                                        urlStr.includes('clone_v2') ||
-                                        urlStr.includes('/act') ||
-                                        urlStr.includes('/user/info');
-            
-            // CẢI THIỆN: Mở rộng điều kiện để bắt được nhiều trường hợp hơn
-            const hasDevicePlatform = queryParams && queryParams.includes('device_platform');
-            const hasAppId = queryParams && queryParams.includes('app_id');
-            const hasUuid = queryParams && (queryParams.includes('uuid') || queryParams.includes('device_id'));
-            const hasBizId = queryParams && queryParams.includes('biz_id');
-            
-            const validParamsCount = [hasDevicePlatform, hasAppId, hasUuid, hasBizId].filter(Boolean).length;
-            const isValidRequest = isImportantEndpoint || validParamsCount >= 1;
-            
-            if (queryParams && isValidRequest && queryParams.length > 10) { // Đảm bảo có query params thực sự
-                addLogEntry(`🔍 [Auto-Sniff] Phát hiện request hợp lệ (qua XHR)${isImportantEndpoint ? ' (endpoint quan trọng)' : ` với ${validParamsCount} tham số quan trọng`}`, 'info');
-                window.MMX_CONFIG.commonParams = queryParams;
-                window.MMX_CONFIG.cookies = document.cookie;
-                window.MMX_CONFIG.isReady = true;
-                
-                console.log("✅ ĐÃ BẮT ĐƯỢC CẤU HÌNH TỰ ĐỘNG (qua XHR)!");
-                console.log("🔑 Params:", queryParams.substring(0, 100) + "...");
-                
-                // Cập nhật UI tương tự như trên
-                const statusDisplay = document.getElementById('gemini-upload-status');
-                if (statusDisplay) {
-                    statusDisplay.innerText = "✅ Đã kết nối API ngầm thành công!";
-                    statusDisplay.style.color = "#50fa7b";
-                }
-                
-                addLogEntry(`✅ [Auto-Sniff] Đã tự động bắt được cấu hình API (qua XHR)!`, 'success');
-                
-                // Cập nhật status display
-                const sniffStatusText = document.getElementById('sniff-status-text');
-                if (sniffStatusText) {
-                    sniffStatusText.textContent = '✅ Đã bắt được cấu hình!';
-                    sniffStatusText.style.color = '#50fa7b';
-                    const statusDiv = document.getElementById('auto-sniff-status');
-                    if (statusDiv) {
-                        statusDiv.style.borderColor = '#50fa7b';
-                        statusDiv.style.background = '#1a1d2e';
-                    }
-                }
-            }
-        }
-        
-        return originalXHROpen.apply(this, [method, url, ...args]);
-    };
-    
-    addLogEntry(`🕵️ [Auto-Sniff] Đã khởi động bộ dò tìm tham số API...`, 'info');
-    addLogEntry(`💡 [Auto-Sniff] Đang chờ các request nền từ Minimax...`, 'info');
-    
-    // Thêm timeout để cảnh báo nếu quá lâu không bắt được
-    setTimeout(() => {
-        if (!window.MMX_CONFIG.isReady) {
-            addLogEntry(`⚠️ [Auto-Sniff] Chưa bắt được cấu hình sau 10 giây. Có thể các request nền chưa có query params đầy đủ.`, 'warning');
-            addLogEntry(`💡 [Auto-Sniff] Bạn có thể nhập thủ công các URLs vào phần cấu hình API hoặc đợi thêm một chút.`, 'info');
-        }
-    }, 10000); // 10 giây
-}
-
-// 3. Cập nhật lại các hàm gọi API để dùng cấu hình tự động
-function getDynamicUrl(endpointType) {
-    if (!window.MMX_CONFIG.isReady) {
-        addLogEntry(`⚠️ [Auto-Sniff] Tool chưa bắt được cấu hình! Đang thử lại...`, 'warning');
-        // Thử khởi động lại sniffer nếu chưa ready
-        if (!window.MMX_CONFIG.snifferActive) {
-            startSmartSniffer();
-        }
-        return null;
-    }
-
-    const baseUrlMap = {
-        'upload_policy': 'https://www.minimax.io/v1/api/file/request_policy',
-        'upload_callback': 'https://www.minimax.io/v1/api/files/policy_callback',
-        'clone': 'https://www.minimax.io/v1/api/audio/voice/clone_v2'
-    };
-
-    const baseUrl = baseUrlMap[endpointType];
-    if (!baseUrl) {
-        addLogEntry(`❌ [Auto-Sniff] Endpoint type không hợp lệ: ${endpointType}`, 'error');
-        return null;
-    }
-
-    // Ghép Base URL + Tham số tự bắt được
-    const fullUrl = `${baseUrl}?${window.MMX_CONFIG.commonParams}`;
-    return fullUrl;
-}
-
-// KHỞI CHẠY NGAY khi script load
-startSmartSniffer();
-
-// Cấu hình API (sẽ được lấy từ UI, localStorage hoặc auto-sniff)
-let API_CONFIG = {
-    REQUEST_POLICY: '',
-    POLICY_CALLBACK: '',
-    CLONE_V2: '',
-    COOKIE: '',
-    USE_API_MODE: false
-};
-
-// Hàm lấy cấu hình API từ UI, localStorage hoặc auto-sniff
-function loadAPIConfig() {
-    const cookieInput = document.getElementById('api-cookie-input');
-    const policyUrlInput = document.getElementById('api-policy-url-input');
-    const callbackUrlInput = document.getElementById('api-callback-url-input');
-    const cloneUrlInput = document.getElementById('api-clone-url-input');
-    const useApiCheckbox = document.getElementById('use-api-mode-checkbox');
-    
-    // ƯU TIÊN 1: Sử dụng cấu hình từ Auto-Sniff nếu đã bắt được
-    if (window.MMX_CONFIG && window.MMX_CONFIG.isReady) {
-        API_CONFIG.COOKIE = window.MMX_CONFIG.cookies || document.cookie;
-        
-        // Tự động tạo URLs từ auto-sniff
-        const policyUrl = getDynamicUrl('upload_policy');
-        const callbackUrl = getDynamicUrl('upload_callback');
-        const cloneUrl = getDynamicUrl('clone');
-        
-        if (policyUrl) API_CONFIG.REQUEST_POLICY = policyUrl;
-        if (callbackUrl) API_CONFIG.POLICY_CALLBACK = callbackUrl;
-        if (cloneUrl) API_CONFIG.CLONE_V2 = cloneUrl;
-        
-        // Cập nhật UI nếu có
-        if (policyUrlInput && !policyUrlInput.value) policyUrlInput.value = policyUrl;
-        if (callbackUrlInput && !callbackUrlInput.value) callbackUrlInput.value = callbackUrl;
-        if (cloneUrlInput && !cloneUrlInput.value) cloneUrlInput.value = cloneUrl;
-        if (cookieInput && !cookieInput.value) cookieInput.value = API_CONFIG.COOKIE;
-        
-        addLogEntry(`✅ [Auto-Sniff] Đang sử dụng cấu hình tự động`, 'success');
-    } else {
-        // ƯU TIÊN 2: Sử dụng cấu hình từ UI hoặc localStorage
-        if (cookieInput) API_CONFIG.COOKIE = cookieInput.value || localStorage.getItem('api_cookie') || document.cookie;
-        if (policyUrlInput) API_CONFIG.REQUEST_POLICY = policyUrlInput.value || localStorage.getItem('api_policy_url') || '';
-        if (callbackUrlInput) API_CONFIG.POLICY_CALLBACK = callbackUrlInput.value || localStorage.getItem('api_callback_url') || '';
-        if (cloneUrlInput) API_CONFIG.CLONE_V2 = cloneUrlInput.value || localStorage.getItem('api_clone_url') || '';
-    }
-    
-    if (useApiCheckbox) API_CONFIG.USE_API_MODE = useApiCheckbox.checked || localStorage.getItem('use_api_mode') === 'true';
-    
-    // Lưu vào localStorage để giữ lại khi reload
-    if (cookieInput && cookieInput.value) localStorage.setItem('api_cookie', cookieInput.value);
-    if (policyUrlInput && policyUrlInput.value) localStorage.setItem('api_policy_url', policyUrlInput.value);
-    if (callbackUrlInput && callbackUrlInput.value) localStorage.setItem('api_callback_url', callbackUrlInput.value);
-    if (cloneUrlInput && cloneUrlInput.value) localStorage.setItem('api_clone_url', cloneUrlInput.value);
-    if (useApiCheckbox) localStorage.setItem('use_api_mode', useApiCheckbox.checked ? 'true' : 'false');
-}
-
-// Hàm helper: Kích hoạt cưỡng bức (Active Trigger) - Tự động click nút Upload trên web để trigger các request API
-async function triggerActiveSniff() {
-    try {
-        // Kiểm tra xem đã có cấu hình chưa
-        if (window.MMX_CONFIG && window.MMX_CONFIG.isReady) {
-            addLogEntry(`✅ [Active Trigger] Đã có cấu hình sẵn. Không cần trigger.`, 'info');
-            return true; // Đã có cấu hình, không cần trigger
-        }
-        
-        addLogEntry(`🔧 [Active Trigger] Chưa có cấu hình. Đang tự động kích hoạt các request API...`, 'info');
-        addLogEntry(`📊 [Active Trigger] Trạng thái hiện tại: MMX_CONFIG=${!!window.MMX_CONFIG}, isReady=${window.MMX_CONFIG?.isReady}, snifferActive=${window.MMX_CONFIG?.snifferActive}`, 'info');
-        
-        // Đảm bảo sniffer đã được khởi động
-        if (!window.MMX_CONFIG) {
-            addLogEntry(`⚠️ [Active Trigger] window.MMX_CONFIG chưa được khởi tạo!`, 'warning');
-            // Khởi tạo nếu chưa có
-            window.MMX_CONFIG = {
-                cookies: document.cookie,
-                commonParams: "",
-                isReady: false,
-                snifferActive: false
-            };
-            addLogEntry(`✅ [Active Trigger] Đã khởi tạo window.MMX_CONFIG`, 'info');
-        }
-        
-        if (!window.MMX_CONFIG.snifferActive) {
-            if (typeof startSmartSniffer === 'function') {
-                addLogEntry(`🔧 [Active Trigger] Đang khởi động sniffer...`, 'info');
-                startSmartSniffer();
-                addLogEntry(`✅ [Active Trigger] Sniffer đã được khởi động`, 'info');
-            } else {
-                addLogEntry(`❌ [Active Trigger] Hàm startSmartSniffer không tồn tại!`, 'error');
-                return false;
-            }
-        } else {
-            addLogEntry(`✅ [Active Trigger] Sniffer đã được khởi động từ trước`, 'info');
-        }
-        
-        // Tìm nút Upload trên web Minimax
-        // CÁCH 1: Tìm input file trực tiếp (ưu tiên nhất)
-        let uploadInput = document.querySelector('input[type="file"]');
-        
-        // CÁCH 2: Nếu không có, tìm trong các container upload của Ant Design
-        if (!uploadInput) {
-            const antUploadContainers = document.querySelectorAll('.ant-upload, [class*="upload"], [class*="Upload"]');
-            for (const container of antUploadContainers) {
-                uploadInput = container.querySelector('input[type="file"]');
-                if (uploadInput) break;
-            }
-        }
-        
-        // CÁCH 3: Tìm button có text liên quan đến upload
-        let uploadButton = null;
-        if (!uploadInput) {
-            const allButtons = document.querySelectorAll('button, [role="button"]');
-            for (const btn of allButtons) {
-                const btnText = (btn.textContent || btn.innerText || '').toLowerCase();
-                if (btnText.includes('upload') || 
-                    btnText.includes('tải lên') ||
-                    btnText.includes('chọn file') ||
-                    btnText.includes('select file')) {
-                    uploadButton = btn;
-                    addLogEntry(`🔧 [Active Trigger] Tìm thấy button upload: "${btn.textContent || btn.innerText}"`, 'info');
-                    break;
-                }
-            }
-        }
-        
-        // CÁCH 4: Tìm bằng data attribute hoặc class
-        if (!uploadInput && !uploadButton) {
-            uploadInput = document.querySelector('[data-testid*="upload"], [class*="upload-button"], [id*="upload"]');
-        }
-        
-        // Trigger click
-        let triggerSuccess = false;
-        if (uploadInput) {
-            addLogEntry(`🔧 [Active Trigger] Tìm thấy input file (id="${uploadInput.id}", class="${uploadInput.className}"). Đang trigger...`, 'info');
-            try {
-                // Tạo một file rỗng để trigger (nếu cần)
-                const dataTransfer = new DataTransfer();
-                const emptyFile = new File([''], 'trigger.txt', { type: 'text/plain' });
-                dataTransfer.items.add(emptyFile);
-                uploadInput.files = dataTransfer.files;
-                uploadInput.dispatchEvent(new Event('change', { bubbles: true }));
-                addLogEntry(`✅ [Active Trigger] Đã dispatch event 'change'`, 'info');
-                await new Promise(resolve => setTimeout(resolve, 300));
-                
-                // Click vào input để mở dialog (có thể trigger request)
-                uploadInput.click();
-                addLogEntry(`✅ [Active Trigger] Đã click vào input file`, 'info');
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                // Đóng dialog nếu đã mở (ESC key)
-                document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-                addLogEntry(`✅ [Active Trigger] Đã gửi ESC để đóng dialog`, 'info');
-                triggerSuccess = true;
-            } catch (error) {
-                addLogEntry(`❌ [Active Trigger] Lỗi khi trigger input file: ${error.message}`, 'error');
-                console.error('[Active Trigger] Error:', error);
-            }
-        } else if (uploadButton) {
-            addLogEntry(`🔧 [Active Trigger] Tìm thấy button upload (text="${uploadButton.textContent || uploadButton.innerText}", id="${uploadButton.id}", class="${uploadButton.className}"). Đang trigger...`, 'info');
-            try {
-                uploadButton.click();
-                addLogEntry(`✅ [Active Trigger] Đã click vào button upload`, 'info');
-                await new Promise(resolve => setTimeout(resolve, 500));
-                triggerSuccess = true;
-            } catch (error) {
-                addLogEntry(`❌ [Active Trigger] Lỗi khi trigger button: ${error.message}`, 'error');
-                console.error('[Active Trigger] Error:', error);
-            }
-        } else {
-            addLogEntry(`⚠️ [Active Trigger] Không tìm thấy nút Upload trên web.`, 'warning');
-            addLogEntry(`📊 [Active Trigger] Đã tìm trong: input[type="file"], .ant-upload, buttons với text "upload/tải lên"`, 'info');
-            addLogEntry(`💡 [Active Trigger] Có thể web đã thay đổi giao diện hoặc các request đã được gửi từ trước`, 'info');
-            // Vẫn tiếp tục, có thể các request đã được gửi từ trước
-        }
-        
-        if (!triggerSuccess) {
-            addLogEntry(`⚠️ [Active Trigger] Không thể trigger click. Có thể các request đã được gửi từ trước hoặc web đã thay đổi.`, 'warning');
-        }
-        
-        // Đợi tối đa 5 giây để bắt được cấu hình từ các request được trigger
-        const maxWaitTime = 5000;
-        const checkInterval = 100;
-        const startTime = Date.now();
-        let checkCount = 0;
-        
-        addLogEntry(`⏳ [Active Trigger] Đang đợi bắt cấu hình từ các request được trigger (tối đa ${maxWaitTime/1000}s)...`, 'info');
-        
-        while (!window.MMX_CONFIG.isReady && (Date.now() - startTime) < maxWaitTime) {
-            await new Promise(resolve => setTimeout(resolve, checkInterval));
-            checkCount++;
-            
-            // Log mỗi 1 giây để user biết đang chờ
-            if (checkCount % 10 === 0) {
-                const elapsed = Math.round((Date.now() - startTime) / 1000);
-                addLogEntry(`⏳ [Active Trigger] Đang chờ... (${elapsed}s/${maxWaitTime/1000}s)`, 'info');
-            }
-        }
-        
-        const elapsedTime = Math.round((Date.now() - startTime) / 1000);
-        
-        if (window.MMX_CONFIG.isReady) {
-            addLogEntry(`✅ [Active Trigger] Đã bắt được cấu hình từ request được trigger sau ${elapsedTime}s!`, 'success');
-            addLogEntry(`🔑 [Active Trigger] Params: ${window.MMX_CONFIG.commonParams.substring(0, 100)}...`, 'info');
-            return true;
-        } else {
-            addLogEntry(`❌ [Active Trigger] CHƯA bắt được cấu hình sau ${elapsedTime}s!`, 'error');
-            addLogEntry(`📊 [Active Trigger] Trạng thái cuối: MMX_CONFIG=${!!window.MMX_CONFIG}, isReady=${window.MMX_CONFIG?.isReady}, snifferActive=${window.MMX_CONFIG?.snifferActive}`, 'error');
-            addLogEntry(`💡 [Active Trigger] Nguyên nhân có thể:`, 'info');
-            addLogEntry(`   1. Các request API không được trigger (nút Upload không hoạt động)`, 'info');
-            addLogEntry(`   2. Sniffer không bắt được request (request không đi qua fetch/XHR)`, 'info');
-            addLogEntry(`   3. Request không có query params đầy đủ`, 'info');
-            addLogEntry(`   4. Request bị chặn hoặc lỗi`, 'info');
-            addLogEntry(`💡 [Active Trigger] Giải pháp: Mở Console (F12) và kiểm tra log "[Auto-Sniff Debug]" để xem các request đang được bắt`, 'info');
-            return false;
-        }
-    } catch (error) {
-        console.error('[Active Trigger] Lỗi:', error);
-        addLogEntry(`⚠️ [Active Trigger] Có lỗi khi trigger: ${error.message}`, 'warning');
-        return false;
-    }
-}
-
-// Hàm 1: Upload file và lấy fileID
-async function uploadAndGetId(fileObj) {
-    try {
-        loadAPIConfig();
-        
-        // LƯU Ý: Cấu hình API sẽ được bắt tự động sau khi chunk 1 thành công
-        // Không cần trigger ở đây vì chunk 1 sẽ được ren bằng UI Mode trước
-        // Sau khi chunk 1 thành công, web sẽ trả về đủ thông số và Auto-Sniff sẽ bắt được
-        
-        // ƯU TIÊN: Sử dụng auto-sniff nếu đã bắt được, nếu không thì dùng cấu hình thủ công
-        let policyUrl, callbackUrl;
-        
-        if (window.MMX_CONFIG && window.MMX_CONFIG.isReady) {
-            // Sử dụng auto-sniff
-            policyUrl = getDynamicUrl('upload_policy');
-            callbackUrl = getDynamicUrl('upload_callback');
-            
-            if (!policyUrl || !callbackUrl) {
-                throw new Error('Auto-Sniff chưa bắt được cấu hình đầy đủ. Vui lòng F5 lại trang và đợi 3 giây.');
-            }
-            
-            // Thêm filename vào policy URL
-            policyUrl = policyUrl + `&filename=${encodeURIComponent(fileObj.name)}`;
-            addLogEntry(`📤 [API] Sử dụng Auto-Sniff để upload file "${fileObj.name}"...`, 'info');
-        } else {
-            // Sử dụng cấu hình thủ công
-            if (!API_CONFIG.REQUEST_POLICY || !API_CONFIG.POLICY_CALLBACK) {
-                throw new Error('Chưa cấu hình API endpoints. Vui lòng nhập URLs vào phần cấu hình API hoặc đợi Auto-Sniff bắt cấu hình.');
-            }
-            
-            policyUrl = API_CONFIG.REQUEST_POLICY + `&filename=${encodeURIComponent(fileObj.name)}`;
-            callbackUrl = API_CONFIG.POLICY_CALLBACK;
-            addLogEntry(`📤 [API] Sử dụng cấu hình thủ công để upload file "${fileObj.name}"...`, 'info');
-        }
-        
-        addLogEntry(`📤 [API] Bước 1: Đang xin quyền upload file "${fileObj.name}"...`, 'info');
-        
-        // BƯỚC 1: Request Policy
-        const policyRes = await fetch(policyUrl, {
-            method: 'GET',
-            headers: { 
-                "Cookie": API_CONFIG.COOKIE,
-                "Accept": "application/json"
-            }
-        });
-        
-        if (policyRes.status === 401 || policyRes.status === 403) {
-            throw new Error('Cookie đã hết hạn hoặc không hợp lệ. Vui lòng cập nhật cookie mới.');
-        }
-        
-        if (!policyRes.ok) {
-            throw new Error(`Lỗi khi request policy: ${policyRes.status} ${policyRes.statusText}`);
-        }
-        
-        const policyData = await policyRes.json();
-        
-        // Giả sử server trả về signedUrl và các field cần thiết trong policyData.data
-        const uploadUrl = policyData.data?.signedUrl || policyData.data?.url || policyData.signedUrl || policyData.url;
-        const ossKey = policyData.data?.ossKey || policyData.ossKey || policyData.data?.key || policyData.key;
-        
-        if (!uploadUrl) {
-            throw new Error('Không tìm thấy upload URL trong response. Response: ' + JSON.stringify(policyData));
-        }
-        
-        addLogEntry(`📤 [API] Bước 2: Đang upload file lên server...`, 'info');
-        
-        // BƯỚC 2: Upload Binary (PUT)
-        const uploadRes = await fetch(uploadUrl, {
-            method: "PUT",
-            headers: { 
-                "Content-Type": fileObj.type || "audio/mpeg"
-            },
-            body: fileObj
-        });
-        
-        if (!uploadRes.ok) {
-            throw new Error(`Lỗi khi upload file: ${uploadRes.status} ${uploadRes.statusText}`);
-        }
-        
-        addLogEntry(`📤 [API] Bước 3: Đang xác nhận để lấy fileID...`, 'info');
-        
-        // BƯỚC 3: Callback
-        const callbackPayload = {
-            "filename": fileObj.name,
-            "ossKey": ossKey || fileObj.name,
-            // Thêm các tham số khác nếu Payload yêu cầu
-        };
-        
-        const callbackRes = await fetch(callbackUrl, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Cookie": API_CONFIG.COOKIE,
-                "Accept": "application/json"
-            },
-            body: JSON.stringify(callbackPayload)
-        });
-        
-        if (callbackRes.status === 401 || callbackRes.status === 403) {
-            throw new Error('Cookie đã hết hạn hoặc không hợp lệ. Vui lòng cập nhật cookie mới.');
-        }
-        
-        if (!callbackRes.ok) {
-            throw new Error(`Lỗi khi callback: ${callbackRes.status} ${callbackRes.statusText}`);
-        }
-        
-        const callbackData = await callbackRes.json();
-        const fileID = callbackData.data?.fileID || callbackData.fileID;
-        
-        if (!fileID) {
-            throw new Error("Không tìm thấy FileID trong response. Response: " + JSON.stringify(callbackData));
-        }
-        
-        addLogEntry(`✅ [API] Upload thành công! FileID: ${fileID}`, 'success');
-        return fileID;
-        
-    } catch (e) {
-        addLogEntry(`❌ [API] Lỗi quy trình Upload: ${e.message}`, 'error');
-        if (e.message.includes('Cookie')) {
-            alert('⚠️ Cookie đã hết hạn!\n\nVui lòng:\n1. Mở DevTools (F12)\n2. Vào tab Network\n3. Copy Cookie từ request header\n4. Dán vào ô Cookie trong phần cấu hình API');
-        }
-        return null;
-    }
-}
-
-// Hàm 2: Gọi API tạo giọng nói
-async function generateVoiceAPI(text, fileID, fileName, languageTag = 'Vietnamese', retryCount = 0) {
-    const MAX_RETRY = 10; // Tối đa retry 10 lần cho lỗi 429
-    
-    try {
-        loadAPIConfig();
-        
-        // ƯU TIÊN: Sử dụng auto-sniff nếu đã bắt được, nếu không thì dùng cấu hình thủ công
-        let cloneUrl;
-        
-        if (window.MMX_CONFIG && window.MMX_CONFIG.isReady) {
-            // Sử dụng auto-sniff
-            cloneUrl = getDynamicUrl('clone');
-            
-            if (!cloneUrl) {
-                throw new Error('Auto-Sniff chưa bắt được cấu hình đầy đủ. Vui lòng F5 lại trang và đợi 3 giây.');
-            }
-            
-            addLogEntry(`🎤 [API] Sử dụng Auto-Sniff để tạo giọng nói...`, 'info');
-        } else {
-            // Sử dụng cấu hình thủ công
-            if (!API_CONFIG.CLONE_V2) {
-                throw new Error('Chưa cấu hình Clone V2 URL. Vui lòng nhập URL vào phần cấu hình API hoặc đợi Auto-Sniff bắt cấu hình.');
-            }
-            
-            cloneUrl = API_CONFIG.CLONE_V2;
-            addLogEntry(`🎤 [API] Sử dụng cấu hình thủ công để tạo giọng nói...`, 'info');
-        }
-        
-        const payload = {
-            "text": text,
-            "files": [{ 
-                "file_id": fileID, 
-                "file_name": fileName 
-            }],
-            "language_tag": languageTag,
-            "speed": 1.0,
-            "vol": 1.0,
-            "pitch": 0
-        };
-        
-        addLogEntry(`🎤 [API] Đang gọi API tạo giọng nói (text: ${text.length} ký tự)...`, 'info');
-        
-        const response = await fetch(cloneUrl, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Cookie": API_CONFIG.COOKIE,
-                "Accept": "application/json"
-            },
-            body: JSON.stringify(payload)
-        });
-        
-        // Xử lý Rate Limit 429
-        if (response.status === 429) {
-            if (retryCount >= MAX_RETRY) {
-                throw new Error(`Đã retry ${MAX_RETRY} lần nhưng vẫn gặp lỗi 429. Vui lòng thử lại sau.`);
-            }
-            
-            const waitTime = 10000; // 10 giây
-            addLogEntry(`⚠️ [API] Quá nhanh (429). Đang chờ ${waitTime/1000}s và retry (lần ${retryCount + 1}/${MAX_RETRY})...`, 'warning');
-            await new Promise(r => setTimeout(r, waitTime));
-            return await generateVoiceAPI(text, fileID, fileName, languageTag, retryCount + 1);
-        }
-        
-        // Xử lý Cookie hết hạn
-        if (response.status === 401 || response.status === 403) {
-            throw new Error('Cookie đã hết hạn hoặc không hợp lệ. Vui lòng cập nhật cookie mới.');
-        }
-        
-        if (!response.ok) {
-            throw new Error(`Lỗi khi generate voice: ${response.status} ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        // Lấy URL audio từ response
-        const audioUrl = data.data?.audio_url || data.data?.url || data.audio_url || data.url;
-        
-        if (!audioUrl) {
-            throw new Error('Không tìm thấy audio URL trong response. Response: ' + JSON.stringify(data));
-        }
-        
-        addLogEntry(`✅ [API] Tạo giọng nói thành công! Audio URL: ${audioUrl.substring(0, 50)}...`, 'success');
-        
-        // Tải audio về dưới dạng blob
-        const audioRes = await fetch(audioUrl);
-        if (!audioRes.ok) {
-            throw new Error(`Lỗi khi tải audio: ${audioRes.status} ${audioRes.statusText}`);
-        }
-        
-        const audioBlob = await audioRes.blob();
-        addLogEntry(`✅ [API] Đã tải audio blob thành công (${(audioBlob.size / 1024).toFixed(2)} KB)`, 'success');
-        
-        return audioBlob;
-        
-    } catch (e) {
-        addLogEntry(`❌ [API] Lỗi Generate Voice: ${e.message}`, 'error');
-        if (e.message.includes('Cookie')) {
-            alert('⚠️ Cookie đã hết hạn!\n\nVui lòng:\n1. Mở DevTools (F12)\n2. Vào tab Network\n3. Copy Cookie từ request header\n4. Dán vào ô Cookie trong phần cấu hình API');
-        }
-        return null;
-    }
-}
-
 function smartSplitter(text, maxLength = 900) {
     // Mặc định chunk lớn 900 ký tự
     const actualMaxLength = 900;
@@ -4376,7 +3848,7 @@ async function uSTZrHUt_IC() {
             addLogEntry(`⚠️ PHÁT HIỆN: ${missingBlobChunks.length} chunk có status 'success' nhưng thiếu blob: ${missingBlobChunks.map(i => i + 1).join(', ')}`, 'error');
             addLogEntry(`🔄 Sẽ không ghép file vì thiếu blob!`, 'warning');
         }
-
+        
         if (window.isFinalCheck) {
             const remainingFailedChunks = window.failedChunks.length;
 
@@ -4407,10 +3879,10 @@ async function uSTZrHUt_IC() {
                 // QUAN TRỌNG: Kiểm tra lại một lần nữa trước khi ghép file
                 // Phải VỪA có đủ số lượng chunks thành công VỪA không có chunk thiếu blob
                 if (successfulChunksCount === totalChunks && failedChunksCount === 0 && missingBlobChunks.length === 0) {
-                addLogEntry(`🎉 Hoàn thành xử lý tất cả chunks (đã thử lại các chunk thất bại)!`, 'success');
+                    addLogEntry(`🎉 Hoàn thành xử lý tất cả chunks (đã thử lại các chunk thất bại)!`, 'success');
                     addLogEntry(`✅ TẤT CẢ ${SI$acY.length} chunks đã thành công (có cả blob)! Bắt đầu ghép file...`, 'success');
                     // CHỈ ghép file khi TẤT CẢ chunk đã thành công VÀ có blob hợp lệ
-                tt__SfNwBHDebpWJOqrSTR();
+                    tt__SfNwBHDebpWJOqrSTR();
                 } else {
                     if (missingBlobChunks.length > 0) {
                         addLogEntry(`⚠️ PHÁT HIỆN LỖI: ${missingBlobChunks.length} chunk có status 'success' nhưng thiếu blob: ${missingBlobChunks.map(i => i + 1).join(', ')}`, 'error');
@@ -4427,7 +3899,7 @@ async function uSTZrHUt_IC() {
                         const firstMissingIndex = Math.min(...missingBlobChunks);
                         ttuo$y_KhCV = firstMissingIndex;
                         setTimeout(uSTZrHUt_IC, 3000);
-        } else {
+                    } else {
                         addLogEntry(`⚠️ PHÁT HIỆN LỖI LOGIC: successfulChunksCount (${successfulChunksCount}) !== totalChunks (${totalChunks}) hoặc failedChunksCount (${failedChunksCount}) > 0`, 'error');
                         addLogEntry(`🔄 Tiếp tục retry các chunk thất bại...`, 'warning');
                         // Tiếp tục retry
@@ -4441,10 +3913,10 @@ async function uSTZrHUt_IC() {
             // QUAN TRỌNG: Kiểm tra TẤT CẢ chunks đã thành công TRƯỚC KHI ghép file
             // Phải VỪA có đủ số lượng chunks thành công VỪA không có chunk thiếu blob
             if (successfulChunksCount === totalChunks && failedChunksCount === 0 && missingBlobChunks.length === 0) {
-            addLogEntry(`🎉 Tất cả ${SI$acY.length} chunks đã được xử lý xong!`, 'success');
+                addLogEntry(`🎉 Tất cả ${SI$acY.length} chunks đã được xử lý xong!`, 'success');
                 addLogEntry(`✅ TẤT CẢ ${SI$acY.length} chunks đã thành công (có cả blob)! Bắt đầu ghép file...`, 'success');
                 // CHỈ ghép file khi TẤT CẢ chunk đã thành công VÀ có blob hợp lệ
-            tt__SfNwBHDebpWJOqrSTR();
+                tt__SfNwBHDebpWJOqrSTR();
             } else {
                 // Nếu còn chunk thất bại hoặc thiếu blob, chuyển sang retry mode
                 if (missingBlobChunks.length > 0) {
@@ -5340,88 +4812,95 @@ async function uSTZrHUt_IC() {
             addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set lại text trước khi click`, 'success');
         }
         
-        // KIỂM TRA: Sử dụng API Mode hay UI Mode?
-        loadAPIConfig();
+        // =======================================================
+        // == PHẦN MỚI: GỬI API TRỰC TIẾP THAY VÌ CLICK BUTTON ==
+        // =======================================================
         
-        if (API_CONFIG.USE_API_MODE && API_CONFIG.CLONE_V2 && API_CONFIG.COOKIE) {
-            // API MODE: Gọi API trực tiếp
-            addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Sử dụng API Mode - Gọi API trực tiếp thay vì click UI`, 'info');
+        // Kiểm tra xem đã có config chưa
+        if (!IS_CONFIG_READY || !CAPTURED_CONFIG) {
+            addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Chưa có cấu hình! Vui lòng tạo thử 1 đoạn âm thanh trên web để Tool học cấu hình.`, 'error');
+            // Fallback: Vẫn click button như cũ
+            KxTOuAJu(targetButton);
+        } else {
+            // Clone config và thay đổi text
+            const clonedPayload = JSON.parse(JSON.stringify(CAPTURED_CONFIG.payload));
+            clonedPayload.text = chunkText; // Chỉ thay đổi text
             
-            try {
-                // Lấy file mẫu từ input
-                const fileInput = document.getElementById('gemini-file-input');
-                if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-                    throw new Error('Chưa có file mẫu. Vui lòng upload file mẫu trước khi sử dụng API Mode.');
-                }
-                
-                const fileObj = fileInput.files[0];
-                
-                // Kiểm tra xem đã có fileID chưa (cache để tránh upload lại nhiều lần)
-                if (!window.uploadedFileID) {
-                    addLogEntry(`📤 [Chunk ${ttuo$y_KhCV + 1}] Đang upload file mẫu và lấy fileID...`, 'info');
-                    window.uploadedFileID = await uploadAndGetId(fileObj);
-                    
-                    if (!window.uploadedFileID) {
-                        throw new Error('Không thể upload file mẫu hoặc lấy fileID. Vui lòng kiểm tra lại cookie và API endpoints.');
-                    }
-                window.uploadedFileName = fileObj.name;
-                } else {
-                    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Sử dụng fileID đã upload trước đó: ${window.uploadedFileID}`, 'info');
-                }
-                
-                // Lấy ngôn ngữ từ UI
-                const languageSelect = document.getElementById('gemini-language-select');
-                const languageTag = languageSelect ? languageSelect.value : 'Vietnamese';
-                
-                // Gọi API generate voice
-                const audioBlob = await generateVoiceAPI(
-                    chunkText,
-                    window.uploadedFileID,
-                    window.uploadedFileName || fileObj.name,
-                    languageTag
-                );
-                
-                if (!audioBlob) {
-                    throw new Error('Không thể tạo giọng nói qua API. Vui lòng kiểm tra lại.');
-                }
-                
-                // Lưu blob vào chunkBlobs (giống như khi dùng UI)
-                if (typeof window.chunkBlobs === 'undefined') {
-                    window.chunkBlobs = new Array(SI$acY.length).fill(null);
-                }
-                while (window.chunkBlobs.length <= ttuo$y_KhCV) {
-                    window.chunkBlobs.push(null);
-                }
-                window.chunkBlobs[ttuo$y_KhCV] = audioBlob;
-                
-                // Đồng bộ với ZTQj$LF$o
-                while (ZTQj$LF$o.length <= ttuo$y_KhCV) {
-                    ZTQj$LF$o.push(null);
-                }
-                ZTQj$LF$o[ttuo$y_KhCV] = audioBlob;
-                
-                // Đánh dấu thành công
-                if (!window.chunkStatus) window.chunkStatus = [];
-                window.chunkStatus[ttuo$y_KhCV] = 'success';
-                window.retryCount = 0;
-                
-                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] API Mode thành công! Đã lưu audio blob (${(audioBlob.size / 1024).toFixed(2)} KB)`, 'success');
-                
-                // Chuyển sang chunk tiếp theo
-                ttuo$y_KhCV++;
-                setTimeout(uSTZrHUt_IC, 1000);
-                return;
-                
-            } catch (apiError) {
-                addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Lỗi API Mode: ${apiError.message}`, 'error');
-                addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Chuyển sang UI Mode để retry...`, 'warning');
-                // Fallback về UI mode nếu API mode thất bại
-                API_CONFIG.USE_API_MODE = false;
+            // Xây dựng URL với query params
+            let apiUrl = CAPTURED_CONFIG.url;
+            const queryParams = new URLSearchParams();
+            Object.keys(CAPTURED_CONFIG.queryParams || {}).forEach(key => {
+                queryParams.append(key, CAPTURED_CONFIG.queryParams[key]);
+            });
+            if (queryParams.toString()) {
+                apiUrl = apiUrl.split('?')[0] + '?' + queryParams.toString();
             }
+            
+            // Gửi API trực tiếp
+            addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang gửi API trực tiếp (không cần click button)...`, 'info');
+            
+            // Đánh dấu đang gửi API để skip phần code click button
+            window._skipClickButtonForChunk = ttuo$y_KhCV;
+            
+            fetch(apiUrl, {
+                method: CAPTURED_CONFIG.method || 'POST',
+                headers: CAPTURED_CONFIG.headers || {},
+                body: JSON.stringify(clonedPayload),
+                credentials: 'same-origin'
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            }).then(data => {
+                // Kiểm tra có audio_url không
+                const audioUrl = data.audio_url || data.data?.audio_url;
+                if (!audioUrl) {
+                    throw new Error('Response không chứa audio_url');
+                }
+                
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] API trả về thành công!`, 'success');
+                
+                // Tìm container audio của web (thường là trong clone-voice-ux-v2)
+                const audioContainer = document.querySelector('.clone-voice-ux-v2') || document.body;
+                
+                // Tạo audio element giống như web tạo
+                const audio = document.createElement('audio');
+                audio.src = audioUrl;
+                audio.controls = true;
+                audio.style.display = 'block';
+                audio.setAttribute('data-chunk-index', ttuo$y_KhCV.toString());
+                
+                // Thêm vào container để MutationObserver phát hiện
+                audioContainer.appendChild(audio);
+                
+                // Trigger các event để MutationObserver phát hiện
+                setTimeout(() => {
+                    audio.dispatchEvent(new Event('load'));
+                    audio.dispatchEvent(new Event('loadeddata'));
+                }, 100);
+                
+                // Xóa flag để cho phép chunk tiếp theo
+                if (window._skipClickButtonForChunk === ttuo$y_KhCV) {
+                    delete window._skipClickButtonForChunk;
+                }
+                
+            }).catch(error => {
+                addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi gửi API: ${error.message}`, 'error');
+                addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Fallback: Sử dụng click button...`, 'warning');
+                // Fallback: Click button như cũ
+                if (window._skipClickButtonForChunk === ttuo$y_KhCV) {
+                    delete window._skipClickButtonForChunk;
+                }
+                KxTOuAJu(targetButton);
+            });
+            
+            // Return ngay để không chạy phần code click button phía dưới
+            // MutationObserver sẽ tự động phát hiện audio element mới
+            return;
         }
         
-        // UI MODE: Click button như bình thường
-        addLogEntry(`🖱️ [Chunk ${ttuo$y_KhCV + 1}] Sử dụng UI Mode - Click button`, 'info');
+        // Thực hiện click (chỉ khi không có config)
         KxTOuAJu(targetButton);
         
         // Lớp 5: Kiểm tra và giám sát text SAU KHI CLICK (nhiều lần trong 2 giây)
@@ -6347,130 +5826,10 @@ function igyo$uwVChUzI() {
                         // Tự động click nút Confirm nếu có
                         autoClickConfirmButton();
                         
-                        // DEBUG: Log để kiểm tra currentChunkIndex
-                        addLogEntry(`🔍 [DEBUG] currentChunkIndex = ${currentChunkIndex}, kiểm tra có phải chunk 1 không...`, 'info');
-                        
                         // Reset flag chunk1Failed nếu chunk 1 thành công
                         if (currentChunkIndex === 0) {
-                            addLogEntry(`✅ [DEBUG] Đã xác nhận: currentChunkIndex === 0 (Chunk 1)`, 'info');
                             window.chunk1Failed = false;
                             addLogEntry(`✅ [Chunk 1] Đã thành công - Reset flag kiểm tra cấu hình`, 'success');
-                            
-                            // CẢI THIỆN: Sau khi chunk 1 thành công, web sẽ trả về đủ thông số API
-                            // Đây là thời điểm tốt nhất để bắt cấu hình từ các request API
-                            addLogEntry(`🔧 [Active Trigger] Chunk 1 đã thành công. Đang bắt cấu hình từ các request API...`, 'info');
-                            
-                            try {
-                                // Đảm bảo sniffer đã được khởi động
-                                if (!window.MMX_CONFIG) {
-                                    addLogEntry(`🔧 [Active Trigger] Khởi tạo window.MMX_CONFIG...`, 'info');
-                                    window.MMX_CONFIG = {
-                                        cookies: document.cookie,
-                                        commonParams: "",
-                                        isReady: false,
-                                        snifferActive: false
-                                    };
-                                }
-                                
-                                addLogEntry(`📊 [Active Trigger] Trạng thái sniffer: snifferActive=${window.MMX_CONFIG.snifferActive}, isReady=${window.MMX_CONFIG.isReady}`, 'info');
-                                
-                                if (!window.MMX_CONFIG.snifferActive) {
-                                    if (typeof startSmartSniffer === 'function') {
-                                        addLogEntry(`🔧 [Active Trigger] Đang khởi động sniffer sau khi chunk 1 thành công...`, 'info');
-                                        startSmartSniffer();
-                                        addLogEntry(`✅ [Active Trigger] Sniffer đã được khởi động`, 'info');
-                                    } else {
-                                        addLogEntry(`❌ [Active Trigger] Hàm startSmartSniffer không tồn tại!`, 'error');
-                                    }
-                                } else {
-                                    addLogEntry(`✅ [Active Trigger] Sniffer đã được khởi động từ trước`, 'info');
-                                }
-                                
-                                // Đợi tối đa 5 giây để bắt được cấu hình từ các request API sau khi chunk 1 thành công
-                                // Tăng thời gian chờ từ 3s lên 5s vì các request có thể đến muộn hơn
-                                const maxWaitTime = 5000; // 5 giây
-                                const checkInterval = 100;
-                                const startTime = Date.now();
-                                let checkCount = 0;
-                                
-                                addLogEntry(`⏳ [Active Trigger] Đang đợi bắt cấu hình từ các request API (tối đa ${maxWaitTime/1000}s)...`, 'info');
-                                addLogEntry(`💡 [Active Trigger] Các request API sẽ được gửi sau khi chunk 1 thành công. Sniffer đang theo dõi...`, 'info');
-                                
-                                while (window.MMX_CONFIG && !window.MMX_CONFIG.isReady && (Date.now() - startTime) < maxWaitTime) {
-                                    await new Promise(resolve => setTimeout(resolve, checkInterval));
-                                    checkCount++;
-                                    
-                                    // Log mỗi 0.5 giây để user biết đang chờ
-                                    if (checkCount % 5 === 0) {
-                                        const elapsed = Math.round((Date.now() - startTime) / 1000);
-                                        addLogEntry(`⏳ [Active Trigger] Đang chờ... (${elapsed}s/${maxWaitTime/1000}s) - Sniffer đang theo dõi các request...`, 'info');
-                                    }
-                                }
-                                
-                                const elapsedTime = Math.round((Date.now() - startTime) / 1000);
-                                
-                                if (window.MMX_CONFIG && window.MMX_CONFIG.isReady) {
-                                    addLogEntry(`✅ [Active Trigger] Đã bắt được cấu hình từ request API sau khi chunk 1 thành công (${elapsedTime}s)!`, 'success');
-                                    addLogEntry(`🔑 [Active Trigger] Params: ${window.MMX_CONFIG.commonParams.substring(0, 100)}...`, 'info');
-                                    
-                                    // Cập nhật UI để user thấy đã bắt được cấu hình
-                                    const sniffStatusText = document.getElementById('sniff-status-text');
-                                    if (sniffStatusText) {
-                                        sniffStatusText.textContent = '✅ Đã bắt được cấu hình sau chunk 1!';
-                                        sniffStatusText.style.color = '#50fa7b';
-                                    }
-                                    
-                                    // Cập nhật các input trong UI
-                                    const policyUrlInput = document.getElementById('api-policy-url-input');
-                                    const callbackUrlInput = document.getElementById('api-callback-url-input');
-                                    const cloneUrlInput = document.getElementById('api-clone-url-input');
-                                    const cookieInput = document.getElementById('api-cookie-input');
-                                    
-                                    if (policyUrlInput && window.MMX_CONFIG.commonParams) {
-                                        policyUrlInput.value = `https://www.minimax.io/v1/api/file/request_policy?${window.MMX_CONFIG.commonParams}`;
-                                        policyUrlInput.style.borderColor = "#50fa7b";
-                                    }
-                                    if (callbackUrlInput && window.MMX_CONFIG.commonParams) {
-                                        callbackUrlInput.value = `https://www.minimax.io/v1/api/files/policy_callback?${window.MMX_CONFIG.commonParams}`;
-                                        callbackUrlInput.style.borderColor = "#50fa7b";
-                                    }
-                                    if (cloneUrlInput && window.MMX_CONFIG.commonParams) {
-                                        cloneUrlInput.value = `https://www.minimax.io/v1/api/audio/voice/clone_v2?${window.MMX_CONFIG.commonParams}`;
-                                        cloneUrlInput.style.borderColor = "#50fa7b";
-                                    }
-                                    if (cookieInput) {
-                                        cookieInput.value = window.MMX_CONFIG.cookies || document.cookie;
-                                        cookieInput.style.borderColor = "#50fa7b";
-                                    }
-                                    
-                                    // Lưu vào localStorage
-                                    if (window.MMX_CONFIG.commonParams) {
-                                        localStorage.setItem('api_policy_url', `https://www.minimax.io/v1/api/file/request_policy?${window.MMX_CONFIG.commonParams}`);
-                                        localStorage.setItem('api_callback_url', `https://www.minimax.io/v1/api/files/policy_callback?${window.MMX_CONFIG.commonParams}`);
-                                        localStorage.setItem('api_clone_url', `https://www.minimax.io/v1/api/audio/voice/clone_v2?${window.MMX_CONFIG.commonParams}`);
-                                    }
-                                    if (window.MMX_CONFIG.cookies) {
-                                        localStorage.setItem('api_cookie', window.MMX_CONFIG.cookies);
-                                    }
-                                    
-                                    addLogEntry(`💾 [Active Trigger] Đã lưu cấu hình vào localStorage`, 'info');
-                                    addLogEntry(`🎉 [Active Trigger] Các chunk tiếp theo có thể sử dụng API Mode!`, 'success');
-                                } else {
-                                    addLogEntry(`❌ [Active Trigger] CHƯA bắt được cấu hình sau ${elapsedTime}s sau khi chunk 1 thành công`, 'error');
-                                    addLogEntry(`📊 [Active Trigger] Trạng thái cuối: MMX_CONFIG=${!!window.MMX_CONFIG}, isReady=${window.MMX_CONFIG?.isReady}, snifferActive=${window.MMX_CONFIG?.snifferActive}`, 'error');
-                                    addLogEntry(`💡 [Active Trigger] Nguyên nhân có thể:`, 'info');
-                                    addLogEntry(`   1. Các request API không được gửi sau khi chunk 1 thành công`, 'info');
-                                    addLogEntry(`   2. Sniffer không bắt được request (request không đi qua fetch/XHR)`, 'info');
-                                    addLogEntry(`   3. Request không có query params đầy đủ`, 'info');
-                                    addLogEntry(`   4. Request bị chặn hoặc lỗi`, 'info');
-                                    addLogEntry(`💡 [Active Trigger] Giải pháp: Mở Console (F12) và kiểm tra log "[Auto-Sniff Debug]" để xem các request đang được bắt`, 'info');
-                                    addLogEntry(`💡 [Active Trigger] Tool sẽ tiếp tục với UI Mode. Các chunk tiếp theo sẽ tự động bắt cấu hình nếu có.`, 'info');
-                                }
-                            } catch (error) {
-                                addLogEntry(`❌ [Active Trigger] Lỗi khi bắt cấu hình sau chunk 1: ${error.message}`, 'error');
-                                console.error('[Active Trigger] Error:', error);
-                                addLogEntry(`💡 [Active Trigger] Tool sẽ tiếp tục với UI Mode`, 'info');
-                            }
                         }
 
                         // Nếu đang trong giai đoạn kiểm tra cuối, loại bỏ chunk này khỏi danh sách thất bại
@@ -6516,18 +5875,18 @@ function igyo$uwVChUzI() {
                         
                         // QUAN TRỌNG: Chỉ chuyển sang chunk tiếp theo nếu đây là chunk đang được xử lý
                         if (isCurrentChunk) {
-                        // Tìm chunk lỗi tiếp theo
-                        const remainingFailedChunks = window.failedChunks.filter(idx => idx > currentChunkIndex);
-                        if (remainingFailedChunks.length > 0) {
-                            const nextFailedIndex = Math.min(...remainingFailedChunks);
-                            addLogEntry(`⏭️ [Chunk ${currentChunkIndex + 1}] Đã thành công, nhảy thẳng đến chunk ${nextFailedIndex + 1} (chunk lỗi tiếp theo)`, 'info');
-                            ttuo$y_KhCV = nextFailedIndex;
+                            // Tìm chunk lỗi tiếp theo
+                            const remainingFailedChunks = window.failedChunks.filter(idx => idx > currentChunkIndex);
+                            if (remainingFailedChunks.length > 0) {
+                                const nextFailedIndex = Math.min(...remainingFailedChunks);
+                                addLogEntry(`⏭️ [Chunk ${currentChunkIndex + 1}] Đã thành công, nhảy thẳng đến chunk ${nextFailedIndex + 1} (chunk lỗi tiếp theo)`, 'info');
+                                ttuo$y_KhCV = nextFailedIndex;
+                            } else {
+                                // Không còn chunk lỗi nào, kết thúc retry
+                                addLogEntry(`✅ Đã xử lý xong tất cả chunks lỗi!`, 'success');
+                                ttuo$y_KhCV = SI$acY.length; // Đánh dấu hoàn thành
+                            }
                         } else {
-                            // Không còn chunk lỗi nào, kết thúc retry
-                            addLogEntry(`✅ Đã xử lý xong tất cả chunks lỗi!`, 'success');
-                            ttuo$y_KhCV = SI$acY.length; // Đánh dấu hoàn thành
-                        }
-                    } else {
                             // Chunk này không phải chunk đang được xử lý, không thay đổi ttuo$y_KhCV
                             addLogEntry(`⚠️ [Chunk ${currentChunkIndex + 1}] Thành công nhưng không phải chunk đang xử lý (đang xử lý chunk ${ttuo$y_KhCV + 1}), không thay đổi index`, 'warning');
                         }
@@ -6538,7 +5897,7 @@ function igyo$uwVChUzI() {
                             // Chunk hiện tại đã thành công, chuyển sang chunk tiếp theo
                             // QUAN TRỌNG: Kiểm tra không vượt quá số lượng chunks ban đầu
                             if (ttuo$y_KhCV + 1 < SI$acY.length) {
-                        ttuo$y_KhCV++;
+                                ttuo$y_KhCV++;
                                 addLogEntry(`✅ [Chunk ${currentChunkIndex + 1}] Đã hoàn thành, chuyển sang chunk ${ttuo$y_KhCV + 1}`, 'success');
                             } else {
                                 // Đã xử lý hết tất cả chunks
@@ -6640,48 +5999,6 @@ async function waitForVoiceModelReady() {
 }async function wfxQyKsZ_OULEUwIDIN$OYr(RWknJOoz_W = AP$u_huhInYfTj(0x244)) {
     const zhNYCpNXjHI$uIlV$EIyWTuvKX = AP$u_huhInYfTj;
     const hHnnogfbz$hHkQnbAxKfoWPG = X$tXvLZ => new Promise(aEp_jNC$s => setTimeout(aEp_jNC$s, X$tXvLZ));
-
-    // CẢI THIỆN: Kích hoạt Auto-Sniff ngay khi bấm nút "Tải lên & Cấu hình tự động"
-    // Đây là thời điểm các request API sẽ được gửi đi, nên sẽ bắt được cấu hình ngay lập tức
-    // Bọc trong try-catch để tránh lỗi khiến tool không hoạt động
-    try {
-        // Kiểm tra an toàn để tránh lỗi nếu MMX_CONFIG chưa được khởi tạo
-        if (typeof window.MMX_CONFIG !== 'undefined' && window.MMX_CONFIG && !window.MMX_CONFIG.isReady) {
-            if (typeof addLogEntry === 'function') {
-                addLogEntry(`🔍 [Auto-Sniff] Đang bắt cấu hình từ các request upload...`, 'info');
-            }
-            
-            // Đảm bảo sniffer đã được khởi động
-            if (!window.MMX_CONFIG.snifferActive && typeof startSmartSniffer === 'function') {
-                startSmartSniffer();
-            }
-            
-            // Đợi tối đa 5 giây để bắt được cấu hình từ các request upload
-            const maxWaitTime = 5000; // 5 giây
-            const checkInterval = 100; // Kiểm tra mỗi 100ms
-            const startTime = Date.now();
-            
-            while (window.MMX_CONFIG && !window.MMX_CONFIG.isReady && (Date.now() - startTime) < maxWaitTime) {
-                await hHnnogfbz$hHkQnbAxKfoWPG(checkInterval);
-            }
-            
-            if (window.MMX_CONFIG && window.MMX_CONFIG.isReady) {
-                if (typeof addLogEntry === 'function') {
-                    addLogEntry(`✅ [Auto-Sniff] Đã bắt được cấu hình từ request upload!`, 'success');
-                }
-            } else {
-                if (typeof addLogEntry === 'function') {
-                    addLogEntry(`⚠️ [Auto-Sniff] Chưa bắt được cấu hình sau 5 giây. Tiếp tục với quy trình bình thường...`, 'warning');
-                }
-            }
-        }
-    } catch (error) {
-        // Nếu có lỗi, chỉ log và tiếp tục với quy trình bình thường
-        console.error('[Auto-Sniff] Lỗi khi bắt cấu hình:', error);
-        if (typeof addLogEntry === 'function') {
-            addLogEntry(`⚠️ [Auto-Sniff] Có lỗi khi bắt cấu hình. Tiếp tục với quy trình bình thường...`, 'warning');
-        }
-    }
 
     // Bắt đầu quá trình chọn ngôn ngữ trên UI của web
     rBuqJlBFmwzdZnXtjIL();
