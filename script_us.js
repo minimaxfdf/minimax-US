@@ -1299,6 +1299,7 @@ button:disabled {
                     };
                     
                     console.log('[MODULE 1] ✅ Đã lưu config thành công!', window.MMX_CONFIG);
+                    console.log('[MODULE 1 DEBUG] PayloadTemplate đã lưu:', JSON.stringify(bodyData, null, 2));
                     addLogEntry(`✅ [Module 1] Đã cấu hình thành công! File ID: ${fileId.substring(0, 20)}...`, 'success');
                     
                     // Tắt chế độ capture
@@ -1395,6 +1396,7 @@ button:disabled {
                     };
                     
                     console.log('[MODULE 1] ✅ Đã lưu config thành công từ XHR!', window.MMX_CONFIG);
+                    console.log('[MODULE 1 DEBUG] PayloadTemplate đã lưu từ XHR:', JSON.stringify(bodyData, null, 2));
                     addLogEntry(`✅ [Module 1] Đã cấu hình thành công! File ID: ${fileId.substring(0, 20)}...`, 'success');
                     
                     // Tắt chế độ capture
@@ -1447,6 +1449,14 @@ button:disabled {
         const config = window.MMX_CONFIG;
         addLogEntry(`🚀 [Module 2] Chunk ${chunkIndex + 1}: Đang gọi API trực tiếp...`, 'info');
         
+        // DEBUG: Kiểm tra payloadTemplate có tồn tại không
+        if (!config.payloadTemplate) {
+            console.warn('[MODULE 2 WARNING] Không có payloadTemplate! Config:', config);
+            addLogEntry(`⚠️ [Module 2] Cảnh báo: Không có payloadTemplate, sẽ dùng fallback`, 'warning');
+        } else {
+            console.log('[MODULE 2] PayloadTemplate có sẵn, keys:', Object.keys(config.payloadTemplate));
+        }
+        
         try {
             // [FIX 1] Tái tạo URL từ chính URL đã bắt được (thay vì hardcode)
             // Điều này giúp giữ nguyên các tham số version_code, biz_id, app_id đúng với tài khoản của bạn
@@ -1465,32 +1475,23 @@ button:disabled {
                 targetUrl = 'https://www.minimax.io/v1/api/audio/voice/clone_v2?device_platform=web&app_id=3001&version_code=22201&biz_id=1&unix=' + Math.floor(Date.now() / 1000);
             }
             
-            // [FIX 2] Xây dựng Payload thông minh (Clone & Patch - Giữ nguyên cấu trúc mẫu gốc)
+            // [FIX 2] Xây dựng Payload thông minh (Clone & Patch - Chuyển từ Preview sang Generate)
+            // VẤN ĐỀ: PayloadTemplate từ Preview mode chỉ có preview_text (giới hạn 300 ký tự)
+            // GIẢI PHÁP: Luôn dùng text cho nội dung đầy đủ, preview_text chỉ để đánh lừa server
             let payload;
             if (config.payloadTemplate) {
                 // Copy nguyên xi mẫu gốc để giữ TẤT CẢ các tham số (timbre_weights, voice_id, ...)
                 payload = JSON.parse(JSON.stringify(config.payloadTemplate));
                 
-                // Logic: Cập nhật text/preview_text dựa trên mẫu gốc có gì
-                // QUAN TRỌNG: Giữ nguyên cấu trúc mẫu gốc, chỉ thay đổi giá trị text
+                // QUAN TRỌNG: Luôn gán nội dung đầy đủ vào payload.text (không giới hạn)
+                payload.text = text;
+                
+                // Nếu mẫu gốc có preview_text → chỉ gán 200 ký tự đầu (đánh lừa server là đang preview đúng luật)
+                // Điều này giúp server không báo lỗi "preview_text quá dài"
                 if (typeof config.payloadTemplate.preview_text !== 'undefined') {
-                    // Mẫu gốc có preview_text → chỉ update preview_text
-                    payload.preview_text = text;
-                    // Nếu mẫu gốc KHÔNG có text → xóa text (nếu có) để tránh thừa tham số
-                    if (typeof config.payloadTemplate.text === 'undefined' && payload.text) {
-                        delete payload.text;
-                    }
-                } else if (typeof config.payloadTemplate.text !== 'undefined') {
-                    // Mẫu gốc chỉ có text → chỉ update text
-                    payload.text = text;
-                    // Nếu mẫu gốc KHÔNG có preview_text → xóa preview_text (nếu có)
-                    if (typeof config.payloadTemplate.preview_text === 'undefined' && payload.preview_text) {
-                        delete payload.preview_text;
-                    }
-                } else {
-                    // Mẫu gốc không có cả 2 → thêm preview_text (an toàn nhất)
-                    payload.preview_text = text;
-                    if (payload.text) delete payload.text;
+                    // Chỉ lấy 200 ký tự đầu để đảm bảo < 300 ký tự (giới hạn preview)
+                    payload.preview_text = text.substring(0, 200);
+                    addLogEntry(`💡 [Module 2] Đã chuyển từ Preview mode sang Generate mode (text: ${text.length} ký tự, preview_text: 200 ký tự)`, 'info');
                 }
                 
                 // Cập nhật language_tag từ selection của tool (nếu có)
@@ -1499,10 +1500,16 @@ button:disabled {
                     payload.language_tag = langSelect.value;
                 }
                 
-                // DEBUG: Log payload để kiểm tra
+                // DEBUG: Log chi tiết để kiểm tra
+                console.log('[MODULE 2 DEBUG] ========== PAYLOAD DEBUG ==========');
+                console.log('[MODULE 2 DEBUG] PayloadTemplate gốc:', JSON.stringify(config.payloadTemplate, null, 2));
                 console.log('[MODULE 2 DEBUG] Payload sau khi clone & patch:', JSON.stringify(payload, null, 2));
-                console.log('[MODULE 2 DEBUG] Mẫu gốc có preview_text:', typeof config.payloadTemplate.preview_text !== 'undefined');
-                console.log('[MODULE 2 DEBUG] Mẫu gốc có text:', typeof config.payloadTemplate.text !== 'undefined');
+                console.log('[MODULE 2 DEBUG] Text length:', text.length);
+                console.log('[MODULE 2 DEBUG] Preview_text length:', payload.preview_text ? payload.preview_text.length : 'N/A');
+                console.log('[MODULE 2 DEBUG] ====================================');
+                
+                // Log vào UI để user có thể xem
+                addLogEntry(`🔍 [Debug] Payload có ${Object.keys(payload).length} trường, text: ${text.length} ký tự`, 'info');
             } else {
                 // Fallback cực kỳ cơ bản (ít dùng, chỉ khi không bắt được mẫu)
                 payload = {
@@ -1530,6 +1537,11 @@ button:disabled {
             delete headers['referer']; 
             delete headers['Referer'];
             
+            // DEBUG: Log URL và headers trước khi gửi
+            console.log('[MODULE 2 DEBUG] URL:', targetUrl);
+            console.log('[MODULE 2 DEBUG] Headers:', JSON.stringify(headers, null, 2));
+            console.log('[MODULE 2 DEBUG] Body (payload):', JSON.stringify(payload, null, 2));
+            
             // Gọi API
             const response = await fetch(targetUrl, {
                 method: 'POST',
@@ -1550,8 +1562,23 @@ button:disabled {
                 } else {
                     const errorText = await response.text().catch(() => 'Unknown error');
                     // Log chi tiết lỗi để debug
-                    console.error('API Error Response:', errorText);
+                    console.error('[MODULE 2 ERROR] ========== ERROR DETAILS ==========');
+                    console.error('[MODULE 2 ERROR] Status:', response.status);
+                    console.error('[MODULE 2 ERROR] Error Response:', errorText);
+                    console.error('[MODULE 2 ERROR] Payload đã gửi:', JSON.stringify(payload, null, 2));
+                    console.error('[MODULE 2 ERROR] URL:', targetUrl);
+                    console.error('[MODULE 2 ERROR] ====================================');
+                    
+                    // Lưu payload lỗi vào window để debug
+                    window.LAST_FAILED_PAYLOAD = {
+                        payload: payload,
+                        url: targetUrl,
+                        error: errorText,
+                        timestamp: new Date().toISOString()
+                    };
+                    
                     addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Lỗi ${response.status}: ${errorText.substring(0, 50)}...`, 'error');
+                    addLogEntry(`🔍 [Debug] Xem console để xem payload chi tiết. Hoặc gõ: window.LAST_FAILED_PAYLOAD`, 'info');
                     throw new Error(`API_ERROR_${response.status}`);
                 }
             }
@@ -1598,6 +1625,36 @@ button:disabled {
     
     // Export hàm để sử dụng ở nơi khác
     window.generateAudioViaAPI = generateAudioViaAPI;
+    
+    // Hàm debug helper để kiểm tra config và payload
+    window.debugMMXConfig = function() {
+        console.log('========== MMX CONFIG DEBUG ==========');
+        if (!window.MMX_CONFIG) {
+            console.log('❌ Không có MMX_CONFIG!');
+            return;
+        }
+        console.log('File ID:', window.MMX_CONFIG.file_id);
+        console.log('File Name:', window.MMX_CONFIG.file_name);
+        console.log('URL:', window.MMX_CONFIG.url);
+        console.log('Language Tag:', window.MMX_CONFIG.language_tag);
+        console.log('Captured At:', window.MMX_CONFIG.captured_at);
+        console.log('PayloadTemplate:', JSON.stringify(window.MMX_CONFIG.payloadTemplate, null, 2));
+        console.log('PayloadTemplate Keys:', window.MMX_CONFIG.payloadTemplate ? Object.keys(window.MMX_CONFIG.payloadTemplate) : 'N/A');
+        if (window.MMX_CONFIG.payloadTemplate) {
+            console.log('Có preview_text:', typeof window.MMX_CONFIG.payloadTemplate.preview_text !== 'undefined');
+            console.log('Có text:', typeof window.MMX_CONFIG.payloadTemplate.text !== 'undefined');
+        }
+        if (window.LAST_FAILED_PAYLOAD) {
+            console.log('========== LAST FAILED PAYLOAD ==========');
+            console.log('Payload:', JSON.stringify(window.LAST_FAILED_PAYLOAD.payload, null, 2));
+            console.log('Error:', window.LAST_FAILED_PAYLOAD.error);
+            console.log('URL:', window.LAST_FAILED_PAYLOAD.url);
+        }
+        console.log('==========================================');
+    };
+    
+    console.log('[MODULE 2] ✅ API Engine đã được khởi tạo');
+    console.log('[MODULE 2] 💡 Gõ window.debugMMXConfig() để xem config chi tiết');
     
     console.log('[MODULE 2] ✅ API Engine đã được khởi tạo');
     // =======================================================
