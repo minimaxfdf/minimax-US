@@ -1750,10 +1750,17 @@ button:disabled {
             // Lấy payload từ data đã lưu
             if (PENDING_REQUEST_INFO.data) {
                 try {
+                    let parsedPayload = null;
                     if (typeof PENDING_REQUEST_INFO.data === 'string') {
-                        config.payload = JSON.parse(PENDING_REQUEST_INFO.data);
+                        parsedPayload = JSON.parse(PENDING_REQUEST_INFO.data);
                     } else if (!(PENDING_REQUEST_INFO.data instanceof FormData)) {
-                        config.payload = PENDING_REQUEST_INFO.data;
+                        parsedPayload = PENDING_REQUEST_INFO.data;
+                    }
+                    
+                    if (parsedPayload) {
+                        // Log payload gốc để debug
+                        addLogEntry(`🔍 [Chunk 1] Payload gốc từ request: ${JSON.stringify(parsedPayload).substring(0, 300)}...`, 'info');
+                        config.payload = parsedPayload;
                     }
                 } catch (e) {
                     addLogEntry(`⚠️ [Chunk 1] Lỗi khi parse payload: ${e.message}`, 'warning');
@@ -1771,6 +1778,83 @@ button:disabled {
                     addLogEntry(`💡 [Chunk 1] Đã lấy text từ chunk đầu tiên làm payload`, 'info');
                 }
             }
+            
+            // === [FIX LỖI 400] QUAN TRỌNG: Chuẩn hóa payload khi bắt config ===
+            // Xóa các trường không cần thiết từ payload preview/upload
+            // Và bổ sung các tham số thiếu (speed, vol, pitch)
+            if (config.payload) {
+                // Xóa preview_text nếu có (từ preview request)
+                if (config.payload.preview_text) {
+                    delete config.payload.preview_text;
+                    addLogEntry(`🧹 [Chunk 1] Đã xóa preview_text khỏi payload`, 'info');
+                }
+                
+                // QUAN TRỌNG: Nếu payload có preview_text nhưng không có text
+                // => Đây là request preview, không phải request chunk 1
+                // => Cần lấy payload từ request thực tế của chunk 1
+                if (!config.payload.text && config.payload.preview_text) {
+                    addLogEntry(`⚠️ [Chunk 1] Phát hiện payload từ preview request! Đang tìm payload từ chunk 1...`, 'warning');
+                    // Thử lấy từ textarea (chứa text của chunk 1)
+                    const textarea = document.getElementById('gemini-hidden-text-for-request');
+                    if (textarea && textarea.value) {
+                        config.payload.text = textarea.value;
+                        delete config.payload.preview_text;
+                        addLogEntry(`✅ [Chunk 1] Đã lấy text từ textarea thay cho preview_text`, 'success');
+                    } else {
+                        // Fallback: Dùng preview_text làm text tạm thời
+                        config.payload.text = config.payload.preview_text;
+                        delete config.payload.preview_text;
+                        addLogEntry(`⚠️ [Chunk 1] Đã dùng preview_text làm text tạm thời`, 'warning');
+                    }
+                }
+                
+                // Đảm bảo có text (sẽ được thay thế sau)
+                if (!config.payload.text) {
+                    // Tạo text rỗng, sẽ được thay thế khi gửi
+                    config.payload.text = '';
+                    addLogEntry(`💡 [Chunk 1] Payload không có text, sẽ được thay thế khi gửi`, 'info');
+                }
+                
+                // === [FIX LỖI 400] BỔ SUNG CÁC THAM SỐ THIẾU ===
+                // Request preview thường thiếu speed, vol, pitch
+                // Cần bổ sung các tham số này với giá trị mặc định
+                // QUAN TRỌNG: Kiểm tra xem có phải request preview không (thiếu các tham số này)
+                const isPreviewRequest = !config.payload.speed && !config.payload.vol && !config.payload.pitch;
+                
+                if (isPreviewRequest) {
+                    addLogEntry(`⚠️ [Chunk 1] Phát hiện payload từ preview request (thiếu speed/vol/pitch)`, 'warning');
+                }
+                
+                // Bổ sung speed nếu thiếu
+                if (typeof config.payload.speed === 'undefined' || config.payload.speed === null) {
+                    config.payload.speed = 1.0; // Tốc độ mặc định (1.0 = bình thường)
+                    addLogEntry(`➕ [Chunk 1] Đã bổ sung speed = 1.0 (thiếu trong payload)`, 'info');
+                }
+                
+                // Bổ sung vol nếu thiếu
+                if (typeof config.payload.vol === 'undefined' || config.payload.vol === null) {
+                    config.payload.vol = 1.0; // Âm lượng mặc định (1.0 = bình thường)
+                    addLogEntry(`➕ [Chunk 1] Đã bổ sung vol = 1.0 (thiếu trong payload)`, 'info');
+                }
+                
+                // Bổ sung pitch nếu thiếu
+                if (typeof config.payload.pitch === 'undefined' || config.payload.pitch === null) {
+                    config.payload.pitch = 1.0; // Cao độ mặc định (1.0 = bình thường)
+                    addLogEntry(`➕ [Chunk 1] Đã bổ sung pitch = 1.0 (thiếu trong payload)`, 'info');
+                }
+                
+                // Kiểm tra các tham số khác có thể thiếu
+                // voice_id hoặc voice_speed (nếu có trong API)
+                // Có thể cần kiểm tra thêm các trường khác tùy vào API thực tế
+                
+                if (isPreviewRequest) {
+                    addLogEntry(`✅ [Chunk 1] Đã bổ sung đầy đủ tham số cho payload từ preview request`, 'success');
+                }
+                
+                // Log payload đã chuẩn hóa
+                addLogEntry(`🔍 [Chunk 1] Payload đã chuẩn hóa: ${JSON.stringify(config.payload).substring(0, 400)}...`, 'info');
+            }
+            // ====================================================
             
             // Lưu config
             saveCapturedConfig(config);
@@ -5164,6 +5248,9 @@ async function uSTZrHUt_IC() {
             // ====================================================
             
             clonedPayload.text = chunkText; // Gán text chuẩn vào
+            
+            // Debug: Log payload đầy đủ để kiểm tra
+            addLogEntry(`🔍 [C#${ttuo$y_KhCV + 1}] Payload đầy đủ: ${JSON.stringify(clonedPayload)}`, 'info');
             
             // Xây dựng URL với query params
             let apiUrl = CAPTURED_CONFIG.url;
