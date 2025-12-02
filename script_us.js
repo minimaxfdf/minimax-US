@@ -1760,6 +1760,15 @@ button:disabled {
                     if (parsedPayload) {
                         // Log payload gốc để debug
                         addLogEntry(`🔍 [Chunk 1] Payload gốc từ request: ${JSON.stringify(parsedPayload).substring(0, 300)}...`, 'info');
+                        
+                        // QUAN TRỌNG: Nếu là Voice Clone mode (có files), ép buộc need_noise_reduction = false
+                        // Vì khi gửi API trực tiếp, server yêu cầu need_noise_reduction = false
+                        if (parsedPayload.files && parsedPayload.files.length > 0) {
+                            const oldValue = parsedPayload.need_noise_reduction;
+                            parsedPayload.need_noise_reduction = false;
+                            addLogEntry(`🔧 [Chunk 1] Đã sửa need_noise_reduction từ ${oldValue} thành false (Voice Clone mode)`, 'info');
+                        }
+                        
                         config.payload = parsedPayload;
                     }
                 } catch (e) {
@@ -2140,21 +2149,46 @@ button:disabled {
                                 timestamp: Date.now()
                             };
                             
-                                // Lấy payload từ data (tham số của send()) - dùng xhr._captureData
-                                const captureData = xhr._captureData;
-                                if (captureData) {
+                                // QUAN TRỌNG: Lấy payload từ PENDING_REQUEST_INFO.data (đã được parse sẵn)
+                                // Thay vì lấy từ xhr._captureData (có thể là string chưa parse)
+                                if (PENDING_REQUEST_INFO && PENDING_REQUEST_INFO.data) {
                                     try {
-                                        if (typeof captureData === 'string') {
-                                            config.payload = JSON.parse(captureData);
-                                        } else if (captureData instanceof FormData) {
-                                            // FormData không thể parse, sẽ để null
-                                            addLogEntry(`⚠️ [CAPTURE XHR] Payload là FormData, không thể lưu`, 'warning');
-                                        } else {
-                                            config.payload = captureData;
-                                        }
+                                        // PENDING_REQUEST_INFO.data đã được parse sẵn trong hook send()
+                                        config.payload = typeof PENDING_REQUEST_INFO.data === 'string' 
+                                            ? JSON.parse(PENDING_REQUEST_INFO.data) 
+                                            : PENDING_REQUEST_INFO.data;
+                                        addLogEntry(`✅ [CAPTURE XHR] Đã lấy payload từ PENDING_REQUEST_INFO`, 'success');
                                     } catch (e) {
-                                        addLogEntry(`⚠️ [CAPTURE XHR] Lỗi khi parse payload: ${e.message}`, 'warning');
-                                        // Vẫn tiếp tục với payload null
+                                        addLogEntry(`⚠️ [CAPTURE XHR] Lỗi khi parse payload từ PENDING_REQUEST_INFO: ${e.message}`, 'warning');
+                                        // Fallback: Thử lấy từ xhr._captureData
+                                        const captureData = xhr._captureData;
+                                        if (captureData) {
+                                            try {
+                                                if (typeof captureData === 'string') {
+                                                    config.payload = JSON.parse(captureData);
+                                                } else {
+                                                    config.payload = captureData;
+                                                }
+                                            } catch (e2) {
+                                                addLogEntry(`⚠️ [CAPTURE XHR] Lỗi khi parse payload từ xhr._captureData: ${e2.message}`, 'warning');
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // Fallback: Lấy từ xhr._captureData
+                                    const captureData = xhr._captureData;
+                                    if (captureData) {
+                                        try {
+                                            if (typeof captureData === 'string') {
+                                                config.payload = JSON.parse(captureData);
+                                            } else if (captureData instanceof FormData) {
+                                                addLogEntry(`⚠️ [CAPTURE XHR] Payload là FormData, không thể lưu`, 'warning');
+                                            } else {
+                                                config.payload = captureData;
+                                            }
+                                        } catch (e) {
+                                            addLogEntry(`⚠️ [CAPTURE XHR] Lỗi khi parse payload: ${e.message}`, 'warning');
+                                        }
                                     }
                                 }
                             
@@ -6490,7 +6524,9 @@ function igyo$uwVChUzI() {
                         
                         // Cho phép bắt lại config từ request thành công của chunk 1
                         // (kể cả khi đã có config, để có config đúng từ request thực tế)
-                        if (currentChunkIndex === 0 && PENDING_REQUEST_INFO && PENDING_REQUEST_INFO.audioUrl) {
+                        // QUAN TRỌNG: Capture lại config ngay cả khi response không có audio_url trong body
+                        // (vì audio_url có thể được lấy từ audio element trong DOM)
+                        if (currentChunkIndex === 0 && PENDING_REQUEST_INFO) {
                             addLogEntry(`🎯 [Chunk 1] Đã thành công! Đang bắt cấu hình từ request đã lưu...`, 'info');
                             
                             try {
