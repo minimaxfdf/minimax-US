@@ -2039,37 +2039,48 @@ button:disabled {
                 xhr._captureUrl = urlString;
                 xhr._captureMethod = xhr._captureMethod || 'POST';
                 
-                // Lưu vào biến tạm để dùng khi chunk thành công
-                // QUAN TRỌNG: Lưu đầy đủ headers từ request thực tế
-                const requestHeaders = xhr._captureHeaders || {};
-                
-                // Đảm bảo có các headers quan trọng
-                if (!requestHeaders['content-type']) {
-                    requestHeaders['Content-Type'] = 'application/json';
+                // QUAN TRỌNG: Chỉ lưu request của chunk 1 (khi chưa có config)
+                // Không lưu các request khác để tránh ghi đè
+                if (!IS_CONFIG_READY) {
+                    // Lưu vào biến tạm để dùng khi chunk thành công
+                    // QUAN TRỌNG: Lưu đầy đủ headers từ request thực tế
+                    const requestHeaders = xhr._captureHeaders || {};
+                    
+                    // Đảm bảo có các headers quan trọng
+                    if (!requestHeaders['content-type']) {
+                        requestHeaders['Content-Type'] = 'application/json';
+                    }
+                    if (!requestHeaders['accept']) {
+                        requestHeaders['Accept'] = 'application/json';
+                    }
+                    
+                    // QUAN TRỌNG: Lấy Cookie từ document (quan trọng nhất)
+                    if (document.cookie) {
+                        requestHeaders['Cookie'] = document.cookie;
+                    }
+                    
+                    // Lấy Referer từ window.location
+                    requestHeaders['Referer'] = window.location.href;
+                    
+                    // Lấy Origin từ window.location
+                    requestHeaders['Origin'] = window.location.origin;
+                    
+                    // Chỉ lưu nếu chưa có PENDING_REQUEST_INFO hoặc đây là request mới hơn
+                    if (!PENDING_REQUEST_INFO || (PENDING_REQUEST_INFO.timestamp < Date.now() - 1000)) {
+                        PENDING_REQUEST_INFO = {
+                            url: urlString,
+                            method: xhr._captureMethod || 'POST',
+                            data: data,
+                            headers: requestHeaders, // Lưu headers để dùng sau
+                            timestamp: Date.now()
+                        };
+                        addLogEntry(`💾 Đã lưu thông tin request tạm thời (chờ chunk thành công mới bắt config)`, 'info');
+                    } else {
+                        addLogEntry(`⚠️ PENDING_REQUEST_INFO đã tồn tại, giữ nguyên request cũ`, 'warning');
+                    }
+                } else {
+                    addLogEntry(`ℹ️ Đã có config, không lưu request này`, 'info');
                 }
-                if (!requestHeaders['accept']) {
-                    requestHeaders['Accept'] = 'application/json';
-                }
-                
-                // QUAN TRỌNG: Lấy Cookie từ document (quan trọng nhất)
-                if (document.cookie) {
-                    requestHeaders['Cookie'] = document.cookie;
-                }
-                
-                // Lấy Referer từ window.location
-                requestHeaders['Referer'] = window.location.href;
-                
-                // Lấy Origin từ window.location
-                requestHeaders['Origin'] = window.location.origin;
-                
-                PENDING_REQUEST_INFO = {
-                    url: urlString,
-                    method: xhr._captureMethod || 'POST',
-                    data: data,
-                    headers: requestHeaders, // Lưu headers để dùng sau
-                    timestamp: Date.now()
-                };
-                addLogEntry(`💾 Đã lưu thông tin request tạm thời (chờ chunk thành công mới bắt config)`, 'info');
                 
                 // Hook vào onreadystatechange
                 const originalOnReadyStateChange = xhr.onreadystatechange;
@@ -2144,12 +2155,23 @@ button:disabled {
                             // KHÔNG lưu config ngay ở đây
                             // Chỉ lưu vào PENDING_REQUEST_INFO để bắt sau khi chunk thành công
                             // Lý do: Cần đợi chunk thành công để có đủ thông tin (audio_url từ audio element)
-                            if (!IS_CONFIG_READY) {
-                                // Cập nhật PENDING_REQUEST_INFO với response data
+                            // QUAN TRỌNG: Chỉ lưu request thành công (có audio_url)
+                            if (!IS_CONFIG_READY && audioUrl) {
+                                // Chỉ cập nhật PENDING_REQUEST_INFO nếu có audio_url (request thành công)
                                 if (PENDING_REQUEST_INFO) {
                                     PENDING_REQUEST_INFO.responseData = responseData;
                                     PENDING_REQUEST_INFO.audioUrl = audioUrl;
-                                    addLogEntry(`💾 [CAPTURE XHR] Đã cập nhật thông tin request (chờ chunk thành công mới bắt config)...`, 'info');
+                                    addLogEntry(`💾 [CAPTURE XHR] Đã cập nhật thông tin request thành công (có audio_url)`, 'success');
+                                } else {
+                                    addLogEntry(`⚠️ [CAPTURE XHR] PENDING_REQUEST_INFO không tồn tại, không thể cập nhật`, 'warning');
+                                }
+                            } else if (!IS_CONFIG_READY && !audioUrl) {
+                                // Request không thành công (không có audio_url), không lưu vào PENDING_REQUEST_INFO
+                                addLogEntry(`⚠️ [CAPTURE XHR] Request không thành công (không có audio_url), bỏ qua`, 'warning');
+                                // Xóa PENDING_REQUEST_INFO nếu đây là request không thành công
+                                if (PENDING_REQUEST_INFO && PENDING_REQUEST_INFO.url === urlString) {
+                                    addLogEntry(`🧹 [CAPTURE XHR] Đã xóa PENDING_REQUEST_INFO của request không thành công`, 'info');
+                                    PENDING_REQUEST_INFO = null;
                                 }
                             } else {
                                 // Đã có config rồi, không cần làm gì
@@ -5237,13 +5259,25 @@ async function uSTZrHUt_IC() {
             // Clone config và thay đổi text
             const clonedPayload = JSON.parse(JSON.stringify(CAPTURED_CONFIG.payload));
             
-            // === [FIX LỖI 400] QUAN TRỌNG: Dọn dẹp payload rác ===
-            if (clonedPayload.preview_text) {
-                delete clonedPayload.preview_text; // Xóa dòng này đi, nó gây lỗi 400
-            }
-            // Đảm bảo cấu trúc files (nếu là voice cloning)
+            // === [FIX TOÀN DIỆN LỖI 400] Bơm tham số bắt buộc ===
+            
+            // 1. Xóa rác
+            if (clonedPayload.preview_text) delete clonedPayload.preview_text;
+            if (clonedPayload.need_noise_reduction) delete clonedPayload.need_noise_reduction;
+            
+            // 2. BẮT BUỘC: Gán cứng các chỉ số này (Server không có là báo lỗi ngay)
+            clonedPayload.speed = 1.0;
+            clonedPayload.vol = 1.0;
+            clonedPayload.pitch = 0;
+            
+            // 3. Xử lý Voice ID cho chế độ Clone
+            // Nếu có files (đang dùng file upload), voice_id phải là rỗng hoặc ID của file
             if (clonedPayload.files && clonedPayload.files.length > 0) {
-                // Giữ nguyên files, đây là ID của giọng clone
+                // Đảm bảo voice_id tồn tại (dù rỗng)
+                if (!clonedPayload.voice_id) clonedPayload.voice_id = "";
+            } else {
+                // Nếu không có files, bắt buộc phải có voice_id
+                if (!clonedPayload.voice_id) clonedPayload.voice_id = "male-qn-01"; // ID dự phòng
             }
             // ====================================================
             
@@ -6291,6 +6325,15 @@ function igyo$uwVChUzI() {
                         // == PHẦN MỚI: BẮT CONFIG KHI CHUNK 1 THÀNH CÔNG ==
                         // =======================================================
                         // QUAN TRỌNG: Chỉ bắt config SAU KHI chunk 1 thành công (có audio_url từ response)
+                        // Debug: Log trạng thái để kiểm tra
+                        if (currentChunkIndex === 0) {
+                            addLogEntry(`🔍 [Chunk 1] Debug: currentChunkIndex=${currentChunkIndex}, IS_CONFIG_READY=${IS_CONFIG_READY}, PENDING_REQUEST_INFO=${PENDING_REQUEST_INFO ? 'có' : 'không'}`, 'info');
+                            if (PENDING_REQUEST_INFO) {
+                                addLogEntry(`🔍 [Chunk 1] Debug: PENDING_REQUEST_INFO.url=${PENDING_REQUEST_INFO.url?.substring(0, 100)}...`, 'info');
+                                addLogEntry(`🔍 [Chunk 1] Debug: PENDING_REQUEST_INFO.audioUrl=${PENDING_REQUEST_INFO.audioUrl ? 'có' : 'không'}`, 'info');
+                            }
+                        }
+                        
                         if (currentChunkIndex === 0 && !IS_CONFIG_READY && PENDING_REQUEST_INFO) {
                             addLogEntry(`🎯 [Chunk 1] Đã thành công! Đang bắt cấu hình từ request đã lưu...`, 'info');
                             
