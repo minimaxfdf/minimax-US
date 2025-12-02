@@ -5338,7 +5338,19 @@ async function uSTZrHUt_IC() {
             Object.keys(CAPTURED_CONFIG.queryParams || {}).forEach(key => {
                 queryParams.append(key, CAPTURED_CONFIG.queryParams[key]);
             });
-            addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] Query params từ config: ${queryParams.toString()}`, 'info');
+            
+            // QUAN TRỌNG: Cập nhật timestamp 'unix' thành giá trị hiện tại
+            // Server có thể từ chối request có timestamp cũ
+            const currentUnix = Date.now();
+            if (queryParams.has('unix')) {
+                queryParams.set('unix', currentUnix.toString());
+                addLogEntry(`🔄 [C#${ttuo$y_KhCV + 1}] Đã cập nhật unix timestamp: ${currentUnix}`, 'info');
+            } else {
+                queryParams.append('unix', currentUnix.toString());
+                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm unix timestamp: ${currentUnix}`, 'info');
+            }
+            
+            addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] Query params sau khi cập nhật: ${queryParams.toString()}`, 'info');
             
             if (queryParams.toString()) {
                 // Giữ nguyên query params nếu URL đã có, hoặc thêm mới
@@ -5347,6 +5359,8 @@ async function uSTZrHUt_IC() {
                     // URL đã có query params, merge lại
                     const existingParams = new URLSearchParams(urlParts[1]);
                     addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] URL đã có query params: ${urlParts[1]}`, 'info');
+                    // Cập nhật unix trong existing params
+                    existingParams.set('unix', currentUnix.toString());
                     queryParams.forEach((value, key) => {
                         existingParams.set(key, value);
                     });
