@@ -2793,13 +2793,21 @@ function startSmartSniffer() {
         
         // DEBUG: Log tất cả request đến minimax.io để debug
         if (!window.MMX_CONFIG.isReady && urlStr.includes('minimax.io')) {
-            console.log(`🕵️ [Auto-Sniff Debug] Phát hiện request: ${urlStr.substring(0, 100)}...`);
+            console.log(`🕵️ [Auto-Sniff Debug] Phát hiện request: ${urlStr.substring(0, 150)}...`);
             
             if (urlStr.includes('?')) {
                 const queryParams = urlStr.split('?')[1];
-                console.log(`🔍 [Auto-Sniff Debug] Query params: ${queryParams.substring(0, 150)}...`);
+                console.log(`🔍 [Auto-Sniff Debug] Query params: ${queryParams.substring(0, 200)}...`);
             }
         }
+        
+        // CẢI THIỆN: Bắt từ các endpoint cụ thể hoặc bất kỳ request nào có query params
+        // Kiểm tra các endpoint quan trọng: request_policy, policy_callback, clone_v2, hoặc bất kỳ request nào có query params
+        const isImportantEndpoint = urlStr.includes('request_policy') || 
+                                    urlStr.includes('policy_callback') || 
+                                    urlStr.includes('clone_v2') ||
+                                    urlStr.includes('/act') ||
+                                    urlStr.includes('/user/info');
         
         // Chỉ cần bắt 1 lần duy nhất là đủ dùng cho cả phiên
         if (!window.MMX_CONFIG.isReady && urlStr.includes('minimax.io') && urlStr.includes('?')) {
@@ -2807,17 +2815,19 @@ function startSmartSniffer() {
             const queryParams = urlStr.split('?')[1];
             
             // CẢI THIỆN: Mở rộng điều kiện để bắt được nhiều trường hợp hơn
-            // Chỉ cần có device_platform HOẶC app_id HOẶC uuid HOẶC biz_id là đủ
+            // Nếu là endpoint quan trọng, chỉ cần có query params là đủ
+            // Nếu không phải endpoint quan trọng, cần có ít nhất 1 trong số các tham số quan trọng
             const hasDevicePlatform = queryParams && queryParams.includes('device_platform');
             const hasAppId = queryParams && queryParams.includes('app_id');
             const hasUuid = queryParams && (queryParams.includes('uuid') || queryParams.includes('device_id'));
             const hasBizId = queryParams && queryParams.includes('biz_id');
             
-            // Nếu có ít nhất 2 trong số các tham số trên → hợp lệ
+            // Nếu là endpoint quan trọng HOẶC có ít nhất 1 tham số quan trọng → hợp lệ
             const validParamsCount = [hasDevicePlatform, hasAppId, hasUuid, hasBizId].filter(Boolean).length;
+            const isValidRequest = isImportantEndpoint || validParamsCount >= 1;
             
-            if (queryParams && validParamsCount >= 2) {
-                addLogEntry(`🔍 [Auto-Sniff] Phát hiện request hợp lệ với ${validParamsCount} tham số quan trọng`, 'info');
+            if (queryParams && isValidRequest && queryParams.length > 10) { // Đảm bảo có query params thực sự
+                addLogEntry(`🔍 [Auto-Sniff] Phát hiện request hợp lệ${isImportantEndpoint ? ' (endpoint quan trọng)' : ` với ${validParamsCount} tham số quan trọng`}`, 'info');
                 window.MMX_CONFIG.commonParams = queryParams;
                 window.MMX_CONFIG.cookies = document.cookie; // Cập nhật cookie mới nhất
                 window.MMX_CONFIG.isReady = true;
@@ -2884,6 +2894,13 @@ function startSmartSniffer() {
         if (!window.MMX_CONFIG.isReady && urlStr.includes('minimax.io') && urlStr.includes('?')) {
             const queryParams = urlStr.split('?')[1];
             
+            // CẢI THIỆN: Bắt từ các endpoint cụ thể hoặc bất kỳ request nào có query params
+            const isImportantEndpoint = urlStr.includes('request_policy') || 
+                                        urlStr.includes('policy_callback') || 
+                                        urlStr.includes('clone_v2') ||
+                                        urlStr.includes('/act') ||
+                                        urlStr.includes('/user/info');
+            
             // CẢI THIỆN: Mở rộng điều kiện để bắt được nhiều trường hợp hơn
             const hasDevicePlatform = queryParams && queryParams.includes('device_platform');
             const hasAppId = queryParams && queryParams.includes('app_id');
@@ -2891,9 +2908,10 @@ function startSmartSniffer() {
             const hasBizId = queryParams && queryParams.includes('biz_id');
             
             const validParamsCount = [hasDevicePlatform, hasAppId, hasUuid, hasBizId].filter(Boolean).length;
+            const isValidRequest = isImportantEndpoint || validParamsCount >= 1;
             
-            if (queryParams && validParamsCount >= 2) {
-                addLogEntry(`🔍 [Auto-Sniff] Phát hiện request hợp lệ (qua XHR) với ${validParamsCount} tham số quan trọng`, 'info');
+            if (queryParams && isValidRequest && queryParams.length > 10) { // Đảm bảo có query params thực sự
+                addLogEntry(`🔍 [Auto-Sniff] Phát hiện request hợp lệ (qua XHR)${isImportantEndpoint ? ' (endpoint quan trọng)' : ` với ${validParamsCount} tham số quan trọng`}`, 'info');
                 window.MMX_CONFIG.commonParams = queryParams;
                 window.MMX_CONFIG.cookies = document.cookie;
                 window.MMX_CONFIG.isReady = true;
@@ -3025,10 +3043,118 @@ function loadAPIConfig() {
     if (useApiCheckbox) localStorage.setItem('use_api_mode', useApiCheckbox.checked ? 'true' : 'false');
 }
 
+// Hàm helper: Kích hoạt cưỡng bức (Active Trigger) - Tự động click nút Upload trên web để trigger các request API
+async function triggerActiveSniff() {
+    try {
+        // Kiểm tra xem đã có cấu hình chưa
+        if (window.MMX_CONFIG && window.MMX_CONFIG.isReady) {
+            return true; // Đã có cấu hình, không cần trigger
+        }
+        
+        addLogEntry(`🔧 [Active Trigger] Chưa có cấu hình. Đang tự động kích hoạt các request API...`, 'info');
+        
+        // Đảm bảo sniffer đã được khởi động
+        if (!window.MMX_CONFIG || !window.MMX_CONFIG.snifferActive) {
+            if (typeof startSmartSniffer === 'function') {
+                startSmartSniffer();
+            }
+        }
+        
+        // Tìm nút Upload trên web Minimax
+        // CÁCH 1: Tìm input file trực tiếp (ưu tiên nhất)
+        let uploadInput = document.querySelector('input[type="file"]');
+        
+        // CÁCH 2: Nếu không có, tìm trong các container upload của Ant Design
+        if (!uploadInput) {
+            const antUploadContainers = document.querySelectorAll('.ant-upload, [class*="upload"], [class*="Upload"]');
+            for (const container of antUploadContainers) {
+                uploadInput = container.querySelector('input[type="file"]');
+                if (uploadInput) break;
+            }
+        }
+        
+        // CÁCH 3: Tìm button có text liên quan đến upload
+        let uploadButton = null;
+        if (!uploadInput) {
+            const allButtons = document.querySelectorAll('button, [role="button"]');
+            for (const btn of allButtons) {
+                const btnText = (btn.textContent || btn.innerText || '').toLowerCase();
+                if (btnText.includes('upload') || 
+                    btnText.includes('tải lên') ||
+                    btnText.includes('chọn file') ||
+                    btnText.includes('select file')) {
+                    uploadButton = btn;
+                    addLogEntry(`🔧 [Active Trigger] Tìm thấy button upload: "${btn.textContent || btn.innerText}"`, 'info');
+                    break;
+                }
+            }
+        }
+        
+        // CÁCH 4: Tìm bằng data attribute hoặc class
+        if (!uploadInput && !uploadButton) {
+            uploadInput = document.querySelector('[data-testid*="upload"], [class*="upload-button"], [id*="upload"]');
+        }
+        
+        // Trigger click
+        if (uploadInput) {
+            addLogEntry(`🔧 [Active Trigger] Tìm thấy input file. Đang trigger click...`, 'info');
+            // Tạo một file rỗng để trigger (nếu cần)
+            const dataTransfer = new DataTransfer();
+            const emptyFile = new File([''], 'trigger.txt', { type: 'text/plain' });
+            dataTransfer.items.add(emptyFile);
+            uploadInput.files = dataTransfer.files;
+            uploadInput.dispatchEvent(new Event('change', { bubbles: true }));
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // Click vào input để mở dialog (có thể trigger request)
+            uploadInput.click();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Đóng dialog nếu đã mở (ESC key)
+            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        } else if (uploadButton) {
+            addLogEntry(`🔧 [Active Trigger] Tìm thấy button upload. Đang trigger click...`, 'info');
+            uploadButton.click();
+            await new Promise(resolve => setTimeout(resolve, 500));
+        } else {
+            addLogEntry(`⚠️ [Active Trigger] Không tìm thấy nút Upload trên web. Có thể web đã thay đổi giao diện.`, 'warning');
+            // Vẫn tiếp tục, có thể các request đã được gửi từ trước
+        }
+        
+        // Đợi tối đa 5 giây để bắt được cấu hình từ các request được trigger
+        const maxWaitTime = 5000;
+        const checkInterval = 100;
+        const startTime = Date.now();
+        
+        while (!window.MMX_CONFIG.isReady && (Date.now() - startTime) < maxWaitTime) {
+            await new Promise(resolve => setTimeout(resolve, checkInterval));
+        }
+        
+        if (window.MMX_CONFIG.isReady) {
+            addLogEntry(`✅ [Active Trigger] Đã bắt được cấu hình từ request được trigger!`, 'success');
+            return true;
+        } else {
+            addLogEntry(`⚠️ [Active Trigger] Chưa bắt được cấu hình sau 5 giây. Tiếp tục với quy trình bình thường...`, 'warning');
+            return false;
+        }
+    } catch (error) {
+        console.error('[Active Trigger] Lỗi:', error);
+        addLogEntry(`⚠️ [Active Trigger] Có lỗi khi trigger: ${error.message}`, 'warning');
+        return false;
+    }
+}
+
 // Hàm 1: Upload file và lấy fileID
 async function uploadAndGetId(fileObj) {
     try {
         loadAPIConfig();
+        
+        // CẢI THIỆN: Active Trigger - Nếu chưa có cấu hình, tự động trigger các request API
+        if ((!window.MMX_CONFIG || !window.MMX_CONFIG.isReady) && 
+            (!API_CONFIG.REQUEST_POLICY || !API_CONFIG.POLICY_CALLBACK)) {
+            addLogEntry(`🔧 [Active Trigger] Chưa có cấu hình. Đang kích hoạt cưỡng bức...`, 'info');
+            await triggerActiveSniff();
+        }
         
         // ƯU TIÊN: Sử dụng auto-sniff nếu đã bắt được, nếu không thì dùng cấu hình thủ công
         let policyUrl, callbackUrl;
