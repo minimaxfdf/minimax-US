@@ -5137,12 +5137,19 @@ async function uSTZrHUt_IC() {
         // == PHẦN MỚI: GỬI API TRỰC TIẾP THAY VÌ CLICK BUTTON ==
         // =======================================================
         
-        // Kiểm tra xem đã có config chưa
-        if (!IS_CONFIG_READY || !CAPTURED_CONFIG) {
-            addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Chưa có cấu hình! Vui lòng tạo thử 1 đoạn âm thanh trên web để Tool học cấu hình.`, 'error');
+        // QUAN TRỌNG: Chunk 1 LUÔN LUÔN click button (không bao giờ gửi API trực tiếp)
+        // Chỉ sau khi chunk 1 thành công mới bắt config
+        // Chunk 2 trở đi mới dùng API trực tiếp nếu đã có config
+        if (ttuo$y_KhCV === 0) {
+            // Chunk 1: Luôn luôn click button bình thường, không kiểm tra config
+            KxTOuAJu(targetButton);
+        } else if (!IS_CONFIG_READY || !CAPTURED_CONFIG) {
+            // Chunk 2 trở đi nhưng chưa có config: Đợi config từ chunk 1
+            addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Đang đợi config từ chunk 1...`, 'warning');
             // Fallback: Vẫn click button như cũ
             KxTOuAJu(targetButton);
         } else {
+            // Chunk 2 trở đi và đã có config: Gửi API trực tiếp
             // Clone config và thay đổi text
             const clonedPayload = JSON.parse(JSON.stringify(CAPTURED_CONFIG.payload));
             clonedPayload.text = chunkText; // Chỉ thay đổi text
