@@ -5281,18 +5281,15 @@ async function uSTZrHUt_IC() {
                     }
                 }
                 
-                // 3. Xây dựng lại object (BẮT BUỘC PHẢI CÓ CÁC THAM SỐ CƠ BẢN)
+                // 3. Xây dựng lại object (ĐÚNG 100% THEO MẪU WEB)
+                // Mẫu web chỉ có: language_tag, files, need_noise_reduction, text
+                // KHÔNG có speed, vol, pitch trong Voice Clone mode
                 clonedPayload.language_tag = keepLanguage;
                 clonedPayload.files = keepFiles;
                 clonedPayload.need_noise_reduction = keepNoise;
+                // Note: trường 'text' sẽ được gán ở dòng code phía dưới (thay cho preview_text)
                 
-                // === [FIX] THÊM LẠI CÁC THAM SỐ BẮT BUỘC MÀ SERVER YÊU CẦU ===
-                clonedPayload.speed = 1.0; // Tốc độ chuẩn
-                clonedPayload.vol = 1.0;   // Âm lượng chuẩn
-                clonedPayload.pitch = 0;   // Cao độ chuẩn
-                // Note: trường 'text' sẽ được gán ở dòng code phía dưới
-                
-                addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã tái tạo Payload: Files + Speed/Vol/Pitch`, 'success');
+                addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã tái tạo Payload đúng mẫu web (language, files, need_noise_reduction)`, 'success');
                 
             } else {
                 // CHẾ ĐỘ KHÁC (Text-to-Speech thường): Giữ logic cũ
