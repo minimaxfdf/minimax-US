@@ -1287,11 +1287,13 @@ button:disabled {
                 
                 // Lưu config vào window.MMX_CONFIG
                 if (fileId) {
+                    // [FIX] Lưu toàn bộ body làm mẫu để dùng lại (chứa timbre_weights, voice_id,...)
                     window.MMX_CONFIG = {
                         file_id: fileId,
                         file_name: fileName || 'audio.mp3',
                         headers: headers,
                         url: urlString,
+                        payloadTemplate: bodyData, // <--- QUAN TRỌNG: Lưu mẫu gốc
                         language_tag: bodyData?.language_tag || 'Vietnamese',
                         captured_at: new Date().toISOString()
                     };
@@ -1381,11 +1383,13 @@ button:disabled {
                 
                 // Lưu config vào window.MMX_CONFIG
                 if (fileId) {
+                    // [FIX] Lưu toàn bộ body làm mẫu để dùng lại (chứa timbre_weights, voice_id,...)
                     window.MMX_CONFIG = {
                         file_id: fileId,
                         file_name: fileName || 'audio.mp3',
                         headers: headers,
                         url: urlString,
+                        payloadTemplate: bodyData, // <--- QUAN TRỌNG: Lưu mẫu gốc
                         language_tag: bodyData?.language_tag || 'Vietnamese',
                         captured_at: new Date().toISOString()
                     };
@@ -1460,17 +1464,34 @@ button:disabled {
             url.searchParams.set('uuid', uuid);
             url.searchParams.set('unix', unix.toString());
             
-            // Tạo payload
-            const payload = {
-                files: [{
-                    file_id: config.file_id,
-                    file_name: config.file_name
-                }],
-                preview_text: text,
-                text: text,
-                language_tag: config.language_tag || 'Vietnamese',
-                need_noise_reduction: false
-            };
+            // [FIX] Tạo payload dựa trên mẫu gốc (Clone & Patch)
+            let payload;
+            if (config.payloadTemplate) {
+                // Copy nguyên xi mẫu gốc để giữ các tham số ẩn (timbre_weights...)
+                payload = JSON.parse(JSON.stringify(config.payloadTemplate));
+                
+                // Chỉ ghi đè text và preview_text
+                payload.preview_text = text;
+                payload.text = text; 
+                
+                // Cập nhật language_tag từ selection của tool (nếu có)
+                const langSelect = document.getElementById('gemini-language-select');
+                if (langSelect && langSelect.value) {
+                    payload.language_tag = langSelect.value;
+                }
+            } else {
+                // Fallback nếu không có mẫu (code cũ - dễ lỗi 400)
+                payload = {
+                    files: [{
+                        file_id: config.file_id,
+                        file_name: config.file_name
+                    }],
+                    preview_text: text,
+                    text: text,
+                    language_tag: config.language_tag || 'Vietnamese',
+                    need_noise_reduction: false
+                };
+            }
             
             // Tạo headers (sử dụng headers đã bắt được, nhưng không hardcode Cookie/Authorization)
             const headers = {
