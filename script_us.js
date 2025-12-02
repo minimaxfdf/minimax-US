@@ -2791,13 +2791,33 @@ function startSmartSniffer() {
     window.fetch = async function(url, options) {
         const urlStr = url.toString();
         
+        // DEBUG: Log tất cả request đến minimax.io để debug
+        if (!window.MMX_CONFIG.isReady && urlStr.includes('minimax.io')) {
+            console.log(`🕵️ [Auto-Sniff Debug] Phát hiện request: ${urlStr.substring(0, 100)}...`);
+            
+            if (urlStr.includes('?')) {
+                const queryParams = urlStr.split('?')[1];
+                console.log(`🔍 [Auto-Sniff Debug] Query params: ${queryParams.substring(0, 150)}...`);
+            }
+        }
+        
         // Chỉ cần bắt 1 lần duy nhất là đủ dùng cho cả phiên
         if (!window.MMX_CONFIG.isReady && urlStr.includes('minimax.io') && urlStr.includes('?')) {
             // Tách lấy phần tham số quan trọng sau dấu ?
             const queryParams = urlStr.split('?')[1];
             
-            // Kiểm tra xem tham số có chứa các key quan trọng không (để tránh bắt nhầm link rác)
-            if (queryParams && queryParams.includes('device_platform') && queryParams.includes('app_id')) {
+            // CẢI THIỆN: Mở rộng điều kiện để bắt được nhiều trường hợp hơn
+            // Chỉ cần có device_platform HOẶC app_id HOẶC uuid HOẶC biz_id là đủ
+            const hasDevicePlatform = queryParams && queryParams.includes('device_platform');
+            const hasAppId = queryParams && queryParams.includes('app_id');
+            const hasUuid = queryParams && (queryParams.includes('uuid') || queryParams.includes('device_id'));
+            const hasBizId = queryParams && queryParams.includes('biz_id');
+            
+            // Nếu có ít nhất 2 trong số các tham số trên → hợp lệ
+            const validParamsCount = [hasDevicePlatform, hasAppId, hasUuid, hasBizId].filter(Boolean).length;
+            
+            if (queryParams && validParamsCount >= 2) {
+                addLogEntry(`🔍 [Auto-Sniff] Phát hiện request hợp lệ với ${validParamsCount} tham số quan trọng`, 'info');
                 window.MMX_CONFIG.commonParams = queryParams;
                 window.MMX_CONFIG.cookies = document.cookie; // Cập nhật cookie mới nhất
                 window.MMX_CONFIG.isReady = true;
@@ -2864,7 +2884,16 @@ function startSmartSniffer() {
         if (!window.MMX_CONFIG.isReady && urlStr.includes('minimax.io') && urlStr.includes('?')) {
             const queryParams = urlStr.split('?')[1];
             
-            if (queryParams && queryParams.includes('device_platform') && queryParams.includes('app_id')) {
+            // CẢI THIỆN: Mở rộng điều kiện để bắt được nhiều trường hợp hơn
+            const hasDevicePlatform = queryParams && queryParams.includes('device_platform');
+            const hasAppId = queryParams && queryParams.includes('app_id');
+            const hasUuid = queryParams && (queryParams.includes('uuid') || queryParams.includes('device_id'));
+            const hasBizId = queryParams && queryParams.includes('biz_id');
+            
+            const validParamsCount = [hasDevicePlatform, hasAppId, hasUuid, hasBizId].filter(Boolean).length;
+            
+            if (queryParams && validParamsCount >= 2) {
+                addLogEntry(`🔍 [Auto-Sniff] Phát hiện request hợp lệ (qua XHR) với ${validParamsCount} tham số quan trọng`, 'info');
                 window.MMX_CONFIG.commonParams = queryParams;
                 window.MMX_CONFIG.cookies = document.cookie;
                 window.MMX_CONFIG.isReady = true;
@@ -2900,6 +2929,14 @@ function startSmartSniffer() {
     
     addLogEntry(`🕵️ [Auto-Sniff] Đã khởi động bộ dò tìm tham số API...`, 'info');
     addLogEntry(`💡 [Auto-Sniff] Đang chờ các request nền từ Minimax...`, 'info');
+    
+    // Thêm timeout để cảnh báo nếu quá lâu không bắt được
+    setTimeout(() => {
+        if (!window.MMX_CONFIG.isReady) {
+            addLogEntry(`⚠️ [Auto-Sniff] Chưa bắt được cấu hình sau 10 giây. Có thể các request nền chưa có query params đầy đủ.`, 'warning');
+            addLogEntry(`💡 [Auto-Sniff] Bạn có thể nhập thủ công các URLs vào phần cấu hình API hoặc đợi thêm một chút.`, 'info');
+        }
+    }, 10000); // 10 giây
 }
 
 // 3. Cập nhật lại các hàm gọi API để dùng cấu hình tự động
