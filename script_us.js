@@ -5407,6 +5407,30 @@ async function uSTZrHUt_IC() {
                 addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm origin: ${window.location.origin}`, 'info');
             }
             
+            // QUAN TRỌNG: Thêm User-Agent và các headers khác mà browser tự động thêm
+            if (!normalizedHeaders['user-agent']) {
+                normalizedHeaders['user-agent'] = navigator.userAgent;
+                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm user-agent`, 'info');
+            }
+            
+            // Thêm Accept-Language nếu có
+            if (!normalizedHeaders['accept-language'] && navigator.language) {
+                normalizedHeaders['accept-language'] = navigator.language + ',' + navigator.languages.join(',');
+                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm accept-language`, 'info');
+            }
+            
+            // Thêm Accept-Encoding (browser tự động thêm)
+            if (!normalizedHeaders['accept-encoding']) {
+                normalizedHeaders['accept-encoding'] = 'gzip, deflate, br';
+                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm accept-encoding`, 'info');
+            }
+            
+            // Thêm Connection
+            if (!normalizedHeaders['connection']) {
+                normalizedHeaders['connection'] = 'keep-alive';
+                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm connection: keep-alive`, 'info');
+            }
+            
             // Gửi API trực tiếp
             addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang gửi API trực tiếp (không cần click button)...`, 'info');
             addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] URL đầy đủ: ${apiUrl}`, 'info');
@@ -5419,24 +5443,43 @@ async function uSTZrHUt_IC() {
             // Đánh dấu đang gửi API để skip phần code click button
             window._skipClickButtonForChunk = ttuo$y_KhCV;
             
-            fetch(apiUrl, {
-                method: CAPTURED_CONFIG.method || 'POST',
-                headers: normalizedHeaders,
-                body: JSON.stringify(clonedPayload),
-                credentials: 'same-origin',
-                mode: 'cors'
-            }).then(response => {
-                // Log response status và headers để debug
-                addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] Response status: ${response.status} ${response.statusText}`, 'info');
+            // QUAN TRỌNG: Dùng XMLHttpRequest thay vì fetch() để giống hệt với cách web gửi
+            // fetch() có thể thiếu một số headers tự động hoặc xử lý khác với XMLHttpRequest
+            addLogEntry(`🔧 [C#${ttuo$y_KhCV + 1}] Sử dụng XMLHttpRequest thay vì fetch() để giống với web`, 'info');
+            
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open(CAPTURED_CONFIG.method || 'POST', apiUrl, true);
                 
-                if (!response.ok) {
-                    // Đọc response body để log lỗi chi tiết
-                    return response.text().then(text => {
-                        addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Response body: ${text.substring(0, 300)}`, 'error');
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    });
-                }
-                return response.json();
+                // Set headers
+                Object.keys(normalizedHeaders).forEach(key => {
+                    xhr.setRequestHeader(key, normalizedHeaders[key]);
+                });
+                
+                xhr.onload = function() {
+                    addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] Response status: ${xhr.status}`, 'info');
+                    
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            const data = JSON.parse(xhr.responseText);
+                            resolve(data);
+                        } catch (e) {
+                            addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Lỗi parse response: ${e.message}`, 'error');
+                            reject(new Error(`Failed to parse response: ${e.message}`));
+                        }
+                    } else {
+                        // Lỗi HTTP
+                        addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Response body: ${xhr.responseText.substring(0, 300)}`, 'error');
+                        reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText || 'Unknown error'}`));
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Network error`, 'error');
+                    reject(new Error('Network error'));
+                };
+                
+                xhr.send(JSON.stringify(clonedPayload));
             }).then(data => {
                 // Kiểm tra có audio_url không
                 const audioUrl = data?.audio_url || data?.data?.audio_url || data?.result?.audio_url;
