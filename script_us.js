@@ -4881,47 +4881,71 @@ async function uSTZrHUt_IC() {
                 }
             }, 500);
             
-            // Chờ intercept XHR (tối đa 3 giây)
+            // Chờ intercept XHR (tối đa 5 giây)
+            // QUAN TRỌNG: Chờ ít nhất 1 giây sau khi click để đảm bảo đã intercept được request đúng
             let interceptWaitCount = 0;
+            let lastInterceptedTime = 0;
             const interceptCheckInterval = setInterval(() => {
                 interceptWaitCount++;
+                
+                // Nếu đã intercept được request info
                 if (window.interceptedRequestInfo) {
-                    clearInterval(interceptCheckInterval);
-                    window.lastRequestInfo = window.interceptedRequestInfo;
-                    const interceptedInfo = {
-                        ...window.interceptedRequestInfo,
-                        text: chunkText
-                    };
-                    // Cập nhật payload với text mới
-                    if (interceptedInfo.payload instanceof FormData) {
-                        const textarea = document.getElementById('gemini-main-textarea') || document.querySelector('textarea');
-                        const fieldName = textarea ? (textarea.name || textarea.id || 'text') : 'text';
-                        const newFormData = new FormData();
-                        for (let [key, value] of interceptedInfo.payload.entries()) {
-                            if (key === fieldName) {
-                                newFormData.set(key, chunkText);
-                            } else {
-                                newFormData.set(key, value);
+                    const url = window.interceptedRequestInfo.url.toLowerCase();
+                    const isSkipRequest = ['hailuo.ai', 'meerkat', 'reporter', 'analytics', 'tracking', 'google-analytics'].some(pattern => url.includes(pattern));
+                    const isAudioRequest = ['/api/audio', '/v1/api/audio', 'minimax.io/audio', 'voice', 'generate', 'regenerate'].some(pattern => url.includes(pattern));
+                    
+                    // Kiểm tra xem request có phải là request đúng không
+                    if (!isSkipRequest && isAudioRequest) {
+                        // Đã có request đúng, chờ thêm 0.5 giây để đảm bảo không có request nào khác đến sau
+                        const now = Date.now();
+                        if (now - lastInterceptedTime > 500 || lastInterceptedTime === 0) {
+                            lastInterceptedTime = now;
+                            // Tiếp tục chờ một chút để đảm bảo
+                            if (interceptWaitCount >= 15) { // Đã chờ ít nhất 1.5 giây
+                                clearInterval(interceptCheckInterval);
+                                window.lastRequestInfo = window.interceptedRequestInfo;
+                                const interceptedInfo = {
+                                    ...window.interceptedRequestInfo,
+                                    text: chunkText
+                                };
+                                // Cập nhật payload với text mới
+                                if (interceptedInfo.payload instanceof FormData) {
+                                    const textarea = document.getElementById('gemini-main-textarea') || document.querySelector('textarea');
+                                    const fieldName = textarea ? (textarea.name || textarea.id || 'text') : 'text';
+                                    const newFormData = new FormData();
+                                    for (let [key, value] of interceptedInfo.payload.entries()) {
+                                        if (key === fieldName) {
+                                            newFormData.set(key, chunkText);
+                                        } else {
+                                            newFormData.set(key, value);
+                                        }
+                                    }
+                                    interceptedInfo.payload = newFormData;
+                                }
+                                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã intercept được request info đúng (audio generation)`, 'success');
+                                addLogEntry(`   URL: ${interceptedInfo.url}`, 'info');
+                                
+                                // Tự động gửi request với info đã intercept
+                                setTimeout(() => {
+                                    addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang gửi request trực tiếp với info đã intercept...`, 'info');
+                                    sendRequestDirectly(interceptedInfo).then(result => {
+                                        if (result.success) {
+                                            handleRequestSuccess(result);
+                                        } else {
+                                            handleRequestFailure(null, result.status);
+                                        }
+                                    }).catch(error => {
+                                        handleRequestFailure(error);
+                                    });
+                                }, 500);
                             }
                         }
-                        interceptedInfo.payload = newFormData;
+                    } else {
+                        // Request không đúng, reset và tiếp tục chờ
+                        addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Intercept được request không đúng (${url}), tiếp tục chờ...`, 'warning');
+                        window.interceptedRequestInfo = null;
                     }
-                    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã intercept được request info`, 'success');
-                    
-                    // Tự động gửi request với info đã intercept
-                    setTimeout(() => {
-                        addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang gửi request trực tiếp với info đã intercept...`, 'info');
-                        sendRequestDirectly(interceptedInfo).then(result => {
-                            if (result.success) {
-                                handleRequestSuccess(result);
-                            } else {
-                                handleRequestFailure(null, result.status);
-                            }
-                        }).catch(error => {
-                            handleRequestFailure(error);
-                        });
-                    }, 1000);
-                } else if (interceptWaitCount >= 30) { // 3 giây (30 * 100ms)
+                } else if (interceptWaitCount >= 50) { // 5 giây (50 * 100ms)
                     clearInterval(interceptCheckInterval);
                     addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Timeout intercept XHR, dùng request info từ phân tích`, 'warning');
                     const fallbackInfo = analyzeRequestFromButton(targetButton, chunkText);
@@ -8482,45 +8506,90 @@ async function waitForVoiceModelReady() {
         const xhr = this;
         const requestInfo = window.pendingXHRRequests.get(xhr._requestId);
         
-        // QUAN TRỌNG: Intercept request để lưu lại thông tin
+        // QUAN TRỌNG: Intercept request để lưu lại thông tin (CHỈ intercept request generate audio)
         if (window.interceptNextXHR && requestInfo) {
-            console.log(`[XHR INTERCEPT] Đang intercept request:`, {
+            const url = requestInfo.url.toLowerCase();
+            
+            // Danh sách các pattern URL cần BỎ QUA (analytics, tracking, etc.)
+            const skipPatterns = [
+                'hailuo.ai',
+                'meerkat',
+                'reporter',
+                'analytics',
+                'tracking',
+                'google-analytics',
+                'gtm',
+                'facebook.com',
+                'doubleclick',
+                'adservice',
+                'googlesyndication'
+            ];
+            
+            // Kiểm tra xem URL có phải là request analytics/tracking không
+            const isSkipRequest = skipPatterns.some(pattern => url.includes(pattern));
+            
+            // Danh sách các pattern URL cần INTERCEPT (audio generation)
+            const interceptPatterns = [
+                '/api/audio',
+                '/v1/api/audio',
+                'minimax.io/audio',
+                'voice',
+                'generate',
+                'regenerate'
+            ];
+            
+            // Kiểm tra xem URL có phải là request generate audio không
+            const isAudioRequest = interceptPatterns.some(pattern => url.includes(pattern));
+            
+            console.log(`[XHR INTERCEPT] Đang kiểm tra request:`, {
                 method: requestInfo.method,
                 url: requestInfo.url,
-                data: data
+                isSkipRequest: isSkipRequest,
+                isAudioRequest: isAudioRequest
             });
             
-            // Lưu request info để dùng sau
-            const interceptedInfo = {
-                url: requestInfo.url,
-                method: requestInfo.method,
-                payload: data,
-                headers: {}
-            };
-            
-            // Lấy headers từ XHR
-            try {
-                // Lấy headers đã set trước đó
-                if (xhr._headers) {
-                    Object.assign(interceptedInfo.headers, xhr._headers);
+            // CHỈ intercept nếu là request generate audio VÀ không phải analytics
+            if (!isSkipRequest && isAudioRequest) {
+                console.log(`[XHR INTERCEPT] ✅ Đây là request generate audio, đang intercept...`);
+                
+                // Lưu request info để dùng sau
+                const interceptedInfo = {
+                    url: requestInfo.url,
+                    method: requestInfo.method,
+                    payload: data,
+                    headers: {}
+                };
+                
+                // Lấy headers từ XHR
+                try {
+                    // Lấy headers đã set trước đó
+                    if (xhr._headers) {
+                        Object.assign(interceptedInfo.headers, xhr._headers);
+                    }
+                    
+                    // Thêm headers mặc định
+                    interceptedInfo.headers['Accept'] = 'application/json, text/plain, */*';
+                    interceptedInfo.headers['X-Requested-With'] = 'XMLHttpRequest';
+                    
+                    // Lưu vào window để dùng sau
+                    window.lastRequestHeaders = interceptedInfo.headers;
+                } catch (e) {
+                    console.error('[XHR INTERCEPT] Lỗi khi lấy headers:', e);
                 }
                 
-                // Thêm headers mặc định
-                interceptedInfo.headers['Accept'] = 'application/json, text/plain, */*';
-                interceptedInfo.headers['X-Requested-With'] = 'XMLHttpRequest';
+                // Lưu request info
+                window.interceptedRequestInfo = interceptedInfo;
+                window.lastRequestInfo = interceptedInfo;
+                window.interceptNextXHR = false; // Tắt flag
                 
-                // Lưu vào window để dùng sau
-                window.lastRequestHeaders = interceptedInfo.headers;
-            } catch (e) {
-                console.error('[XHR INTERCEPT] Lỗi khi lấy headers:', e);
+                console.log(`[XHR INTERCEPT] ✅ Đã lưu request info:`, interceptedInfo);
+            } else if (isSkipRequest) {
+                console.log(`[XHR INTERCEPT] ⏭️ Bỏ qua request analytics/tracking: ${requestInfo.url}`);
+                // Không tắt flag, tiếp tục chờ request đúng
+            } else {
+                console.log(`[XHR INTERCEPT] ⚠️ Không phải request generate audio: ${requestInfo.url}`);
+                // Không tắt flag, tiếp tục chờ request đúng
             }
-            
-            // Lưu request info
-            window.interceptedRequestInfo = interceptedInfo;
-            window.lastRequestInfo = interceptedInfo;
-            window.interceptNextXHR = false; // Tắt flag
-            
-            console.log(`[XHR INTERCEPT] Đã lưu request info:`, interceptedInfo);
         }
         
         // Log request để debug
