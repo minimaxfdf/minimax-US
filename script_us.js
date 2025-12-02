@@ -1491,15 +1491,31 @@ button:disabled {
                 // Sử dụng deep clone để đảm bảo giữ nguyên cả nested objects
                 payload = JSON.parse(JSON.stringify(config.payloadTemplate));
                 
-                // QUAN TRỌNG: Luôn gán nội dung đầy đủ vào payload.text (không giới hạn)
-                payload.text = text;
+                // QUAN TRỌNG: Logic thông minh dựa trên template gốc
+                // Nếu template gốc có preview_text -> Giữ nguyên preview_text và thêm text
+                // Nếu template gốc có text -> Chỉ cập nhật text
+                // Server có thể yêu cầu cả 2 trường hoặc chỉ 1 trường tùy vào template gốc
                 
-                // QUAN TRỌNG: XÓA HOÀN TOÀN preview_text để tránh lỗi 400
-                // Server Minimax KHÔNG chấp nhận cả text và preview_text cùng lúc
-                // Nếu có preview_text, server sẽ ưu tiên nó và báo lỗi khi quá dài hoặc có cả 2 trường
-                if (payload.preview_text !== undefined) {
-                    delete payload.preview_text;
-                    addLogEntry(`💡 [Module 2] Đã xóa preview_text, chỉ dùng text (${text.length} ký tự)`, 'info');
+                const hasPreviewText = typeof config.payloadTemplate.preview_text !== 'undefined';
+                const hasText = typeof config.payloadTemplate.text !== 'undefined';
+                
+                if (hasPreviewText && !hasText) {
+                    // Template chỉ có preview_text -> Giữ nguyên và thêm text
+                    payload.preview_text = text.substring(0, 200); // Giới hạn 200 ký tự cho preview_text
+                    payload.text = text; // Thêm text đầy đủ
+                    addLogEntry(`💡 [Module 2] Template có preview_text -> Giữ preview_text (200 ký tự) + text (${text.length} ký tự)`, 'info');
+                } else if (hasText) {
+                    // Template có text -> Chỉ cập nhật text
+                    payload.text = text;
+                    // Xóa preview_text nếu có để tránh xung đột
+                    if (payload.preview_text !== undefined) {
+                        delete payload.preview_text;
+                    }
+                    addLogEntry(`💡 [Module 2] Template có text -> Chỉ dùng text (${text.length} ký tự)`, 'info');
+                } else {
+                    // Template không có cả 2 -> Thêm text
+                    payload.text = text;
+                    addLogEntry(`💡 [Module 2] Template không có text/preview_text -> Thêm text (${text.length} ký tự)`, 'info');
                 }
                 
                 // Cập nhật language_tag từ selection của tool (nếu có)
@@ -1585,11 +1601,7 @@ button:disabled {
             delete headers['referer']; 
             delete headers['Referer'];
             
-            // ĐẢM BẢO CUỐI CÙNG: Xóa preview_text một lần nữa trước khi gửi (phòng trường hợp có code khác thêm vào)
-            if (payload.preview_text !== undefined) {
-                delete payload.preview_text;
-                console.warn('[MODULE 2 WARNING] Đã xóa preview_text lần cuối trước khi gửi');
-            }
+            // KHÔNG xóa preview_text nữa - để logic trên quyết định
             
             // DEBUG: Log URL và headers trước khi gửi
             console.log('[MODULE 2 DEBUG] URL:', targetUrl);
