@@ -1,3 +1,4 @@
+
 // ==UserScript==
 // @name         DUC LOI - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
@@ -1231,6 +1232,367 @@ button:disabled {
     // == KẾT THÚC: KHỐI LOGIC QUOTA ==
     // =======================================================
 
+    // =======================================================
+    // == MODULE 1: INTERCEPTOR - BẮT API CONFIG ==
+    // =======================================================
+    // Nhiệm vụ: Lắng nghe ngầm các request mạng để "ăn cắp" thông số cấu hình
+    // Lưu file_id, headers khi phát hiện request đến clone_v2
+    
+    window.MMX_CONFIG = window.MMX_CONFIG || null;
+    window.MMX_CONFIG_CAPTURE_MODE = false; // Bật khi user bấm "Cấu hình"
+    
+    // Monkey-patch fetch để bắt request
+    const originalFetch = window.fetch;
+    window.fetch = function(url, options = {}) {
+        const urlString = typeof url === 'string' ? url : url.toString();
+        
+        // Kiểm tra nếu là request đến clone_v2 và đang trong chế độ capture
+        if (window.MMX_CONFIG_CAPTURE_MODE && urlString.includes('clone_v2')) {
+            console.log('[MODULE 1] Phát hiện request clone_v2 - Đang bắt config...');
+            addLogEntry('🔍 [Module 1] Phát hiện request API - Đang lưu cấu hình...', 'info');
+            
+            try {
+                // Parse body để lấy file_id và file_name
+                let bodyData = null;
+                if (options.body) {
+                    if (typeof options.body === 'string') {
+                        bodyData = JSON.parse(options.body);
+                    } else if (options.body instanceof FormData) {
+                        // Nếu là FormData, không thể parse trực tiếp
+                        bodyData = {};
+                    } else {
+                        bodyData = options.body;
+                    }
+                }
+                
+                // Lưu headers
+                const headers = {};
+                if (options.headers) {
+                    if (options.headers instanceof Headers) {
+                        options.headers.forEach((value, key) => {
+                            headers[key] = value;
+                        });
+                    } else {
+                        Object.assign(headers, options.headers);
+                    }
+                }
+                
+                // Lưu file_id và file_name từ body
+                let fileId = null;
+                let fileName = null;
+                if (bodyData && bodyData.files && Array.isArray(bodyData.files) && bodyData.files.length > 0) {
+                    fileId = bodyData.files[0].file_id;
+                    fileName = bodyData.files[0].file_name;
+                }
+                
+                // Lưu config vào window.MMX_CONFIG
+                if (fileId) {
+                    window.MMX_CONFIG = {
+                        file_id: fileId,
+                        file_name: fileName || 'audio.mp3',
+                        headers: headers,
+                        url: urlString,
+                        language_tag: bodyData?.language_tag || 'Vietnamese',
+                        captured_at: new Date().toISOString()
+                    };
+                    
+                    console.log('[MODULE 1] ✅ Đã lưu config thành công!', window.MMX_CONFIG);
+                    addLogEntry(`✅ [Module 1] Đã cấu hình thành công! File ID: ${fileId.substring(0, 20)}...`, 'success');
+                    
+                    // Tắt chế độ capture
+                    window.MMX_CONFIG_CAPTURE_MODE = false;
+                    
+                    // Thông báo lên UI
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Cấu hình thành công!',
+                            text: `Đã lưu cấu hình API. Sẵn sàng chạy tự động.`,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    }
+                } else {
+                    console.warn('[MODULE 1] Không tìm thấy file_id trong request');
+                    addLogEntry('⚠️ [Module 1] Không tìm thấy file_id trong request', 'warning');
+                }
+            } catch (error) {
+                console.error('[MODULE 1] Lỗi khi bắt config:', error);
+                addLogEntry(`❌ [Module 1] Lỗi khi bắt config: ${error.message}`, 'error');
+            }
+        }
+        
+        // Gọi fetch gốc
+        return originalFetch.apply(this, arguments);
+    };
+    
+    // Monkey-patch XMLHttpRequest để bắt request
+    const originalXHROpen = XMLHttpRequest.prototype.open;
+    const originalXHRSend = XMLHttpRequest.prototype.send;
+    
+    XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+        this._url = typeof url === 'string' ? url : url.toString();
+        return originalXHROpen.apply(this, arguments);
+    };
+    
+    XMLHttpRequest.prototype.send = function(data) {
+        const xhr = this;
+        const urlString = xhr._url || '';
+        
+        // Kiểm tra nếu là request đến clone_v2 và đang trong chế độ capture
+        if (window.MMX_CONFIG_CAPTURE_MODE && urlString.includes('clone_v2')) {
+            console.log('[MODULE 1] Phát hiện XHR request clone_v2 - Đang bắt config...');
+            addLogEntry('🔍 [Module 1] Phát hiện XHR request API - Đang lưu cấu hình...', 'info');
+            
+            try {
+                // Parse body để lấy file_id
+                let bodyData = null;
+                if (data) {
+                    if (typeof data === 'string') {
+                        try {
+                            bodyData = JSON.parse(data);
+                        } catch (e) {
+                            // Không phải JSON
+                        }
+                    } else {
+                        bodyData = data;
+                    }
+                }
+                
+                // Lưu headers từ xhr
+                const headers = {};
+                const headerString = xhr.getAllResponseHeaders();
+                if (headerString) {
+                    headerString.split('\r\n').forEach(line => {
+                        const parts = line.split(': ');
+                        if (parts.length === 2) {
+                            headers[parts[0]] = parts[1];
+                        }
+                    });
+                }
+                
+                // Lưu file_id và file_name từ body
+                let fileId = null;
+                let fileName = null;
+                if (bodyData && bodyData.files && Array.isArray(bodyData.files) && bodyData.files.length > 0) {
+                    fileId = bodyData.files[0].file_id;
+                    fileName = bodyData.files[0].file_name;
+                }
+                
+                // Lưu config vào window.MMX_CONFIG
+                if (fileId) {
+                    window.MMX_CONFIG = {
+                        file_id: fileId,
+                        file_name: fileName || 'audio.mp3',
+                        headers: headers,
+                        url: urlString,
+                        language_tag: bodyData?.language_tag || 'Vietnamese',
+                        captured_at: new Date().toISOString()
+                    };
+                    
+                    console.log('[MODULE 1] ✅ Đã lưu config thành công từ XHR!', window.MMX_CONFIG);
+                    addLogEntry(`✅ [Module 1] Đã cấu hình thành công! File ID: ${fileId.substring(0, 20)}...`, 'success');
+                    
+                    // Tắt chế độ capture
+                    window.MMX_CONFIG_CAPTURE_MODE = false;
+                    
+                    // Thông báo lên UI
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Cấu hình thành công!',
+                            text: `Đã lưu cấu hình API. Sẵn sàng chạy tự động.`,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('[MODULE 1] Lỗi khi bắt config từ XHR:', error);
+                addLogEntry(`❌ [Module 1] Lỗi khi bắt config: ${error.message}`, 'error');
+            }
+        }
+        
+        return originalXHRSend.apply(this, arguments);
+    };
+    
+    console.log('[MODULE 1] ✅ Interceptor đã được khởi tạo');
+    // =======================================================
+    // == KẾT THÚC MODULE 1: INTERCEPTOR ==
+    // =======================================================
+
+    // =======================================================
+    // == MODULE 2: API ENGINE - GỌI API TRỰC TIẾP ==
+    // =======================================================
+    // Nhiệm vụ: Thay thế hoàn toàn hành vi Click chuột bằng API call
+    
+    /**
+     * Hàm gọi API clone_v2 trực tiếp để tạo audio
+     * @param {string} text - Đoạn văn bản cần đọc
+     * @param {number} chunkIndex - Chỉ số chunk (để log)
+     * @returns {Promise<Blob|null>} - Trả về Blob audio hoặc null nếu lỗi
+     */
+    async function generateAudioViaAPI(text, chunkIndex = 0) {
+        // Kiểm tra config
+        if (!window.MMX_CONFIG || !window.MMX_CONFIG.file_id) {
+            addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Chưa cấu hình API! Vui lòng bấm "Cấu hình" trước.`, 'error');
+            return null;
+        }
+        
+        const config = window.MMX_CONFIG;
+        addLogEntry(`🚀 [Module 2] Chunk ${chunkIndex + 1}: Đang gọi API trực tiếp...`, 'info');
+        
+        try {
+            // Tạo URL với query parameters
+            const baseUrl = 'https://www.minimax.io/v1/api/audio/voice/clone_v2';
+            const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+            const unix = Math.floor(Date.now() / 1000);
+            
+            const url = new URL(baseUrl);
+            url.searchParams.set('device_platform', 'web');
+            url.searchParams.set('app_id', '3001');
+            url.searchParams.set('version_code', '22201');
+            url.searchParams.set('biz_id', '1');
+            url.searchParams.set('uuid', uuid);
+            url.searchParams.set('unix', unix.toString());
+            
+            // Tạo payload
+            const payload = {
+                files: [{
+                    file_id: config.file_id,
+                    file_name: config.file_name
+                }],
+                preview_text: text,
+                text: text,
+                language_tag: config.language_tag || 'Vietnamese',
+                need_noise_reduction: false
+            };
+            
+            // Tạo headers (sử dụng headers đã bắt được, nhưng không hardcode Cookie/Authorization)
+            const headers = {
+                'Content-Type': 'application/json',
+                ...config.headers
+            };
+            
+            // Loại bỏ các header không cần thiết hoặc có thể gây lỗi
+            delete headers['content-length'];
+            delete headers['host'];
+            delete headers['origin'];
+            
+            // Gọi API
+            const response = await fetch(url.toString(), {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(payload),
+                credentials: 'include',
+                mode: 'cors'
+            });
+            
+            // Xử lý response
+            if (!response.ok) {
+                if (response.status === 429) {
+                    addLogEntry(`⚠️ [Module 2] Chunk ${chunkIndex + 1}: Lỗi 429 (Too Many Requests) - Đang nghỉ...`, 'warning');
+                    throw new Error('429_TOO_MANY_REQUESTS');
+                } else if (response.status === 403) {
+                    addLogEntry(`🚨 [Module 2] Chunk ${chunkIndex + 1}: Lỗi 403 (Forbidden) - Cookie có thể đã hết hạn!`, 'error');
+                    throw new Error('403_FORBIDDEN');
+                } else {
+                    const errorText = await response.text().catch(() => 'Unknown error');
+                    addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Lỗi ${response.status}: ${errorText.substring(0, 100)}`, 'error');
+                    throw new Error(`API_ERROR_${response.status}`);
+                }
+            }
+            
+            // Parse response để lấy audio URL
+            const responseData = await response.json().catch(async () => {
+                // Nếu không phải JSON, có thể response trả về audio trực tiếp
+                const blob = await response.blob();
+                if (blob.type.startsWith('audio/')) {
+                    return { audio_url: null, blob: blob };
+                }
+                throw new Error('Invalid response format');
+            });
+            
+            // Lấy audio URL từ response
+            let audioUrl = null;
+            if (responseData.audio_url) {
+                audioUrl = responseData.audio_url;
+            } else if (responseData.data && responseData.data.audio_url) {
+                audioUrl = responseData.data.audio_url;
+            } else if (responseData.blob) {
+                // Nếu đã có blob sẵn
+                addLogEntry(`✅ [Module 2] Chunk ${chunkIndex + 1}: Thành công!`, 'success');
+                return responseData.blob;
+            }
+            
+            if (!audioUrl) {
+                addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Không tìm thấy audio_url trong response`, 'error');
+                return null;
+            }
+            
+            // Tải audio từ URL
+            const audioResponse = await fetch(audioUrl, {
+                method: 'GET',
+                credentials: 'include',
+                mode: 'cors'
+            });
+            
+            if (!audioResponse.ok) {
+                addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Lỗi khi tải audio: ${audioResponse.status}`, 'error');
+                return null;
+            }
+            
+            const audioBlob = await audioResponse.blob();
+            addLogEntry(`✅ [Module 2] Chunk ${chunkIndex + 1}: Thành công! (${Math.round(audioBlob.size/1024)}KB)`, 'success');
+            return audioBlob;
+            
+        } catch (error) {
+            if (error.message === '429_TOO_MANY_REQUESTS') {
+                throw error; // Re-throw để Module 3 xử lý
+            } else if (error.message === '403_FORBIDDEN') {
+                throw error; // Re-throw để Module 3 xử lý
+            } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Lỗi mạng - ${error.message}`, 'error');
+                throw new Error('NETWORK_ERROR');
+            } else {
+                addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Lỗi - ${error.message}`, 'error');
+                throw error;
+            }
+        }
+    }
+    
+    // Export hàm để sử dụng ở nơi khác
+    window.generateAudioViaAPI = generateAudioViaAPI;
+    
+    console.log('[MODULE 2] ✅ API Engine đã được khởi tạo');
+    // =======================================================
+    // == KẾT THÚC MODULE 2: API ENGINE ==
+    // =======================================================
+
+    // =======================================================
+    // == MODULE 3: PROCESS MANAGER - VÒNG LẶP VÉT CẠN ==
+    // =======================================================
+    // Nhiệm vụ: Đảm bảo tải đủ 100% chunk, không bỏ sót
+    // Logic: Vòng lặp chạy liên tục khi số lượng chunk Success < Tổng số chunk
+    // - Delay 3-5 giây giữa các lần gọi API (để tránh lỗi 429)
+    // - Nếu có chunk Failed: Nghỉ 10-15 giây rồi quay lại xử lý
+    // - Retry VÔ HẠN cho đến khi TẤT CẢ chunk thành công
+    
+    // Module 3 được tích hợp vào hàm uSTZrHUt_IC() và logic retry hiện có
+    // Các delay đã được thiết lập:
+    // - Delay giữa các API call: 3-5 giây (trong generateAudioViaAPI)
+    // - Delay khi retry failed chunks: 10-15 giây (trong logic retry)
+    // - Delay khi lỗi 429: 15 giây
+    
+    console.log('[MODULE 3] ✅ Process Manager đã được tích hợp vào logic retry');
+    // =======================================================
+    // == KẾT THÚC MODULE 3: PROCESS MANAGER ==
+    // =======================================================
+
     // Log functionality
     function addLogEntry(message, type = 'info') {
         const logContainer = document.getElementById('log-container');
@@ -1886,11 +2248,14 @@ async function uSTZrHUt_IC() {
                     addLogEntry(`❌ Lỗi khi reset web: ${resetError.message}, tiếp tục...`, 'error');
                 }
                 
-                // Nhảy thẳng đến chunk lỗi đầu tiên, không đếm lại từ đầu
-                const firstFailedIndex = Math.min(...failedChunks);
-                ttuo$y_KhCV = firstFailedIndex;
-                addLogEntry(`🔄 RETRY MODE: Nhảy thẳng đến chunk ${firstFailedIndex + 1} (chunk lỗi đầu tiên), chỉ xử lý chunks lỗi`, 'info');
-                setTimeout(uSTZrHUt_IC, 2000); // Chờ 2 giây rồi bắt đầu xử lý
+                    // MODULE 3: Nhảy thẳng đến chunk lỗi đầu tiên, không đếm lại từ đầu
+                    const firstFailedIndex = Math.min(...failedChunks);
+                    ttuo$y_KhCV = firstFailedIndex;
+                    // MODULE 3: Nghỉ 10-15 giây trước khi retry failed chunks (theo tài liệu)
+                    const retryDelay = Math.random() * 5000 + 10000; // 10-15 giây
+                    addLogEntry(`🔄 RETRY MODE: Nhảy thẳng đến chunk ${firstFailedIndex + 1} (chunk lỗi đầu tiên), chỉ xử lý chunks lỗi`, 'info');
+                    addLogEntry(`⏳ Nghỉ ${Math.round(retryDelay/1000)} giây trước khi retry...`, 'info');
+                    setTimeout(uSTZrHUt_IC, retryDelay); // Chờ 10-15 giây rồi bắt đầu xử lý
             })();
             return;
         }
@@ -1960,14 +2325,17 @@ async function uSTZrHUt_IC() {
                         addLogEntry(`❌ Lỗi khi reset web: ${resetError.message}, tiếp tục...`, 'error');
                     }
                     
-                    // KHÔNG ghép file khi còn chunk thất bại - tiếp tục retry VÔ HẠN
+                    // MODULE 3: KHÔNG ghép file khi còn chunk thất bại - tiếp tục retry VÔ HẠN
                     window.retryCount = 0; // Reset bộ đếm retry
                     window.totalRetryAttempts++; // Tăng bộ đếm retry tổng thể
                     // Nhảy thẳng đến chunk lỗi đầu tiên, không đếm lại từ đầu
                     const firstFailedIndex = Math.min(...window.failedChunks);
                     ttuo$y_KhCV = firstFailedIndex;
+                    // MODULE 3: Nghỉ 10-15 giây trước khi retry failed chunks (theo tài liệu)
+                    const retryDelay = Math.random() * 5000 + 10000; // 10-15 giây
                     addLogEntry(`🔄 RETRY MODE: Nhảy thẳng đến chunk ${firstFailedIndex + 1} (chunk lỗi đầu tiên), chỉ xử lý chunks lỗi`, 'info');
-                    setTimeout(uSTZrHUt_IC, 2000); // Chờ 2 giây rồi bắt đầu lại
+                    addLogEntry(`⏳ Nghỉ ${Math.round(retryDelay/1000)} giây trước khi retry...`, 'info');
+                    setTimeout(uSTZrHUt_IC, retryDelay); // Chờ 10-15 giây rồi bắt đầu lại
                 })();
                 return;
             } else {
@@ -2139,6 +2507,108 @@ async function uSTZrHUt_IC() {
         nWHrScjZnIyNYzztyEWwM(ttuo$y_KhCV, SI$acY[tQqGbytKzpHwhGmeQJucsrq(0x216)]);
         addLogEntry(`📦 [Chunk ${ttuo$y_KhCV + 1}/${SI$acY.length}] Đang gửi đi... (độ dài: ${chunkText.length} ký tự sau chuẩn hóa)`, 'info');
 
+        // =======================================================
+        // == MODULE 2: SỬ DỤNG API THAY VÌ CLICK ==
+        // =======================================================
+        // Kiểm tra xem đã có config API chưa
+        if (window.MMX_CONFIG && window.MMX_CONFIG.file_id) {
+            // Sử dụng API Engine
+            try {
+                // MODULE 3: Delay ngẫu nhiên 3-5 giây giữa các lần gọi API (để tránh lỗi 429)
+                const delay = Math.random() * 2000 + 3000; // 3-5 giây
+                await new Promise(resolve => setTimeout(resolve, delay));
+                
+                // Gọi API để tạo audio
+                const audioBlob = await generateAudioViaAPI(chunkText, ttuo$y_KhCV);
+                
+                if (audioBlob) {
+                    // Lưu blob vào đúng vị trí
+                    if (typeof window.chunkBlobs === 'undefined') {
+                        window.chunkBlobs = new Array(SI$acY.length).fill(null);
+                    }
+                    while (window.chunkBlobs.length <= ttuo$y_KhCV) {
+                        window.chunkBlobs.push(null);
+                    }
+                    window.chunkBlobs[ttuo$y_KhCV] = audioBlob;
+                    
+                    // Đồng bộ với ZTQj$LF$o
+                    while (ZTQj$LF$o.length <= ttuo$y_KhCV) {
+                        ZTQj$LF$o.push(null);
+                    }
+                    ZTQj$LF$o[ttuo$y_KhCV] = audioBlob;
+                    
+                    // Đánh dấu thành công
+                    window.chunkStatus[ttuo$y_KhCV] = 'success';
+                    window.retryCount = 0;
+                    if (typeof window.timeoutRetryCount !== 'undefined' && window.timeoutRetryCount[ttuo$y_KhCV] !== undefined) {
+                        window.timeoutRetryCount[ttuo$y_KhCV] = 0;
+                    }
+                    
+                    // Loại bỏ khỏi danh sách failed nếu có
+                    if (window.isFinalCheck && window.failedChunks.includes(ttuo$y_KhCV)) {
+                        window.failedChunks = window.failedChunks.filter(index => index !== ttuo$y_KhCV);
+                        addLogEntry(`🎉 [Chunk ${ttuo$y_KhCV + 1}] Đã khôi phục thành công từ trạng thái thất bại!`, 'success');
+                    }
+                    
+                    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}/${SI$acY.length}] Xử lý thành công qua API!`, 'success');
+                    
+                    // Chuyển sang chunk tiếp theo
+                    ttuo$y_KhCV++;
+                    setTimeout(uSTZrHUt_IC, 1000); // Delay ngắn trước khi xử lý chunk tiếp theo
+                    return;
+                } else {
+                    // API trả về null, đánh dấu failed và tiếp tục
+                    throw new Error('API returned null');
+                }
+            } catch (apiError) {
+                // Xử lý lỗi từ API
+                if (apiError.message === '429_TOO_MANY_REQUESTS') {
+                    // MODULE 3: Lỗi 429 - quá nhiều request, nghỉ 10-20 giây (theo tài liệu)
+                    const retryDelay = Math.random() * 10000 + 10000; // 10-20 giây
+                    addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi 429 - Đang nghỉ ${Math.round(retryDelay/1000)} giây...`, 'warning');
+                    window.chunkStatus[ttuo$y_KhCV] = 'failed';
+                    if (!window.failedChunks.includes(ttuo$y_KhCV)) {
+                        window.failedChunks.push(ttuo$y_KhCV);
+                    }
+                    setTimeout(uSTZrHUt_IC, retryDelay); // Nghỉ 10-20 giây rồi thử lại
+                    return;
+                } else if (apiError.message === '403_FORBIDDEN') {
+                    // Lỗi 403 - Cookie hết hạn
+                    addLogEntry(`🚨 [Chunk ${ttuo$y_KhCV + 1}] Lỗi 403 - Cookie có thể đã hết hạn!`, 'error');
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi 403 - Cookie hết hạn',
+                            text: 'Vui lòng F5 tải lại trang để đăng nhập lại.',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                    EfNjYNYj_O_CGB = false; // Dừng xử lý
+                    return;
+                } else if (apiError.message === 'NETWORK_ERROR') {
+                    // Lỗi mạng
+                    addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Lỗi mạng - Đánh dấu failed để retry sau`, 'error');
+                    window.chunkStatus[ttuo$y_KhCV] = 'failed';
+                    if (!window.failedChunks.includes(ttuo$y_KhCV)) {
+                        window.failedChunks.push(ttuo$y_KhCV);
+                    }
+                    ttuo$y_KhCV++;
+                    setTimeout(uSTZrHUt_IC, 2000);
+                    return;
+                } else {
+                    // Lỗi khác, fallback về click
+                    addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] API lỗi, fallback về click: ${apiError.message}`, 'warning');
+                    // Tiếp tục với logic click cũ bên dưới
+                }
+            }
+        } else {
+            // Chưa có config, fallback về click
+            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Chưa cấu hình API, sử dụng click (fallback)`, 'warning');
+        }
+        
+        // =======================================================
+        // == FALLBACK: CLICK LOGIC CŨ (Nếu API không khả dụng) ==
+        // =======================================================
         // ANTI-DETECTION: Thêm delay ngẫu nhiên trước khi click
         await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
         
@@ -2528,6 +2998,20 @@ async function waitForVoiceModelReady() {
 }function u_In_Taeyb(ha_vkXztSqPwoX_qmQKlcp){const scdrpb$_nwRMQXvVJ=AP$u_huhInYfTj,TJ_txTK=document[scdrpb$_nwRMQXvVJ(0x1cd)](scdrpb$_nwRMQXvVJ(0x26d));if(!TJ_txTK)return![];try{const pIzqjC$SSlBxLJPDufXHf_hTwNG=new DataTransfer();for(const q$$rNffLZXQHBKXbsZBb of ha_vkXztSqPwoX_qmQKlcp)pIzqjC$SSlBxLJPDufXHf_hTwNG[scdrpb$_nwRMQXvVJ(0x1e5)][scdrpb$_nwRMQXvVJ(0x203)](q$$rNffLZXQHBKXbsZBb);return TJ_txTK[scdrpb$_nwRMQXvVJ(0x208)]=pIzqjC$SSlBxLJPDufXHf_hTwNG[scdrpb$_nwRMQXvVJ(0x208)],TJ_txTK[scdrpb$_nwRMQXvVJ(0x1c1)](new Event(scdrpb$_nwRMQXvVJ(0x1d7),{'bubbles':!![]})),!![];}catch(tnv$KWVWNV){return![];}}WRVxYBSrPsjcqQs_bXI[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x229),()=>{const bISsk$DCGLNjOv=AP$u_huhInYfTj,LvLmlCAo_vy_AFJk=WRVxYBSrPsjcqQs_bXI[bISsk$DCGLNjOv(0x24c)];CVjXA$H[bISsk$DCGLNjOv(0x1c7)]=bISsk$DCGLNjOv(0x20f)+LvLmlCAo_vy_AFJk[bISsk$DCGLNjOv(0x216)]+bISsk$DCGLNjOv(0x1ff)+LvLmlCAo_vy_AFJk[bISsk$DCGLNjOv(0x1d4)]()[bISsk$DCGLNjOv(0x1ed)](/\s+/)[bISsk$DCGLNjOv(0x21d)](Boolean)[bISsk$DCGLNjOv(0x216)]+bISsk$DCGLNjOv(0x1fc)+LvLmlCAo_vy_AFJk[bISsk$DCGLNjOv(0x1ed)](/[.!?。！？]+/)[bISsk$DCGLNjOv(0x21d)](Boolean)[bISsk$DCGLNjOv(0x216)]+bISsk$DCGLNjOv(0x23b)+LvLmlCAo_vy_AFJk[bISsk$DCGLNjOv(0x1d4)]()[bISsk$DCGLNjOv(0x1ed)](/\n+/)[bISsk$DCGLNjOv(0x21d)](Boolean)[bISsk$DCGLNjOv(0x216)]+bISsk$DCGLNjOv(0x1f4);}),yU_jfkzmffcnGgLWrq[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),async()=>{const t$_EKwXXWYJwVOu=AP$u_huhInYfTj;if(PcLAEW[t$_EKwXXWYJwVOu(0x208)][t$_EKwXXWYJwVOu(0x216)]===0x16e0+-0x1573+-parseInt(0x49)*0x5){Swal[t$_EKwXXWYJwVOu(0x26b)]({'icon':t$_EKwXXWYJwVOu(0x212),'title':t$_EKwXXWYJwVOu(0x266),'text':t$_EKwXXWYJwVOu(0x200)});return;}if(PcLAEW[t$_EKwXXWYJwVOu(0x208)][t$_EKwXXWYJwVOu(0x216)]>0x1){Swal[t$_EKwXXWYJwVOu(0x26b)]({'icon':t$_EKwXXWYJwVOu(0x212),'title':'Lỗi','text':'Chỉ được phép tải lên 1 file duy nhất. Vui lòng chọn lại.'});PcLAEW.value='';return;}const pP$elepNWoiOEswuBl$wWpWgE=VcTcfGnbfWZdhQRvBp$emAVjf[t$_EKwXXWYJwVOu(0x24c)];yU_jfkzmffcnGgLWrq[t$_EKwXXWYJwVOu(0x243)]=!![],TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x1d0),TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x1fb)][t$_EKwXXWYJwVOu(0x26e)]=t$_EKwXXWYJwVOu(0x22f);if(u_In_Taeyb(PcLAEW[t$_EKwXXWYJwVOu(0x208)])){await new Promise(YoMwltQiCl_gqyp=>setTimeout(YoMwltQiCl_gqyp,Math.floor(-0xbf0)*Math.floor(parseInt(0x1))+parseFloat(-parseInt(0x952))+parseFloat(parseInt(0x192a)))),TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x267);const lYBfNBUXykQSrYdLWRfJs=await wfxQyKsZ_OULEUwIDIN$OYr(pP$elepNWoiOEswuBl$wWpWgE);lYBfNBUXykQSrYdLWRfJs?(TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x22b)+pP$elepNWoiOEswuBl$wWpWgE+'.',TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x1fb)][t$_EKwXXWYJwVOu(0x26e)]=t$_EKwXXWYJwVOu(0x228)):(TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x247)+pP$elepNWoiOEswuBl$wWpWgE+'.',TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x1fb)][t$_EKwXXWYJwVOu(0x26e)]=t$_EKwXXWYJwVOu(0x1e6)),LrkOcBYz_$AGjPqXLWnyiATpCI[t$_EKwXXWYJwVOu(0x243)]=![];}else TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x259),TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x1fb)][t$_EKwXXWYJwVOu(0x26e)]=t$_EKwXXWYJwVOu(0x1e6);yU_jfkzmffcnGgLWrq[t$_EKwXXWYJwVOu(0x243)]=![];}),LrkOcBYz_$AGjPqXLWnyiATpCI[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const muOPzQltrb_ezJpe_MNI=AP$u_huhInYfTj;if(EfNjYNYj_O_CGB)return;const EFBSgoVbWWlkmceHpywAdxhpn=WRVxYBSrPsjcqQs_bXI[muOPzQltrb_ezJpe_MNI(0x24c)][muOPzQltrb_ezJpe_MNI(0x1d4)]();const charsToUse=EFBSgoVbWWlkmceHpywAdxhpn.length;if(!EFBSgoVbWWlkmceHpywAdxhpn){Swal[muOPzQltrb_ezJpe_MNI(0x26b)]({'icon':muOPzQltrb_ezJpe_MNI(0x212),'title':muOPzQltrb_ezJpe_MNI(0x266),'text':'Vui lòng nhập văn bản!'});return;}if(typeof window.REMAINING_CHARS==='undefined'){Swal.fire({icon:'error',title:'Lỗi Quota',text:'Không thể đọc Quota từ main.py. Script bị lỗi.'});return;}const remaining=window.REMAINING_CHARS;if(remaining!==-1&&charsToUse>remaining){Swal.fire({icon:'error',title:'Không đủ ký tự',text:`Bạn cần ${new Intl.NumberFormat().format(charsToUse)} ký tự, nhưng chỉ còn ${new Intl.NumberFormat().format(remaining)} ký tự.`});return;}window.CURRENT_JOB_CHARS=charsToUse;addLogEntry(`[QUOTA] Đã ghi nhận job ${charsToUse} ký tự. Sẽ trừ sau khi hoàn thành.`,'info');dqj_t_Mr=new Date(),zQizakWdLEdLjtenmCbNC[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x209),document[muOPzQltrb_ezJpe_MNI(0x1de)](muOPzQltrb_ezJpe_MNI(0x225))[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x209),pT$bOHGEGbXDSpcuLWAq_yMVf[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x258),cHjV$QkAT$JWlL[muOPzQltrb_ezJpe_MNI(0x273)]='';if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[muOPzQltrb_ezJpe_MNI(0x1cc)]();ZTQj$LF$o=[];if(typeof window.chunkBlobs!=='undefined'&&window.chunkBlobs.length>0){addLogEntry('🗑️ Đã xóa các chunk cũ trước khi tạo âm thanh mới.','info');}window.chunkBlobs=[];addLogEntry('🧹 Đã dọn dẹp và sẵn sàng tạo âm thanh mới.','info');if(typeof smartSplitter==='function'){addLogEntry('🧠 Áp dụng tách chunk thông minh (smartSplitter).','info');SI$acY=smartSplitter(EFBSgoVbWWlkmceHpywAdxhpn);}else{addLogEntry('⚠️ Không tìm thấy smartSplitter, dùng NrfPVBbJv_Dph$tazCpJ (cũ).','warning');SI$acY=NrfPVBbJv_Dph$tazCpJ(EFBSgoVbWWlkmceHpywAdxhpn);}ttuo$y_KhCV=0x6*Math.floor(-parseInt(0x26))+-0x1c45+Math.ceil(parseInt(0x1d29)),EfNjYNYj_O_CGB=!![],MEpJezGZUsmpZdAgFRBRZW=![],LrkOcBYz_$AGjPqXLWnyiATpCI[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x209),lraDK$WDOgsXHRO[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x258),OdKzziXLxtOGjvaBMHm[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x258),lraDK$WDOgsXHRO[muOPzQltrb_ezJpe_MNI(0x273)]=muOPzQltrb_ezJpe_MNI(0x239);if(typeof window.chunkStatus==='undefined')window.chunkStatus=[];window.chunkStatus=new Array(SI$acY.length).fill('pending');window.failedChunks=[];window.isFinalCheck=false;window.retryCount=0;window.totalRetryAttempts=0;if(typeof window.chunkBlobs==='undefined')window.chunkBlobs=[];window.chunkBlobs=new Array(SI$acY.length).fill(null);uSTZrHUt_IC();}),lraDK$WDOgsXHRO[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const AuzopbHlRPCFBPQqnHMs=AP$u_huhInYfTj;MEpJezGZUsmpZdAgFRBRZW=!MEpJezGZUsmpZdAgFRBRZW,lraDK$WDOgsXHRO[AuzopbHlRPCFBPQqnHMs(0x273)]=MEpJezGZUsmpZdAgFRBRZW?AuzopbHlRPCFBPQqnHMs(0x271):AuzopbHlRPCFBPQqnHMs(0x239);if(!MEpJezGZUsmpZdAgFRBRZW)uSTZrHUt_IC();}),OdKzziXLxtOGjvaBMHm[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const jWtMo=AP$u_huhInYfTj;EfNjYNYj_O_CGB=![],MEpJezGZUsmpZdAgFRBRZW=![];if(xlgJHLP$MATDT$kTXWV)xlgJHLP$MATDT$kTXWV[jWtMo(0x24e)]();if(Srnj$swt)clearTimeout(Srnj$swt);ZTQj$LF$o=[],SI$acY=[],WRVxYBSrPsjcqQs_bXI[jWtMo(0x24c)]='',rUxbIRagbBVychZ$GfsogD[jWtMo(0x24c)]='',pT$bOHGEGbXDSpcuLWAq_yMVf[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209),zQizakWdLEdLjtenmCbNC[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209);if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[jWtMo(0x1cc)]();LrkOcBYz_$AGjPqXLWnyiATpCI[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x258),lraDK$WDOgsXHRO[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209),OdKzziXLxtOGjvaBMHm[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209),LrkOcBYz_$AGjPqXLWnyiATpCI[jWtMo(0x243)]=![],LrkOcBYz_$AGjPqXLWnyiATpCI[jWtMo(0x273)]=jWtMo(0x275);}),XvyPnqSRdJtYjSxingI[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const XhOmEQytvnK$v=AP$u_huhInYfTj;if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[XhOmEQytvnK$v(0x21a)]();});
 
         // --- START: NEW FUNCTIONALITY ---
+
+        // --- MODULE 1: BẬT CHẾ ĐỘ CAPTURE KHI UPLOAD ---
+        // Khi user upload file và bấm nút upload, bật chế độ capture để bắt API config
+        (function() {
+            const uploadBtn = document.getElementById('gemini-upload-btn');
+            if (uploadBtn) {
+                uploadBtn.addEventListener('click', function() {
+                    // Bật chế độ capture để Module 1 có thể bắt config
+                    window.MMX_CONFIG_CAPTURE_MODE = true;
+                    addLogEntry('🔍 [Module 1] Đã bật chế độ capture - Đang chờ API request...', 'info');
+                    console.log('[MODULE 1] Đã bật chế độ capture');
+                });
+            }
+        })();
 
         // --- Audio File Validation: Check file count and duration ---
         (function() {
@@ -4706,4 +5190,3 @@ async function waitForVoiceModelReady() {
             errorObserver.disconnect();
         }
     });
-
