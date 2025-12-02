@@ -1702,8 +1702,8 @@ button:disabled {
     
     // Hàm bắt request clone_v2 thành công
     function captureCloneV2Config(requestUrl, requestOptions, response) {
-        // Chỉ bắt một lần duy nhất
-        if (IS_CONFIG_READY) {
+        // Chỉ bắt một lần duy nhất (trừ khi chưa có config)
+        if (IS_CONFIG_READY && CAPTURED_CONFIG) {
             return;
         }
         
@@ -1759,6 +1759,7 @@ button:disabled {
                 // Lưu config
                 saveCapturedConfig(config);
                 addLogEntry('🎯 Đã bắt được cấu hình từ request thành công!', 'success');
+                addLogEntry('✅ Từ chunk tiếp theo, tool sẽ gửi API trực tiếp (không cần click button)', 'success');
                 
             }).catch(error => {
                 // Nếu không parse được JSON, có thể response không hợp lệ
@@ -1772,31 +1773,59 @@ button:disabled {
     
     // Hook vào fetch để bắt request clone_v2
     // Lưu ý: Có thể đã có originalFetch được định nghĩa ở phần khác (auto reset 403)
-    // Sử dụng wrapper để không conflict
+    // Sử dụng wrapper để không conflict và đảm bảo hook luôn hoạt động
     (function() {
-        const existingFetch = window.fetch;
-        window.fetch = function(url, options) {
+        // Lưu reference đến fetch gốc (có thể đã bị wrap bởi code khác)
+        let existingFetch = window.fetch;
+        
+        // Nếu fetch đã bị wrap, tìm fetch gốc
+        while (existingFetch && existingFetch._originalFetch) {
+            existingFetch = existingFetch._originalFetch;
+        }
+        
+        // Đánh dấu để tránh wrap nhiều lần
+        if (window.fetch._captureHookInstalled) {
+            return; // Hook đã được cài đặt
+        }
+        
+        const originalFetchWrapper = function(url, options) {
             const urlString = typeof url === 'string' ? url : url.toString();
             
             // Kiểm tra có phải request clone_v2 không
             if (urlString.includes('/voice/clone_v2') || urlString.includes('clone_v2')) {
+                addLogEntry(`🔍 Phát hiện request clone_v2: ${urlString.substring(0, 100)}...`, 'info');
                 return existingFetch.apply(this, arguments).then(response => {
                     // Bắt config khi response thành công
                     if (response.status === 200) {
+                        addLogEntry(`✅ Response clone_v2 thành công, đang bắt cấu hình...`, 'info');
                         captureCloneV2Config(urlString, options, response);
                     }
                     return response;
+                }).catch(error => {
+                    addLogEntry(`❌ Request clone_v2 lỗi: ${error.message}`, 'error');
+                    throw error;
                 });
             }
             
             return existingFetch.apply(this, arguments);
         };
+        
+        // Đánh dấu đã cài đặt
+        originalFetchWrapper._captureHookInstalled = true;
+        originalFetchWrapper._originalFetch = existingFetch;
+        
+        window.fetch = originalFetchWrapper;
     })();
     
     // Hook vào XMLHttpRequest để bắt request clone_v2
     // Lưu ý: Có thể đã có originalXHROpen/originalXHRSend được định nghĩa ở phần khác
-    // Sử dụng wrapper để không conflict
+    // Sử dụng wrapper để không conflict và đảm bảo hook luôn hoạt động
     (function() {
+        // Kiểm tra xem đã hook chưa
+        if (XMLHttpRequest.prototype.open._captureHookInstalled) {
+            return; // Hook đã được cài đặt
+        }
+        
         const existingXHROpen = XMLHttpRequest.prototype.open;
         const existingXHRSend = XMLHttpRequest.prototype.send;
         
@@ -1806,12 +1835,16 @@ button:disabled {
             return existingXHROpen.apply(this, arguments);
         };
         
+        // Đánh dấu đã cài đặt
+        XMLHttpRequest.prototype.open._captureHookInstalled = true;
+        
         XMLHttpRequest.prototype.send = function(data) {
             const xhr = this;
             const urlString = this._captureUrl || '';
             
             // Kiểm tra có phải request clone_v2 không
             if (urlString.includes('/voice/clone_v2') || urlString.includes('clone_v2')) {
+                addLogEntry(`🔍 Phát hiện XMLHttpRequest clone_v2: ${urlString.substring(0, 100)}...`, 'info');
                 const originalOnReadyStateChange = xhr.onreadystatechange;
                 xhr.onreadystatechange = function() {
                     if (originalOnReadyStateChange) {
@@ -1849,6 +1882,7 @@ button:disabled {
                                 // Lưu config
                                 saveCapturedConfig(config);
                                 addLogEntry('🎯 Đã bắt được cấu hình từ XMLHttpRequest thành công!', 'success');
+                                addLogEntry('✅ Từ chunk tiếp theo, tool sẽ gửi API trực tiếp (không cần click button)', 'success');
                             }
                         } catch (error) {
                             console.error('[CAPTURE XHR] Lỗi khi bắt config:', error);
@@ -5795,6 +5829,23 @@ function igyo$uwVChUzI() {
                         if (typeof window.processingChunks !== 'undefined') {
                             window.processingChunks.delete(currentChunkIndex);
                         }
+                        
+                        // =======================================================
+                        // == PHẦN MỚI: BẮT CONFIG KHI CHUNK 1 THÀNH CÔNG ==
+                        // =======================================================
+                        // Khi chunk đầu tiên (index 0) thành công và chưa có config, kiểm tra xem hook đã bắt được chưa
+                        if (currentChunkIndex === 0 && !IS_CONFIG_READY) {
+                            addLogEntry(`🎯 [Chunk 1] Đã thành công! Kiểm tra xem đã bắt được cấu hình chưa...`, 'info');
+                            
+                            // Nếu hook đã bắt được config, nó sẽ được lưu tự động
+                            // Nhưng nếu chưa có, có thể request đã được gửi trước khi hook được thiết lập
+                            // Trong trường hợp này, config sẽ được bắt từ request tiếp theo (chunk 2)
+                            if (!IS_CONFIG_READY) {
+                                addLogEntry(`💡 [Chunk 1] Chưa có cấu hình. Config sẽ được bắt tự động từ request tiếp theo.`, 'info');
+                                addLogEntry(`💡 [Chunk 2] Sẽ sử dụng click button và bắt config từ request đó.`, 'info');
+                            }
+                        }
+                        // =======================================================
                         
                         // =======================================================
                         // == ĐÁNH DẤU THÀNH CÔNG: SAU KHI TẤT CẢ KIỂM TRA ĐỀU HỢP LỆ ==
