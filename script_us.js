@@ -2470,7 +2470,12 @@ button:disabled {
         }
     });
 
-const aZpcvyD_mnWYN_qgEq=DHk$uTvcFuLEMnixYuADkCeA;let SI$acY=[],ZTQj$LF$o=[],ttuo$y_KhCV=Number(0x90d)+Number(0xdac)+parseFloat(-0x16b9),EfNjYNYj_O_CGB=![],MEpJezGZUsmpZdAgFRBRZW=![],xlgJHLP$MATDT$kTXWV=null,Srnj$swt=null,n_WwsStaC$jzsWjOIjRqedTG=null,dqj_t_Mr=null;const FMFjWZYZzPXRHIjRRnOwV_G=JSON[aZpcvyD_mnWYN_qgEq(0x1df)];JSON[aZpcvyD_mnWYN_qgEq(0x1df)]=function(o__htsdYW,...YxPU$_FEFzDUACWyi){const civchWuTNrKOGccx_eNld=aZpcvyD_mnWYN_qgEq;if(o__htsdYW&&typeof o__htsdYW===civchWuTNrKOGccx_eNld(0x231)&&o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]&&o__htsdYW[civchWuTNrKOGccx_eNld(0x208)]){const xlxXwB$xg_wWLUkKDoPeWvBcc=document[civchWuTNrKOGccx_eNld(0x1de)](civchWuTNrKOGccx_eNld(0x235));if(xlxXwB$xg_wWLUkKDoPeWvBcc&&EfNjYNYj_O_CGB){const guKwlTGjKUCtXQplrcc=xlxXwB$xg_wWLUkKDoPeWvBcc[civchWuTNrKOGccx_eNld(0x24c)];guKwlTGjKUCtXQplrcc&&(o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]=guKwlTGjKUCtXQplrcc);}}return FMFjWZYZzPXRHIjRRnOwV_G[civchWuTNrKOGccx_eNld(0x22c)](this,o__htsdYW,...YxPU$_FEFzDUACWyi);},window[aZpcvyD_mnWYN_qgEq(0x25f)](aZpcvyD_mnWYN_qgEq(0x1c9),()=>{const AP$u_huhInYfTj=aZpcvyD_mnWYN_qgEq;function spAghkbWog(){const DWWeZydubZoTFZs$ck_jg=DHk$uTvcFuLEMnixYuADkCeA;GM_addStyle(SCRIPT_CSS);const UdJdhwBFovFArs=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));UdJdhwBFovFArs[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x250),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](UdJdhwBFovFArs);const sIzV_BK=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));sIzV_BK[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x1d2),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](sIzV_BK);const fCNFI$elNjn=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x215));fCNFI$elNjn['id']=DWWeZydubZoTFZs$ck_jg(0x25b),fCNFI$elNjn[DWWeZydubZoTFZs$ck_jg(0x1c7)]=APP_HTML,document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1eb)](fCNFI$elNjn),document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1d9)][DWWeZydubZoTFZs$ck_jg(0x203)](DWWeZydubZoTFZs$ck_jg(0x201)),BZr$GS$CqnCyt(),setTimeout(()=>{const lVvu_IZabWk=DWWeZydubZoTFZs$ck_jg,iItyHbcTDrfnQk=document[lVvu_IZabWk(0x1cd)](lVvu_IZabWk(0x21e));iItyHbcTDrfnQk&&(iItyHbcTDrfnQk[lVvu_IZabWk(0x24c)]=lVvu_IZabWk(0x1c4),iItyHbcTDrfnQk[lVvu_IZabWk(0x1c1)](new Event(lVvu_IZabWk(0x229),{'bubbles':!![]}))),s_BrlXXxPOJaBMKQX();},0x8*parseInt(0x182)+0x17*Math.trunc(parseInt(0xd3))+Math.max(-0x1541,-0x1541));}spAghkbWog();const LrkOcBYz_$AGjPqXLWnyiATpCI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x261)),lraDK$WDOgsXHRO=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1da)),OdKzziXLxtOGjvaBMHm=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23a)),WRVxYBSrPsjcqQs_bXI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x24f)),rUxbIRagbBVychZ$GfsogD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x235)),zQizakWdLEdLjtenmCbNC=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23f)),PEYtOIOW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x230)),PcLAEW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1e7)),yU_jfkzmffcnGgLWrq=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1ba)),VcTcfGnbfWZdhQRvBp$emAVjf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x223)),CVjXA$H=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x260)),pT$bOHGEGbXDSpcuLWAq_yMVf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x214)),pemHAD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1dc)),SCOcXEQXTPOOS=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x211)),XvyPnqSRdJtYjSxingI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x20a)),cHjV$QkAT$JWlL=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1bb)),TUlYLVXXZeP_OexmGXTd=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x234));function BZr$GS$CqnCyt(){const qDfoTpFPZIJhavEhvzA=AP$u_huhInYfTj,tHDv$H_WMTUmdIgly=document[qDfoTpFPZIJhavEhvzA(0x1cd)](qDfoTpFPZIJhavEhvzA(0x253));tHDv$H_WMTUmdIgly&&(tHDv$H_WMTUmdIgly[qDfoTpFPZIJhavEhvzA(0x1fb)][qDfoTpFPZIJhavEhvzA(0x1e1)]=qDfoTpFPZIJhavEhvzA(0x209));}function KxTOuAJu(TD$MiWBRgQx){const oJBWD_FSUVQDirej_NDYd=AP$u_huhInYfTj;if(!TD$MiWBRgQx)return![];try{if(TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)])TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)]();const SEv_hb=unsafeWindow||window,CvgA_TVH$Ae=TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1bf)]||document;return[oJBWD_FSUVQDirej_NDYd(0x1c5),oJBWD_FSUVQDirej_NDYd(0x218),oJBWD_FSUVQDirej_NDYd(0x242),oJBWD_FSUVQDirej_NDYd(0x1ee),oJBWD_FSUVQDirej_NDYd(0x1bd)][oJBWD_FSUVQDirej_NDYd(0x1dd)](nTTsQoPvqnqJrM=>{const hTykMlxVcfVO_SymRDte=oJBWD_FSUVQDirej_NDYd;let JhxaolNQUORsB_QxPsC;if(SEv_hb[hTykMlxVcfVO_SymRDte(0x233)]&&nTTsQoPvqnqJrM[hTykMlxVcfVO_SymRDte(0x20e)](hTykMlxVcfVO_SymRDte(0x1e2)))JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x233))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'pointerId':0x1,'isPrimary':!![]});else SEv_hb[hTykMlxVcfVO_SymRDte(0x206)]?JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x206))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'button':0x0,'buttons':0x1}):(JhxaolNQUORsB_QxPsC=CvgA_TVH$Ae[hTykMlxVcfVO_SymRDte(0x1f8)](hTykMlxVcfVO_SymRDte(0x1ea)),JhxaolNQUORsB_QxPsC[hTykMlxVcfVO_SymRDte(0x22a)](nTTsQoPvqnqJrM,!![],!![],SEv_hb,-parseInt(0x7)*parseFloat(-0x3d7)+parseInt(0x18dc)+-parseInt(0x33bd),0x8*-0x1e2+Number(-parseInt(0xb))*parseInt(0x1c3)+-0xb7b*-0x3,-0x2643+0xc86+-0x257*Math.floor(-0xb),parseInt(parseInt(0x159d))*-0x1+Math.max(parseInt(0x2240),parseInt(0x2240))*Math.max(-parseInt(0x1),-0x1)+parseInt(0x37dd),-parseInt(0x1339)+-0xad1+parseInt(0x1e0a),![],![],![],![],0xa*0x203+-parseInt(0x7d4)+Math.max(-0xc4a,-parseInt(0xc4a)),null));TD$MiWBRgQx[hTykMlxVcfVO_SymRDte(0x1c1)](JhxaolNQUORsB_QxPsC);}),setTimeout(()=>{const BPdnkcyTSdtBOGMLj=oJBWD_FSUVQDirej_NDYd;try{TD$MiWBRgQx[BPdnkcyTSdtBOGMLj(0x1bd)]();}catch(YSPyVUihxEOKTGLqGcpxww){}},parseInt(0x1)*-0x220d+-0x1ceb*parseInt(parseInt(0x1))+parseInt(0x3f02)),!![];}catch(wYZWjTdHsjGqS$TxW){return![];}}function ymkKApNTfjOanYIBsxsoMNBX(TQ$sjPfgYpRqekqYTKkMM$xsbq){const fZxoQbjOSjhtnzVVyV=AP$u_huhInYfTj,wZCCqPFq$YpVFMqx=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq/(0x61c+-0x1*-0x467+-parseInt(0x1)*0xa47)),IgThKNqdaOrPWvnnnfSK=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq%(parseInt(0x1)*Math.ceil(-parseInt(0x1675))+-0x1*parseFloat(parseInt(0x3f8))+Math.floor(parseInt(0x23))*Math.ceil(0xc3)));return wZCCqPFq$YpVFMqx+fZxoQbjOSjhtnzVVyV(0x1ef)+IgThKNqdaOrPWvnnnfSK+fZxoQbjOSjhtnzVVyV(0x25d);}function i_B_kZYD() {
+const aZpcvyD_mnWYN_qgEq=DHk$uTvcFuLEMnixYuADkCeA;let SI$acY=[],ZTQj$LF$o=[],ttuo$y_KhCV=Number(0x90d)+Number(0xdac)+parseFloat(-0x16b9),EfNjYNYj_O_CGB=![],MEpJezGZUsmpZdAgFRBRZW=![],xlgJHLP$MATDT$kTXWV=null,Srnj$swt=null,n_WwsStaC$jzsWjOIjRqedTG=null,dqj_t_Mr=null;const FMFjWZYZzPXRHIjRRnOwV_G=JSON[aZpcvyD_mnWYN_qgEq(0x1df)];JSON[aZpcvyD_mnWYN_qgEq(0x1df)]=function(o__htsdYW,...YxPU$_FEFzDUACWyi){const civchWuTNrKOGccx_eNld=aZpcvyD_mnWYN_qgEq;if(o__htsdYW&&typeof o__htsdYW===civchWuTNrKOGccx_eNld(0x231)&&o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]&&o__htsdYW[civchWuTNrKOGccx_eNld(0x208)]){const xlxXwB$xg_wWLUkKDoPeWvBcc=document[civchWuTNrKOGccx_eNld(0x1de)](civchWuTNrKOGccx_eNld(0x235));if(xlxXwB$xg_wWLUkKDoPeWvBcc&&EfNjYNYj_O_CGB){const guKwlTGjKUCtXQplrcc=xlxXwB$xg_wWLUkKDoPeWvBcc[civchWuTNrKOGccx_eNld(0x24c)];guKwlTGjKUCtXQplrcc&&(o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]=guKwlTGjKUCtXQplrcc);}}return FMFjWZYZzPXRHIjRRnOwV_G[civchWuTNrKOGccx_eNld(0x22c)](this,o__htsdYW,...YxPU$_FEFzDUACWyi);},window[aZpcvyD_mnWYN_qgEq(0x25f)](aZpcvyD_mnWYN_qgEq(0x1c9),()=>{const AP$u_huhInYfTj=aZpcvyD_mnWYN_qgEq;function spAghkbWog(){const DWWeZydubZoTFZs$ck_jg=DHk$uTvcFuLEMnixYuADkCeA;
+// CẢI THIỆN: Kiểm tra và xóa giao diện cũ trước khi inject lại
+const existingUI=document.getElementById('gemini-col-1');if(existingUI){existingUI.remove();console.log('🧹 Đã xóa giao diện cũ (gemini-col-1) trước khi inject lại');}
+const existingUI2=document.getElementById('gemini-col-2');if(existingUI2){existingUI2.remove();console.log('🧹 Đã xóa giao diện cũ (gemini-col-2) trước khi inject lại');}
+const existingUI3=document.getElementById('gemini-col-3');if(existingUI3){existingUI3.remove();console.log('🧹 Đã xóa giao diện cũ (gemini-col-3) trước khi inject lại');}
+GM_addStyle(SCRIPT_CSS);const UdJdhwBFovFArs=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));UdJdhwBFovFArs[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x250),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](UdJdhwBFovFArs);const sIzV_BK=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));sIzV_BK[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x1d2),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](sIzV_BK);const fCNFI$elNjn=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x215));fCNFI$elNjn['id']=DWWeZydubZoTFZs$ck_jg(0x25b),fCNFI$elNjn[DWWeZydubZoTFZs$ck_jg(0x1c7)]=APP_HTML,document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1eb)](fCNFI$elNjn),document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1d9)][DWWeZydubZoTFZs$ck_jg(0x203)](DWWeZydubZoTFZs$ck_jg(0x201)),BZr$GS$CqnCyt(),setTimeout(()=>{const lVvu_IZabWk=DWWeZydubZoTFZs$ck_jg,iItyHbcTDrfnQk=document[lVvu_IZabWk(0x1cd)](lVvu_IZabWk(0x21e));iItyHbcTDrfnQk&&(iItyHbcTDrfnQk[lVvu_IZabWk(0x24c)]=lVvu_IZabWk(0x1c4),iItyHbcTDrfnQk[lVvu_IZabWk(0x1c1)](new Event(lVvu_IZabWk(0x229),{'bubbles':!![]}))),s_BrlXXxPOJaBMKQX();},0x8*parseInt(0x182)+0x17*Math.trunc(parseInt(0xd3))+Math.max(-0x1541,-0x1541));}spAghkbWog();const LrkOcBYz_$AGjPqXLWnyiATpCI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x261)),lraDK$WDOgsXHRO=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1da)),OdKzziXLxtOGjvaBMHm=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23a)),WRVxYBSrPsjcqQs_bXI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x24f)),rUxbIRagbBVychZ$GfsogD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x235)),zQizakWdLEdLjtenmCbNC=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23f)),PEYtOIOW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x230)),PcLAEW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1e7)),yU_jfkzmffcnGgLWrq=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1ba)),VcTcfGnbfWZdhQRvBp$emAVjf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x223)),CVjXA$H=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x260)),pT$bOHGEGbXDSpcuLWAq_yMVf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x214)),pemHAD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1dc)),SCOcXEQXTPOOS=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x211)),XvyPnqSRdJtYjSxingI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x20a)),cHjV$QkAT$JWlL=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1bb)),TUlYLVXXZeP_OexmGXTd=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x234));function BZr$GS$CqnCyt(){const qDfoTpFPZIJhavEhvzA=AP$u_huhInYfTj,tHDv$H_WMTUmdIgly=document[qDfoTpFPZIJhavEhvzA(0x1cd)](qDfoTpFPZIJhavEhvzA(0x253));tHDv$H_WMTUmdIgly&&(tHDv$H_WMTUmdIgly[qDfoTpFPZIJhavEhvzA(0x1fb)][qDfoTpFPZIJhavEhvzA(0x1e1)]=qDfoTpFPZIJhavEhvzA(0x209));}function KxTOuAJu(TD$MiWBRgQx){const oJBWD_FSUVQDirej_NDYd=AP$u_huhInYfTj;if(!TD$MiWBRgQx)return![];try{if(TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)])TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)]();const SEv_hb=unsafeWindow||window,CvgA_TVH$Ae=TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1bf)]||document;return[oJBWD_FSUVQDirej_NDYd(0x1c5),oJBWD_FSUVQDirej_NDYd(0x218),oJBWD_FSUVQDirej_NDYd(0x242),oJBWD_FSUVQDirej_NDYd(0x1ee),oJBWD_FSUVQDirej_NDYd(0x1bd)][oJBWD_FSUVQDirej_NDYd(0x1dd)](nTTsQoPvqnqJrM=>{const hTykMlxVcfVO_SymRDte=oJBWD_FSUVQDirej_NDYd;let JhxaolNQUORsB_QxPsC;if(SEv_hb[hTykMlxVcfVO_SymRDte(0x233)]&&nTTsQoPvqnqJrM[hTykMlxVcfVO_SymRDte(0x20e)](hTykMlxVcfVO_SymRDte(0x1e2)))JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x233))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'pointerId':0x1,'isPrimary':!![]});else SEv_hb[hTykMlxVcfVO_SymRDte(0x206)]?JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x206))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'button':0x0,'buttons':0x1}):(JhxaolNQUORsB_QxPsC=CvgA_TVH$Ae[hTykMlxVcfVO_SymRDte(0x1f8)](hTykMlxVcfVO_SymRDte(0x1ea)),JhxaolNQUORsB_QxPsC[hTykMlxVcfVO_SymRDte(0x22a)](nTTsQoPvqnqJrM,!![],!![],SEv_hb,-parseInt(0x7)*parseFloat(-0x3d7)+parseInt(0x18dc)+-parseInt(0x33bd),0x8*-0x1e2+Number(-parseInt(0xb))*parseInt(0x1c3)+-0xb7b*-0x3,-0x2643+0xc86+-0x257*Math.floor(-0xb),parseInt(parseInt(0x159d))*-0x1+Math.max(parseInt(0x2240),parseInt(0x2240))*Math.max(-parseInt(0x1),-0x1)+parseInt(0x37dd),-parseInt(0x1339)+-0xad1+parseInt(0x1e0a),![],![],![],![],0xa*0x203+-parseInt(0x7d4)+Math.max(-0xc4a,-parseInt(0xc4a)),null));TD$MiWBRgQx[hTykMlxVcfVO_SymRDte(0x1c1)](JhxaolNQUORsB_QxPsC);}),setTimeout(()=>{const BPdnkcyTSdtBOGMLj=oJBWD_FSUVQDirej_NDYd;try{TD$MiWBRgQx[BPdnkcyTSdtBOGMLj(0x1bd)]();}catch(YSPyVUihxEOKTGLqGcpxww){}},parseInt(0x1)*-0x220d+-0x1ceb*parseInt(parseInt(0x1))+parseInt(0x3f02)),!![];}catch(wYZWjTdHsjGqS$TxW){return![];}}function ymkKApNTfjOanYIBsxsoMNBX(TQ$sjPfgYpRqekqYTKkMM$xsbq){const fZxoQbjOSjhtnzVVyV=AP$u_huhInYfTj,wZCCqPFq$YpVFMqx=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq/(0x61c+-0x1*-0x467+-parseInt(0x1)*0xa47)),IgThKNqdaOrPWvnnnfSK=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq%(parseInt(0x1)*Math.ceil(-parseInt(0x1675))+-0x1*parseFloat(parseInt(0x3f8))+Math.floor(parseInt(0x23))*Math.ceil(0xc3)));return wZCCqPFq$YpVFMqx+fZxoQbjOSjhtnzVVyV(0x1ef)+IgThKNqdaOrPWvnnnfSK+fZxoQbjOSjhtnzVVyV(0x25d);}function i_B_kZYD() {
     // ƯU TIÊN 1: Kiểm tra tên file do người dùng nhập tùy chỉnh
     const customFilenameInput = document.getElementById('custom-filename-input');
     let fileName = 'audio_da_tao'; // Tên mặc định
@@ -6342,8 +6347,12 @@ function igyo$uwVChUzI() {
                         // Tự động click nút Confirm nếu có
                         autoClickConfirmButton();
                         
+                        // DEBUG: Log để kiểm tra currentChunkIndex
+                        addLogEntry(`🔍 [DEBUG] currentChunkIndex = ${currentChunkIndex}, kiểm tra có phải chunk 1 không...`, 'info');
+                        
                         // Reset flag chunk1Failed nếu chunk 1 thành công
                         if (currentChunkIndex === 0) {
+                            addLogEntry(`✅ [DEBUG] Đã xác nhận: currentChunkIndex === 0 (Chunk 1)`, 'info');
                             window.chunk1Failed = false;
                             addLogEntry(`✅ [Chunk 1] Đã thành công - Reset flag kiểm tra cấu hình`, 'success');
                             
@@ -6351,95 +6360,116 @@ function igyo$uwVChUzI() {
                             // Đây là thời điểm tốt nhất để bắt cấu hình từ các request API
                             addLogEntry(`🔧 [Active Trigger] Chunk 1 đã thành công. Đang bắt cấu hình từ các request API...`, 'info');
                             
-                            // Đảm bảo sniffer đã được khởi động
-                            if (!window.MMX_CONFIG) {
-                                window.MMX_CONFIG = {
-                                    cookies: document.cookie,
-                                    commonParams: "",
-                                    isReady: false,
-                                    snifferActive: false
-                                };
-                            }
-                            
-                            if (!window.MMX_CONFIG.snifferActive && typeof startSmartSniffer === 'function') {
-                                addLogEntry(`🔧 [Active Trigger] Đang khởi động sniffer sau khi chunk 1 thành công...`, 'info');
-                                startSmartSniffer();
-                            }
-                            
-                            // Đợi tối đa 3 giây để bắt được cấu hình từ các request API sau khi chunk 1 thành công
-                            const maxWaitTime = 3000; // 3 giây
-                            const checkInterval = 100;
-                            const startTime = Date.now();
-                            let checkCount = 0;
-                            
-                            addLogEntry(`⏳ [Active Trigger] Đang đợi bắt cấu hình từ các request API (tối đa ${maxWaitTime/1000}s)...`, 'info');
-                            
-                            while (!window.MMX_CONFIG.isReady && (Date.now() - startTime) < maxWaitTime) {
-                                await new Promise(resolve => setTimeout(resolve, checkInterval));
-                                checkCount++;
-                                
-                                // Log mỗi 0.5 giây
-                                if (checkCount % 5 === 0) {
-                                    const elapsed = Math.round((Date.now() - startTime) / 1000);
-                                    addLogEntry(`⏳ [Active Trigger] Đang chờ... (${elapsed}s/${maxWaitTime/1000}s)`, 'info');
-                                }
-                            }
-                            
-                            const elapsedTime = Math.round((Date.now() - startTime) / 1000);
-                            
-                            if (window.MMX_CONFIG.isReady) {
-                                addLogEntry(`✅ [Active Trigger] Đã bắt được cấu hình từ request API sau khi chunk 1 thành công (${elapsedTime}s)!`, 'success');
-                                addLogEntry(`🔑 [Active Trigger] Params: ${window.MMX_CONFIG.commonParams.substring(0, 100)}...`, 'info');
-                                
-                                // Cập nhật UI để user thấy đã bắt được cấu hình
-                                const sniffStatusText = document.getElementById('sniff-status-text');
-                                if (sniffStatusText) {
-                                    sniffStatusText.textContent = '✅ Đã bắt được cấu hình sau chunk 1!';
-                                    sniffStatusText.style.color = '#50fa7b';
+                            try {
+                                // Đảm bảo sniffer đã được khởi động
+                                if (!window.MMX_CONFIG) {
+                                    addLogEntry(`🔧 [Active Trigger] Khởi tạo window.MMX_CONFIG...`, 'info');
+                                    window.MMX_CONFIG = {
+                                        cookies: document.cookie,
+                                        commonParams: "",
+                                        isReady: false,
+                                        snifferActive: false
+                                    };
                                 }
                                 
-                                // Cập nhật các input trong UI
-                                const policyUrlInput = document.getElementById('api-policy-url-input');
-                                const callbackUrlInput = document.getElementById('api-callback-url-input');
-                                const cloneUrlInput = document.getElementById('api-clone-url-input');
-                                const cookieInput = document.getElementById('api-cookie-input');
+                                addLogEntry(`📊 [Active Trigger] Trạng thái sniffer: snifferActive=${window.MMX_CONFIG.snifferActive}, isReady=${window.MMX_CONFIG.isReady}`, 'info');
                                 
-                                if (policyUrlInput && window.MMX_CONFIG.commonParams) {
-                                    policyUrlInput.value = `https://www.minimax.io/v1/api/file/request_policy?${window.MMX_CONFIG.commonParams}`;
-                                    policyUrlInput.style.borderColor = "#50fa7b";
-                                }
-                                if (callbackUrlInput && window.MMX_CONFIG.commonParams) {
-                                    callbackUrlInput.value = `https://www.minimax.io/v1/api/files/policy_callback?${window.MMX_CONFIG.commonParams}`;
-                                    callbackUrlInput.style.borderColor = "#50fa7b";
-                                }
-                                if (cloneUrlInput && window.MMX_CONFIG.commonParams) {
-                                    cloneUrlInput.value = `https://www.minimax.io/v1/api/audio/voice/clone_v2?${window.MMX_CONFIG.commonParams}`;
-                                    cloneUrlInput.style.borderColor = "#50fa7b";
-                                }
-                                if (cookieInput) {
-                                    cookieInput.value = window.MMX_CONFIG.cookies || document.cookie;
-                                    cookieInput.style.borderColor = "#50fa7b";
+                                if (!window.MMX_CONFIG.snifferActive) {
+                                    if (typeof startSmartSniffer === 'function') {
+                                        addLogEntry(`🔧 [Active Trigger] Đang khởi động sniffer sau khi chunk 1 thành công...`, 'info');
+                                        startSmartSniffer();
+                                        addLogEntry(`✅ [Active Trigger] Sniffer đã được khởi động`, 'info');
+                                    } else {
+                                        addLogEntry(`❌ [Active Trigger] Hàm startSmartSniffer không tồn tại!`, 'error');
+                                    }
+                                } else {
+                                    addLogEntry(`✅ [Active Trigger] Sniffer đã được khởi động từ trước`, 'info');
                                 }
                                 
-                                // Lưu vào localStorage
-                                if (window.MMX_CONFIG.commonParams) {
-                                    localStorage.setItem('api_policy_url', `https://www.minimax.io/v1/api/file/request_policy?${window.MMX_CONFIG.commonParams}`);
-                                    localStorage.setItem('api_callback_url', `https://www.minimax.io/v1/api/files/policy_callback?${window.MMX_CONFIG.commonParams}`);
-                                    localStorage.setItem('api_clone_url', `https://www.minimax.io/v1/api/audio/voice/clone_v2?${window.MMX_CONFIG.commonParams}`);
-                                }
-                                if (window.MMX_CONFIG.cookies) {
-                                    localStorage.setItem('api_cookie', window.MMX_CONFIG.cookies);
+                                // Đợi tối đa 5 giây để bắt được cấu hình từ các request API sau khi chunk 1 thành công
+                                // Tăng thời gian chờ từ 3s lên 5s vì các request có thể đến muộn hơn
+                                const maxWaitTime = 5000; // 5 giây
+                                const checkInterval = 100;
+                                const startTime = Date.now();
+                                let checkCount = 0;
+                                
+                                addLogEntry(`⏳ [Active Trigger] Đang đợi bắt cấu hình từ các request API (tối đa ${maxWaitTime/1000}s)...`, 'info');
+                                addLogEntry(`💡 [Active Trigger] Các request API sẽ được gửi sau khi chunk 1 thành công. Sniffer đang theo dõi...`, 'info');
+                                
+                                while (window.MMX_CONFIG && !window.MMX_CONFIG.isReady && (Date.now() - startTime) < maxWaitTime) {
+                                    await new Promise(resolve => setTimeout(resolve, checkInterval));
+                                    checkCount++;
+                                    
+                                    // Log mỗi 0.5 giây để user biết đang chờ
+                                    if (checkCount % 5 === 0) {
+                                        const elapsed = Math.round((Date.now() - startTime) / 1000);
+                                        addLogEntry(`⏳ [Active Trigger] Đang chờ... (${elapsed}s/${maxWaitTime/1000}s) - Sniffer đang theo dõi các request...`, 'info');
+                                    }
                                 }
                                 
-                                addLogEntry(`💾 [Active Trigger] Đã lưu cấu hình vào localStorage`, 'info');
-                            } else {
-                                addLogEntry(`⚠️ [Active Trigger] CHƯA bắt được cấu hình sau ${elapsedTime}s sau khi chunk 1 thành công`, 'warning');
-                                addLogEntry(`📊 [Active Trigger] Trạng thái: MMX_CONFIG=${!!window.MMX_CONFIG}, isReady=${window.MMX_CONFIG?.isReady}, snifferActive=${window.MMX_CONFIG?.snifferActive}`, 'warning');
-                                addLogEntry(`💡 [Active Trigger] Nguyên nhân có thể:`, 'info');
-                                addLogEntry(`   1. Các request API không được gửi sau khi chunk 1 thành công`, 'info');
-                                addLogEntry(`   2. Sniffer không bắt được request (request không đi qua fetch/XHR)`, 'info');
-                                addLogEntry(`   3. Request không có query params đầy đủ`, 'info');
-                                addLogEntry(`💡 [Active Trigger] Tool sẽ tiếp tục với UI Mode. Các chunk tiếp theo sẽ tự động bắt cấu hình nếu có.`, 'info');
+                                const elapsedTime = Math.round((Date.now() - startTime) / 1000);
+                                
+                                if (window.MMX_CONFIG && window.MMX_CONFIG.isReady) {
+                                    addLogEntry(`✅ [Active Trigger] Đã bắt được cấu hình từ request API sau khi chunk 1 thành công (${elapsedTime}s)!`, 'success');
+                                    addLogEntry(`🔑 [Active Trigger] Params: ${window.MMX_CONFIG.commonParams.substring(0, 100)}...`, 'info');
+                                    
+                                    // Cập nhật UI để user thấy đã bắt được cấu hình
+                                    const sniffStatusText = document.getElementById('sniff-status-text');
+                                    if (sniffStatusText) {
+                                        sniffStatusText.textContent = '✅ Đã bắt được cấu hình sau chunk 1!';
+                                        sniffStatusText.style.color = '#50fa7b';
+                                    }
+                                    
+                                    // Cập nhật các input trong UI
+                                    const policyUrlInput = document.getElementById('api-policy-url-input');
+                                    const callbackUrlInput = document.getElementById('api-callback-url-input');
+                                    const cloneUrlInput = document.getElementById('api-clone-url-input');
+                                    const cookieInput = document.getElementById('api-cookie-input');
+                                    
+                                    if (policyUrlInput && window.MMX_CONFIG.commonParams) {
+                                        policyUrlInput.value = `https://www.minimax.io/v1/api/file/request_policy?${window.MMX_CONFIG.commonParams}`;
+                                        policyUrlInput.style.borderColor = "#50fa7b";
+                                    }
+                                    if (callbackUrlInput && window.MMX_CONFIG.commonParams) {
+                                        callbackUrlInput.value = `https://www.minimax.io/v1/api/files/policy_callback?${window.MMX_CONFIG.commonParams}`;
+                                        callbackUrlInput.style.borderColor = "#50fa7b";
+                                    }
+                                    if (cloneUrlInput && window.MMX_CONFIG.commonParams) {
+                                        cloneUrlInput.value = `https://www.minimax.io/v1/api/audio/voice/clone_v2?${window.MMX_CONFIG.commonParams}`;
+                                        cloneUrlInput.style.borderColor = "#50fa7b";
+                                    }
+                                    if (cookieInput) {
+                                        cookieInput.value = window.MMX_CONFIG.cookies || document.cookie;
+                                        cookieInput.style.borderColor = "#50fa7b";
+                                    }
+                                    
+                                    // Lưu vào localStorage
+                                    if (window.MMX_CONFIG.commonParams) {
+                                        localStorage.setItem('api_policy_url', `https://www.minimax.io/v1/api/file/request_policy?${window.MMX_CONFIG.commonParams}`);
+                                        localStorage.setItem('api_callback_url', `https://www.minimax.io/v1/api/files/policy_callback?${window.MMX_CONFIG.commonParams}`);
+                                        localStorage.setItem('api_clone_url', `https://www.minimax.io/v1/api/audio/voice/clone_v2?${window.MMX_CONFIG.commonParams}`);
+                                    }
+                                    if (window.MMX_CONFIG.cookies) {
+                                        localStorage.setItem('api_cookie', window.MMX_CONFIG.cookies);
+                                    }
+                                    
+                                    addLogEntry(`💾 [Active Trigger] Đã lưu cấu hình vào localStorage`, 'info');
+                                    addLogEntry(`🎉 [Active Trigger] Các chunk tiếp theo có thể sử dụng API Mode!`, 'success');
+                                } else {
+                                    addLogEntry(`❌ [Active Trigger] CHƯA bắt được cấu hình sau ${elapsedTime}s sau khi chunk 1 thành công`, 'error');
+                                    addLogEntry(`📊 [Active Trigger] Trạng thái cuối: MMX_CONFIG=${!!window.MMX_CONFIG}, isReady=${window.MMX_CONFIG?.isReady}, snifferActive=${window.MMX_CONFIG?.snifferActive}`, 'error');
+                                    addLogEntry(`💡 [Active Trigger] Nguyên nhân có thể:`, 'info');
+                                    addLogEntry(`   1. Các request API không được gửi sau khi chunk 1 thành công`, 'info');
+                                    addLogEntry(`   2. Sniffer không bắt được request (request không đi qua fetch/XHR)`, 'info');
+                                    addLogEntry(`   3. Request không có query params đầy đủ`, 'info');
+                                    addLogEntry(`   4. Request bị chặn hoặc lỗi`, 'info');
+                                    addLogEntry(`💡 [Active Trigger] Giải pháp: Mở Console (F12) và kiểm tra log "[Auto-Sniff Debug]" để xem các request đang được bắt`, 'info');
+                                    addLogEntry(`💡 [Active Trigger] Tool sẽ tiếp tục với UI Mode. Các chunk tiếp theo sẽ tự động bắt cấu hình nếu có.`, 'info');
+                                }
+                            } catch (error) {
+                                addLogEntry(`❌ [Active Trigger] Lỗi khi bắt cấu hình sau chunk 1: ${error.message}`, 'error');
+                                console.error('[Active Trigger] Error:', error);
+                                addLogEntry(`💡 [Active Trigger] Tool sẽ tiếp tục với UI Mode`, 'info');
                             }
                         }
 
