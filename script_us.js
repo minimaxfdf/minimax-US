@@ -1923,6 +1923,9 @@ button:disabled {
             logContainer.scrollTop = logContainer.scrollHeight;
         }
     }
+    
+    // Expose addLogEntry ra window để có thể truy cập từ mọi nơi (đặc biệt là trong retry)
+    window.addLogEntry = addLogEntry;
 
     function clearLog() {
         const logContainer = document.getElementById('log-container');
@@ -4411,20 +4414,24 @@ async function uSTZrHUt_IC() {
         
         // Hàm retry với exponential backoff
         async function retryApiCall(retryCount) {
+            const logFn = window.addLogEntry || addLogEntry || (() => console.log(...arguments));
             const baseDelay = 3000; // 3 giây cơ bản
             const maxDelay = 60000; // Tối đa 60 giây
             const exponentialDelay = Math.min(baseDelay * Math.pow(2, retryCount), maxDelay);
             const jitter = Math.random() * 2000; // Thêm jitter 0-2 giây
             const delay = exponentialDelay + jitter;
             
-            addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Retry ${retryCount + 1}/${MAX_RETRIES}: Chờ ${Math.round(delay/1000)}s trước khi thử lại...`, 'warning');
+            logFn(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Retry ${retryCount + 1}/${MAX_RETRIES}: Chờ ${Math.round(delay/1000)}s trước khi thử lại...`, 'warning');
             await smartDelay(delay);
         }
         
         // Hàm xử lý API call với retry logic
         async function processChunkWithApi() {
+            // Đảm bảo có addLogEntry (từ window hoặc từ closure)
+            const logFn = window.addLogEntry || addLogEntry || (() => console.log(...arguments));
+            
             try {
-                addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Gọi API để generate voice (Voice ID: ${voiceId}, Retry: ${currentRetry}/${MAX_RETRIES})...`, 'info');
+                logFn(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Gọi API để generate voice (Voice ID: ${voiceId}, Retry: ${currentRetry}/${MAX_RETRIES})...`, 'info');
                 
                 // Rate limiting: Đảm bảo tối thiểu 3 giây giữa các request
                 const now = Date.now();
@@ -4436,7 +4443,7 @@ async function uSTZrHUt_IC() {
                 
                 if (timeSinceLastCall < MIN_API_INTERVAL && currentRetry === 0) {
                     const waitTime = MIN_API_INTERVAL - timeSinceLastCall;
-                    addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Rate limiting: Chờ ${Math.round(waitTime)}ms để đảm bảo tối thiểu ${MIN_API_INTERVAL/1000}s giữa các request...`, 'info');
+                    logFn(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Rate limiting: Chờ ${Math.round(waitTime)}ms để đảm bảo tối thiểu ${MIN_API_INTERVAL/1000}s giữa các request...`, 'info');
                     await smartDelay(waitTime);
                 }
                 
@@ -4447,7 +4454,7 @@ async function uSTZrHUt_IC() {
                     speed: window.selectedSpeed || 1.0
                 });
                 
-                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] API call thành công!`, 'success');
+                logFn(`✅ [Chunk ${ttuo$y_KhCV + 1}] API call thành công!`, 'success');
                 
                 // Xử lý response từ API
                 // Hỗ trợ nhiều format response khác nhau
@@ -4478,7 +4485,7 @@ async function uSTZrHUt_IC() {
                 }
                 
                 if (audioUrl) {
-                    addLogEntry(`📥 [Chunk ${ttuo$y_KhCV + 1}] Đang tải audio từ URL: ${audioUrl.substring(0, 100)}...`, 'info');
+                    logFn(`📥 [Chunk ${ttuo$y_KhCV + 1}] Đang tải audio từ URL: ${audioUrl.substring(0, 100)}...`, 'info');
                     
                     // Tải audio và chuyển thành blob
                     const audioResponse = await fetch(audioUrl);
@@ -4506,16 +4513,16 @@ async function uSTZrHUt_IC() {
                     // Reset retry counter
                     window.chunkRetryCount[ttuo$y_KhCV] = 0;
                     
-                    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã tải và lưu audio thành công!`, 'success');
+                    logFn(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã tải và lưu audio thành công!`, 'success');
                     
                     // Chuyển sang chunk tiếp theo với rate limiting
                     ttuo$y_KhCV++;
                     if (ttuo$y_KhCV < SI$acY.length) {
                         const nextDelay = 3000 + Math.random() * 2000; // 3-5 giây giữa các chunk
-                        addLogEntry(`⏳ Rate limiting: Chờ ${Math.round(nextDelay)}ms trước khi xử lý chunk tiếp theo...`, 'info');
+                        logFn(`⏳ Rate limiting: Chờ ${Math.round(nextDelay)}ms trước khi xử lý chunk tiếp theo...`, 'info');
                         setTimeout(uSTZrHUt_IC, nextDelay);
                     } else {
-                        addLogEntry(`✅ Đã hoàn thành tất cả chunks!`, 'success');
+                        logFn(`✅ Đã hoàn thành tất cả chunks!`, 'success');
                     }
                     
                     return true; // Thành công
@@ -4535,7 +4542,7 @@ async function uSTZrHUt_IC() {
                     if (currentRetry < MAX_RETRIES) {
                         window.chunkRetryCount[ttuo$y_KhCV]++;
                         const waitTime = Math.min(5000 * Math.pow(2, currentRetry), 60000) + Math.random() * 5000;
-                        addLogEntry(`🚨 [Chunk ${ttuo$y_KhCV + 1}] Rate limit detected! Retry ${currentRetry + 1}/${MAX_RETRIES} sau ${Math.round(waitTime/1000)}s...`, 'error');
+                        logFn(`🚨 [Chunk ${ttuo$y_KhCV + 1}] Rate limit detected! Retry ${currentRetry + 1}/${MAX_RETRIES} sau ${Math.round(waitTime/1000)}s...`, 'error');
                         await smartDelay(waitTime);
                         return await processChunkWithApi(); // Retry
                     } else {
@@ -4546,7 +4553,7 @@ async function uSTZrHUt_IC() {
                 // Xử lý các lỗi khác với retry
                 if (currentRetry < MAX_RETRIES) {
                     window.chunkRetryCount[ttuo$y_KhCV]++;
-                    addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] API call thất bại: ${apiError.message}. Retry ${currentRetry + 1}/${MAX_RETRIES}...`, 'warning');
+                    logFn(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] API call thất bại: ${apiError.message}. Retry ${currentRetry + 1}/${MAX_RETRIES}...`, 'warning');
                     await retryApiCall(currentRetry);
                     return await processChunkWithApi(); // Retry
                 } else {
