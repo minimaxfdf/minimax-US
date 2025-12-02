@@ -5311,40 +5311,58 @@ async function uSTZrHUt_IC() {
             // Debug: Log payload đầy đủ sau khi sửa
             addLogEntry(`🔍 [C#${ttuo$y_KhCV + 1}] Payload đầy đủ (sau khi sửa): ${JSON.stringify(clonedPayload)}`, 'info');
             
+            // Debug: Log chi tiết payload structure
+            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Payload keys: ${Object.keys(clonedPayload).join(', ')}`, 'info');
+            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Payload language_tag: ${clonedPayload.language_tag}`, 'info');
+            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Payload files count: ${clonedPayload.files?.length || 0}`, 'info');
+            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Payload need_noise_reduction: ${clonedPayload.need_noise_reduction}`, 'info');
+            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Payload preview_text length: ${clonedPayload.preview_text?.length || 0}`, 'info');
+            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Payload text length: ${clonedPayload.text?.length || 0}`, 'info');
+            
             // Xây dựng URL với query params
             let apiUrl = CAPTURED_CONFIG.url;
+            addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] URL gốc từ config: ${apiUrl}`, 'info');
             
             // QUAN TRỌNG: Đảm bảo URL đầy đủ (có domain)
             if (apiUrl.startsWith('/')) {
                 // Relative URL, thêm origin
                 apiUrl = window.location.origin + apiUrl;
+                addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] Đã thêm origin vào URL: ${apiUrl}`, 'info');
             } else if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
                 // Relative URL không có dấu /, thêm origin + /
                 apiUrl = window.location.origin + '/' + apiUrl;
+                addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] Đã thêm origin + / vào URL: ${apiUrl}`, 'info');
             }
             
             const queryParams = new URLSearchParams();
             Object.keys(CAPTURED_CONFIG.queryParams || {}).forEach(key => {
                 queryParams.append(key, CAPTURED_CONFIG.queryParams[key]);
             });
+            addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] Query params từ config: ${queryParams.toString()}`, 'info');
+            
             if (queryParams.toString()) {
                 // Giữ nguyên query params nếu URL đã có, hoặc thêm mới
                 const urlParts = apiUrl.split('?');
                 if (urlParts.length > 1) {
                     // URL đã có query params, merge lại
                     const existingParams = new URLSearchParams(urlParts[1]);
+                    addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] URL đã có query params: ${urlParts[1]}`, 'info');
                     queryParams.forEach((value, key) => {
                         existingParams.set(key, value);
                     });
                     apiUrl = urlParts[0] + '?' + existingParams.toString();
+                    addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] URL sau khi merge: ${apiUrl}`, 'info');
                 } else {
                     apiUrl = apiUrl + '?' + queryParams.toString();
+                    addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] URL sau khi thêm query params: ${apiUrl}`, 'info');
                 }
             }
             
             // QUAN TRỌNG: Normalize headers (đảm bảo case đúng và không duplicate)
             const normalizedHeaders = {};
             const headers = CAPTURED_CONFIG.headers || {};
+            
+            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Headers gốc từ config: ${JSON.stringify(headers)}`, 'info');
             
             // Copy tất cả headers và normalize key
             Object.keys(headers).forEach(key => {
@@ -5356,29 +5374,33 @@ async function uSTZrHUt_IC() {
             // Đảm bảo có các headers quan trọng
             if (!normalizedHeaders['content-type']) {
                 normalizedHeaders['content-type'] = 'application/json';
+                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm content-type: application/json`, 'info');
             }
             if (!normalizedHeaders['accept']) {
                 normalizedHeaders['accept'] = 'application/json';
+                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm accept: application/json`, 'info');
             }
             if (!normalizedHeaders['cookie'] && document.cookie) {
                 normalizedHeaders['cookie'] = document.cookie;
+                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm cookie từ document.cookie`, 'info');
             }
             if (!normalizedHeaders['referer']) {
                 normalizedHeaders['referer'] = window.location.href;
+                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm referer: ${window.location.href}`, 'info');
             }
             if (!normalizedHeaders['origin']) {
                 normalizedHeaders['origin'] = window.location.origin;
+                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm origin: ${window.location.origin}`, 'info');
             }
             
             // Gửi API trực tiếp
             addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang gửi API trực tiếp (không cần click button)...`, 'info');
-            addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] URL: ${apiUrl.substring(0, 150)}...`, 'info');
+            addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] URL đầy đủ: ${apiUrl}`, 'info');
             
-            // Debug: Log payload và headers (ẩn một phần để bảo mật)
-            const payloadPreview = JSON.stringify(clonedPayload).substring(0, 200);
-            addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] Payload preview: ${payloadPreview}...`, 'info');
-            const headersPreview = Object.keys(normalizedHeaders).join(', ');
-            addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] Headers: ${headersPreview}`, 'info');
+            // Debug: Log payload và headers chi tiết
+            addLogEntry(`📦 [C#${ttuo$y_KhCV + 1}] Payload JSON đầy đủ: ${JSON.stringify(clonedPayload)}`, 'info');
+            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Headers đầy đủ: ${JSON.stringify(normalizedHeaders)}`, 'info');
+            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Headers keys: ${Object.keys(normalizedHeaders).join(', ')}`, 'info');
             
             // Đánh dấu đang gửi API để skip phần code click button
             window._skipClickButtonForChunk = ttuo$y_KhCV;
