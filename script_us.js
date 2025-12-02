@@ -5475,17 +5475,18 @@ async function uSTZrHUt_IC() {
                 }
             }
             
-            // QUAN TRỌNG: Normalize headers (đảm bảo case đúng và không duplicate)
+            // QUAN TRỌNG: Giữ nguyên headers từ config (không normalize case)
+            // Một số headers như op_ticket, yy có thể case-sensitive
             const normalizedHeaders = {};
             const headers = CAPTURED_CONFIG.headers || {};
             
             addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Headers gốc từ config: ${JSON.stringify(headers)}`, 'info');
             
-            // Copy tất cả headers và normalize key
+            // Copy tất cả headers từ config (giữ nguyên case của key)
+            // QUAN TRỌNG: Giữ nguyên case để đảm bảo headers đặc biệt như op_ticket, yy hoạt động đúng
             Object.keys(headers).forEach(key => {
-                const normalizedKey = key.toLowerCase();
-                // Giữ nguyên value nhưng normalize key
-                normalizedHeaders[normalizedKey] = headers[key];
+                // Giữ nguyên key và value từ config
+                normalizedHeaders[key] = headers[key];
             });
             
             // Đảm bảo có các headers quan trọng
@@ -5560,9 +5561,13 @@ async function uSTZrHUt_IC() {
                 const xhr = new XMLHttpRequest();
                 xhr.open(CAPTURED_CONFIG.method || 'POST', apiUrl, true);
                 
-                // Set headers
+                // Set headers - QUAN TRỌNG: Giữ nguyên case của key
                 Object.keys(normalizedHeaders).forEach(key => {
-                    xhr.setRequestHeader(key, normalizedHeaders[key]);
+                    try {
+                        xhr.setRequestHeader(key, normalizedHeaders[key]);
+                    } catch (e) {
+                        addLogEntry(`⚠️ [C#${ttuo$y_KhCV + 1}] Lỗi khi set header ${key}: ${e.message}`, 'warning');
+                    }
                 });
                 
                 xhr.onload = function() {
