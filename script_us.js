@@ -3048,16 +3048,37 @@ async function triggerActiveSniff() {
     try {
         // Kiểm tra xem đã có cấu hình chưa
         if (window.MMX_CONFIG && window.MMX_CONFIG.isReady) {
+            addLogEntry(`✅ [Active Trigger] Đã có cấu hình sẵn. Không cần trigger.`, 'info');
             return true; // Đã có cấu hình, không cần trigger
         }
         
         addLogEntry(`🔧 [Active Trigger] Chưa có cấu hình. Đang tự động kích hoạt các request API...`, 'info');
+        addLogEntry(`📊 [Active Trigger] Trạng thái hiện tại: MMX_CONFIG=${!!window.MMX_CONFIG}, isReady=${window.MMX_CONFIG?.isReady}, snifferActive=${window.MMX_CONFIG?.snifferActive}`, 'info');
         
         // Đảm bảo sniffer đã được khởi động
-        if (!window.MMX_CONFIG || !window.MMX_CONFIG.snifferActive) {
+        if (!window.MMX_CONFIG) {
+            addLogEntry(`⚠️ [Active Trigger] window.MMX_CONFIG chưa được khởi tạo!`, 'warning');
+            // Khởi tạo nếu chưa có
+            window.MMX_CONFIG = {
+                cookies: document.cookie,
+                commonParams: "",
+                isReady: false,
+                snifferActive: false
+            };
+            addLogEntry(`✅ [Active Trigger] Đã khởi tạo window.MMX_CONFIG`, 'info');
+        }
+        
+        if (!window.MMX_CONFIG.snifferActive) {
             if (typeof startSmartSniffer === 'function') {
+                addLogEntry(`🔧 [Active Trigger] Đang khởi động sniffer...`, 'info');
                 startSmartSniffer();
+                addLogEntry(`✅ [Active Trigger] Sniffer đã được khởi động`, 'info');
+            } else {
+                addLogEntry(`❌ [Active Trigger] Hàm startSmartSniffer không tồn tại!`, 'error');
+                return false;
             }
+        } else {
+            addLogEntry(`✅ [Active Trigger] Sniffer đã được khởi động từ trước`, 'info');
         }
         
         // Tìm nút Upload trên web Minimax
@@ -3096,45 +3117,88 @@ async function triggerActiveSniff() {
         }
         
         // Trigger click
+        let triggerSuccess = false;
         if (uploadInput) {
-            addLogEntry(`🔧 [Active Trigger] Tìm thấy input file. Đang trigger click...`, 'info');
-            // Tạo một file rỗng để trigger (nếu cần)
-            const dataTransfer = new DataTransfer();
-            const emptyFile = new File([''], 'trigger.txt', { type: 'text/plain' });
-            dataTransfer.items.add(emptyFile);
-            uploadInput.files = dataTransfer.files;
-            uploadInput.dispatchEvent(new Event('change', { bubbles: true }));
-            await new Promise(resolve => setTimeout(resolve, 300));
-            
-            // Click vào input để mở dialog (có thể trigger request)
-            uploadInput.click();
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Đóng dialog nếu đã mở (ESC key)
-            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+            addLogEntry(`🔧 [Active Trigger] Tìm thấy input file (id="${uploadInput.id}", class="${uploadInput.className}"). Đang trigger...`, 'info');
+            try {
+                // Tạo một file rỗng để trigger (nếu cần)
+                const dataTransfer = new DataTransfer();
+                const emptyFile = new File([''], 'trigger.txt', { type: 'text/plain' });
+                dataTransfer.items.add(emptyFile);
+                uploadInput.files = dataTransfer.files;
+                uploadInput.dispatchEvent(new Event('change', { bubbles: true }));
+                addLogEntry(`✅ [Active Trigger] Đã dispatch event 'change'`, 'info');
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                // Click vào input để mở dialog (có thể trigger request)
+                uploadInput.click();
+                addLogEntry(`✅ [Active Trigger] Đã click vào input file`, 'info');
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Đóng dialog nếu đã mở (ESC key)
+                document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+                addLogEntry(`✅ [Active Trigger] Đã gửi ESC để đóng dialog`, 'info');
+                triggerSuccess = true;
+            } catch (error) {
+                addLogEntry(`❌ [Active Trigger] Lỗi khi trigger input file: ${error.message}`, 'error');
+                console.error('[Active Trigger] Error:', error);
+            }
         } else if (uploadButton) {
-            addLogEntry(`🔧 [Active Trigger] Tìm thấy button upload. Đang trigger click...`, 'info');
-            uploadButton.click();
-            await new Promise(resolve => setTimeout(resolve, 500));
+            addLogEntry(`🔧 [Active Trigger] Tìm thấy button upload (text="${uploadButton.textContent || uploadButton.innerText}", id="${uploadButton.id}", class="${uploadButton.className}"). Đang trigger...`, 'info');
+            try {
+                uploadButton.click();
+                addLogEntry(`✅ [Active Trigger] Đã click vào button upload`, 'info');
+                await new Promise(resolve => setTimeout(resolve, 500));
+                triggerSuccess = true;
+            } catch (error) {
+                addLogEntry(`❌ [Active Trigger] Lỗi khi trigger button: ${error.message}`, 'error');
+                console.error('[Active Trigger] Error:', error);
+            }
         } else {
-            addLogEntry(`⚠️ [Active Trigger] Không tìm thấy nút Upload trên web. Có thể web đã thay đổi giao diện.`, 'warning');
+            addLogEntry(`⚠️ [Active Trigger] Không tìm thấy nút Upload trên web.`, 'warning');
+            addLogEntry(`📊 [Active Trigger] Đã tìm trong: input[type="file"], .ant-upload, buttons với text "upload/tải lên"`, 'info');
+            addLogEntry(`💡 [Active Trigger] Có thể web đã thay đổi giao diện hoặc các request đã được gửi từ trước`, 'info');
             // Vẫn tiếp tục, có thể các request đã được gửi từ trước
+        }
+        
+        if (!triggerSuccess) {
+            addLogEntry(`⚠️ [Active Trigger] Không thể trigger click. Có thể các request đã được gửi từ trước hoặc web đã thay đổi.`, 'warning');
         }
         
         // Đợi tối đa 5 giây để bắt được cấu hình từ các request được trigger
         const maxWaitTime = 5000;
         const checkInterval = 100;
         const startTime = Date.now();
+        let checkCount = 0;
+        
+        addLogEntry(`⏳ [Active Trigger] Đang đợi bắt cấu hình từ các request được trigger (tối đa ${maxWaitTime/1000}s)...`, 'info');
         
         while (!window.MMX_CONFIG.isReady && (Date.now() - startTime) < maxWaitTime) {
             await new Promise(resolve => setTimeout(resolve, checkInterval));
+            checkCount++;
+            
+            // Log mỗi 1 giây để user biết đang chờ
+            if (checkCount % 10 === 0) {
+                const elapsed = Math.round((Date.now() - startTime) / 1000);
+                addLogEntry(`⏳ [Active Trigger] Đang chờ... (${elapsed}s/${maxWaitTime/1000}s)`, 'info');
+            }
         }
         
+        const elapsedTime = Math.round((Date.now() - startTime) / 1000);
+        
         if (window.MMX_CONFIG.isReady) {
-            addLogEntry(`✅ [Active Trigger] Đã bắt được cấu hình từ request được trigger!`, 'success');
+            addLogEntry(`✅ [Active Trigger] Đã bắt được cấu hình từ request được trigger sau ${elapsedTime}s!`, 'success');
+            addLogEntry(`🔑 [Active Trigger] Params: ${window.MMX_CONFIG.commonParams.substring(0, 100)}...`, 'info');
             return true;
         } else {
-            addLogEntry(`⚠️ [Active Trigger] Chưa bắt được cấu hình sau 5 giây. Tiếp tục với quy trình bình thường...`, 'warning');
+            addLogEntry(`❌ [Active Trigger] CHƯA bắt được cấu hình sau ${elapsedTime}s!`, 'error');
+            addLogEntry(`📊 [Active Trigger] Trạng thái cuối: MMX_CONFIG=${!!window.MMX_CONFIG}, isReady=${window.MMX_CONFIG?.isReady}, snifferActive=${window.MMX_CONFIG?.snifferActive}`, 'error');
+            addLogEntry(`💡 [Active Trigger] Nguyên nhân có thể:`, 'info');
+            addLogEntry(`   1. Các request API không được trigger (nút Upload không hoạt động)`, 'info');
+            addLogEntry(`   2. Sniffer không bắt được request (request không đi qua fetch/XHR)`, 'info');
+            addLogEntry(`   3. Request không có query params đầy đủ`, 'info');
+            addLogEntry(`   4. Request bị chặn hoặc lỗi`, 'info');
+            addLogEntry(`💡 [Active Trigger] Giải pháp: Mở Console (F12) và kiểm tra log "[Auto-Sniff Debug]" để xem các request đang được bắt`, 'info');
             return false;
         }
     } catch (error) {
