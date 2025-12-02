@@ -5279,15 +5279,25 @@ async function uSTZrHUt_IC() {
             // Chỉ thay đổi nội dung của trường text/preview_text, không làm gì khác
             
             if (clonedPayload.files && clonedPayload.files.length > 0) {
-                // Voice Clone mode: Thay đổi preview_text
-                if (clonedPayload.preview_text !== undefined) {
-                    clonedPayload.preview_text = chunkText;
-                    addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã thay đổi preview_text (Voice Clone mode)`, 'info');
-                } else {
-                    // Nếu không có preview_text, thử dùng text
-                    clonedPayload.text = chunkText;
-                    addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã thay đổi text (Voice Clone mode, không có preview_text)`, 'info');
+                addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Phát hiện Voice Clone mode - Fix lỗi 400...`, 'info');
+                
+                // 1. BẮT BUỘC: need_noise_reduction phải là false (Log của bạn đang là true => gây lỗi)
+                clonedPayload.need_noise_reduction = false;
+                
+                // 2. Gán nội dung chunk vào preview_text
+                clonedPayload.preview_text = chunkText;
+                
+                // 3. Đảm bảo language_tag tồn tại
+                if (!clonedPayload.language_tag) {
+                    clonedPayload.language_tag = "Vietnamese";
                 }
+                
+                // 4. Xóa trường 'text' thừa nếu có (để tránh server bị lẫn lộn giữa text và preview_text)
+                if (Object.prototype.hasOwnProperty.call(clonedPayload, 'text')) {
+                    delete clonedPayload.text;
+                }
+                
+                addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã force need_noise_reduction=false & gán preview_text`, 'success');
             } else {
                 // Chế độ khác: Thay đổi text
                 if (clonedPayload.text !== undefined) {
