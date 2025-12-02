@@ -5152,7 +5152,18 @@ async function uSTZrHUt_IC() {
             // Chunk 2 trở đi và đã có config: Gửi API trực tiếp
             // Clone config và thay đổi text
             const clonedPayload = JSON.parse(JSON.stringify(CAPTURED_CONFIG.payload));
-            clonedPayload.text = chunkText; // Chỉ thay đổi text
+            
+            // === [FIX LỖI 400] QUAN TRỌNG: Dọn dẹp payload rác ===
+            if (clonedPayload.preview_text) {
+                delete clonedPayload.preview_text; // Xóa dòng này đi, nó gây lỗi 400
+            }
+            // Đảm bảo cấu trúc files (nếu là voice cloning)
+            if (clonedPayload.files && clonedPayload.files.length > 0) {
+                // Giữ nguyên files, đây là ID của giọng clone
+            }
+            // ====================================================
+            
+            clonedPayload.text = chunkText; // Gán text chuẩn vào
             
             // Xây dựng URL với query params
             let apiUrl = CAPTURED_CONFIG.url;
