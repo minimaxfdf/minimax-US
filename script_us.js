@@ -1481,17 +1481,17 @@ button:disabled {
             let payload;
             if (config.payloadTemplate) {
                 // Copy nguyên xi mẫu gốc để giữ TẤT CẢ các tham số (timbre_weights, voice_id, ...)
+                // Sử dụng deep clone để đảm bảo giữ nguyên cả nested objects
                 payload = JSON.parse(JSON.stringify(config.payloadTemplate));
                 
                 // QUAN TRỌNG: Luôn gán nội dung đầy đủ vào payload.text (không giới hạn)
                 payload.text = text;
                 
-                // QUAN TRỌNG: XÓA preview_text để tránh server báo lỗi "thừa tham số" hoặc "preview_text quá dài"
-                // Server Minimax chỉ cần MỘT trong hai: text HOẶC preview_text, không phải cả hai
-                // Nếu giữ cả 2, server sẽ ưu tiên preview_text và báo lỗi khi > 300 ký tự
-                if (payload.preview_text !== undefined) {
-                    delete payload.preview_text;
-                    addLogEntry(`💡 [Module 2] Đã xóa preview_text, chỉ dùng text (${text.length} ký tự)`, 'info');
+                // THỬ NGHIỆM: Giữ cả preview_text (200 ký tự đầu) để xem server có chấp nhận không
+                // Nếu mẫu gốc có preview_text, chỉ cập nhật 200 ký tự đầu (để < 300 giới hạn)
+                if (typeof config.payloadTemplate.preview_text !== 'undefined') {
+                    payload.preview_text = text.substring(0, 200);
+                    addLogEntry(`💡 [Module 2] Giữ cả text (${text.length} ký tự) và preview_text (200 ký tự)`, 'info');
                 }
                 
                 // Cập nhật language_tag từ selection của tool (nếu có)
@@ -1500,18 +1500,54 @@ button:disabled {
                     payload.language_tag = langSelect.value;
                 }
                 
+                // ĐẢM BẢO: Kiểm tra và giữ nguyên các trường quan trọng từ template
+                // Nếu template có các trường đặc biệt, đảm bảo chúng được giữ lại
+                if (config.payloadTemplate.timbre_weights !== undefined) {
+                    payload.timbre_weights = config.payloadTemplate.timbre_weights;
+                }
+                if (config.payloadTemplate.voice_id !== undefined) {
+                    payload.voice_id = config.payloadTemplate.voice_id;
+                }
+                if (config.payloadTemplate.speed !== undefined) {
+                    payload.speed = config.payloadTemplate.speed;
+                }
+                if (config.payloadTemplate.pitch !== undefined) {
+                    payload.pitch = config.payloadTemplate.pitch;
+                }
+                // Giữ nguyên files array nếu có
+                if (Array.isArray(config.payloadTemplate.files)) {
+                    payload.files = JSON.parse(JSON.stringify(config.payloadTemplate.files));
+                }
+                
                 // DEBUG: Log chi tiết để kiểm tra
                 console.log('[MODULE 2 DEBUG] ========== PAYLOAD DEBUG ==========');
                 console.log('[MODULE 2 DEBUG] PayloadTemplate gốc:', JSON.stringify(config.payloadTemplate, null, 2));
+                console.log('[MODULE 2 DEBUG] PayloadTemplate keys:', Object.keys(config.payloadTemplate).sort());
                 console.log('[MODULE 2 DEBUG] Payload sau khi clone & patch:', JSON.stringify(payload, null, 2));
+                console.log('[MODULE 2 DEBUG] Payload keys:', Object.keys(payload).sort());
                 console.log('[MODULE 2 DEBUG] Text length:', text.length);
                 console.log('[MODULE 2 DEBUG] Có preview_text trong payload:', typeof payload.preview_text !== 'undefined');
                 console.log('[MODULE 2 DEBUG] Có text trong payload:', typeof payload.text !== 'undefined');
-                console.log('[MODULE 2 DEBUG] Payload keys:', Object.keys(payload).sort());
+                
+                // So sánh keys để đảm bảo không mất trường nào
+                const templateKeys = Object.keys(config.payloadTemplate).sort();
+                const payloadKeys = Object.keys(payload).sort();
+                const missingKeys = templateKeys.filter(k => !payloadKeys.includes(k));
+                const extraKeys = payloadKeys.filter(k => !templateKeys.includes(k));
+                
+                if (missingKeys.length > 0) {
+                    console.warn('[MODULE 2 WARNING] Các trường bị thiếu trong payload:', missingKeys);
+                }
+                if (extraKeys.length > 0) {
+                    console.log('[MODULE 2 INFO] Các trường mới thêm vào payload:', extraKeys);
+                }
                 console.log('[MODULE 2 DEBUG] ====================================');
                 
                 // Log vào UI để user có thể xem
-                addLogEntry(`🔍 [Debug] Payload có ${Object.keys(payload).length} trường, text: ${text.length} ký tự`, 'info');
+                addLogEntry(`🔍 [Debug] Payload có ${Object.keys(payload).length} trường (template: ${Object.keys(config.payloadTemplate).length}), text: ${text.length} ký tự`, 'info');
+                if (missingKeys.length > 0) {
+                    addLogEntry(`⚠️ [Debug] CẢNH BÁO: Thiếu ${missingKeys.length} trường từ template: ${missingKeys.join(', ')}`, 'warning');
+                }
             } else {
                 // Fallback cực kỳ cơ bản (ít dùng, chỉ khi không bắt được mẫu)
                 // Dùng text thay vì preview_text để tránh giới hạn 300 ký tự
