@@ -1431,7 +1431,8 @@ button:disabled {
     // Nhiệm vụ: Thay thế hoàn toàn hành vi Click chuột bằng API call
     
     /**
-     * Hàm gọi API clone_v2 trực tiếp để tạo audio
+     * [FIXED] Hàm gọi API clone_v2 trực tiếp
+     * Cập nhật: Tự động lấy URL chuẩn và Payload sạch để tránh lỗi 400
      * @param {string} text - Đoạn văn bản cần đọc
      * @param {number} chunkIndex - Chỉ số chunk (để log)
      * @returns {Promise<Blob|null>} - Trả về Blob audio hoặc null nếu lỗi
@@ -1447,32 +1448,44 @@ button:disabled {
         addLogEntry(`🚀 [Module 2] Chunk ${chunkIndex + 1}: Đang gọi API trực tiếp...`, 'info');
         
         try {
-            // Tạo URL với query parameters
-            const baseUrl = 'https://www.minimax.io/v1/api/audio/voice/clone_v2';
-            const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0;
-                const v = c === 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-            const unix = Math.floor(Date.now() / 1000);
+            // [FIX 1] Tái tạo URL từ chính URL đã bắt được (thay vì hardcode)
+            // Điều này giúp giữ nguyên các tham số version_code, biz_id, app_id đúng với tài khoản của bạn
+            let targetUrl;
+            try {
+                const capturedUrl = new URL(config.url);
+                // Cập nhật uuid mới (random) và thời gian unix mới
+                capturedUrl.searchParams.set('uuid', 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                    const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                }));
+                capturedUrl.searchParams.set('unix', Math.floor(Date.now() / 1000).toString());
+                targetUrl = capturedUrl.toString();
+            } catch (e) {
+                // Dự phòng nếu URL bắt được bị lỗi (hiếm khi xảy ra)
+                targetUrl = 'https://www.minimax.io/v1/api/audio/voice/clone_v2?device_platform=web&app_id=3001&version_code=22201&biz_id=1&unix=' + Math.floor(Date.now() / 1000);
+            }
             
-            const url = new URL(baseUrl);
-            url.searchParams.set('device_platform', 'web');
-            url.searchParams.set('app_id', '3001');
-            url.searchParams.set('version_code', '22201');
-            url.searchParams.set('biz_id', '1');
-            url.searchParams.set('uuid', uuid);
-            url.searchParams.set('unix', unix.toString());
-            
-            // [FIX] Tạo payload dựa trên mẫu gốc (Clone & Patch)
+            // [FIX 2] Xây dựng Payload thông minh (Tránh gửi thừa tham số gây lỗi 400)
             let payload;
             if (config.payloadTemplate) {
-                // Copy nguyên xi mẫu gốc để giữ các tham số ẩn (timbre_weights...)
+                // Copy nguyên xi mẫu gốc
                 payload = JSON.parse(JSON.stringify(config.payloadTemplate));
                 
-                // Chỉ ghi đè text và preview_text
-                payload.preview_text = text;
-                payload.text = text; 
+                // Logic thông minh: Chỉ sửa trường nào CÓ SẴN trong mẫu
+                // Minimax chỉ chấp nhận 'preview_text', nếu gửi thêm 'text' sẽ bị lỗi 400
+                if (typeof payload.preview_text !== 'undefined') {
+                    payload.preview_text = text;
+                } else if (typeof payload.text !== 'undefined') {
+                    payload.text = text;
+                } else {
+                    // Mặc định an toàn nhất
+                    payload.preview_text = text;
+                }
+
+                // Xóa trường 'text' nếu nó không có trong mẫu gốc (để tránh lỗi thừa tham số)
+                if (payload.text && !config.payloadTemplate.text) {
+                    delete payload.text;
+                }
                 
                 // Cập nhật language_tag từ selection của tool (nếu có)
                 const langSelect = document.getElementById('gemini-language-select');
@@ -1480,36 +1493,38 @@ button:disabled {
                     payload.language_tag = langSelect.value;
                 }
             } else {
-                // Fallback nếu không có mẫu (code cũ - dễ lỗi 400)
+                // Fallback cực kỳ cơ bản (ít dùng, chỉ khi không bắt được mẫu)
                 payload = {
                     files: [{
                         file_id: config.file_id,
                         file_name: config.file_name
                     }],
-                    preview_text: text,
-                    text: text,
+                    preview_text: text, // Chỉ dùng preview_text
                     language_tag: config.language_tag || 'Vietnamese',
                     need_noise_reduction: false
                 };
             }
             
-            // Tạo headers (sử dụng headers đã bắt được, nhưng không hardcode Cookie/Authorization)
+            // Tạo headers (sử dụng headers đã bắt được)
             const headers = {
                 'Content-Type': 'application/json',
                 ...config.headers
             };
             
-            // Loại bỏ các header không cần thiết hoặc có thể gây lỗi
+            // Xóa các header tự động của trình duyệt để tránh xung đột
             delete headers['content-length'];
             delete headers['host'];
             delete headers['origin'];
+            // Xóa Referer để trình duyệt tự điền (tránh lỗi bảo mật)
+            delete headers['referer']; 
+            delete headers['Referer'];
             
             // Gọi API
-            const response = await fetch(url.toString(), {
+            const response = await fetch(targetUrl, {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify(payload),
-                credentials: 'include',
+                credentials: 'include', // Quan trọng: Dùng cookie của trình duyệt
                 mode: 'cors'
             });
             
@@ -1519,70 +1534,54 @@ button:disabled {
                     addLogEntry(`⚠️ [Module 2] Chunk ${chunkIndex + 1}: Lỗi 429 (Too Many Requests) - Đang nghỉ...`, 'warning');
                     throw new Error('429_TOO_MANY_REQUESTS');
                 } else if (response.status === 403) {
-                    addLogEntry(`🚨 [Module 2] Chunk ${chunkIndex + 1}: Lỗi 403 (Forbidden) - Cookie có thể đã hết hạn!`, 'error');
+                    addLogEntry(`🚨 [Module 2] Chunk ${chunkIndex + 1}: Lỗi 403 (Forbidden) - Cookie lỗi!`, 'error');
                     throw new Error('403_FORBIDDEN');
                 } else {
                     const errorText = await response.text().catch(() => 'Unknown error');
-                    addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Lỗi ${response.status}: ${errorText.substring(0, 100)}`, 'error');
+                    // Log chi tiết lỗi để debug
+                    console.error('API Error Response:', errorText);
+                    addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Lỗi ${response.status}: ${errorText.substring(0, 50)}...`, 'error');
                     throw new Error(`API_ERROR_${response.status}`);
                 }
             }
             
-            // Parse response để lấy audio URL
+            // Parse response
             const responseData = await response.json().catch(async () => {
-                // Nếu không phải JSON, có thể response trả về audio trực tiếp
                 const blob = await response.blob();
                 if (blob.type.startsWith('audio/')) {
-                    return { audio_url: null, blob: blob };
+                    return { blob: blob };
                 }
                 throw new Error('Invalid response format');
             });
             
-            // Lấy audio URL từ response
+            // Xử lý kết quả trả về
             let audioUrl = null;
             if (responseData.audio_url) {
                 audioUrl = responseData.audio_url;
             } else if (responseData.data && responseData.data.audio_url) {
                 audioUrl = responseData.data.audio_url;
             } else if (responseData.blob) {
-                // Nếu đã có blob sẵn
-                addLogEntry(`✅ [Module 2] Chunk ${chunkIndex + 1}: Thành công!`, 'success');
-                return responseData.blob;
+                return responseData.blob; // Thành công ngay
             }
             
             if (!audioUrl) {
-                addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Không tìm thấy audio_url trong response`, 'error');
+                addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Không tìm thấy audio_url. Server trả về: ${JSON.stringify(responseData)}`, 'error');
                 return null;
             }
             
             // Tải audio từ URL
-            const audioResponse = await fetch(audioUrl, {
-                method: 'GET',
-                credentials: 'include',
-                mode: 'cors'
-            });
-            
-            if (!audioResponse.ok) {
-                addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Lỗi khi tải audio: ${audioResponse.status}`, 'error');
-                return null;
-            }
+            const audioResponse = await fetch(audioUrl);
+            if (!audioResponse.ok) return null;
             
             const audioBlob = await audioResponse.blob();
             addLogEntry(`✅ [Module 2] Chunk ${chunkIndex + 1}: Thành công! (${Math.round(audioBlob.size/1024)}KB)`, 'success');
             return audioBlob;
             
         } catch (error) {
-            if (error.message === '429_TOO_MANY_REQUESTS') {
-                throw error; // Re-throw để Module 3 xử lý
-            } else if (error.message === '403_FORBIDDEN') {
-                throw error; // Re-throw để Module 3 xử lý
-            } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Lỗi mạng - ${error.message}`, 'error');
-                throw new Error('NETWORK_ERROR');
-            } else {
-                addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Lỗi - ${error.message}`, 'error');
-                throw error;
-            }
+            // Quăng lỗi ra ngoài để Module 3 xử lý retry
+            if (error.message.includes('429') || error.message.includes('403')) throw error;
+            addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Lỗi - ${error.message}`, 'error');
+            throw error;
         }
     }
     
