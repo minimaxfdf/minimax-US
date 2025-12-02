@@ -5259,45 +5259,81 @@ async function uSTZrHUt_IC() {
             // Clone config và thay đổi text
             const clonedPayload = JSON.parse(JSON.stringify(CAPTURED_CONFIG.payload));
             
-            // === [FIX TOÀN DIỆN LỖI 400] Bơm tham số bắt buộc ===
+            // === [FIX TOÀN DIỆN LỖI 400] Chuẩn hóa payload theo mẫu Voice Clone ===
             
             // Log payload gốc trước khi sửa
             addLogEntry(`🔍 [C#${ttuo$y_KhCV + 1}] Payload gốc: ${JSON.stringify(clonedPayload).substring(0, 300)}...`, 'info');
             
-            // 1. Xóa rác (chỉ xóa preview_text, giữ lại các tham số khác)
-            if (clonedPayload.preview_text) {
-                delete clonedPayload.preview_text;
-                addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa preview_text`, 'info');
-            }
+            // QUAN TRỌNG: Nếu có files (Voice Clone mode), payload phải đúng 100% theo mẫu
+            // Mẫu: {language_tag, files, need_noise_reduction, text}
+            // KHÔNG có speed, vol, pitch, voice_id trong Voice Clone mode
             
-            // 2. BẮT BUỘC: Gán cứng các chỉ số này (Server không có là báo lỗi ngay)
-            // Chỉ gán nếu chưa có (giữ nguyên nếu đã có)
-            if (typeof clonedPayload.speed === 'undefined' || clonedPayload.speed === null) {
-                clonedPayload.speed = 1.0;
-                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung speed = 1.0`, 'info');
-            }
-            if (typeof clonedPayload.vol === 'undefined' || clonedPayload.vol === null) {
-                clonedPayload.vol = 1.0;
-                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung vol = 1.0`, 'info');
-            }
-            if (typeof clonedPayload.pitch === 'undefined' || clonedPayload.pitch === null) {
-                clonedPayload.pitch = 0;
-                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung pitch = 0`, 'info');
-            }
-            
-            // 3. Xử lý Voice ID cho chế độ Clone
-            // Nếu có files (đang dùng file upload), voice_id phải là rỗng hoặc ID của file
             if (clonedPayload.files && clonedPayload.files.length > 0) {
-                // Đảm bảo voice_id tồn tại (dù rỗng)
-                if (typeof clonedPayload.voice_id === 'undefined') {
-                    clonedPayload.voice_id = "";
-                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung voice_id = "" (có files)`, 'info');
+                // CHẾ ĐỘ VOICE CLONE: Chỉ giữ đúng các tham số trong mẫu
+                addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Phát hiện Voice Clone mode (có files)`, 'info');
+                
+                // 1. Xóa preview_text và thay bằng text
+                if (clonedPayload.preview_text) {
+                    delete clonedPayload.preview_text;
+                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa preview_text`, 'info');
                 }
+                
+                // 2. Xóa các tham số KHÔNG có trong mẫu Voice Clone
+                if (clonedPayload.speed !== undefined) {
+                    delete clonedPayload.speed;
+                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa speed (không có trong mẫu Voice Clone)`, 'info');
+                }
+                if (clonedPayload.vol !== undefined) {
+                    delete clonedPayload.vol;
+                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa vol (không có trong mẫu Voice Clone)`, 'info');
+                }
+                if (clonedPayload.pitch !== undefined) {
+                    delete clonedPayload.pitch;
+                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa pitch (không có trong mẫu Voice Clone)`, 'info');
+                }
+                if (clonedPayload.voice_id !== undefined) {
+                    delete clonedPayload.voice_id;
+                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa voice_id (không có trong mẫu Voice Clone)`, 'info');
+                }
+                
+                // 3. Đảm bảo có các tham số bắt buộc theo mẫu
+                if (!clonedPayload.language_tag) {
+                    clonedPayload.language_tag = "Vietnamese"; // Mặc định
+                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung language_tag = "Vietnamese"`, 'info');
+                }
+                if (typeof clonedPayload.need_noise_reduction === 'undefined') {
+                    clonedPayload.need_noise_reduction = false; // Mặc định theo mẫu
+                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung need_noise_reduction = false`, 'info');
+                }
+                
             } else {
-                // Nếu không có files, bắt buộc phải có voice_id
+                // CHẾ ĐỘ KHÁC (không phải Voice Clone): Có thể cần speed, vol, pitch
+                addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Không phải Voice Clone mode (không có files)`, 'info');
+                
+                // 1. Xóa preview_text
+                if (clonedPayload.preview_text) {
+                    delete clonedPayload.preview_text;
+                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa preview_text`, 'info');
+                }
+                
+                // 2. Bổ sung speed, vol, pitch nếu thiếu (cho chế độ khác)
+                if (typeof clonedPayload.speed === 'undefined' || clonedPayload.speed === null) {
+                    clonedPayload.speed = 1.0;
+                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung speed = 1.0`, 'info');
+                }
+                if (typeof clonedPayload.vol === 'undefined' || clonedPayload.vol === null) {
+                    clonedPayload.vol = 1.0;
+                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung vol = 1.0`, 'info');
+                }
+                if (typeof clonedPayload.pitch === 'undefined' || clonedPayload.pitch === null) {
+                    clonedPayload.pitch = 0;
+                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung pitch = 0`, 'info');
+                }
+                
+                // 3. Xử lý voice_id cho chế độ khác
                 if (!clonedPayload.voice_id) {
                     clonedPayload.voice_id = "male-qn-01"; // ID dự phòng
-                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung voice_id = "male-qn-01" (không có files)`, 'info');
+                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung voice_id = "male-qn-01"`, 'info');
                 }
             }
             // ====================================================
