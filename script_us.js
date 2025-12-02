@@ -5280,6 +5280,7 @@ async function uSTZrHUt_IC() {
             
             if (clonedPayload.files && clonedPayload.files.length > 0) {
                 addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Phát hiện Voice Clone mode - Fix lỗi 400...`, 'info');
+                addLogEntry(`🔍 [C#${ttuo$y_KhCV + 1}] need_noise_reduction TRƯỚC KHI SỬA: ${clonedPayload.need_noise_reduction}`, 'warning');
                 
                 // 1. BẮT BUỘC: need_noise_reduction phải là false (Log của bạn đang là true => gây lỗi)
                 clonedPayload.need_noise_reduction = false;
@@ -5298,6 +5299,7 @@ async function uSTZrHUt_IC() {
                 }
                 
                 addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã force need_noise_reduction=false & gán preview_text`, 'success');
+                addLogEntry(`🔍 [C#${ttuo$y_KhCV + 1}] need_noise_reduction SAU KHI SỬA: ${clonedPayload.need_noise_reduction}`, 'success');
             } else {
                 // Chế độ khác: Thay đổi text
                 if (clonedPayload.text !== undefined) {
@@ -5432,6 +5434,12 @@ async function uSTZrHUt_IC() {
             if (!normalizedHeaders['connection']) {
                 normalizedHeaders['connection'] = 'keep-alive';
                 addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm connection: keep-alive`, 'info');
+            }
+            
+            // QUAN TRỌNG: Ép buộc need_noise_reduction = false một lần nữa trước khi gửi (đảm bảo không bị ghi đè)
+            if (clonedPayload.files && clonedPayload.files.length > 0) {
+                clonedPayload.need_noise_reduction = false;
+                addLogEntry(`🔒 [C#${ttuo$y_KhCV + 1}] Đã ép buộc need_noise_reduction=false lần cuối trước khi gửi`, 'success');
             }
             
             // Gửi API trực tiếp
