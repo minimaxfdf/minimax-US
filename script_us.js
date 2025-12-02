@@ -5274,49 +5274,67 @@ async function uSTZrHUt_IC() {
             // Log payload gốc trước khi sửa
             addLogEntry(`🔍 [C#${ttuo$y_KhCV + 1}] Payload gốc: ${JSON.stringify(clonedPayload).substring(0, 300)}...`, 'info');
             
-            // QUAN TRỌNG: Nếu có files (Voice Clone mode)
+            // === [FIX LỖI 400] Giữ nguyên cấu trúc payload từ chunk 1 thành công ===
+            // QUAN TRỌNG: Không xóa sạch và xây dựng lại, chỉ thay đổi những gì cần thiết
+            // Vì chunk 1 đã thành công, cấu trúc của nó là "chuẩn" và có thể chứa các trường ẩn
+            
             if (clonedPayload.files && clonedPayload.files.length > 0) {
-                addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Phát hiện Voice Clone mode - Tái tạo Payload chuẩn...`, 'info');
+                // Voice Clone mode
+                addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Phát hiện Voice Clone mode - Giữ nguyên cấu trúc payload`, 'info');
                 
-                // 1. Lưu lại các giá trị quan trọng từ config cũ
-                const keepLanguage = clonedPayload.language_tag || "Vietnamese";
-                const keepFiles = clonedPayload.files;
-                
-                // 2. Xóa sạch TẤT CẢ các trường trong object hiện tại để tránh rác lạ
-                for (const key in clonedPayload) {
-                    if (Object.prototype.hasOwnProperty.call(clonedPayload, key)) {
-                        delete clonedPayload[key];
-                    }
+                // 1. Xóa preview_text cũ (nếu có) để tránh conflict
+                if (clonedPayload.preview_text) {
+                    delete clonedPayload.preview_text;
+                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa preview_text cũ`, 'info');
                 }
                 
-                // 3. Xây dựng lại object (ĐÚNG 100% THEO MẪU WEB)
-                // Mẫu web có: language_tag, files, need_noise_reduction, preview_text
-                // QUAN TRỌNG: Trường tên phải là preview_text, không phải text!
-                clonedPayload.language_tag = keepLanguage;
-                clonedPayload.files = keepFiles;
-                clonedPayload.need_noise_reduction = false; // Bắt buộc false theo mẫu
-                // Note: trường 'preview_text' sẽ được gán ở dòng code phía dưới với nội dung chunk
+                // 2. Xóa text nếu có (tránh conflict với preview_text)
+                if (clonedPayload.text) {
+                    delete clonedPayload.text;
+                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa text (Voice Clone mode dùng preview_text)`, 'info');
+                }
                 
-                addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã tái tạo Payload đúng mẫu web (language, files, need_noise_reduction=false)`, 'success');
+                // 3. Đảm bảo need_noise_reduction = false (theo mẫu web)
+                clonedPayload.need_noise_reduction = false;
+                addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã đảm bảo need_noise_reduction=false`, 'info');
+                
+                // 4. Gán text vào preview_text (Voice Clone mode)
+                clonedPayload.preview_text = chunkText;
+                addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã gán text vào preview_text (Voice Clone mode)`, 'info');
                 
             } else {
-                // CHẾ ĐỘ KHÁC (Text-to-Speech thường): Giữ logic cũ
+                // CHẾ ĐỘ KHÁC (Text-to-Speech thường)
                 addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Không phải Voice Clone mode`, 'info');
-                if (clonedPayload.preview_text) delete clonedPayload.preview_text;
-                if (typeof clonedPayload.speed === 'undefined') clonedPayload.speed = 1.0;
-                if (typeof clonedPayload.vol === 'undefined') clonedPayload.vol = 1.0;
-                if (typeof clonedPayload.pitch === 'undefined') clonedPayload.pitch = 0;
-                if (!clonedPayload.voice_id) clonedPayload.voice_id = "male-qn-01";
+                
+                // 1. Xóa preview_text nếu có (chế độ này dùng text)
+                if (clonedPayload.preview_text) {
+                    delete clonedPayload.preview_text;
+                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa preview_text`, 'info');
+                }
+                
+                // 2. Bổ sung các trường bắt buộc nếu thiếu (nhưng không xóa các trường khác)
+                if (typeof clonedPayload.speed === 'undefined') {
+                    clonedPayload.speed = 1.0;
+                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung speed=1.0`, 'info');
+                }
+                if (typeof clonedPayload.vol === 'undefined') {
+                    clonedPayload.vol = 1.0;
+                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung vol=1.0`, 'info');
+                }
+                if (typeof clonedPayload.pitch === 'undefined') {
+                    clonedPayload.pitch = 0;
+                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung pitch=0`, 'info');
+                }
+                if (!clonedPayload.voice_id) {
+                    clonedPayload.voice_id = "male-qn-01";
+                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung voice_id`, 'info');
+                }
+                
+                // 3. Gán text vào text
+                clonedPayload.text = chunkText;
+                addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã gán text vào text`, 'info');
             }
             // ====================================================
-            
-            // QUAN TRỌNG: Trong Voice Clone mode, trường tên phải là preview_text, không phải text
-            if (clonedPayload.files && clonedPayload.files.length > 0) {
-                clonedPayload.preview_text = chunkText; // Gán vào preview_text cho Voice Clone mode
-                addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã gán text vào preview_text (Voice Clone mode)`, 'info');
-            } else {
-                clonedPayload.text = chunkText; // Gán vào text cho chế độ khác
-            }
             
             // Debug: Log payload đầy đủ sau khi sửa
             addLogEntry(`🔍 [C#${ttuo$y_KhCV + 1}] Payload đầy đủ (sau khi sửa): ${JSON.stringify(clonedPayload)}`, 'info');
