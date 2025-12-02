@@ -9562,3 +9562,511 @@ async function waitForVoiceModelReady() {
             errorObserver.disconnect();
         }
     });
+    
+    // ====================================================
+    // == HÀM TEST: Test logic gửi API trực tiếp ==
+    // ====================================================
+    // Sử dụng: Mở Console và chạy: window.testDirectAPI("text test")
+    // Đảm bảo hàm được định nghĩa ở scope global
+    if (typeof window !== 'undefined') {
+        window.testDirectAPI = function(testText) {
+            if (!CAPTURED_CONFIG || !CAPTURED_CONFIG.payload) {
+                console.error('❌ Chưa có config! Vui lòng chạy chunk 1 thành công trước.');
+                return Promise.reject('Chưa có config');
+            }
+            
+            console.log('🧪 [TEST] Bắt đầu test gửi API trực tiếp...');
+            console.log('📋 [TEST] Config payload keys:', Object.keys(CAPTURED_CONFIG.payload));
+            console.log('📋 [TEST] Config headers keys:', Object.keys(CAPTURED_CONFIG.headers || {}));
+            
+            // Clone payload từ config
+            const clonedPayload = JSON.parse(JSON.stringify(CAPTURED_CONFIG.payload));
+            const testChunkText = testText || 'Test text để kiểm tra API';
+            
+            // Xử lý payload giống như khi gửi chunk 2
+            if (clonedPayload.files && clonedPayload.files.length > 0) {
+                console.log('🎯 [TEST] Voice Clone mode');
+                clonedPayload.need_noise_reduction = false;
+                
+                // Xóa speed, vol, pitch
+                if (clonedPayload.speed !== undefined) delete clonedPayload.speed;
+                if (clonedPayload.vol !== undefined) delete clonedPayload.vol;
+                if (clonedPayload.pitch !== undefined) delete clonedPayload.pitch;
+                if (clonedPayload.text !== undefined) delete clonedPayload.text;
+                
+                clonedPayload.preview_text = testChunkText;
+                console.log('✅ [TEST] Payload sau khi xử lý:', JSON.stringify(clonedPayload, null, 2));
+            } else {
+                clonedPayload.text = testChunkText;
+                if (clonedPayload.preview_text) delete clonedPayload.preview_text;
+                console.log('✅ [TEST] Payload sau khi xử lý:', JSON.stringify(clonedPayload, null, 2));
+            }
+            
+            // Xây dựng URL
+            let apiUrl = CAPTURED_CONFIG.url;
+            if (apiUrl.startsWith('/')) {
+                apiUrl = window.location.origin + apiUrl;
+            }
+            
+            // Cập nhật unix timestamp
+            try {
+                const urlObj = new URL(apiUrl);
+                urlObj.searchParams.set('unix', Date.now().toString());
+                apiUrl = urlObj.toString();
+            } catch (e) {
+                console.warn('⚠️ [TEST] Lỗi khi parse URL:', e);
+            }
+            
+            console.log('🔗 [TEST] URL:', apiUrl);
+            
+            // Xử lý headers
+            const normalizedHeaders = {};
+            const headers = CAPTURED_CONFIG.headers || {};
+            Object.keys(headers).forEach(key => {
+                normalizedHeaders[key] = headers[key];
+            });
+            
+            // Đảm bảo có các headers quan trọng
+            if (!normalizedHeaders['content-type'] && !normalizedHeaders['Content-Type']) {
+                normalizedHeaders['content-type'] = 'application/json';
+            }
+            if (!normalizedHeaders['accept'] && !normalizedHeaders['Accept']) {
+                normalizedHeaders['accept'] = 'application/json';
+            }
+            if (!normalizedHeaders['cookie'] && !normalizedHeaders['Cookie'] && document.cookie) {
+                normalizedHeaders['cookie'] = document.cookie;
+            }
+            if (!normalizedHeaders['referer'] && !normalizedHeaders['Referer']) {
+                normalizedHeaders['referer'] = window.location.href;
+            }
+            if (!normalizedHeaders['origin'] && !normalizedHeaders['Origin']) {
+                normalizedHeaders['origin'] = window.location.origin;
+            }
+            
+            console.log('📋 [TEST] Headers:', JSON.stringify(normalizedHeaders, null, 2));
+            
+            // Gửi request test
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open(CAPTURED_CONFIG.method || 'POST', apiUrl, true);
+                
+                // Set headers
+                Object.keys(normalizedHeaders).forEach(key => {
+                    try {
+                        xhr.setRequestHeader(key, normalizedHeaders[key]);
+                    } catch (e) {
+                        console.warn(`⚠️ [TEST] Lỗi khi set header ${key}:`, e.message);
+                    }
+                });
+                
+                xhr.onload = function() {
+                    console.log(`🔍 [TEST] Response status: ${xhr.status}`);
+                    console.log(`📦 [TEST] Response body:`, xhr.responseText);
+                    
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            const data = JSON.parse(xhr.responseText);
+                            console.log('✅ [TEST] THÀNH CÔNG!', data);
+                            resolve(data);
+                        } catch (e) {
+                            console.error('❌ [TEST] Lỗi parse response:', e);
+                            reject(e);
+                        }
+                    } else {
+                        console.error(`❌ [TEST] LỖI HTTP ${xhr.status}:`, xhr.responseText);
+                        reject(new Error(`HTTP ${xhr.status}`));
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    console.error('❌ [TEST] Network error');
+                    reject(new Error('Network error'));
+                };
+                
+                console.log('🚀 [TEST] Đang gửi request...');
+                xhr.send(JSON.stringify(clonedPayload));
+            });
+        };
+        
+        window.compareConfigWithSuccess = window.compareConfigWithSuccess || function() {
+            if (!CAPTURED_CONFIG) {
+                console.error('❌ Chưa có config!');
+                return;
+            }
+            
+            console.log('📊 [COMPARE] So sánh Config với Request thành công:');
+            console.log('📋 [COMPARE] Config payload:', JSON.stringify(CAPTURED_CONFIG.payload, null, 2));
+            console.log('📋 [COMPARE] Config headers:', JSON.stringify(CAPTURED_CONFIG.headers, null, 2));
+            console.log('📋 [COMPARE] Config URL:', CAPTURED_CONFIG.url);
+            
+            if (PENDING_REQUEST_INFO) {
+                console.log('📋 [COMPARE] PENDING_REQUEST_INFO payload:', JSON.stringify(PENDING_REQUEST_INFO.data, null, 2));
+                console.log('📋 [COMPARE] PENDING_REQUEST_INFO headers:', JSON.stringify(PENDING_REQUEST_INFO.headers, null, 2));
+                console.log('📋 [COMPARE] PENDING_REQUEST_INFO URL:', PENDING_REQUEST_INFO.url);
+            } else {
+                console.log('⚠️ [COMPARE] Không có PENDING_REQUEST_INFO');
+            }
+        };
+        
+        console.log('✅ [TEST] Đã load hàm test. Sử dụng:');
+        console.log('   - window.testDirectAPI("text test") - Test gửi API trực tiếp');
+        console.log('   - window.compareConfigWithSuccess() - So sánh config với request thành công');
+    }
+    
+    // ====================================================
+    // == ĐỊNH NGHĨA HÀM TEST Ở SCOPE GLOBAL (ĐỂ TEST) ==
+    // ====================================================
+    // Đảm bảo hàm luôn được expose ra window, không phụ thuộc vào scope
+    (function() {
+        'use strict';
+        // Kiểm tra và định nghĩa hàm test
+        if (typeof window !== 'undefined') {
+            // Định nghĩa lại hàm test ở scope global tuyệt đối
+            window.testDirectAPI = function(testText) {
+                try {
+                    // Kiểm tra biến global
+                    if (typeof CAPTURED_CONFIG === 'undefined' || !CAPTURED_CONFIG || !CAPTURED_CONFIG.payload) {
+                        console.error('❌ [TEST] Chưa có config! Vui lòng chạy chunk 1 thành công trước.');
+                        console.log('💡 [TEST] Hãy đảm bảo đã có CAPTURED_CONFIG trong localStorage hoặc đã chạy chunk 1 thành công.');
+                        return Promise.reject('Chưa có config');
+                    }
+                    
+                    console.log('🧪 [TEST] Bắt đầu test gửi API trực tiếp...');
+                    console.log('📋 [TEST] Config payload keys:', Object.keys(CAPTURED_CONFIG.payload));
+                    console.log('📋 [TEST] Config headers keys:', Object.keys(CAPTURED_CONFIG.headers || {}));
+                    
+                    // Clone payload từ config
+                    const clonedPayload = JSON.parse(JSON.stringify(CAPTURED_CONFIG.payload));
+                    const testChunkText = testText || 'Test text để kiểm tra API';
+                    
+                    // Xử lý payload giống như khi gửi chunk 2
+                    if (clonedPayload.files && clonedPayload.files.length > 0) {
+                        console.log('🎯 [TEST] Voice Clone mode');
+                        clonedPayload.need_noise_reduction = false;
+                        
+                        // Xóa speed, vol, pitch
+                        if (clonedPayload.speed !== undefined) delete clonedPayload.speed;
+                        if (clonedPayload.vol !== undefined) delete clonedPayload.vol;
+                        if (clonedPayload.pitch !== undefined) delete clonedPayload.pitch;
+                        if (clonedPayload.text !== undefined) delete clonedPayload.text;
+                        
+                        clonedPayload.preview_text = testChunkText;
+                        console.log('✅ [TEST] Payload sau khi xử lý:', JSON.stringify(clonedPayload, null, 2));
+                    } else {
+                        clonedPayload.text = testChunkText;
+                        if (clonedPayload.preview_text) delete clonedPayload.preview_text;
+                        console.log('✅ [TEST] Payload sau khi xử lý:', JSON.stringify(clonedPayload, null, 2));
+                    }
+                    
+                    // Xây dựng URL
+                    let apiUrl = CAPTURED_CONFIG.url;
+                    if (apiUrl.startsWith('/')) {
+                        apiUrl = window.location.origin + apiUrl;
+                    }
+                    
+                    // Cập nhật unix timestamp
+                    try {
+                        const urlObj = new URL(apiUrl);
+                        urlObj.searchParams.set('unix', Date.now().toString());
+                        apiUrl = urlObj.toString();
+                    } catch (e) {
+                        console.warn('⚠️ [TEST] Lỗi khi parse URL:', e);
+                    }
+                    
+                    console.log('🔗 [TEST] URL:', apiUrl);
+                    
+                    // Xử lý headers
+                    const normalizedHeaders = {};
+                    const headers = CAPTURED_CONFIG.headers || {};
+                    Object.keys(headers).forEach(key => {
+                        normalizedHeaders[key] = headers[key];
+                    });
+                    
+                    // Đảm bảo có các headers quan trọng
+                    if (!normalizedHeaders['content-type'] && !normalizedHeaders['Content-Type']) {
+                        normalizedHeaders['content-type'] = 'application/json';
+                    }
+                    if (!normalizedHeaders['accept'] && !normalizedHeaders['Accept']) {
+                        normalizedHeaders['accept'] = 'application/json';
+                    }
+                    if (!normalizedHeaders['cookie'] && !normalizedHeaders['Cookie'] && document.cookie) {
+                        normalizedHeaders['cookie'] = document.cookie;
+                    }
+                    if (!normalizedHeaders['referer'] && !normalizedHeaders['Referer']) {
+                        normalizedHeaders['referer'] = window.location.href;
+                    }
+                    if (!normalizedHeaders['origin'] && !normalizedHeaders['Origin']) {
+                        normalizedHeaders['origin'] = window.location.origin;
+                    }
+                    
+                    console.log('📋 [TEST] Headers:', JSON.stringify(normalizedHeaders, null, 2));
+                    
+                    // Gửi request test
+                    return new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open(CAPTURED_CONFIG.method || 'POST', apiUrl, true);
+                        
+                        // Set headers
+                        Object.keys(normalizedHeaders).forEach(key => {
+                            try {
+                                xhr.setRequestHeader(key, normalizedHeaders[key]);
+                            } catch (e) {
+                                console.warn(`⚠️ [TEST] Lỗi khi set header ${key}:`, e.message);
+                            }
+                        });
+                        
+                        xhr.onload = function() {
+                            console.log(`🔍 [TEST] Response status: ${xhr.status}`);
+                            console.log(`📦 [TEST] Response body:`, xhr.responseText);
+                            
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                try {
+                                    const data = JSON.parse(xhr.responseText);
+                                    console.log('✅ [TEST] THÀNH CÔNG!', data);
+                                    resolve(data);
+                                } catch (e) {
+                                    console.error('❌ [TEST] Lỗi parse response:', e);
+                                    reject(e);
+                                }
+                            } else {
+                                console.error(`❌ [TEST] LỖI HTTP ${xhr.status}:`, xhr.responseText);
+                                reject(new Error(`HTTP ${xhr.status}`));
+                            }
+                        };
+                        
+                        xhr.onerror = function() {
+                            console.error('❌ [TEST] Network error');
+                            reject(new Error('Network error'));
+                        };
+                        
+                        console.log('🚀 [TEST] Đang gửi request...');
+                        xhr.send(JSON.stringify(clonedPayload));
+                    });
+                } catch (error) {
+                    console.error('❌ [TEST] Lỗi trong hàm test:', error);
+                    return Promise.reject(error);
+                }
+            };
+            
+            window.compareConfigWithSuccess = function() {
+                try {
+                    if (typeof CAPTURED_CONFIG === 'undefined' || !CAPTURED_CONFIG) {
+                        console.error('❌ Chưa có config!');
+                        return;
+                    }
+                    
+                    console.log('📊 [COMPARE] So sánh Config với Request thành công:');
+                    console.log('📋 [COMPARE] Config payload:', JSON.stringify(CAPTURED_CONFIG.payload, null, 2));
+                    console.log('📋 [COMPARE] Config headers:', JSON.stringify(CAPTURED_CONFIG.headers, null, 2));
+                    console.log('📋 [COMPARE] Config URL:', CAPTURED_CONFIG.url);
+                    
+                    if (typeof PENDING_REQUEST_INFO !== 'undefined' && PENDING_REQUEST_INFO) {
+                        console.log('📋 [COMPARE] PENDING_REQUEST_INFO payload:', JSON.stringify(PENDING_REQUEST_INFO.data, null, 2));
+                        console.log('📋 [COMPARE] PENDING_REQUEST_INFO headers:', JSON.stringify(PENDING_REQUEST_INFO.headers, null, 2));
+                        console.log('📋 [COMPARE] PENDING_REQUEST_INFO URL:', PENDING_REQUEST_INFO.url);
+                    } else {
+                        console.log('⚠️ [COMPARE] Không có PENDING_REQUEST_INFO');
+                    }
+                } catch (error) {
+                    console.error('❌ [COMPARE] Lỗi:', error);
+                }
+            };
+            
+            // Log để xác nhận hàm đã được load
+            console.log('✅ [TEST GLOBAL] Đã định nghĩa hàm test ở scope global:');
+            console.log('   - window.testDirectAPI("text test") - Test gửi API trực tiếp');
+            console.log('   - window.compareConfigWithSuccess() - So sánh config với request thành công');
+        }
+    })();
+    
+    // ====================================================
+    // == ĐỊNH NGHĨA HÀM TEST Ở CUỐI FILE (ĐẢM BẢO CHẠY) ==
+    // ====================================================
+    // Định nghĩa trực tiếp ở scope global, không phụ thuộc vào điều kiện
+    if (typeof window !== 'undefined') {
+        // Hàm test với khả năng tự lấy config từ localStorage
+        window.testDirectAPI = window.testDirectAPI || function(testText) {
+            console.log('🧪 [TEST] Bắt đầu test gửi API trực tiếp...');
+            
+            // Lấy config từ nhiều nguồn
+            let config = null;
+            
+            // 1. Thử lấy từ biến global CAPTURED_CONFIG
+            if (typeof CAPTURED_CONFIG !== 'undefined' && CAPTURED_CONFIG && CAPTURED_CONFIG.payload) {
+                config = CAPTURED_CONFIG;
+                console.log('✅ [TEST] Đã lấy config từ biến global CAPTURED_CONFIG');
+            }
+            // 2. Thử lấy từ localStorage
+            else {
+                try {
+                    const savedConfig = localStorage.getItem('DUC_LOI_CAPTURED_CONFIG_V1');
+                    if (savedConfig) {
+                        config = JSON.parse(savedConfig);
+                        console.log('✅ [TEST] Đã lấy config từ localStorage');
+                    }
+                } catch (e) {
+                    console.warn('⚠️ [TEST] Lỗi khi đọc localStorage:', e);
+                }
+            }
+            
+            if (!config || !config.payload) {
+                console.error('❌ [TEST] Chưa có config!');
+                console.log('💡 [TEST] Hãy đảm bảo:');
+                console.log('   1. Đã chạy chunk 1 thành công');
+                console.log('   2. Hoặc có config trong localStorage với key: DUC_LOI_CAPTURED_CONFIG_V1');
+                console.log('   3. Hoặc có biến CAPTURED_CONFIG trong scope global');
+                return Promise.reject('Chưa có config');
+            }
+            
+            console.log('📋 [TEST] Config payload keys:', Object.keys(config.payload));
+            console.log('📋 [TEST] Config headers keys:', Object.keys(config.headers || {}));
+            
+            // Clone payload từ config
+            const clonedPayload = JSON.parse(JSON.stringify(config.payload));
+            const testChunkText = testText || 'Test text để kiểm tra API';
+            
+            // Xử lý payload giống như khi gửi chunk 2
+            if (clonedPayload.files && clonedPayload.files.length > 0) {
+                console.log('🎯 [TEST] Voice Clone mode');
+                clonedPayload.need_noise_reduction = false;
+                
+                // Xóa speed, vol, pitch
+                if (clonedPayload.speed !== undefined) delete clonedPayload.speed;
+                if (clonedPayload.vol !== undefined) delete clonedPayload.vol;
+                if (clonedPayload.pitch !== undefined) delete clonedPayload.pitch;
+                if (clonedPayload.text !== undefined) delete clonedPayload.text;
+                
+                clonedPayload.preview_text = testChunkText;
+                console.log('✅ [TEST] Payload sau khi xử lý:', JSON.stringify(clonedPayload, null, 2));
+            } else {
+                clonedPayload.text = testChunkText;
+                if (clonedPayload.preview_text) delete clonedPayload.preview_text;
+                console.log('✅ [TEST] Payload sau khi xử lý:', JSON.stringify(clonedPayload, null, 2));
+            }
+            
+            // Xây dựng URL
+            let apiUrl = config.url;
+            if (apiUrl.startsWith('/')) {
+                apiUrl = window.location.origin + apiUrl;
+            }
+            
+            // Cập nhật unix timestamp
+            try {
+                const urlObj = new URL(apiUrl);
+                urlObj.searchParams.set('unix', Date.now().toString());
+                apiUrl = urlObj.toString();
+            } catch (e) {
+                console.warn('⚠️ [TEST] Lỗi khi parse URL:', e);
+            }
+            
+            console.log('🔗 [TEST] URL:', apiUrl);
+            
+            // Xử lý headers
+            const normalizedHeaders = {};
+            const headers = config.headers || {};
+            Object.keys(headers).forEach(key => {
+                normalizedHeaders[key] = headers[key];
+            });
+            
+            // Đảm bảo có các headers quan trọng
+            if (!normalizedHeaders['content-type'] && !normalizedHeaders['Content-Type']) {
+                normalizedHeaders['content-type'] = 'application/json';
+            }
+            if (!normalizedHeaders['accept'] && !normalizedHeaders['Accept']) {
+                normalizedHeaders['accept'] = 'application/json';
+            }
+            if (!normalizedHeaders['cookie'] && !normalizedHeaders['Cookie'] && document.cookie) {
+                normalizedHeaders['cookie'] = document.cookie;
+            }
+            if (!normalizedHeaders['referer'] && !normalizedHeaders['Referer']) {
+                normalizedHeaders['referer'] = window.location.href;
+            }
+            if (!normalizedHeaders['origin'] && !normalizedHeaders['Origin']) {
+                normalizedHeaders['origin'] = window.location.origin;
+            }
+            
+            console.log('📋 [TEST] Headers:', JSON.stringify(normalizedHeaders, null, 2));
+            
+            // Gửi request test
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open(config.method || 'POST', apiUrl, true);
+                
+                // Set headers
+                Object.keys(normalizedHeaders).forEach(key => {
+                    try {
+                        xhr.setRequestHeader(key, normalizedHeaders[key]);
+                    } catch (e) {
+                        console.warn(`⚠️ [TEST] Lỗi khi set header ${key}:`, e.message);
+                    }
+                });
+                
+                xhr.onload = function() {
+                    console.log(`🔍 [TEST] Response status: ${xhr.status}`);
+                    console.log(`📦 [TEST] Response body:`, xhr.responseText);
+                    
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            const data = JSON.parse(xhr.responseText);
+                            console.log('✅ [TEST] THÀNH CÔNG!', data);
+                            resolve(data);
+                        } catch (e) {
+                            console.error('❌ [TEST] Lỗi parse response:', e);
+                            reject(e);
+                        }
+                    } else {
+                        console.error(`❌ [TEST] LỖI HTTP ${xhr.status}:`, xhr.responseText);
+                        reject(new Error(`HTTP ${xhr.status}`));
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    console.error('❌ [TEST] Network error');
+                    reject(new Error('Network error'));
+                };
+                
+                console.log('🚀 [TEST] Đang gửi request...');
+                xhr.send(JSON.stringify(clonedPayload));
+            });
+        };
+        
+        window.compareConfigWithSuccess = window.compareConfigWithSuccess || function() {
+            let config = null;
+            
+            if (typeof CAPTURED_CONFIG !== 'undefined' && CAPTURED_CONFIG) {
+                config = CAPTURED_CONFIG;
+            } else {
+                try {
+                    const savedConfig = localStorage.getItem('DUC_LOI_CAPTURED_CONFIG_V1');
+                    if (savedConfig) {
+                        config = JSON.parse(savedConfig);
+                    }
+                } catch (e) {
+                    console.warn('⚠️ [COMPARE] Lỗi khi đọc localStorage:', e);
+                }
+            }
+            
+            if (!config) {
+                console.error('❌ Chưa có config!');
+                return;
+            }
+            
+            console.log('📊 [COMPARE] So sánh Config với Request thành công:');
+            console.log('📋 [COMPARE] Config payload:', JSON.stringify(config.payload, null, 2));
+            console.log('📋 [COMPARE] Config headers:', JSON.stringify(config.headers, null, 2));
+            console.log('📋 [COMPARE] Config URL:', config.url);
+            
+            if (typeof PENDING_REQUEST_INFO !== 'undefined' && PENDING_REQUEST_INFO) {
+                console.log('📋 [COMPARE] PENDING_REQUEST_INFO payload:', JSON.stringify(PENDING_REQUEST_INFO.data, null, 2));
+                console.log('📋 [COMPARE] PENDING_REQUEST_INFO headers:', JSON.stringify(PENDING_REQUEST_INFO.headers, null, 2));
+                console.log('📋 [COMPARE] PENDING_REQUEST_INFO URL:', PENDING_REQUEST_INFO.url);
+            } else {
+                console.log('⚠️ [COMPARE] Không có PENDING_REQUEST_INFO');
+            }
+        };
+        
+        // Log xác nhận
+        console.log('✅ [TEST FINAL] Đã định nghĩa hàm test ở cuối file:');
+        console.log('   - window.testDirectAPI("text test") - Test gửi API trực tiếp');
+        console.log('   - window.compareConfigWithSuccess() - So sánh config');
+    }
