@@ -3213,12 +3213,9 @@ async function uploadAndGetId(fileObj) {
     try {
         loadAPIConfig();
         
-        // CẢI THIỆN: Active Trigger - Nếu chưa có cấu hình, tự động trigger các request API
-        if ((!window.MMX_CONFIG || !window.MMX_CONFIG.isReady) && 
-            (!API_CONFIG.REQUEST_POLICY || !API_CONFIG.POLICY_CALLBACK)) {
-            addLogEntry(`🔧 [Active Trigger] Chưa có cấu hình. Đang kích hoạt cưỡng bức...`, 'info');
-            await triggerActiveSniff();
-        }
+        // LƯU Ý: Cấu hình API sẽ được bắt tự động sau khi chunk 1 thành công
+        // Không cần trigger ở đây vì chunk 1 sẽ được ren bằng UI Mode trước
+        // Sau khi chunk 1 thành công, web sẽ trả về đủ thông số và Auto-Sniff sẽ bắt được
         
         // ƯU TIÊN: Sử dụng auto-sniff nếu đã bắt được, nếu không thì dùng cấu hình thủ công
         let policyUrl, callbackUrl;
@@ -6349,6 +6346,101 @@ function igyo$uwVChUzI() {
                         if (currentChunkIndex === 0) {
                             window.chunk1Failed = false;
                             addLogEntry(`✅ [Chunk 1] Đã thành công - Reset flag kiểm tra cấu hình`, 'success');
+                            
+                            // CẢI THIỆN: Sau khi chunk 1 thành công, web sẽ trả về đủ thông số API
+                            // Đây là thời điểm tốt nhất để bắt cấu hình từ các request API
+                            addLogEntry(`🔧 [Active Trigger] Chunk 1 đã thành công. Đang bắt cấu hình từ các request API...`, 'info');
+                            
+                            // Đảm bảo sniffer đã được khởi động
+                            if (!window.MMX_CONFIG) {
+                                window.MMX_CONFIG = {
+                                    cookies: document.cookie,
+                                    commonParams: "",
+                                    isReady: false,
+                                    snifferActive: false
+                                };
+                            }
+                            
+                            if (!window.MMX_CONFIG.snifferActive && typeof startSmartSniffer === 'function') {
+                                addLogEntry(`🔧 [Active Trigger] Đang khởi động sniffer sau khi chunk 1 thành công...`, 'info');
+                                startSmartSniffer();
+                            }
+                            
+                            // Đợi tối đa 3 giây để bắt được cấu hình từ các request API sau khi chunk 1 thành công
+                            const maxWaitTime = 3000; // 3 giây
+                            const checkInterval = 100;
+                            const startTime = Date.now();
+                            let checkCount = 0;
+                            
+                            addLogEntry(`⏳ [Active Trigger] Đang đợi bắt cấu hình từ các request API (tối đa ${maxWaitTime/1000}s)...`, 'info');
+                            
+                            while (!window.MMX_CONFIG.isReady && (Date.now() - startTime) < maxWaitTime) {
+                                await new Promise(resolve => setTimeout(resolve, checkInterval));
+                                checkCount++;
+                                
+                                // Log mỗi 0.5 giây
+                                if (checkCount % 5 === 0) {
+                                    const elapsed = Math.round((Date.now() - startTime) / 1000);
+                                    addLogEntry(`⏳ [Active Trigger] Đang chờ... (${elapsed}s/${maxWaitTime/1000}s)`, 'info');
+                                }
+                            }
+                            
+                            const elapsedTime = Math.round((Date.now() - startTime) / 1000);
+                            
+                            if (window.MMX_CONFIG.isReady) {
+                                addLogEntry(`✅ [Active Trigger] Đã bắt được cấu hình từ request API sau khi chunk 1 thành công (${elapsedTime}s)!`, 'success');
+                                addLogEntry(`🔑 [Active Trigger] Params: ${window.MMX_CONFIG.commonParams.substring(0, 100)}...`, 'info');
+                                
+                                // Cập nhật UI để user thấy đã bắt được cấu hình
+                                const sniffStatusText = document.getElementById('sniff-status-text');
+                                if (sniffStatusText) {
+                                    sniffStatusText.textContent = '✅ Đã bắt được cấu hình sau chunk 1!';
+                                    sniffStatusText.style.color = '#50fa7b';
+                                }
+                                
+                                // Cập nhật các input trong UI
+                                const policyUrlInput = document.getElementById('api-policy-url-input');
+                                const callbackUrlInput = document.getElementById('api-callback-url-input');
+                                const cloneUrlInput = document.getElementById('api-clone-url-input');
+                                const cookieInput = document.getElementById('api-cookie-input');
+                                
+                                if (policyUrlInput && window.MMX_CONFIG.commonParams) {
+                                    policyUrlInput.value = `https://www.minimax.io/v1/api/file/request_policy?${window.MMX_CONFIG.commonParams}`;
+                                    policyUrlInput.style.borderColor = "#50fa7b";
+                                }
+                                if (callbackUrlInput && window.MMX_CONFIG.commonParams) {
+                                    callbackUrlInput.value = `https://www.minimax.io/v1/api/files/policy_callback?${window.MMX_CONFIG.commonParams}`;
+                                    callbackUrlInput.style.borderColor = "#50fa7b";
+                                }
+                                if (cloneUrlInput && window.MMX_CONFIG.commonParams) {
+                                    cloneUrlInput.value = `https://www.minimax.io/v1/api/audio/voice/clone_v2?${window.MMX_CONFIG.commonParams}`;
+                                    cloneUrlInput.style.borderColor = "#50fa7b";
+                                }
+                                if (cookieInput) {
+                                    cookieInput.value = window.MMX_CONFIG.cookies || document.cookie;
+                                    cookieInput.style.borderColor = "#50fa7b";
+                                }
+                                
+                                // Lưu vào localStorage
+                                if (window.MMX_CONFIG.commonParams) {
+                                    localStorage.setItem('api_policy_url', `https://www.minimax.io/v1/api/file/request_policy?${window.MMX_CONFIG.commonParams}`);
+                                    localStorage.setItem('api_callback_url', `https://www.minimax.io/v1/api/files/policy_callback?${window.MMX_CONFIG.commonParams}`);
+                                    localStorage.setItem('api_clone_url', `https://www.minimax.io/v1/api/audio/voice/clone_v2?${window.MMX_CONFIG.commonParams}`);
+                                }
+                                if (window.MMX_CONFIG.cookies) {
+                                    localStorage.setItem('api_cookie', window.MMX_CONFIG.cookies);
+                                }
+                                
+                                addLogEntry(`💾 [Active Trigger] Đã lưu cấu hình vào localStorage`, 'info');
+                            } else {
+                                addLogEntry(`⚠️ [Active Trigger] CHƯA bắt được cấu hình sau ${elapsedTime}s sau khi chunk 1 thành công`, 'warning');
+                                addLogEntry(`📊 [Active Trigger] Trạng thái: MMX_CONFIG=${!!window.MMX_CONFIG}, isReady=${window.MMX_CONFIG?.isReady}, snifferActive=${window.MMX_CONFIG?.snifferActive}`, 'warning');
+                                addLogEntry(`💡 [Active Trigger] Nguyên nhân có thể:`, 'info');
+                                addLogEntry(`   1. Các request API không được gửi sau khi chunk 1 thành công`, 'info');
+                                addLogEntry(`   2. Sniffer không bắt được request (request không đi qua fetch/XHR)`, 'info');
+                                addLogEntry(`   3. Request không có query params đầy đủ`, 'info');
+                                addLogEntry(`💡 [Active Trigger] Tool sẽ tiếp tục với UI Mode. Các chunk tiếp theo sẽ tự động bắt cấu hình nếu có.`, 'info');
+                            }
                         }
 
                         // Nếu đang trong giai đoạn kiểm tra cuối, loại bỏ chunk này khỏi danh sách thất bại
