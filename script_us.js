@@ -1762,11 +1762,30 @@ button:disabled {
                         addLogEntry(`🔍 [Chunk 1] Payload gốc từ request: ${JSON.stringify(parsedPayload).substring(0, 300)}...`, 'info');
                         
                         // QUAN TRỌNG: Nếu là Voice Clone mode (có files), ép buộc need_noise_reduction = false
-                        // Vì khi gửi API trực tiếp, server yêu cầu need_noise_reduction = false
+                        // Và xóa speed, vol, pitch ngay lập tức
                         if (parsedPayload.files && parsedPayload.files.length > 0) {
                             const oldValue = parsedPayload.need_noise_reduction;
                             parsedPayload.need_noise_reduction = false;
                             addLogEntry(`🔧 [Chunk 1] Đã sửa need_noise_reduction từ ${oldValue} thành false (Voice Clone mode)`, 'info');
+                            
+                            // Xóa speed, vol, pitch ngay lập tức (Voice Clone mode không có)
+                            if (parsedPayload.speed !== undefined) {
+                                delete parsedPayload.speed;
+                                addLogEntry(`🧹 [Chunk 1] Đã xóa speed ngay khi capture (Voice Clone mode)`, 'info');
+                            }
+                            if (parsedPayload.vol !== undefined) {
+                                delete parsedPayload.vol;
+                                addLogEntry(`🧹 [Chunk 1] Đã xóa vol ngay khi capture (Voice Clone mode)`, 'info');
+                            }
+                            if (parsedPayload.pitch !== undefined) {
+                                delete parsedPayload.pitch;
+                                addLogEntry(`🧹 [Chunk 1] Đã xóa pitch ngay khi capture (Voice Clone mode)`, 'info');
+                            }
+                            // Xóa text nếu có (Voice Clone mode dùng preview_text)
+                            if (parsedPayload.text !== undefined) {
+                                delete parsedPayload.text;
+                                addLogEntry(`🧹 [Chunk 1] Đã xóa text ngay khi capture (Voice Clone mode dùng preview_text)`, 'info');
+                            }
                         }
                         
                         config.payload = parsedPayload;
@@ -1839,13 +1858,6 @@ button:disabled {
                     }
                 }
                 
-                // Đảm bảo có text (sẽ được thay thế sau)
-                if (!config.payload.text) {
-                    // Tạo text rỗng, sẽ được thay thế khi gửi
-                    config.payload.text = '';
-                    addLogEntry(`💡 [Chunk 1] Payload không có text, sẽ được thay thế khi gửi`, 'info');
-                }
-                
                 // === [FIX LỖI 400] BỔ SUNG CÁC THAM SỐ THIẾU ===
                 // QUAN TRỌNG: Chỉ bổ sung speed/vol/pitch cho chế độ KHÔNG phải Voice Clone
                 // Voice Clone mode KHÔNG có speed, vol, pitch
@@ -1880,14 +1892,6 @@ button:disabled {
                     addLogEntry(`✅ [Chunk 1] Đã bổ sung đầy đủ tham số cho payload từ preview request`, 'success');
                 } else {
                     addLogEntry(`✅ [Chunk 1] Voice Clone mode - Không bổ sung speed/vol/pitch (không cần)`, 'success');
-                }
-                
-                // Kiểm tra các tham số khác có thể thiếu
-                // voice_id hoặc voice_speed (nếu có trong API)
-                // Có thể cần kiểm tra thêm các trường khác tùy vào API thực tế
-                
-                if (isPreviewRequest) {
-                    addLogEntry(`✅ [Chunk 1] Đã bổ sung đầy đủ tham số cho payload từ preview request`, 'success');
                 }
                 
                 // Log payload đã chuẩn hóa
