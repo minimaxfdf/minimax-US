@@ -2039,11 +2039,12 @@ button:disabled {
                 xhr._captureUrl = urlString;
                 xhr._captureMethod = xhr._captureMethod || 'POST';
                 
-                // QUAN TRỌNG: Chỉ lưu request của chunk 1 (khi chưa có config)
-                // Hoặc cho phép bắt lại config từ request thành công của chunk 1
+                // QUAN TRỌNG: Luôn lưu request để có thể so sánh và capture lại config
+                // Đặc biệt quan trọng: Capture lại config từ request thành công của chunk 1
                 // (để có config đúng từ request thực tế, không phải preview)
                 const isChunk1Request = ttuo$y_KhCV === 0 || (typeof window.currentChunkIndex !== 'undefined' && window.currentChunkIndex === 0);
                 
+                // Luôn lưu request để có thể capture lại config từ request thành công
                 if (!IS_CONFIG_READY || (IS_CONFIG_READY && isChunk1Request)) {
                     // Lưu vào biến tạm để dùng khi chunk thành công
                     // QUAN TRỌNG: Lưu đầy đủ headers từ request thực tế
@@ -2068,18 +2069,32 @@ button:disabled {
                     // Lấy Origin từ window.location
                     requestHeaders['Origin'] = window.location.origin;
                     
-                    // Chỉ lưu nếu chưa có PENDING_REQUEST_INFO hoặc đây là request mới hơn
-                    if (!PENDING_REQUEST_INFO || (PENDING_REQUEST_INFO.timestamp < Date.now() - 1000)) {
-                        PENDING_REQUEST_INFO = {
-                            url: urlString,
-                            method: xhr._captureMethod || 'POST',
-                            data: data,
-                            headers: requestHeaders, // Lưu headers để dùng sau
-                            timestamp: Date.now()
-                        };
-                        addLogEntry(`💾 Đã lưu thông tin request tạm thời (chờ chunk thành công mới bắt config)`, 'info');
+                    // QUAN TRỌNG: Luôn cập nhật PENDING_REQUEST_INFO với request mới nhất
+                    // Đặc biệt quan trọng: Capture lại config từ request thành công của chunk 1
+                    // Parse data để lưu payload đầy đủ
+                    let parsedData = data;
+                    if (typeof data === 'string') {
+                        try {
+                            parsedData = JSON.parse(data);
+                        } catch (e) {
+                            // Giữ nguyên string nếu không parse được
+                        }
+                    }
+                    
+                    PENDING_REQUEST_INFO = {
+                        url: urlString,
+                        method: xhr._captureMethod || 'POST',
+                        data: parsedData, // Lưu payload đã parse
+                        headers: requestHeaders, // Lưu headers để dùng sau
+                        timestamp: Date.now(),
+                        isChunk1: isChunk1Request
+                    };
+                    
+                    // Log chi tiết để debug
+                    if (parsedData && typeof parsedData === 'object') {
+                        addLogEntry(`💾 [CAPTURE] Đã lưu request: URL=${urlString.substring(0, 80)}..., Payload keys=${Object.keys(parsedData).join(', ')}, need_noise_reduction=${parsedData.need_noise_reduction}`, 'info');
                     } else {
-                        addLogEntry(`⚠️ PENDING_REQUEST_INFO đã tồn tại, giữ nguyên request cũ`, 'warning');
+                        addLogEntry(`💾 Đã lưu thông tin request tạm thời (chờ chunk thành công mới bắt config)`, 'info');
                     }
                 } else {
                     addLogEntry(`ℹ️ Đã có config, không lưu request này`, 'info');
@@ -5479,8 +5494,20 @@ async function uSTZrHUt_IC() {
                             reject(new Error(`Failed to parse response: ${e.message}`));
                         }
                     } else {
-                        // Lỗi HTTP
-                        addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Response body: ${xhr.responseText.substring(0, 300)}`, 'error');
+                        // Lỗi HTTP - Log chi tiết để debug
+                        const responseText = xhr.responseText;
+                        addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Response body: ${responseText.substring(0, 500)}`, 'error');
+                        
+                        // QUAN TRỌNG: So sánh với request thành công của chunk 1
+                        if (CAPTURED_CONFIG && CAPTURED_CONFIG.payload) {
+                            addLogEntry(`🔍 [DEBUG] So sánh với config từ chunk 1:`, 'info');
+                            addLogEntry(`🔍 [DEBUG] Config payload keys: ${Object.keys(CAPTURED_CONFIG.payload).join(', ')}`, 'info');
+                            addLogEntry(`🔍 [DEBUG] Config payload need_noise_reduction: ${CAPTURED_CONFIG.payload.need_noise_reduction}`, 'info');
+                            addLogEntry(`🔍 [DEBUG] Request payload need_noise_reduction: ${clonedPayload.need_noise_reduction}`, 'info');
+                            addLogEntry(`🔍 [DEBUG] Config headers keys: ${Object.keys(CAPTURED_CONFIG.headers || {}).join(', ')}`, 'info');
+                            addLogEntry(`🔍 [DEBUG] Request headers keys: ${Object.keys(normalizedHeaders).join(', ')}`, 'info');
+                        }
+                        
                         reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText || 'Unknown error'}`));
                     }
                 };
