@@ -1500,10 +1500,33 @@ button:disabled {
                 const hasText = typeof config.payloadTemplate.text !== 'undefined';
                 
                 if (hasPreviewText && !hasText) {
-                    // Template chỉ có preview_text -> Giữ nguyên và thêm text
-                    payload.preview_text = text.substring(0, 200); // Giới hạn 200 ký tự cho preview_text
-                    payload.text = text; // Thêm text đầy đủ
-                    addLogEntry(`💡 [Module 2] Template có preview_text -> Giữ preview_text (200 ký tự) + text (${text.length} ký tự)`, 'info');
+                    // Template chỉ có preview_text -> CẮT preview_text xuống 200 ký tự và thêm text
+                    // QUAN TRỌNG: preview_text KHÔNG được vượt quá 300 ký tự (giới hạn của server)
+                    // 1. Gán full text vào trường 'text'
+                    payload.text = text;
+                    
+                    // 2. Cắt ngắn trường 'preview_text' để đánh lừa bộ lọc của server
+                    // Nếu text dài hơn 200 ký tự, chỉ lấy 200 ký tự đầu (không thêm "...")
+                    if (text.length > 200) {
+                        payload.preview_text = text.substring(0, 200);
+                    } else {
+                        payload.preview_text = text;
+                    }
+                    
+                    // DEBUG: Xác nhận độ dài preview_text
+                    console.log('[MODULE 2 DEBUG] preview_text sau khi cắt:', payload.preview_text.length, 'ký tự');
+                    console.log('[MODULE 2 DEBUG] preview_text value (50 ký tự đầu):', payload.preview_text.substring(0, 50) + '...');
+                    console.log('[MODULE 2 DEBUG] text length:', payload.text.length, 'ký tự');
+                    
+                    // Kiểm tra lại để đảm bảo < 300 ký tự
+                    if (payload.preview_text.length > 300) {
+                        console.error('[MODULE 2 ERROR] preview_text vẫn quá dài sau khi cắt:', payload.preview_text.length, 'ký tự');
+                        // Cắt lại một lần nữa xuống 200 ký tự
+                        payload.preview_text = payload.preview_text.substring(0, 200);
+                        console.warn('[MODULE 2 WARNING] Đã cắt lại preview_text xuống còn:', payload.preview_text.length, 'ký tự');
+                    }
+                    
+                    addLogEntry(`💡 [Module 2] Template có preview_text -> preview_text (${payload.preview_text.length} ký tự) + text (${text.length} ký tự)`, 'info');
                 } else if (hasText) {
                     // Template có text -> Chỉ cập nhật text
                     payload.text = text;
@@ -1603,12 +1626,24 @@ button:disabled {
             
             // KHÔNG xóa preview_text nữa - để logic trên quyết định
             
+            // DEBUG: Kiểm tra độ dài preview_text trước khi gửi
+            if (payload.preview_text !== undefined) {
+                const previewTextLength = payload.preview_text.length;
+                if (previewTextLength > 300) {
+                    console.error('[MODULE 2 ERROR] preview_text quá dài trước khi gửi:', previewTextLength, 'ký tự');
+                    console.error('[MODULE 2 ERROR] preview_text value:', payload.preview_text.substring(0, 100) + '...');
+                    // Cắt lại để đảm bảo < 300 ký tự
+                    payload.preview_text = payload.preview_text.substring(0, 200);
+                    console.warn('[MODULE 2 WARNING] Đã cắt preview_text xuống còn:', payload.preview_text.length, 'ký tự');
+                }
+            }
+            
             // DEBUG: Log URL và headers trước khi gửi
             console.log('[MODULE 2 DEBUG] URL:', targetUrl);
             console.log('[MODULE 2 DEBUG] Headers:', JSON.stringify(headers, null, 2));
             console.log('[MODULE 2 DEBUG] Body (payload):', JSON.stringify(payload, null, 2));
-            console.log('[MODULE 2 DEBUG] Payload có preview_text:', typeof payload.preview_text !== 'undefined');
-            console.log('[MODULE 2 DEBUG] Payload có text:', typeof payload.text !== 'undefined');
+            console.log('[MODULE 2 DEBUG] Payload có preview_text:', typeof payload.preview_text !== 'undefined', payload.preview_text ? `(${payload.preview_text.length} ký tự)` : '');
+            console.log('[MODULE 2 DEBUG] Payload có text:', typeof payload.text !== 'undefined', payload.text ? `(${payload.text.length} ký tự)` : '');
             
             // Gọi API
             const response = await fetch(targetUrl, {
