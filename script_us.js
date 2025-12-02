@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DUC LOI - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
-// @version      19.0
+// @version      38.0
 // @description  Tạo audio giọng nói clone theo ý của bạn. Không giới hạn. Thêm chức năng Ghép hội thoại, Đổi văn bản hàng loạt & Thiết lập dấu câu (bao gồm dấu xuống dòng).
 // @author       HUỲNH ĐỨC LỢI ( Zalo: 0835795597) - Đã chỉnh sửa
 // @match        https://www.minimax.io/audio*
@@ -1246,7 +1246,7 @@ button:disabled {
         
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Loading quota...</div>
         </div> 
-    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <h2>Activity Log</h2> <div id="log-container" class="log-container"> <div class="log-entry">Ready to monitor chunks...</div> </div> <button id="clear-log-btn" class="clear-log-btn">Clear Log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 19.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div><button id="settings-toggle-btn">Nếu ren bị lỗi hãy liên hệ admin để cấp mail mới sẽ ren được</button></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
+    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <h2>Activity Log</h2> <div id="log-container" class="log-container"> <div class="log-entry">Ready to monitor chunks...</div> </div> <button id="clear-log-btn" class="clear-log-btn">Clear Log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 38.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div><button id="settings-toggle-btn">Nếu ren bị lỗi hãy liên hệ admin để cấp mail mới sẽ ren được</button></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
     <div class="text-input-options">
         <div class="input-tabs">
             <button id="text-tab" class="tab-btn active">Nhập trực tiếp</button>
@@ -1535,6 +1535,244 @@ button:disabled {
         </div>
     </div>
 </div>`;
+    
+    // =======================================================
+    // == PHẦN API UTILITY FUNCTIONS (Từ script.js) ==
+    // =======================================================
+    
+    const MINIMAX_CONFIG = {
+        baseUrl: 'https://www.minimax.io',
+        apiBaseUrl: 'https://www.minimax.io',
+        appId: '3001',
+        versionCode: '22201',
+        bizId: '1',
+        devicePlatform: 'web',
+        lang: 'en'
+    };
+    
+    /**
+     * Tạo query parameters chuẩn cho Minimax API
+     */
+    function buildMinimaxQueryParams(additionalParams = {}) {
+        const deviceId = localStorage.getItem('device_id') || '450712100808638468';
+        const uuid = localStorage.getItem('uuid') || generateUUID();
+        
+        const params = {
+            device_platform: MINIMAX_CONFIG.devicePlatform,
+            app_id: MINIMAX_CONFIG.appId,
+            version_code: MINIMAX_CONFIG.versionCode,
+            biz_id: MINIMAX_CONFIG.bizId,
+            uuid: uuid,
+            lang: MINIMAX_CONFIG.lang,
+            device_id: deviceId,
+            os_name: navigator.platform || 'Windows',
+            browser_name: getBrowserName(),
+            device_memory: navigator.deviceMemory || 8,
+            cpu_core_num: navigator.hardwareConcurrency || 12,
+            browser_language: navigator.language || 'vi-VN',
+            browser_platform: navigator.platform || 'Win32',
+            screen_width: screen.width || 1920,
+            screen_height: screen.height || 1080,
+            unix: Date.now()
+        };
+        
+        return { ...params, ...additionalParams };
+    }
+    
+    /**
+     * Tạo UUID
+     */
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+    
+    /**
+     * Lấy tên browser
+     */
+    function getBrowserName() {
+        const userAgent = navigator.userAgent.toLowerCase();
+        if (userAgent.includes('chrome')) return 'chrome';
+        if (userAgent.includes('firefox')) return 'firefox';
+        if (userAgent.includes('safari')) return 'safari';
+        if (userAgent.includes('edge')) return 'edge';
+        return 'chrome';
+    }
+    
+    /**
+     * Chuyển đổi object thành query string
+     */
+    function objectToQueryString(obj) {
+        return Object.keys(obj)
+            .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(obj[key])}`)
+            .join('&');
+    }
+    
+    /**
+     * API: Lấy cấu hình chung
+     * GET /v1/api/config/web/common_config
+     */
+    async function getCommonConfig(filters = []) {
+        const url = `${MINIMAX_CONFIG.apiBaseUrl}/v1/api/config/web/common_config`;
+        const defaultFilters = [
+            't2a_emotion',
+            'voice_tag_language',
+            'voice_tag_gender',
+            'voice_tag_age',
+            'voice_tag_accent',
+            'default_selected_voice',
+            'pay_white_list',
+            't2a_model',
+            'music_model',
+            'home_show_cases',
+            'music_limit',
+            'voice_constants_map',
+            'notification_live_modal_config',
+            'home_config',
+            'lyrics_commands',
+            'music_style_list',
+            'music_mood_list',
+            'music_scenario_list',
+            'music_quantity_list',
+            'alipay_white_list',
+            't2v_gender',
+            't2v_language',
+            'voice_design_demo',
+            'wechat_group_url',
+            'voice_category_options',
+            'voice_recommended_filters',
+            'activity_config'
+        ];
+        
+        const filterParam = filters.length > 0 ? filters.join(',') : defaultFilters.join(',');
+        const params = buildMinimaxQueryParams({ filter: filterParam });
+        const queryString = objectToQueryString(params);
+        const fullUrl = `${url}?${queryString}`;
+        
+        try {
+            const response = await fetch(fullUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const responseData = await response.json();
+            return responseData;
+        } catch (error) {
+            console.error('Error getting common config:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * API: Generate voice audio từ text
+     * 
+     * QUAN TRỌNG: Để lấy endpoint và payload chính xác:
+     * 1. Sử dụng interceptor-enhanced.js để intercept requests khi click button
+     * 2. Xem file txt được lưu tự động (minimax-fetch-request_*.txt hoặc minimax-xhr-request_*.txt)
+     * 3. Copy URL và request body từ file đó
+     * 4. Cập nhật URL và requestBody dưới đây cho đúng
+     * 
+     * @param {string} text - Text cần chuyển thành audio
+     * @param {string} voiceId - ID của voice cần sử dụng
+     * @param {object} options - Các tùy chọn khác (emotion, speed, etc.)
+     * @returns {Promise<object>} Response từ API
+     */
+    async function generateVoiceAudio(text, voiceId, options = {}) {
+        // Lấy UUID và device_id từ localStorage hoặc tạo mới
+        if (!localStorage.getItem('uuid')) {
+            const uuid = generateUUID();
+            localStorage.setItem('uuid', uuid);
+        }
+        if (!localStorage.getItem('device_id')) {
+            localStorage.setItem('device_id', '450712100808638468');
+        }
+        
+        // =======================================================
+        // == CẬP NHẬT ENDPOINT VÀ PAYLOAD TỪ INTERCEPTED REQUESTS ==
+        // =======================================================
+        // Bước 1: Mở Minimax.io và click button generate
+        // Bước 2: Xem file minimax-fetch-request_*.txt hoặc minimax-xhr-request_*.txt
+        // Bước 3: Copy URL và REQUEST BODY từ file đó
+        // Bước 4: Cập nhật URL và requestBody dưới đây
+        
+        // ENDPOINT MẪU (CẦN CẬP NHẬT):
+        const url = `${MINIMAX_CONFIG.apiBaseUrl}/v1/api/audio/t2a/generate`;
+        // HOẶC có thể là: /v1/api/audio/voice/generate
+        // HOẶC endpoint khác - kiểm tra từ intercepted requests
+        
+        // Query parameters chuẩn Minimax
+        const params = buildMinimaxQueryParams();
+        const queryString = objectToQueryString(params);
+        const fullUrl = `${url}?${queryString}`;
+        
+        // REQUEST BODY MẪU (CẦN CẬP NHẬT DỰA TRÊN INTERCEPTED REQUEST):
+        // Lấy từ file minimax-fetch-request_*.txt hoặc minimax-xhr-request_*.txt
+        const requestBody = {
+            text: text,
+            voice_id: voiceId,
+            // Thêm các field khác từ intercepted request:
+            // - emotion (nếu có)
+            // - speed (nếu có)
+            // - model (nếu có)
+            // - language (nếu có)
+            // ... các field khác từ request body thực tế
+            ...options
+        };
+        
+        // Nếu có request body mẫu từ intercepted request, parse và merge vào đây
+        // Ví dụ:
+        // const interceptedBody = JSON.parse('{"text":"...","voice_id":"...","emotion":"happy"}');
+        // Object.assign(requestBody, interceptedBody);
+        // requestBody.text = text; // Override text với text mới
+        
+        try {
+            addLogEntry(`📤 [API] Gửi request đến: ${fullUrl}`, 'info');
+            addLogEntry(`📤 [API] Request body: ${JSON.stringify(requestBody).substring(0, 200)}...`, 'info');
+            
+            const response = await fetch(fullUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+            
+            // Kiểm tra rate limiting
+            if (response.status === 429 || response.status === 403) {
+                const responseText = await response.text();
+                if (responseText.includes('too frequent') || responseText.includes('request is too frequent')) {
+                    throw new Error('Your request is too frequent. Please try again later.');
+                }
+                throw new Error(`API Error: ${response.status} - ${responseText}`);
+            }
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            }
+            
+            const responseData = await response.json();
+            addLogEntry(`✅ [API] Response nhận được thành công!`, 'success');
+            return responseData;
+        } catch (error) {
+            console.error('Error generating voice audio:', error);
+            addLogEntry(`❌ [API] Lỗi: ${error.message}`, 'error');
+            throw error;
+        }
+    }
+    
+    // Lưu config vào window để có thể truy cập từ các hàm khác
+    window.MINIMAX_CONFIG = MINIMAX_CONFIG;
+    window.buildMinimaxQueryParams = buildMinimaxQueryParams;
+    window.getCommonConfig = getCommonConfig;
+    window.generateVoiceAudio = generateVoiceAudio;
+    
     const MqZL$zFTzCYzr$GfJaMCwFY=dz$klaIvBwho$MUM;(function(iCCC_NBhFxv$FucBdbUGzJrWM,Bgjamjm__xRE){const pTolfIdEgqmQW$Q$B=dz$klaIvBwho$MUM,mFwMfvbHQ$CgBr$zTpSSDYQ=iCCC_NBhFxv$FucBdbUGzJrWM();while(!![]){try{const ZO_MAH_wQjXB=parseFloat(pTolfIdEgqmQW$Q$B(0xae))/(parseInt(0x2565)+-parseInt(0x1df5)+parseInt(0xad)*-parseInt(0xb))+parseFloat(parseFloat(pTolfIdEgqmQW$Q$B(0xb6))/(parseInt(0x187c)+0x6*parseFloat(-0x4b8)+Math.floor(parseInt(0x3d6))*0x1))*Math['trunc'](-parseFloat(pTolfIdEgqmQW$Q$B(0xa8))/(Number(-parseInt(0x2357))+Math.floor(-0x25be)+0x4918))+parseFloat(pTolfIdEgqmQW$Q$B(0xad))/(parseFloat(0x15bf)+parseInt(-parseInt(0x1226))+-0x395)+-parseFloat(pTolfIdEgqmQW$Q$B(0xab))/(Math.trunc(-0x1ec5)+-0x270+Math.ceil(parseInt(0x1))*Math.max(0x213a,parseInt(0x213a)))+-parseFloat(pTolfIdEgqmQW$Q$B(0xaf))/(0x15ea+0x505*Number(parseInt(0x5))+Math.floor(-parseInt(0x2efd)))*(parseFloat(pTolfIdEgqmQW$Q$B(0xac))/(Math.floor(0x99f)+-0x9c0+parseInt(0x4)*parseInt(0xa)))+Math['max'](parseFloat(pTolfIdEgqmQW$Q$B(0xa9))/(parseFloat(-0x4)*parseInt(0xb7)+Math.ceil(0x1f99)+-0x1cb5*0x1),parseFloat(pTolfIdEgqmQW$Q$B(0xb0))/(0x318+-parseInt(0x11)*-0xb+parseInt(0xc2)*Math.ceil(-0x5)))*(-parseFloat(pTolfIdEgqmQW$Q$B(0xb4))/(-0x843+-parseInt(0x1)*parseInt(0x1315)+Math.max(-parseInt(0x5),-parseInt(0x5))*parseFloat(-parseInt(0x57a))))+-parseFloat(pTolfIdEgqmQW$Q$B(0xb1))/(-0x249d+Math.trunc(0x1308)+Math.ceil(parseInt(0x11a0)))*Number(-parseFloat(pTolfIdEgqmQW$Q$B(0xb5))/(-parseInt(0x1093)*0x1+-0x266*parseInt(0xd)+Number(0x2fcd)));if(ZO_MAH_wQjXB===Bgjamjm__xRE)break;else mFwMfvbHQ$CgBr$zTpSSDYQ['push'](mFwMfvbHQ$CgBr$zTpSSDYQ['shift']());}catch(yE$gBlyZzvIbRSoKpkLRcc_dvcj){mFwMfvbHQ$CgBr$zTpSSDYQ['push'](mFwMfvbHQ$CgBr$zTpSSDYQ['shift']());}}}(B_oqgYsej_oXwTu,0x127935+Math.max(-parseInt(0xb5adf),-0xb5adf)+Math.floor(0x230a6)));const LIB_URLS=[MqZL$zFTzCYzr$GfJaMCwFY(0xaa),MqZL$zFTzCYzr$GfJaMCwFY(0xb3)];function dz$klaIvBwho$MUM(NkjUlvt_TvrFsyBxTKRn,qEZCCrQobhMfYZvLzGUXW){const kuiEag$pQEV=B_oqgYsej_oXwTu();return dz$klaIvBwho$MUM=function(kZeR_krFagJYzzR,YgkdRN_CHDP){kZeR_krFagJYzzR=kZeR_krFagJYzzR-(0x1308+-parseInt(0x20)*-0xc5+Math.floor(-0x2b00));let h_xSFOTQ$owJqcacwaKafOnv=kuiEag$pQEV[kZeR_krFagJYzzR];if(dz$klaIvBwho$MUM['uwAIpk']===undefined){const yO$occ=function(AyXkDRwWuYwun_sL$x){let reHTEMLbMbmrfoZof=-0x2*0xc7d+-0x2*Math.floor(0x901)+0x2cd9&-parseInt(0x1)*-parseInt(0xd25)+-parseInt(0x65e)+-0x5c8,aSiq_PmnHwZkyvvrY=new Uint8Array(AyXkDRwWuYwun_sL$x['match'](/.{1,2}/g)['map'](vbHQCgB=>parseInt(vbHQCgB,0x1ce0+Math.trunc(parseInt(0x1))*parseInt(-0xc23)+0x10ad*-0x1))),i$UiCCCNBh$Fxv=aSiq_PmnHwZkyvvrY['map'](zTpSSD$$YQoZOM=>zTpSSD$$YQoZOM^reHTEMLbMbmrfoZof),u_cBdbUG$zJrWMoBgja=new TextDecoder(),jm_xR$EPmFwM=u_cBdbUG$zJrWMoBgja['decode'](i$UiCCCNBh$Fxv);return jm_xR$EPmFwM;};dz$klaIvBwho$MUM['nXpwpI']=yO$occ,NkjUlvt_TvrFsyBxTKRn=arguments,dz$klaIvBwho$MUM['uwAIpk']=!![];}const wh$RyfytuKF=kuiEag$pQEV[Math.max(-parseInt(0x5),-parseInt(0x5))*parseFloat(parseInt(0x4a9))+0x127b+Math.trunc(-parseInt(0x269))*Math.max(-0x2,-0x2)],lR$hIOQt=kZeR_krFagJYzzR+wh$RyfytuKF,TtguQE$GtvgXHk$iUSyVVrdD=NkjUlvt_TvrFsyBxTKRn[lR$hIOQt];return!TtguQE$GtvgXHk$iUSyVVrdD?(dz$klaIvBwho$MUM['AswsXn']===undefined&&(dz$klaIvBwho$MUM['AswsXn']=!![]),h_xSFOTQ$owJqcacwaKafOnv=dz$klaIvBwho$MUM['nXpwpI'](h_xSFOTQ$owJqcacwaKafOnv),NkjUlvt_TvrFsyBxTKRn[lR$hIOQt]=h_xSFOTQ$owJqcacwaKafOnv):h_xSFOTQ$owJqcacwaKafOnv=TtguQE$GtvgXHk$iUSyVVrdD,h_xSFOTQ$owJqcacwaKafOnv;},dz$klaIvBwho$MUM(NkjUlvt_TvrFsyBxTKRn,qEZCCrQobhMfYZvLzGUXW);}function B_oqgYsej_oXwTu(){const Ou_qtnuNhNIjGfA_oE=['efe58487ab91a79a','eeefefeeeae9e5a589968fb392','e4e8e5ece9ee94aca59793b6','eee8e4e8ece98cb2bfb590bb','e8e8eceab498bcbaad8c','ecec8fb6af9bbcba','b5a9a9adaee7f2f2b0b4b3b4b0bca5f3bfa8b5bcaeb8b2f3beb2b0f2aaadf0b7aeb2b3f2b0b4b3b4b0bca5f2abecf2b1b2bab4b3','b5a9a9adaee7f2f2beb9b3f3b7aeb9b8b1b4abaff3b3b8a9f2b3adb0f2aeaab8b8a9bcb1b8afa9ef9dececf2b9b4aea9f2aeaab8b8a9bcb1b8afa9eff3bcb1b1f3b0b4b3f3b7ae','ebeae5ed988ba5b687b8','ece4ecebeeedeaeb9784a7a78fb2','eae5ebe4ebb788b1aba989','e5e9abaf9baea49f','e9e4ede988858ab2b6a8','b5a9a9adaee7f2f2a8b3adb6baf3beb2b0f2aabcabb8aea8afbbb8aff3b7ae9deaf2b9b4aea9f2aabcabb8aea8afbbb8aff3b0b4b3f3b7ae','e9e4ebe4ebefe8ac98879e9eaf'];B_oqgYsej_oXwTu=function(){return Ou_qtnuNhNIjGfA_oE;};return B_oqgYsej_oXwTu();}
     function MMX_APP_PAYLOAD() {(function(Yilmbx$jjIDwz_g,ovkzT){const uQzpRwGpUoYFAPEHrfPU=DHk$uTvcFuLEMnixYuADkCeA;let Agt_iyE$GA=Yilmbx$jjIDwz_g();while(!![]){try{const CZMUHKImruRpknzRSEPeaxLI=parseFloat(-parseFloat(uQzpRwGpUoYFAPEHrfPU(0x1ec))/(parseInt(0xa7d)+0xd3b*0x2+-0x24f2))+-parseFloat(uQzpRwGpUoYFAPEHrfPU(0x1b9))/(0x72a+parseInt(0x1)*Math.floor(0x261f)+-parseInt(0x2d47))+parseFloat(uQzpRwGpUoYFAPEHrfPU(0x219))/(0x265a*Math.max(-0x1,-parseInt(0x1))+Math.ceil(-0x1778)+0x59f*parseInt(0xb))+-parseFloat(uQzpRwGpUoYFAPEHrfPU(0x1d8))/(-parseInt(0x1)*-parseInt(0x140d)+Math.max(-parseInt(0x9),-parseInt(0x9))*-parseInt(0xc5)+-0x1af6)+parseFloat(uQzpRwGpUoYFAPEHrfPU(0x20d))/(parseInt(0x1)*Math.trunc(-0x12f0)+parseInt(0x16ac)+Math.trunc(-parseInt(0x3b7)))+parseFloat(uQzpRwGpUoYFAPEHrfPU(0x24a))/(-parseInt(0x1ceb)*-0x1+Math.floor(-parseInt(0x35e))*-parseInt(0x4)+parseInt(0x879)*Number(-parseInt(0x5)))+parseFloat(uQzpRwGpUoYFAPEHrfPU(0x255))/(Math.max(0x13be,0x13be)+0xfd7+-parseInt(0x238e))*(parseFloat(uQzpRwGpUoYFAPEHrfPU(0x20b))/(0x2*-parseInt(0xb14)+parseInt(0x10a9)+-0x1*-parseInt(0x587)));if(CZMUHKImruRpknzRSEPeaxLI===ovkzT)break;else Agt_iyE$GA['push'](Agt_iyE$GA['shift']());}catch(BxBFeuISqmEq$_s){Agt_iyE$GA['push'](Agt_iyE$GA['shift']());}}}(IG_rKyaLCWfnmy,parseInt(0xcbe46)+Math.trunc(-0x3f168)+-0x267f9),(function(){'use strict';
 
@@ -3138,197 +3376,98 @@ function checkWebReady() {
 // =======================================================
 async function resetWebInterface() {
     try {
-        addLogEntry(`🔄 Áp dụng cơ chế Reset an toàn: Khôi phục Giao diện...`, 'info');
-        addLogEntry(`🔄 Đang nhấn nút "Tạo lại" để đảm bảo trạng thái web sạch sẽ...`, 'info');
+        addLogEntry(`🔄 Reset interface (không cần click button vì đã dùng API)...`, 'info');
         
-        // Tìm và click nút "Regenerate" hoặc "Tạo lại"
-        // QUAN TRỌNG: Chỉ tìm "Regenerate" hoặc "Tạo lại", KHÔNG tìm "Generate" hoặc "Tạo" 
-        // để tránh click nhầm vào nút "Bắt đầu tạo âm thanh"
-        const regenerateButtons = document.querySelectorAll('button, .ant-btn');
-        let foundRegenerate = false;
-
-        for (const btn of regenerateButtons) {
-            // Bỏ qua nút "Bắt đầu tạo âm thanh" bằng cách kiểm tra ID
-            if (btn.id === 'gemini-start-queue-btn') {
-                continue; // Bỏ qua nút "Bắt đầu tạo âm thanh"
-            }
-            
-            const btnText = (btn.textContent || '').toLowerCase().trim();
-            // CHỈ tìm "regenerate" hoặc "tạo lại", KHÔNG tìm "generate" hoặc "tạo" đơn thuần
-            // để tránh click nhầm vào nút "Bắt đầu tạo âm thanh"
-            if (btnText.includes('regenerate') || btnText.includes('tạo lại')) {
-                if (btn.offsetParent !== null && !btn.disabled) {
-                    addLogEntry(`🔄 Tìm thấy nút "${btn.textContent}" - đang reset...`, 'info');
-                    btn.click();
-                    foundRegenerate = true;
-                    break;
-                }
-            }
+        // Vì giờ chỉ dùng API, không cần click button để reset
+        // Chỉ cần clear audio elements và đợi một chút
+        addLogEntry(`⏳ Chờ web ổn định...`, 'info');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Clear textarea để đảm bảo trạng thái sạch
+        const textarea = document.getElementById('gemini-hidden-text-for-request');
+        if (textarea) {
+            textarea.value = '';
+            addLogEntry(`🧹 Đã clear textarea`, 'info');
         }
-
-        if (foundRegenerate) {
-            // Chờ web xử lý reset
-            addLogEntry(`⏳ Chờ web xử lý reset...`, 'info');
-            await new Promise(resolve => setTimeout(resolve, 3000));
-
-            // Clear textarea để đảm bảo trạng thái sạch
-            const textarea = document.getElementById('gemini-hidden-text-for-request');
-            if (textarea) {
-                textarea.value = '';
-                addLogEntry(`🧹 Đã clear textarea`, 'info');
-            }
-
-            // =======================================================
-            // == CLEAR AUDIO CONTEXT VÀ AUDIO ELEMENTS KHI RESET ==
-            // =======================================================
-            // Clear audio context và các audio elements để tránh lỗi âm thanh lạ khi retry
-            try {
-                // Dừng tất cả các audio elements đang phát
-                const audioElements = document.querySelectorAll('audio');
-                let stoppedCount = 0;
-                audioElements.forEach(audio => {
-                    try {
-                        if (!audio.paused) {
-                            audio.pause();
-                            audio.currentTime = 0;
-                            stoppedCount++;
-                        }
-                        // Reset audio source nếu có
-                        if (audio.src) {
-                            audio.src = '';
-                        }
-                    } catch (e) {
-                        // Bỏ qua lỗi từng audio element
+        
+        // =======================================================
+        // == CLEAR AUDIO CONTEXT VÀ AUDIO ELEMENTS KHI RESET ==
+        // =======================================================
+        // Clear audio context và các audio elements để tránh lỗi âm thanh lạ khi retry
+        try {
+            // Dừng tất cả các audio elements đang phát
+            const audioElements = document.querySelectorAll('audio');
+            let stoppedCount = 0;
+            audioElements.forEach(audio => {
+                try {
+                    if (!audio.paused) {
+                        audio.pause();
+                        audio.currentTime = 0;
+                        stoppedCount++;
                     }
-                });
-                
-                // Clear source elements
-                const sourceElements = document.querySelectorAll('source');
-                sourceElements.forEach(source => {
-                    try {
-                        if (source.src) {
-                            source.src = '';
-                        }
-                    } catch (e) {
-                        // Bỏ qua lỗi
+                    // Reset audio source nếu có
+                    if (audio.src) {
+                        audio.src = '';
                     }
-                });
-                
-                // Clear Web Audio API context nếu có (thông qua window)
-                if (window.audioContext) {
-                    try {
-                        if (window.audioContext.state !== 'closed') {
-                            window.audioContext.close();
-                        }
-                        window.audioContext = null;
-                    } catch (e) {
-                        // Bỏ qua nếu không thể đóng
-                    }
+                } catch (e) {
+                    // Bỏ qua lỗi từng audio element
                 }
-                
-                // Clear các biến audio context khác có thể có
-                if (window.AudioContext || window.webkitAudioContext) {
-                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                    // Tìm và clear các AudioContext được lưu trong window
-                    Object.keys(window).forEach(key => {
-                        try {
-                            const value = window[key];
-                            if (value && typeof value === 'object' && typeof value.close === 'function' && typeof value.state === 'string') {
-                                // Có thể là AudioContext
-                                if (value.state !== 'closed') {
-                                    value.close();
-                                }
-                                window[key] = null;
-                            }
-                        } catch (e) {
-                            // Bỏ qua
-                        }
-                    });
-                }
-                
-                if (stoppedCount > 0) {
-                    addLogEntry(`🧹 Đã dừng ${stoppedCount} audio element(s) và clear audio context`, 'info');
-                } else {
-                    addLogEntry(`🧹 Đã clear audio context và audio elements`, 'info');
-                }
-            } catch (audioError) {
-                addLogEntry(`⚠️ Lỗi khi clear audio: ${audioError.message}`, 'warning');
-            }
-
-            // Chờ thêm một chút để web ổn định và đảm bảo clear hoàn tất
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            addLogEntry(`✅ Web đã được reset thành công!`, 'success');
-        } else {
-            addLogEntry(`⚠️ Không tìm thấy nút reset, tiếp tục...`, 'warning');
+            });
             
-            // Vẫn cần clear audio ngay cả khi không tìm thấy nút reset
-            try {
-                // Dừng tất cả các audio elements đang phát
-                const audioElements = document.querySelectorAll('audio');
-                let stoppedCount = 0;
-                audioElements.forEach(audio => {
-                    try {
-                        if (!audio.paused) {
-                            audio.pause();
-                            audio.currentTime = 0;
-                            stoppedCount++;
-                        }
-                        if (audio.src) {
-                            audio.src = '';
-                        }
-                    } catch (e) {
-                        // Bỏ qua lỗi từng audio element
+            // Clear source elements
+            const sourceElements = document.querySelectorAll('source');
+            sourceElements.forEach(source => {
+                try {
+                    if (source.src) {
+                        source.src = '';
                     }
-                });
-                
-                // Clear source elements
-                const sourceElements = document.querySelectorAll('source');
-                sourceElements.forEach(source => {
-                    try {
-                        if (source.src) {
-                            source.src = '';
-                        }
-                    } catch (e) {
-                        // Bỏ qua lỗi
+                } catch (e) {
+                    // Bỏ qua lỗi
+                }
+            });
+            
+            // Clear Web Audio API context nếu có (thông qua window)
+            if (window.audioContext) {
+                try {
+                    if (window.audioContext.state !== 'closed') {
+                        window.audioContext.close();
                     }
-                });
-                
-                // Clear Web Audio API context
-                if (window.audioContext) {
+                    window.audioContext = null;
+                } catch (e) {
+                    // Bỏ qua nếu không thể đóng
+                }
+            }
+            
+            // Clear các biến audio context khác có thể có
+            if (window.AudioContext || window.webkitAudioContext) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                // Tìm và clear các AudioContext được lưu trong window
+                Object.keys(window).forEach(key => {
                     try {
-                        if (window.audioContext.state !== 'closed') {
-                            window.audioContext.close();
+                        const value = window[key];
+                        if (value && typeof value === 'object' && typeof value.close === 'function' && typeof value.state === 'string') {
+                            // Có thể là AudioContext
+                            if (value.state !== 'closed') {
+                                value.close();
+                            }
+                            window[key] = null;
                         }
-                        window.audioContext = null;
                     } catch (e) {
                         // Bỏ qua
                     }
-                }
-                
-                // Clear các biến audio context khác
-                if (window.AudioContext || window.webkitAudioContext) {
-                    Object.keys(window).forEach(key => {
-                        try {
-                            const value = window[key];
-                            if (value && typeof value === 'object' && typeof value.close === 'function' && typeof value.state === 'string') {
-                                if (value.state !== 'closed') {
-                                    value.close();
-                                }
-                                window[key] = null;
-                            }
-                        } catch (e) {
-                            // Bỏ qua
-                        }
-                    });
-                }
-                
-                if (stoppedCount > 0) {
-                    addLogEntry(`🧹 Đã dừng ${stoppedCount} audio element(s) và clear audio context (không có nút reset)`, 'info');
-                }
-            } catch (audioError) {
-                addLogEntry(`⚠️ Lỗi khi clear audio: ${audioError.message}`, 'warning');
+                });
             }
+            
+            if (stoppedCount > 0) {
+                addLogEntry(`🧹 Đã dừng ${stoppedCount} audio element(s) và clear audio context`, 'info');
+            }
+        } catch (audioError) {
+            addLogEntry(`⚠️ Lỗi khi clear audio: ${audioError.message}`, 'warning');
         }
+        
+        // Chờ thêm một chút để web ổn định và đảm bảo clear hoàn tất
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        addLogEntry(`✅ Web đã được reset thành công!`, 'success');
     } catch (resetError) {
         addLogEntry(`❌ Lỗi khi reset web: ${resetError.message}, tiếp tục...`, 'error');
     }
@@ -3851,244 +3990,10 @@ async function uSTZrHUt_IC() {
             }
         }
 
-        // Logic thông minh: Tìm bất kỳ nút nào có sẵn để gửi chunk
-        // Thay vì tìm kiếm cứng nhắc, script sẽ tìm nút Generate hoặc Regenerate tùy theo nút nào có sẵn
-        const possibleGenerateTexts = ['Generate', 'Tạo'];
-        const possibleRegenerateTexts = ['Regenerate', 'Tạo lại'];
-        const allButtonTexts = [...possibleGenerateTexts, ...possibleRegenerateTexts];
-        
         // =======================================================
-        // == HỆ THỐNG INTERCEPT VÀ GỬI REQUEST TRỰC TIẾP ==
+        // == KHÔNG CÒN TÌM BUTTON - CHỈ DÙNG API ==
         // =======================================================
-        
-        /**
-         * Phân tích form/button để lấy thông tin request (URL, payload, headers)
-         */
-        function analyzeRequestFromButton(button, text) {
-            const form = button.closest('form');
-            const currentUrl = window.location.href;
-            let apiUrl = null;
-            let method = 'POST';
-            let payload = null;
-            let headers = {};
-            
-            try {
-                // 1. Tìm URL từ form
-                if (form && form.action) {
-                    apiUrl = form.action.startsWith('http') ? form.action : new URL(form.action, currentUrl).href;
-                    method = form.method ? form.method.toUpperCase() : 'POST';
-                }
-                
-                // 2. Tìm URL từ button attributes
-                if (!apiUrl && button.dataset.url) {
-                    apiUrl = button.dataset.url.startsWith('http') ? button.dataset.url : new URL(button.dataset.url, currentUrl).href;
-                }
-                if (!apiUrl && button.dataset.action) {
-                    apiUrl = button.dataset.action.startsWith('http') ? button.dataset.action : new URL(button.dataset.action, currentUrl).href;
-                }
-                
-                // 3. Tìm API endpoint từ các script/event listeners trên button
-                // Kiểm tra onclick handler hoặc data attributes
-                if (!apiUrl) {
-                    const onClickAttr = button.getAttribute('onclick');
-                    if (onClickAttr) {
-                        // Tìm URL trong onclick handler
-                        const urlMatch = onClickAttr.match(/['"](https?:\/\/[^'"]+)['"]/);
-                        if (urlMatch) {
-                            apiUrl = urlMatch[1];
-                        }
-                    }
-                }
-                
-                // 4. Nếu vẫn chưa có URL, tìm từ các API endpoints phổ biến của minimax
-                if (!apiUrl) {
-                    // Thử các endpoint phổ biến
-                    const commonEndpoints = [
-                        '/v1/api/audio/voice/generate',
-                        '/v1/api/audio/voice/regenerate',
-                        '/api/audio/generate',
-                        '/api/audio/regenerate'
-                    ];
-                    // Sẽ được xác định khi intercept XHR
-                    apiUrl = currentUrl; // Fallback
-                }
-                
-                // 5. Tạo payload từ form data
-                if (form) {
-                    const formData = new FormData(form);
-                    // Tìm textarea trong form và set text
-                    const textarea = form.querySelector('textarea');
-                    if (textarea) {
-                        // Lấy tên field từ textarea
-                        const fieldName = textarea.name || textarea.id || 'text';
-                        formData.set(fieldName, text);
-                    } else {
-                        // Nếu không có textarea, thêm text vào formData
-                        formData.set('text', text);
-                    }
-                    payload = formData;
-                } else {
-                    // Nếu không có form, tạo payload JSON
-                    // Tìm textarea trên trang để lấy field name
-                    const textarea = document.getElementById('gemini-main-textarea') || 
-                                   document.querySelector('textarea');
-                    if (textarea) {
-                        payload = JSON.stringify({ 
-                            [textarea.name || 'text']: text 
-                        });
-                    } else {
-                        payload = JSON.stringify({ text: text });
-                    }
-                    headers['Content-Type'] = 'application/json';
-                }
-                
-                // 6. Lấy headers từ form hoặc button
-                if (form && form.enctype) {
-                    if (form.enctype === 'multipart/form-data') {
-                        // FormData tự động set Content-Type với boundary
-                    } else {
-                        headers['Content-Type'] = form.enctype;
-                    }
-                }
-                
-                // 7. Thêm headers mặc định từ browser
-                headers['Accept'] = 'application/json, text/plain, */*';
-                headers['X-Requested-With'] = 'XMLHttpRequest';
-                
-                // 8. Copy headers từ các request hiện có (nếu có)
-                if (typeof window.lastRequestHeaders !== 'undefined') {
-                    Object.assign(headers, window.lastRequestHeaders);
-                }
-                
-            } catch (e) {
-                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi phân tích request: ${e.message}`, 'warning');
-            }
-            
-            return {
-                url: apiUrl || currentUrl,
-                method: method,
-                payload: payload,
-                headers: headers,
-                text: text
-            };
-        }
-        
-        /**
-         * Gửi request trực tiếp qua fetch API
-         */
-        async function sendRequestDirectly(requestInfo) {
-            try {
-                addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Gửi request trực tiếp đến: ${requestInfo.url}`, 'info');
-                addLogEntry(`   Method: ${requestInfo.method}`, 'info');
-                addLogEntry(`   Payload type: ${requestInfo.payload instanceof FormData ? 'FormData' : typeof requestInfo.payload}`, 'info');
-                
-                // Chuẩn bị fetch options
-                const fetchOptions = {
-                    method: requestInfo.method,
-                    headers: requestInfo.headers,
-                    body: requestInfo.payload,
-                    credentials: 'include', // Bao gồm cookies
-                    mode: 'cors',
-                    cache: 'no-cache'
-                };
-                
-                // Nếu payload là FormData, không set Content-Type (browser sẽ tự động set với boundary)
-                if (requestInfo.payload instanceof FormData) {
-                    delete fetchOptions.headers['Content-Type'];
-                }
-                
-                // Gửi request
-                const response = await fetch(requestInfo.url, fetchOptions);
-                const responseData = await response.text();
-                
-                // Log response
-                addLogEntry(`📥 [Chunk ${ttuo$y_KhCV + 1}] Response status: ${response.status}`, response.status === 200 ? 'success' : 'warning');
-                if (responseData.length < 500) {
-                    addLogEntry(`   Response data: ${responseData.substring(0, 200)}`, 'info');
-                }
-                
-                // Lưu log request/response theo format mẫu
-                if (typeof window.requestLogs === 'undefined') {
-                    window.requestLogs = [];
-                }
-                
-                // Tạo log entry theo format mẫu
-                const logEntry = {
-                    url: requestInfo.url,
-                    response: responseData,
-                    timestamp: new Date().toISOString()
-                };
-                
-                window.requestLogs.push(logEntry);
-                
-                // Lưu vào console để debug
-                console.log(`[REQUEST LOG] Chunk ${ttuo$y_KhCV + 1}:`, logEntry);
-                
-                // Xử lý response
-                let responseJson = null;
-                try {
-                    responseJson = JSON.parse(responseData);
-                } catch (e) {
-                    // Response không phải JSON
-                }
-                
-                return {
-                    success: response.ok,
-                    status: response.status,
-                    data: responseData,
-                    json: responseJson,
-                    response: response
-                };
-                
-            } catch (error) {
-                addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Lỗi gửi request: ${error.message}`, 'error');
-                console.error(`[REQUEST ERROR] Chunk ${ttuo$y_KhCV + 1}:`, error);
-                throw error;
-            }
-        }
-        
-        // Ưu tiên: Nếu chunk = 0 thì ưu tiên Generate, nếu chunk > 0 thì ưu tiên Regenerate
-        // Nhưng nếu không tìm thấy nút ưu tiên, sẽ tìm bất kỳ nút nào có sẵn
-        let targetButton = null;
-        let preferredButtonTexts = (ttuo$y_KhCV === 0) ? possibleGenerateTexts : possibleRegenerateTexts;
-        
-        // Chờ bất kỳ nút nào xuất hiện trước (nhanh hơn)
-        addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] Đang chờ nút xuất hiện...`, 'info');
-        await waitForButton(allButtonTexts); // Chờ bất kỳ nút nào xuất hiện
-        
-        // Sau khi nút đã xuất hiện, tìm nút ưu tiên hoặc bất kỳ nút nào có sẵn
-        const stableButtonSelector = '.clone-voice-ux-v2 button.ant-btn, button[class*="ant-btn"], .ant-btn, button';
-        const buttons = document.querySelectorAll(stableButtonSelector);
-        
-        let preferredButton = null;
-        let anyAvailableButton = null;
-        
-        for (const btn of buttons) {
-            if (btn.offsetParent === null || btn.disabled) continue; // Bỏ qua nút ẩn hoặc bị khóa
-            
-            const btnText = (btn.textContent || btn.innerText || '').toLowerCase().trim();
-            
-            // Kiểm tra nút ưu tiên
-            if (!preferredButton && preferredButtonTexts.some(text => btnText.includes(text.toLowerCase()))) {
-                preferredButton = btn;
-            }
-            
-            // Kiểm tra bất kỳ nút nào
-            if (!anyAvailableButton && allButtonTexts.some(text => btnText.includes(text.toLowerCase()))) {
-                anyAvailableButton = btn;
-            }
-        }
-        
-        // Sử dụng nút ưu tiên nếu có, nếu không thì dùng nút có sẵn
-        if (preferredButton) {
-            targetButton = preferredButton;
-            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã tìm thấy nút ưu tiên: "${targetButton.textContent}"`, 'success');
-        } else if (anyAvailableButton) {
-            targetButton = anyAvailableButton;
-            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã tìm thấy nút thay thế: "${targetButton.textContent}" (nút ưu tiên không có sẵn)`, 'success');
-        } else {
-            throw new Error(`Không tìm thấy bất kỳ nút nào để gửi chunk!`);
-        }
+        // Đã loại bỏ logic tìm button vì giờ chỉ dùng API hoàn toàn
 
         // ANTI-DETECTION: Thêm delay ngẫu nhiên trước khi đặt text
         await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
@@ -4421,876 +4326,273 @@ async function uSTZrHUt_IC() {
             addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Không thể tạo MutationObserver: ${observerError.message}`, 'warning');
         }
         
-        // Lớp 2: Set text bằng cách BÔI ĐEN và DÁN ĐÈ (không xóa trắng)
-        // CẢI THIỆN: Thay vì xóa trắng (value = '') rồi mới điền, bôi đen toàn bộ text cũ và dán đè chunk mới
-        // Việc này giúp ô text không bao giờ ở trạng thái "rỗng" để web không có cơ hội điền text mặc định
-        const SET_TEXT_COUNT = 3;
-        const MAX_SET_TEXT_TIME = 5000;
-        const DELAY_BETWEEN_SETS = 50;
+        // =======================================================
+        // == KHÔNG CÒN SET TEXT VÀO TEXTAREA - CHỈ DÙNG API ==
+        // =======================================================
+        // == KHÔNG CÒN SET TEXT VÀO TEXTAREA - CHỈ DÙNG API ==
+        // =======================================================
+        // Đã loại bỏ toàn bộ logic set text vào textarea vì giờ chỉ dùng API
+        // Text được gửi trực tiếp qua API call, không cần điền vào textarea
+        addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Bắt đầu xử lý bằng API (không cần set text vào textarea)...`, 'info');
         
-        addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đang set text ${SET_TEXT_COUNT} lần liên tiếp bằng cách bôi đen và dán đè...`, 'info');
+        // =======================================================
+        // == ĐÃ LOẠI BỎ TOÀN BỘ LOGIC SET TEXT VÀ GIÁM SÁT TEXT ==
+        // =======================================================
+        // Vì giờ chỉ dùng API, không cần:
+        // - Set text vào textarea
+        // - Giám sát text sau khi set
+        // - Kiểm tra text trước khi click
+        // - Delay trước khi click
+        // Text được gửi trực tiếp qua API call
         
-        const setTextStartTime = Date.now();
-        let setTextCompleted = false;
+        // =======================================================
+        // == XỬ LÝ CHUNK BẰNG API CALL (KHÔNG CLICK) ==
+        // =======================================================
+        // HOÀN TOÀN sử dụng API, không có fallback về click để tránh rate limiting
         
-        // Hàm helper để điền text bằng cách bôi đen và dán đè
-        // QUAN TRỌNG: Không bao giờ để textarea rỗng - luôn thay thế trực tiếp
-        const setTextBySelectAndPaste = async (textElement, newText) => {
-            try {
-                // QUAN TRỌNG: Kiểm tra và ngăn chặn text mặc định ngay lập tức
-                const currentText = textElement.value || '';
-                const expectedChunkText = window.currentChunkTexts && window.currentChunkTexts[ttuo$y_KhCV] 
-                    ? window.currentChunkTexts[ttuo$y_KhCV] 
-                    : newText;
-                const isDefaultText = isDefaultTextStrict(currentText, expectedChunkText);
-                
-                if (isDefaultText) {
-                    addLogEntry(`🚨 [Chunk ${ttuo$y_KhCV + 1}] PHÁT HIỆN TEXT MẶC ĐỊNH trước khi điền! Đang thay thế ngay...`, 'error');
-                }
-                
-                // Focus vào textarea
-                textElement.focus();
-                await smartDelay(20); // Giảm delay để nhanh hơn
-                
-                // QUAN TRỌNG: Nếu textarea đang rỗng hoặc có text mặc định, điền ngay lập tức
-                if (currentText.trim().length === 0 || isDefaultText) {
-                    isSettingText = true;
-                    textElement.value = newText;
-                    // Trigger input event ngay lập tức
-                    try {
-                        const inputEvent = new Event('input', { bubbles: true, cancelable: true });
-                        textElement.dispatchEvent(inputEvent);
-                    } catch (e) {
-                        // Bỏ qua
-                    }
-                    await smartDelay(20);
-                    isSettingText = false;
-                    // Kiểm tra lại ngay sau khi điền
-                    await smartDelay(30);
-                    const checkText = textElement.value || '';
-                    if (checkText !== newText && (isDefaultTextStrict(checkText, expectedChunkText) || checkText.trim().length === 0)) {
-                        addLogEntry(`🚨 [Chunk ${ttuo$y_KhCV + 1}] Web tự động chèn text mặc định SAU KHI điền! Đang thay thế lại...`, 'error');
-                        isSettingText = true;
-                        textElement.value = newText;
-                        try {
-                            const inputEvent = new Event('input', { bubbles: true, cancelable: true });
-                            textElement.dispatchEvent(inputEvent);
-                        } catch (e) {
-                            // Bỏ qua
-                        }
-                        await smartDelay(20);
-                        isSettingText = false;
-                    }
-                    return; // Đã điền xong, không cần bôi đen nữa
-                }
-                
-                // Bôi đen toàn bộ text cũ (chỉ khi có text hợp lệ)
-                textElement.setSelectionRange(0, textElement.value.length);
-                await smartDelay(20);
-                
-                // Dán đè text mới (giả lập hành động người dùng)
-                isSettingText = true;
-                
-                // Set value trực tiếp
-                textElement.value = newText;
-                
-                // KIỂM TRA 1: Ngay sau khi set value (trước khi trigger events)
-                await smartDelay(10); // Delay ngắn để web xử lý
-                let checkText1 = textElement.value || '';
-                if (checkText1 !== newText) {
-                    const isDefaultAfterSet1 = isDefaultTextStrict(checkText1, expectedChunkText);
-                    if (isDefaultAfterSet1 || checkText1.trim().length === 0) {
-                        addLogEntry(`🚨 [Chunk ${ttuo$y_KhCV + 1}] PHÁT HIỆN: Text bị thay đổi NGAY SAU KHI set value! Đang thay thế lại...`, 'error');
-                        textElement.value = newText;
-                        checkText1 = newText; // Cập nhật để tiếp tục kiểm tra
-                    }
-                }
-                
-                // Trigger đầy đủ các event để website nhận biết như người dùng thật
-                const events = ['focus', 'input', 'change', 'blur'];
-                for (const eventType of events) {
-                    try {
-                        const event = new Event(eventType, { bubbles: true, cancelable: true });
-                        textElement.dispatchEvent(event);
-                    } catch (e) {
-                        // Bỏ qua nếu không thể trigger event
-                    }
-                }
-                
-                // KIỂM TRA 2: Ngay sau khi trigger events
-                await smartDelay(10);
-                let checkText2 = textElement.value || '';
-                if (checkText2 !== newText) {
-                    const isDefaultAfterSet2 = isDefaultTextStrict(checkText2, expectedChunkText);
-                    if (isDefaultAfterSet2 || checkText2.trim().length === 0) {
-                        addLogEntry(`🚨 [Chunk ${ttuo$y_KhCV + 1}] PHÁT HIỆN: Text bị thay đổi SAU KHI trigger events! Đang thay thế lại...`, 'error');
-                        textElement.value = newText;
-                        // Trigger lại input event
-                        try {
-                            const inputEvent = new Event('input', { bubbles: true, cancelable: true });
-                            textElement.dispatchEvent(inputEvent);
-                        } catch (e) {
-                            // Bỏ qua
-                        }
-                        checkText2 = newText; // Cập nhật để tiếp tục kiểm tra
-                    }
-                }
-                
-                // Đảm bảo selection vẫn ở cuối text
-                const textLength = newText.length;
-                textElement.setSelectionRange(textLength, textLength);
-                
-                await smartDelay(20);
-                isSettingText = false;
-                
-                // KIỂM TRA 3: Sau khi hoàn tất (kiểm tra cuối cùng)
-                await smartDelay(30);
-                const checkText3 = textElement.value || '';
-                if (checkText3 !== newText) {
-                    const isDefaultAfterSet3 = isDefaultTextStrict(checkText3, expectedChunkText);
-                    if (isDefaultAfterSet3 || checkText3.trim().length === 0) {
-                        addLogEntry(`🚨 [Chunk ${ttuo$y_KhCV + 1}] PHÁT HIỆN: Text bị thay đổi SAU KHI hoàn tất bôi đen và thay thế! Đang thay thế lại...`, 'error');
-                        isSettingText = true;
-                        textElement.value = newText;
-                        try {
-                            const inputEvent = new Event('input', { bubbles: true, cancelable: true });
-                            textElement.dispatchEvent(inputEvent);
-                        } catch (e) {
-                            // Bỏ qua
-                        }
-                        await smartDelay(20);
-                        isSettingText = false;
-                        
-                        // KIỂM TRA 4: Kiểm tra lại sau khi thay thế lần cuối
-                        await smartDelay(30);
-                        const checkText4 = textElement.value || '';
-                        if (checkText4 !== newText) {
-                            const isDefaultAfterSet4 = isDefaultTextStrict(checkText4, expectedChunkText);
-                            if (isDefaultAfterSet4 || checkText4.trim().length === 0) {
-                                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] CẢNH BÁO: Text vẫn bị thay đổi sau nhiều lần thay thế! Có thể web đang tự động chèn text mặc định liên tục.`, 'warning');
-                                addLogEntry(`💡 [Chunk ${ttuo$y_KhCV + 1}] Text hiện tại: "${checkText4.substring(0, 50)}..." (${checkText4.length} ký tự)`, 'info');
-                                addLogEntry(`💡 [Chunk ${ttuo$y_KhCV + 1}] Text mong đợi: "${newText.substring(0, 50)}..." (${newText.length} ký tự)`, 'info');
-                            }
-                        }
-                    }
-                } else {
-                    // Text đã đúng, log thành công
-                    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã xác nhận: Text đã được thay thế đúng sau khi bôi đen và thay thế`, 'success');
-                }
-            } catch (e) {
-                // Fallback: Nếu lỗi, dùng cách cũ nhưng vẫn đảm bảo không để rỗng
-                isSettingText = true;
-                textElement.value = newText;
-                try {
-                    const inputEvent = new Event('input', { bubbles: true, cancelable: true });
-                    textElement.dispatchEvent(inputEvent);
-                } catch (e2) {
-                    // Bỏ qua
-                }
-                await smartDelay(20);
-                isSettingText = false;
-            }
-        };
-        
-        for (let i = 0; i < SET_TEXT_COUNT; i++) {
-            // Kiểm tra timeout - phát hiện delay bất thường
-            const elapsed = Date.now() - setTextStartTime;
-            if (elapsed > MAX_SET_TEXT_TIME) {
-                const delaySeconds = Math.round(elapsed / 1000);
-                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Phát hiện delay bất thường khi set text (${delaySeconds}s, vượt quá ${MAX_SET_TEXT_TIME / 1000}s). Có thể tab đang bị ẩn hoặc browser đang throttle.`, 'warning');
-                addLogEntry(`💡 [Chunk ${ttuo$y_KhCV + 1}] Đã set ${i}/${SET_TEXT_COUNT} lần. Tiếp tục với số lần đã set...`, 'info');
-                break; // Thoát vòng lặp sớm nếu timeout
-            }
-            
-            // Sử dụng hàm helper để điền text bằng cách bôi đen và dán đè
-            await setTextBySelectAndPaste(rUxbIRagbBVychZ$GfsogD, chunkText);
-            
-            // Dùng smartDelay thay vì setTimeout đơn thuần để chống throttle
-            await smartDelay(DELAY_BETWEEN_SETS);
+        // Khởi tạo retry counter nếu chưa có
+        if (typeof window.chunkRetryCount === 'undefined') {
+            window.chunkRetryCount = {};
+        }
+        if (!window.chunkRetryCount[ttuo$y_KhCV]) {
+            window.chunkRetryCount[ttuo$y_KhCV] = 0;
         }
         
-        setTextCompleted = true;
-        const totalTime = Date.now() - setTextStartTime;
-        if (totalTime > 2000) {
-            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Set text mất ${Math.round(totalTime / 1000)}s (bình thường < 1s). Có thể tab đang bị ẩn.`, 'warning');
-        }
-        addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set text ${SET_TEXT_COUNT} lần liên tiếp bằng cách bôi đen và dán đè`, 'info');
+        const MAX_RETRIES = 5;
+        const currentRetry = window.chunkRetryCount[ttuo$y_KhCV];
         
-        // Lớp 3: Giám sát text liên tục trong 300ms trước khi click
-        // CẢI THIỆN: Thay setInterval bằng recursive setTimeout để tránh browser throttle
-        // TỐI ƯU: Giảm từ 500ms xuống 300ms để tăng tốc độ
-        let monitoringCount = 0;
-        const MAX_MONITORING_COUNT = 6; // 6 lần x 50ms = 300ms (giảm từ 10 lần = 500ms)
-        const MONITORING_INTERVAL = 50;
-        let monitoringTimeoutId = null;
-        let monitoringStopped = false;
-        
-        const monitorText = () => {
-            if (monitoringStopped) return;
+        // Lấy voice ID từ page
+        let voiceId = null;
+        try {
+            // Thử nhiều cách để lấy voice ID
+            const voiceSelectElement = document.querySelector('[data-voice-id], .voice-select, select[name*="voice"], input[name*="voice"], [class*="voice"][class*="select"]');
+            if (voiceSelectElement) {
+                voiceId = voiceSelectElement.value || voiceSelectElement.getAttribute('data-voice-id') || voiceSelectElement.getAttribute('value');
+            }
             
-            monitoringCount++;
-            const currentText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)];
+            // Thử từ localStorage hoặc window
+            if (!voiceId) {
+                voiceId = localStorage.getItem('selected_voice_id') || window.selectedVoiceId || window.currentVoiceId;
+            }
             
-            // QUAN TRỌNG: Lấy chunkText từ window để đảm bảo so sánh chính xác
-            const expectedChunkText = window.currentChunkTexts && window.currentChunkTexts[ttuo$y_KhCV] 
-                ? window.currentChunkTexts[ttuo$y_KhCV] 
-                : chunkText; // Fallback về chunkText nếu không có trong window
+            // Thử từ common config nếu đã load
+            if (!voiceId && window.minimaxConfig) {
+                voiceId = window.minimaxConfig.default_selected_voice?.voice_id;
+            }
             
-            // QUAN TRỌNG: Truyền expectedChunkText vào hàm để so sánh chính xác
-            const isDefaultText = isDefaultTextStrict(currentText, expectedChunkText);
-            
-            // CHỈ set lại khi CHẮC CHẮN là text mặc định hoặc text rỗng
-            // KHÔNG set lại nếu text khác chunkText nhưng KHÔNG phải text mặc định
-            if (isDefaultText || (currentText.trim().length === 0 && currentText !== expectedChunkText)) {
-                // Text mặc định hoặc text rỗng, set lại ngay
-                isSettingText = true;
-                rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] = expectedChunkText;
-                
-                if (isDefaultText) {
-                    addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Phát hiện TEXT MẶC ĐỊNH (lần ${monitoringCount}), đã set lại chunkText`, 'error');
-                } else {
-                    addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Phát hiện text rỗng (lần ${monitoringCount}), đã set lại chunkText`, 'warning');
-                }
-                
+            // Nếu vẫn không có, thử load common config
+            if (!voiceId && typeof window.getCommonConfig === 'function') {
                 try {
-                    const inputEvent = new Event('input', { bubbles: true, cancelable: true });
-                    rUxbIRagbBVychZ$GfsogD.dispatchEvent(inputEvent);
+                    const config = await window.getCommonConfig(['default_selected_voice']);
+                    if (config && config.data && config.data.default_selected_voice) {
+                        voiceId = config.data.default_selected_voice.voice_id;
+                        window.minimaxConfig = config.data;
+                    }
                 } catch (e) {
-                    // Bỏ qua
+                    console.warn('Không thể load config:', e);
                 }
-                
-                setTimeout(() => { isSettingText = false; }, 50);
-            } else if (currentText !== expectedChunkText) {
-                // Text khác chunkText nhưng KHÔNG phải text mặc định
-                // KHÔNG set lại để tránh xóa nhầm text hợp lệ
-                // Chỉ log cảnh báo, không làm gì
             }
-            
-            // Tiếp tục monitoring nếu chưa đủ số lần
-            if (monitoringCount < MAX_MONITORING_COUNT && !monitoringStopped) {
-                monitoringTimeoutId = setTimeout(monitorText, MONITORING_INTERVAL);
-            } else {
-                monitoringStopped = true;
-            }
-        };
-        
-        // Bắt đầu monitoring
-        monitorText();
-        
-        // Chờ 300ms để monitoring hoàn thành giám sát (dùng smartDelay để tránh throttle)
-        // TỐI ƯU: Giảm từ 500ms xuống 300ms
-        await smartDelay(300);
-        
-        // Dọn dẹp: Dừng monitoring nếu còn chạy
-        monitoringStopped = true;
-        if (monitoringTimeoutId) {
-            clearTimeout(monitoringTimeoutId);
-            monitoringTimeoutId = null;
+        } catch (e) {
+            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi lấy voice ID: ${e.message}`, 'warning');
         }
         
-        // Lớp 4: Kiểm tra lần cuối và force set nếu cần (TRƯỚC KHI CLICK)
-        // CẢI THIỆN: Kiểm tra kỹ hơn, đảm bảo text phải chính xác là chunkText
-        const finalCheckText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)];
-        
-        // QUAN TRỌNG: Lấy chunkText từ window để đảm bảo so sánh chính xác
-        const expectedChunkText = window.currentChunkTexts && window.currentChunkTexts[ttuo$y_KhCV] 
-            ? window.currentChunkTexts[ttuo$y_KhCV] 
-            : chunkText; // Fallback về chunkText nếu không có trong window
-        
-        // QUAN TRỌNG: Truyền expectedChunkText vào hàm để so sánh chính xác
-        const isDefaultText = isDefaultTextStrict(finalCheckText, expectedChunkText);
-        
-        // CHỈ force set lại khi CHẮC CHẮN là text mặc định hoặc text rỗng
-        // KHÔNG set lại nếu text khác chunkText nhưng KHÔNG phải text mặc định
-        if (isDefaultText || (finalCheckText.trim().length === 0 && finalCheckText !== expectedChunkText)) {
-            addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Kiểm tra lần cuối: Phát hiện text mặc định hoặc text rỗng, force set lại...`, 'warning');
-            if (isDefaultText) {
-                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] PHÁT HIỆN TEXT MẶC ĐỊNH! Đang force set lại chunkText (${expectedChunkText.length} ký tự)`, 'error');
-            }
-            
-            // Force set lại nhiều lần để đảm bảo
-            for (let retry = 0; retry < 3; retry++) {
-                isSettingText = true;
-                rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] = expectedChunkText;
-                
-                try {
-                    const inputEvent = new Event('input', { bubbles: true, cancelable: true });
-                    rUxbIRagbBVychZ$GfsogD.dispatchEvent(inputEvent);
-                } catch (e) {
-                    // Bỏ qua
-                }
-                
-                await smartDelay(50);
-                isSettingText = false;
-                
-                // Kiểm tra lại sau mỗi lần set
-                const verifyText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)];
-                if (verifyText === expectedChunkText && !isDefaultTextStrict(verifyText, expectedChunkText)) {
-                    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set lại thành công sau ${retry + 1} lần thử`, 'success');
-                    break;
-                }
-            }
-            
-            // Kiểm tra lần cuối trước khi click
-            const preClickCheck = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)];
-            if (preClickCheck !== expectedChunkText || isDefaultTextStrict(preClickCheck, expectedChunkText)) {
-                addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] CẢNH BÁO: Text vẫn không đúng sau khi force set! Text hiện tại: "${preClickCheck.substring(0, 50)}..." (${preClickCheck.length} ký tự)`, 'error');
-                addLogEntry(`💡 [Chunk ${ttuo$y_KhCV + 1}] ChunkText mong đợi: "${expectedChunkText.substring(0, 50)}..." (${expectedChunkText.length} ký tự)`, 'info');
-            } else {
-                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Xác nhận: Text đúng trước khi click (${preClickCheck.length} ký tự)`, 'success');
-            }
-        } else if (finalCheckText !== expectedChunkText) {
-            // Text khác chunkText nhưng KHÔNG phải text mặc định
-            // Có thể là text hợp lệ từ chunk khác hoặc text người dùng nhập
-            // KHÔNG set lại để tránh xóa nhầm, chỉ log cảnh báo
-            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Kiểm tra lần cuối: Text khác chunkText nhưng KHÔNG phải text mặc định. KHÔNG set lại để tránh xóa nhầm.`, 'warning');
-            addLogEntry(`💡 [Chunk ${ttuo$y_KhCV + 1}] Text hiện tại: "${finalCheckText.substring(0, 50)}..." (${finalCheckText.length} ký tự)`, 'info');
-            addLogEntry(`💡 [Chunk ${ttuo$y_KhCV + 1}] ChunkText mong đợi: "${expectedChunkText.substring(0, 50)}..." (${expectedChunkText.length} ký tự)`, 'info');
-        } else {
-            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Kiểm tra lần cuối: Text đúng (${finalCheckText.length} ký tự)`, 'info');
+        // Kiểm tra điều kiện bắt buộc
+        if (!voiceId) {
+            const errorMsg = `❌ [Chunk ${ttuo$y_KhCV + 1}] KHÔNG TÌM THẤY VOICE ID! Không thể tiếp tục.`;
+            addLogEntry(errorMsg, 'error');
+            throw new Error('Voice ID is required');
         }
         
-        // CẢI THIỆN: Tăng delay trước khi click từ 0.5s lên 1-1.5s để đảm bảo text đã ổn định
-        // Sau khi điền text chunk vào, đợi lâu hơn một chút để đảm bảo text đã ổn định, 
-        // web không tự đổi lại, rồi mới cho click nút Tạo
-        const PRE_CLICK_DELAY = 1000 + Math.random() * 500; // 1000-1500ms (1-1.5 giây)
-        addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Chờ ${Math.round(PRE_CLICK_DELAY)}ms trước khi click để đảm bảo text đã ổn định...`, 'info');
-        await smartDelay(PRE_CLICK_DELAY);
+        if (typeof window.generateVoiceAudio !== 'function') {
+            const errorMsg = `❌ [Chunk ${ttuo$y_KhCV + 1}] Hàm generateVoiceAudio không tồn tại!`;
+            addLogEntry(errorMsg, 'error');
+            throw new Error('generateVoiceAudio function not found');
+        }
         
-        // Kiểm tra lại text một lần nữa trước khi click
-        const finalPreClickText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)];
-        const finalExpectedText = window.currentChunkTexts && window.currentChunkTexts[ttuo$y_KhCV] 
-            ? window.currentChunkTexts[ttuo$y_KhCV] 
-            : chunkText;
-        // QUAN TRỌNG: Truyền finalExpectedText vào hàm để so sánh chính xác
-        const isFinalDefaultText = isDefaultTextStrict(finalPreClickText, finalExpectedText);
+        // Hàm retry với exponential backoff
+        async function retryApiCall(retryCount) {
+            const baseDelay = 3000; // 3 giây cơ bản
+            const maxDelay = 60000; // Tối đa 60 giây
+            const exponentialDelay = Math.min(baseDelay * Math.pow(2, retryCount), maxDelay);
+            const jitter = Math.random() * 2000; // Thêm jitter 0-2 giây
+            const delay = exponentialDelay + jitter;
+            
+            addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Retry ${retryCount + 1}/${MAX_RETRIES}: Chờ ${Math.round(delay/1000)}s trước khi thử lại...`, 'warning');
+            await smartDelay(delay);
+        }
         
-        if (isFinalDefaultText || (finalPreClickText.trim().length === 0 && finalPreClickText !== finalExpectedText)) {
-            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] PHÁT HIỆN TEXT BỊ THAY ĐỔI ngay trước khi click! Đang set lại...`, 'error');
-            isSettingText = true;
-            rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] = finalExpectedText;
+        // Hàm xử lý API call với retry logic
+        async function processChunkWithApi() {
             try {
-                const inputEvent = new Event('input', { bubbles: true, cancelable: true });
-                rUxbIRagbBVychZ$GfsogD.dispatchEvent(inputEvent);
-            } catch (e) {
-                // Bỏ qua
+                addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Gọi API để generate voice (Voice ID: ${voiceId}, Retry: ${currentRetry}/${MAX_RETRIES})...`, 'info');
+                
+                // Rate limiting: Đảm bảo tối thiểu 3 giây giữa các request
+                const now = Date.now();
+                if (typeof window.lastApiCallTime === 'undefined') {
+                    window.lastApiCallTime = 0;
+                }
+                const timeSinceLastCall = now - window.lastApiCallTime;
+                const MIN_API_INTERVAL = 3000; // Tối thiểu 3 giây
+                
+                if (timeSinceLastCall < MIN_API_INTERVAL && currentRetry === 0) {
+                    const waitTime = MIN_API_INTERVAL - timeSinceLastCall;
+                    addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Rate limiting: Chờ ${Math.round(waitTime)}ms để đảm bảo tối thiểu ${MIN_API_INTERVAL/1000}s giữa các request...`, 'info');
+                    await smartDelay(waitTime);
+                }
+                
+                // Gọi API
+                window.lastApiCallTime = Date.now();
+                const apiResponse = await window.generateVoiceAudio(chunkText, voiceId, {
+                    emotion: window.selectedEmotion || 'default',
+                    speed: window.selectedSpeed || 1.0
+                });
+                
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] API call thành công!`, 'success');
+                
+                // Xử lý response từ API
+                // Hỗ trợ nhiều format response khác nhau
+                let audioUrl = null;
+                
+                if (apiResponse && apiResponse.data) {
+                    // Format 1: apiResponse.data.audio_url
+                    audioUrl = apiResponse.data.audio_url || apiResponse.data.url || apiResponse.data.audioUrl;
+                    
+                    // Format 2: apiResponse.data.result?.audio_url
+                    if (!audioUrl && apiResponse.data.result) {
+                        audioUrl = apiResponse.data.result.audio_url || apiResponse.data.result.url;
+                    }
+                    
+                    // Format 3: apiResponse.audio_url (trực tiếp)
+                    if (!audioUrl) {
+                        audioUrl = apiResponse.audio_url || apiResponse.url;
+                    }
+                }
+                
+                if (!audioUrl) {
+                    // Thử parse response để tìm URL
+                    const responseStr = JSON.stringify(apiResponse);
+                    const urlMatch = responseStr.match(/https?:\/\/[^\s"']+\.(mp3|wav|ogg|m4a)/i);
+                    if (urlMatch) {
+                        audioUrl = urlMatch[0];
+                    }
+                }
+                
+                if (audioUrl) {
+                    addLogEntry(`📥 [Chunk ${ttuo$y_KhCV + 1}] Đang tải audio từ URL: ${audioUrl.substring(0, 100)}...`, 'info');
+                    
+                    // Tải audio và chuyển thành blob
+                    const audioResponse = await fetch(audioUrl);
+                    if (!audioResponse.ok) {
+                        throw new Error(`Failed to download audio: ${audioResponse.status} ${audioResponse.statusText}`);
+                    }
+                    const audioBlob = await audioResponse.blob();
+                    
+                    // Lưu blob vào mảng chunks
+                    if (typeof window.chunkBlobs === 'undefined') {
+                        window.chunkBlobs = new Array(SI$acY.length).fill(null);
+                    }
+                    while (window.chunkBlobs.length <= ttuo$y_KhCV) {
+                        window.chunkBlobs.push(null);
+                    }
+                    window.chunkBlobs[ttuo$y_KhCV] = audioBlob;
+                    
+                    // Đánh dấu chunk thành công
+                    if (!window.chunkStatus) window.chunkStatus = [];
+                    while (window.chunkStatus.length <= ttuo$y_KhCV) {
+                        window.chunkStatus.push(null);
+                    }
+                    window.chunkStatus[ttuo$y_KhCV] = 'success';
+                    
+                    // Reset retry counter
+                    window.chunkRetryCount[ttuo$y_KhCV] = 0;
+                    
+                    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã tải và lưu audio thành công!`, 'success');
+                    
+                    // Chuyển sang chunk tiếp theo với rate limiting
+                    ttuo$y_KhCV++;
+                    if (ttuo$y_KhCV < SI$acY.length) {
+                        const nextDelay = 3000 + Math.random() * 2000; // 3-5 giây giữa các chunk
+                        addLogEntry(`⏳ Rate limiting: Chờ ${Math.round(nextDelay)}ms trước khi xử lý chunk tiếp theo...`, 'info');
+                        setTimeout(uSTZrHUt_IC, nextDelay);
+                    } else {
+                        addLogEntry(`✅ Đã hoàn thành tất cả chunks!`, 'success');
+                    }
+                    
+                    return true; // Thành công
+                } else {
+                    throw new Error(`API response không có audio URL. Response: ${JSON.stringify(apiResponse).substring(0, 200)}`);
+                }
+            } catch (apiError) {
+                // Xử lý lỗi rate limiting với exponential backoff
+                const isRateLimit = apiError.message && (
+                    apiError.message.includes('too frequent') || 
+                    apiError.message.includes('rate limit') ||
+                    apiError.message.includes('429') ||
+                    apiError.message.includes('403')
+                );
+                
+                if (isRateLimit) {
+                    if (currentRetry < MAX_RETRIES) {
+                        window.chunkRetryCount[ttuo$y_KhCV]++;
+                        const waitTime = Math.min(5000 * Math.pow(2, currentRetry), 60000) + Math.random() * 5000;
+                        addLogEntry(`🚨 [Chunk ${ttuo$y_KhCV + 1}] Rate limit detected! Retry ${currentRetry + 1}/${MAX_RETRIES} sau ${Math.round(waitTime/1000)}s...`, 'error');
+                        await smartDelay(waitTime);
+                        return await processChunkWithApi(); // Retry
+                    } else {
+                        throw new Error(`Rate limit: Đã retry ${MAX_RETRIES} lần nhưng vẫn bị rate limit`);
+                    }
+                }
+                
+                // Xử lý các lỗi khác với retry
+                if (currentRetry < MAX_RETRIES) {
+                    window.chunkRetryCount[ttuo$y_KhCV]++;
+                    addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] API call thất bại: ${apiError.message}. Retry ${currentRetry + 1}/${MAX_RETRIES}...`, 'warning');
+                    await retryApiCall(currentRetry);
+                    return await processChunkWithApi(); // Retry
+                } else {
+                    throw new Error(`API call failed after ${MAX_RETRIES} retries: ${apiError.message}`);
+                }
             }
-            await smartDelay(200);
-            isSettingText = false;
-            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set lại text trước khi click`, 'success');
         }
         
-        // ✅ NÂNG CẤP: Intercept XHR khi click button để lấy đúng request info, sau đó gửi trực tiếp
-        
-        // Hàm xử lý sau khi gửi request thành công
-        const handleRequestSuccess = async (result) => {
-            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Request đã được gửi thành công!`, 'success');
+        // Gọi hàm xử lý API
+        try {
+            await processChunkWithApi();
+            return; // Thành công, thoát hàm
+        } catch (error) {
+            // Xử lý lỗi cuối cùng
+            addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] LỖI CUỐI CÙNG sau ${MAX_RETRIES} retries: ${error.message}`, 'error');
             
-            // Reset flag sendingChunk
-            window.sendingChunk = null;
-            
-            // Đánh dấu chunk đang pending (đang chờ audio xuất hiện)
-            if (typeof window.chunkStatus === 'undefined') {
-                window.chunkStatus = new Array(SI$acY.length).fill('pending');
-            }
-            window.chunkStatus[ttuo$y_KhCV] = 'pending';
-            
-            // QUAN TRỌNG: Gọi igyo$uwVChUzI() để tạo MutationObserver detect audio element
-            // MutationObserver sẽ tự động detect khi audio xuất hiện và xử lý
-            addLogEntry(`👁️ [Chunk ${ttuo$y_KhCV + 1}] Đang chờ audio element xuất hiện...`, 'info');
-            igyo$uwVChUzI();
-        };
-        
-        // Hàm xử lý sau khi gửi request thất bại
-        const handleRequestFailure = (error, status) => {
-            addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Request thất bại${status ? ` với status: ${status}` : ''}${error ? `: ${error.message}` : ''}`, 'error');
-            
-            // Reset flag sendingChunk
-            window.sendingChunk = null;
-            
-            // Đánh dấu chunk này là failed
-            if (typeof window.chunkStatus === 'undefined') {
-                window.chunkStatus = new Array(SI$acY.length).fill('pending');
+            // Đánh dấu chunk thất bại
+            if (!window.chunkStatus) window.chunkStatus = [];
+            while (window.chunkStatus.length <= ttuo$y_KhCV) {
+                window.chunkStatus.push(null);
             }
             window.chunkStatus[ttuo$y_KhCV] = 'failed';
+            
+            if (!window.failedChunks) window.failedChunks = [];
             if (!window.failedChunks.includes(ttuo$y_KhCV)) {
                 window.failedChunks.push(ttuo$y_KhCV);
             }
             
-            // Retry logic sẽ được xử lý bởi uSTZrHUt_IC() sau
-            addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Sẽ được retry sau...`, 'info');
-        };
-        
-        // Kiểm tra xem đã có request info từ lần intercept trước chưa
-        let requestInfo = null;
-        
-        if (typeof window.lastRequestInfo !== 'undefined' && window.lastRequestInfo && window.lastRequestInfo.url && window.lastRequestInfo.url !== window.location.href) {
-            // Đã có request info từ lần intercept trước -> dùng lại và chỉ cần thay text
-            addLogEntry(`♻️ [Chunk ${ttuo$y_KhCV + 1}] Dùng lại request info từ lần intercept trước`, 'info');
-            requestInfo = {
-                ...window.lastRequestInfo,
-                text: chunkText
-            };
+            // Reset retry counter
+            window.chunkRetryCount[ttuo$y_KhCV] = 0;
             
-            // ✅ QUAN TRỌNG: Cập nhật uuid và unix trong URL để tránh lỗi 400
-            try {
-                // Xử lý cả relative và absolute URL
-                let url;
-                if (requestInfo.url.startsWith('http://') || requestInfo.url.startsWith('https://')) {
-                    url = new URL(requestInfo.url);
-                } else {
-                    url = new URL(requestInfo.url, window.location.origin);
-                }
-                
-                // Tạo uuid mới (UUID v4 format)
-                const newUuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                    const r = Math.random() * 16 | 0;
-                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-                    return v.toString(16);
-                });
-                
-                // Cập nhật timestamp hiện tại (milliseconds)
-                const newUnix = Date.now();
-                
-                // Cập nhật các query parameters
-                url.searchParams.set('uuid', newUuid);
-                url.searchParams.set('unix', newUnix.toString());
-                
-                // Cập nhật lại URL với uuid và unix mới
-                // Giữ lại format gốc (relative hoặc absolute)
-                if (requestInfo.url.startsWith('http://') || requestInfo.url.startsWith('https://')) {
-                    requestInfo.url = url.href;
-                } else {
-                    requestInfo.url = url.pathname + url.search;
-                }
-                
-                addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đã cập nhật uuid và unix mới trong URL`, 'info');
-            } catch (e) {
-                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Không thể cập nhật uuid/unix: ${e.message}`, 'warning');
-                // Nếu không parse được URL, vẫn tiếp tục với URL cũ
+            // Chuyển sang chunk tiếp theo sau delay dài hơn
+            ttuo$y_KhCV++;
+            if (ttuo$y_KhCV < SI$acY.length) {
+                const errorDelay = 10000 + Math.random() * 10000; // 10-20 giây sau lỗi
+                addLogEntry(`⏳ Chờ ${Math.round(errorDelay/1000)}s trước khi tiếp tục với chunk tiếp theo...`, 'info');
+                setTimeout(uSTZrHUt_IC, errorDelay);
             }
             
-            // Cập nhật payload với text mới
-            if (requestInfo.payload instanceof FormData) {
-                // Tìm và cập nhật text trong FormData
-                const textarea = document.getElementById('gemini-main-textarea') || document.querySelector('textarea');
-                const fieldName = textarea ? (textarea.name || textarea.id || 'text') : 'text';
-                // Tạo FormData mới với text mới
-                const newFormData = new FormData();
-                // Copy tất cả fields từ FormData cũ
-                for (let [key, value] of requestInfo.payload.entries()) {
-                    if (key === fieldName) {
-                        newFormData.set(key, chunkText);
-                    } else {
-                        newFormData.set(key, value);
-                    }
-                }
-                requestInfo.payload = newFormData;
-            } else if (typeof requestInfo.payload === 'string') {
-                try {
-                    const payloadObj = JSON.parse(requestInfo.payload);
-                    const textarea = document.getElementById('gemini-main-textarea') || document.querySelector('textarea');
-                    const fieldName = textarea ? (textarea.name || textarea.id || 'text') : 'text';
-                    payloadObj[fieldName] = chunkText;
-                    requestInfo.payload = JSON.stringify(payloadObj);
-                } catch (e) {
-                    // Nếu không phải JSON, thay thế toàn bộ bằng text
-                    requestInfo.payload = chunkText;
-                }
-            }
-        } else {
-            // Chưa có request info -> click button một lần để intercept XHR
-            addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] Chưa có request info, đang click button để intercept XHR...`, 'info');
-            
-            // Đặt flag để intercept XHR
-            window.interceptNextXHR = true;
-            window.interceptedRequestInfo = null;
-            
-            // Click button để trigger XHR (sẽ bị intercept)
-            setTimeout(() => {
-                try {
-                    KxTOuAJu(targetButton);
-                    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã click button để intercept XHR`, 'info');
-                } catch (e) {
-                    addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi click button: ${e.message}`, 'error');
-                    // Fallback: dùng analyzeRequestFromButton
-                    requestInfo = analyzeRequestFromButton(targetButton, chunkText);
-                    window.lastRequestInfo = requestInfo;
-                }
-            }, 500);
-            
-            // Chờ intercept XHR (tối đa 5 giây)
-            // QUAN TRỌNG: Chờ ít nhất 1 giây sau khi click để đảm bảo đã intercept được request đúng
-            let interceptWaitCount = 0;
-            let lastInterceptedTime = 0;
-            const interceptCheckInterval = setInterval(() => {
-                interceptWaitCount++;
-                
-                // Nếu đã intercept được request info
-                if (window.interceptedRequestInfo) {
-                    const url = window.interceptedRequestInfo.url.toLowerCase();
-                    const isSkipRequest = ['hailuo.ai', 'meerkat', 'reporter', 'analytics', 'tracking', 'google-analytics'].some(pattern => url.includes(pattern));
-                    const isAudioRequest = ['/api/audio', '/v1/api/audio', 'minimax.io/audio', 'voice', 'generate', 'regenerate'].some(pattern => url.includes(pattern));
-                    
-                    // Kiểm tra xem request có phải là request đúng không
-                    if (!isSkipRequest && isAudioRequest) {
-                        // Đã có request đúng, chờ thêm 0.5 giây để đảm bảo không có request nào khác đến sau
-                        const now = Date.now();
-                        if (now - lastInterceptedTime > 500 || lastInterceptedTime === 0) {
-                            lastInterceptedTime = now;
-                            // Tiếp tục chờ một chút để đảm bảo
-                            if (interceptWaitCount >= 15) { // Đã chờ ít nhất 1.5 giây
-                                clearInterval(interceptCheckInterval);
-                                window.lastRequestInfo = window.interceptedRequestInfo;
-                                const interceptedInfo = {
-                                    ...window.interceptedRequestInfo,
-                                    text: chunkText
-                                };
-                                // Cập nhật payload với text mới
-                                if (interceptedInfo.payload instanceof FormData) {
-                                    const textarea = document.getElementById('gemini-main-textarea') || document.querySelector('textarea');
-                                    const fieldName = textarea ? (textarea.name || textarea.id || 'text') : 'text';
-                                    const newFormData = new FormData();
-                                    for (let [key, value] of interceptedInfo.payload.entries()) {
-                                        if (key === fieldName) {
-                                            newFormData.set(key, chunkText);
-                                        } else {
-                                            newFormData.set(key, value);
-                                        }
-                                    }
-                                    interceptedInfo.payload = newFormData;
-                                }
-                                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã intercept được request info đúng (audio generation)`, 'success');
-                                addLogEntry(`   URL: ${interceptedInfo.url}`, 'info');
-                                
-                                // Tự động gửi request với info đã intercept
-                                setTimeout(() => {
-                                    addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang gửi request trực tiếp với info đã intercept...`, 'info');
-                                    sendRequestDirectly(interceptedInfo).then(result => {
-                                        if (result.success) {
-                                            handleRequestSuccess(result);
-                                        } else {
-                                            handleRequestFailure(null, result.status);
-                                        }
-                                    }).catch(error => {
-                                        handleRequestFailure(error);
-                                    });
-                                }, 500);
-                            }
-                        }
-                    } else {
-                        // Request không đúng, reset và tiếp tục chờ
-                        addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Intercept được request không đúng (${url}), tiếp tục chờ...`, 'warning');
-                        window.interceptedRequestInfo = null;
-                    }
-                } else if (interceptWaitCount >= 50) { // 5 giây (50 * 100ms)
-                    clearInterval(interceptCheckInterval);
-                    addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Timeout intercept XHR, dùng request info từ phân tích`, 'warning');
-                    const fallbackInfo = analyzeRequestFromButton(targetButton, chunkText);
-                    window.lastRequestInfo = fallbackInfo;
-                    
-                    // Gửi request với fallback info
-                    setTimeout(() => {
-                        sendRequestDirectly(fallbackInfo).then(result => {
-                            if (result.success) {
-                                handleRequestSuccess(result);
-                            } else {
-                                handleRequestFailure(null, result.status);
-                            }
-                        }).catch(error => {
-                            handleRequestFailure(error);
-                        });
-                    }, 1000);
-                }
-                // Nếu chưa intercept được, tiếp tục chờ
-            }, 100);
-            
-            return; // Dừng lại, chờ intercept
+            return; // Thoát hàm
         }
         
-        // Nếu đã có requestInfo, gửi request trực tiếp (không cần modal)
-        if (requestInfo) {
-            // Log thông tin request
-            addLogEntry(`📊 [Chunk ${ttuo$y_KhCV + 1}] Request info:`, 'info');
-            addLogEntry(`   URL: ${requestInfo.url}`, 'info');
-            addLogEntry(`   Method: ${requestInfo.method}`, 'info');
-            addLogEntry(`   Text length: ${chunkText.length} ký tự`, 'info');
-            
-            // Tạo JSON để log
-            const requestJSON = {
-                url: requestInfo.url,
-                response: chunkText,
-                timestamp: new Date().toISOString()
-            };
-            addLogEntry(`📋 [Chunk ${ttuo$y_KhCV + 1}] JSON Request:`, 'info');
-            addLogEntry(JSON.stringify(requestJSON, null, 2), 'info');
-            
-            // Tự động gửi request sau 1 giây
-            setTimeout(() => {
-                addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang gửi request trực tiếp...`, 'info');
-                sendRequestDirectly(requestInfo).then(result => {
-                    if (result.success) {
-                        handleRequestSuccess(result);
-                    } else {
-                        handleRequestFailure(null, result.status);
-                    }
-                }).catch(error => {
-                    handleRequestFailure(error);
-                });
-            }, 1000);
-            
-            return; // Dừng lại, đã gửi request
-        }
-        
-        // Nếu chưa có requestInfo, hiển thị modal để chờ intercept
-        // Tạo JSON theo format mẫu để hiển thị
-        const requestJSON = {
-            url: 'Đang intercept...',
-            response: chunkText,
-            timestamp: new Date().toISOString()
-        };
-        
-        // Log thông tin
-        addLogEntry(`📊 [Chunk ${ttuo$y_KhCV + 1}] Đang chờ intercept XHR...`, 'info');
-        addLogEntry(`   Text length: ${chunkText.length} ký tự`, 'info');
-        addLogEntry(`   Button: ${targetButton ? targetButton.textContent : 'N/A'}`, 'info');
-        
-        // Hiển thị JSON để người dùng duyệt
-        const jsonString = JSON.stringify(requestJSON, null, 2);
-        addLogEntry(`📋 [Chunk ${ttuo$y_KhCV + 1}] JSON Request (chờ intercept):`, 'info');
-        addLogEntry(jsonString, 'info');
-        
-        // Tạo modal để hiển thị JSON và cho phép người dùng duyệt
-        const modalId = `request-review-modal-${ttuo$y_KhCV}`;
-        let reviewModal = document.getElementById(modalId);
-        
-        if (!reviewModal) {
-            reviewModal = document.createElement('div');
-            reviewModal.id = modalId;
-            reviewModal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.7);
-                z-index: 999999;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            `;
-            
-            const modalContent = document.createElement('div');
-            modalContent.style.cssText = `
-                background: #282a36;
-                color: #f8f8f2;
-                padding: 20px;
-                border-radius: 8px;
-                max-width: 80%;
-                max-height: 80%;
-                overflow: auto;
-                font-family: monospace;
-            `;
-            
-            const title = document.createElement('h3');
-            title.textContent = `📋 Review Request - Chunk ${ttuo$y_KhCV + 1}/${SI$acY.length}`;
-            title.style.cssText = 'margin-top: 0; color: #8be9fd;';
-            
-            const infoText = document.createElement('p');
-            infoText.textContent = `⚠️ Tool sẽ gửi request trực tiếp qua payload (không click button) để tránh lỗi rate limit.`;
-            infoText.style.cssText = 'color: #ffb86c; margin: 10px 0; font-size: 14px;';
-            
-            const jsonDisplay = document.createElement('pre');
-            jsonDisplay.textContent = jsonString;
-            jsonDisplay.style.cssText = `
-                background: #1e1e1e;
-                padding: 15px;
-                border-radius: 4px;
-                overflow-x: auto;
-                white-space: pre-wrap;
-                word-wrap: break-word;
-                max-height: 400px;
-                overflow-y: auto;
-            `;
-            
-            const buttonContainer = document.createElement('div');
-            buttonContainer.style.cssText = 'margin-top: 15px; display: flex; gap: 10px; justify-content: flex-end;';
-            
-            const approveBtn = document.createElement('button');
-            approveBtn.textContent = '✅ Approve & Send';
-            approveBtn.style.cssText = `
-                background: #50fa7b;
-                color: #282a36;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 4px;
-                cursor: pointer;
-                font-weight: bold;
-            `;
-            
-            const rejectBtn = document.createElement('button');
-            rejectBtn.textContent = '❌ Reject';
-            rejectBtn.style.cssText = `
-                background: #ff5555;
-                color: #fff;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 4px;
-                cursor: pointer;
-                font-weight: bold;
-            `;
-            
-            // Tự động approve sau 5 giây nếu người dùng không tương tác
-            let autoApproveTimeout = setTimeout(() => {
-                addLogEntry(`⏰ [Chunk ${ttuo$y_KhCV + 1}] Tự động approve sau 5 giây (không có tương tác)`, 'info');
-                reviewModal.remove();
-                // Gửi request trực tiếp thay vì click button
-                sendRequestDirectly(requestInfo).then(result => {
-                    if (result.success) {
-                        handleRequestSuccess(result);
-                    } else {
-                        handleRequestFailure(null, result.status);
-                    }
-                }).catch(error => {
-                    handleRequestFailure(error);
-                });
-            }, 5000);
-            
-            approveBtn.onclick = () => {
-                clearTimeout(autoApproveTimeout);
-                reviewModal.remove();
-                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Request đã được approve, đang gửi trực tiếp...`, 'success');
-                // Gửi request trực tiếp thay vì click button
-                sendRequestDirectly(requestInfo).then(result => {
-                    if (result.success) {
-                        handleRequestSuccess(result);
-                    } else {
-                        handleRequestFailure(null, result.status);
-                    }
-                }).catch(error => {
-                    handleRequestFailure(error);
-                });
-            };
-            
-            rejectBtn.onclick = () => {
-                clearTimeout(autoApproveTimeout);
-                reviewModal.remove();
-                addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Request bị từ chối bởi người dùng`, 'error');
-                // Đánh dấu chunk này là failed
-                window.chunkStatus[ttuo$y_KhCV] = 'failed';
-                if (!window.failedChunks.includes(ttuo$y_KhCV)) {
-                    window.failedChunks.push(ttuo$y_KhCV);
-                }
-                // Chuyển sang chunk tiếp theo
-                ttuo$y_KhCV++;
-                if (ttuo$y_KhCV < SI$acY.length) {
-                    setTimeout(uSTZrHUt_IC, 1000);
-                }
-            };
-            
-            buttonContainer.appendChild(rejectBtn);
-            buttonContainer.appendChild(approveBtn);
-            
-            modalContent.appendChild(title);
-            modalContent.appendChild(infoText);
-            modalContent.appendChild(jsonDisplay);
-            modalContent.appendChild(buttonContainer);
-            reviewModal.appendChild(modalContent);
-            
-            document.body.appendChild(reviewModal);
-        }
-        
-        // Dừng lại ở đây, chờ người dùng duyệt
-        return;
-        
-        // Lớp 5: Kiểm tra và giám sát text SAU KHI CLICK (nhiều lần trong 2 giây)
-        // QUAN TRỌNG: Website có thể reset text về mặc định sau khi click
-        // CẢI THIỆN: Giám sát liên tục trong 2 giây sau click để đảm bảo text không bị thay đổi
-        const POST_CLICK_MONITORING_DURATION = 2000; // 2 giây
-        const POST_CLICK_CHECK_INTERVAL = 200; // Kiểm tra mỗi 200ms
-        const POST_CLICK_MAX_CHECKS = POST_CLICK_MONITORING_DURATION / POST_CLICK_CHECK_INTERVAL; // 10 lần
-        
-        addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] Bắt đầu giám sát text sau khi click (${POST_CLICK_MONITORING_DURATION}ms)...`, 'info');
-        
-        // QUAN TRỌNG: Lấy chunkText từ window để đảm bảo so sánh chính xác
-        const expectedChunkTextPostClick = window.currentChunkTexts && window.currentChunkTexts[ttuo$y_KhCV] 
-            ? window.currentChunkTexts[ttuo$y_KhCV] 
-            : chunkText; // Fallback về chunkText nếu không có trong window
-        
-        let postClickCheckCount = 0;
-        let postClickMonitoringStopped = false;
-        
-        const postClickMonitor = async () => {
-            if (postClickMonitoringStopped) return;
-            
-            postClickCheckCount++;
-            const currentPostClickText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)];
-            // QUAN TRỌNG: Truyền expectedChunkTextPostClick vào hàm để so sánh chính xác
-            const isPostClickDefault = isDefaultTextStrict(currentPostClickText, expectedChunkTextPostClick);
-            
-            // Kiểm tra nếu text bị thay đổi thành text mặc định hoặc text rỗng
-            if (isPostClickDefault || (currentPostClickText.trim().length === 0 && currentPostClickText !== expectedChunkTextPostClick)) {
-                addLogEntry(`🚨 [Chunk ${ttuo$y_KhCV + 1}] PHÁT HIỆN TEXT MẶC ĐỊNH sau click (lần kiểm tra ${postClickCheckCount})! Đang force set lại ngay...`, 'error');
-                
-                // Force set lại nhiều lần để đảm bảo
-                for (let retry = 0; retry < 5; retry++) {
-                    isSettingText = true;
-                    rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] = expectedChunkTextPostClick;
-                    
-                    try {
-                        const inputEvent = new Event('input', { bubbles: true, cancelable: true });
-                        rUxbIRagbBVychZ$GfsogD.dispatchEvent(inputEvent);
-                    } catch (e) {
-                        // Bỏ qua
-                    }
-                    
-                    await smartDelay(100);
-                    isSettingText = false;
-                    
-                    // Kiểm tra lại sau mỗi lần set
-                    const verifyText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)];
-                    if (verifyText === expectedChunkTextPostClick && !isDefaultTextStrict(verifyText, expectedChunkTextPostClick)) {
-                        addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã khôi phục text sau ${retry + 1} lần thử`, 'success');
-                        break;
-                    }
-                }
-                
-                // Kiểm tra lại sau khi force set
-                const finalVerify = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)];
-                if (finalVerify !== expectedChunkTextPostClick || isDefaultTextStrict(finalVerify, expectedChunkTextPostClick)) {
-                    addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] KHÔNG THỂ khôi phục text! Text hiện tại: "${finalVerify.substring(0, 50)}..."`, 'error');
-                    addLogEntry(`💡 [Chunk ${ttuo$y_KhCV + 1}] ChunkText mong đợi: "${expectedChunkTextPostClick.substring(0, 50)}..."`, 'info');
-                }
-            } else if (currentPostClickText !== expectedChunkTextPostClick) {
-                // Text khác nhưng không phải text mặc định - có thể là text hợp lệ khác
-                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Text khác chunkText sau click (lần ${postClickCheckCount}): "${currentPostClickText.substring(0, 50)}..."`, 'warning');
-            }
-            
-            // Tiếp tục monitoring nếu chưa đủ số lần
-            if (postClickCheckCount < POST_CLICK_MAX_CHECKS && !postClickMonitoringStopped) {
-                setTimeout(postClickMonitor, POST_CLICK_CHECK_INTERVAL);
-            } else {
-                postClickMonitoringStopped = true;
-                const finalPostClickText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)];
-                if (finalPostClickText === expectedChunkTextPostClick && !isDefaultTextStrict(finalPostClickText, expectedChunkTextPostClick)) {
-                    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Hoàn thành giám sát: Text đúng sau ${POST_CLICK_MONITORING_DURATION}ms`, 'success');
-                } else {
-                    addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Hoàn thành giám sát: Text vẫn khác sau ${POST_CLICK_MONITORING_DURATION}ms`, 'warning');
-                }
-            }
-        };
-        
-        // Bắt đầu giám sát ngay sau click
-        await smartDelay(100); // Chờ 100ms đầu tiên
-        postClickMonitor();
-        
-        // Chờ một chút để giám sát bắt đầu
-        await smartDelay(300);
-        
-        // Lưu ý: Giám sát sẽ tiếp tục chạy trong background trong 2 giây
-        // MutationObserver cũng sẽ tiếp tục theo dõi để phát hiện text mặc định
-        
-        // CẢI THIỆN: Giữ MutationObserver chạy LÂU HƠN (ít nhất 55 giây sau khi click)
+        // =======================================================
+        // == TIMEOUT VÀ TRACKING CHO API CALL ==
+        // =======================================================
+        // Không còn giám sát text sau click vì đã dùng API hoàn toàn
         // Thay vì disconnect sau 500ms, giữ đến khi chunk thành công hoặc ít nhất 55 giây
         // MutationObserver sẽ tự động disconnect khi chunk thành công (trong phần xử lý success)
         // Nếu không thành công trong 55 giây, mới disconnect (dưới timeout 60 giây)
@@ -8508,155 +7810,17 @@ async function waitForVoiceModelReady() {
         console.log('[AUTO RESET 403] Đã tắt cơ chế tự động reset');
     }
     
-    // Override XMLHttpRequest để bắt lỗi 403 VÀ intercept requests
+    // Override XMLHttpRequest để bắt lỗi 403
     const originalXHROpen = XMLHttpRequest.prototype.open;
     const originalXHRSend = XMLHttpRequest.prototype.send;
     
-    // Lưu trữ request info để intercept
-    if (typeof window.pendingXHRRequests === 'undefined') {
-        window.pendingXHRRequests = new Map();
-    }
-    
     XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
-        this._method = method;
         this._url = url;
-        this._requestId = Date.now() + Math.random();
-        this._headers = {}; // Lưu headers để dùng sau
-        
-        // Override setRequestHeader để lưu headers
-        const originalSetRequestHeader = this.setRequestHeader;
-        this.setRequestHeader = function(name, value) {
-            this._headers[name] = value;
-            return originalSetRequestHeader.apply(this, arguments);
-        };
-        
-        // Lưu request info để intercept sau
-        window.pendingXHRRequests.set(this._requestId, {
-            method: method,
-            url: url,
-            xhr: this
-        });
-        
         return originalXHROpen.apply(this, arguments);
     };
     
     XMLHttpRequest.prototype.send = function(data) {
         const xhr = this;
-        const requestInfo = window.pendingXHRRequests.get(xhr._requestId);
-        
-        // QUAN TRỌNG: Intercept request để lưu lại thông tin (CHỈ intercept request generate audio)
-        if (window.interceptNextXHR && requestInfo) {
-            const url = requestInfo.url.toLowerCase();
-            
-            // Danh sách các pattern URL cần BỎ QUA (analytics, tracking, etc.)
-            const skipPatterns = [
-                'hailuo.ai',
-                'meerkat',
-                'reporter',
-                'analytics',
-                'tracking',
-                'google-analytics',
-                'gtm',
-                'facebook.com',
-                'doubleclick',
-                'adservice',
-                'googlesyndication'
-            ];
-            
-            // Kiểm tra xem URL có phải là request analytics/tracking không
-            const isSkipRequest = skipPatterns.some(pattern => url.includes(pattern));
-            
-            // Danh sách các pattern URL cần INTERCEPT (audio generation)
-            const interceptPatterns = [
-                '/api/audio',
-                '/v1/api/audio',
-                'minimax.io/audio',
-                'voice',
-                'generate',
-                'regenerate'
-            ];
-            
-            // Kiểm tra xem URL có phải là request generate audio không
-            const isAudioRequest = interceptPatterns.some(pattern => url.includes(pattern));
-            
-            console.log(`[XHR INTERCEPT] Đang kiểm tra request:`, {
-                method: requestInfo.method,
-                url: requestInfo.url,
-                isSkipRequest: isSkipRequest,
-                isAudioRequest: isAudioRequest
-            });
-            
-            // CHỈ intercept nếu là request generate audio VÀ không phải analytics
-            if (!isSkipRequest && isAudioRequest) {
-                console.log(`[XHR INTERCEPT] ✅ Đây là request generate audio, đang intercept...`);
-                
-                // Lưu request info để dùng sau
-                const interceptedInfo = {
-                    url: requestInfo.url,
-                    method: requestInfo.method,
-                    payload: data,
-                    headers: {}
-                };
-                
-                // Lấy headers từ XHR
-                try {
-                    // Lấy headers đã set trước đó
-                    if (xhr._headers) {
-                        Object.assign(interceptedInfo.headers, xhr._headers);
-                    }
-                    
-                    // Thêm headers mặc định
-                    interceptedInfo.headers['Accept'] = 'application/json, text/plain, */*';
-                    interceptedInfo.headers['X-Requested-With'] = 'XMLHttpRequest';
-                    
-                    // Lưu vào window để dùng sau
-                    window.lastRequestHeaders = interceptedInfo.headers;
-                } catch (e) {
-                    console.error('[XHR INTERCEPT] Lỗi khi lấy headers:', e);
-                }
-                
-                // Lưu request info
-                window.interceptedRequestInfo = interceptedInfo;
-                window.lastRequestInfo = interceptedInfo;
-                window.interceptNextXHR = false; // Tắt flag
-                
-                console.log(`[XHR INTERCEPT] ✅ Đã lưu request info:`, interceptedInfo);
-            } else if (isSkipRequest) {
-                console.log(`[XHR INTERCEPT] ⏭️ Bỏ qua request analytics/tracking: ${requestInfo.url}`);
-                // Không tắt flag, tiếp tục chờ request đúng
-            } else {
-                console.log(`[XHR INTERCEPT] ⚠️ Không phải request generate audio: ${requestInfo.url}`);
-                // Không tắt flag, tiếp tục chờ request đúng
-            }
-        }
-        
-        // Log request để debug
-        if (requestInfo) {
-            console.log(`[XHR INTERCEPT] Method: ${requestInfo.method}, URL: ${requestInfo.url}`);
-            
-            // Lưu headers để dùng sau
-            if (typeof window.lastRequestHeaders === 'undefined') {
-                window.lastRequestHeaders = {};
-            }
-            // Copy headers từ XHR
-            try {
-                const xhrHeaders = {};
-                if (xhr.getAllResponseHeaders) {
-                    const headers = xhr.getAllResponseHeaders();
-                    if (headers) {
-                        headers.split('\r\n').forEach(line => {
-                            const [key, value] = line.split(': ');
-                            if (key && value) {
-                                xhrHeaders[key] = value;
-                            }
-                        });
-                    }
-                }
-                Object.assign(window.lastRequestHeaders, xhrHeaders);
-            } catch (e) {
-                // Bỏ qua lỗi
-            }
-        }
         
         // Override onreadystatechange
         const originalOnReadyStateChange = xhr.onreadystatechange;
@@ -8665,32 +7829,9 @@ async function waitForVoiceModelReady() {
                 originalOnReadyStateChange.apply(this, arguments);
             }
             
-            if (xhr.readyState === 4) {
-                // Xóa request khỏi pending
-                if (requestInfo) {
-                    window.pendingXHRRequests.delete(xhr._requestId);
-                }
-                
-                if (xhr.status === 403) {
-                    console.log('[AUTO RESET 403] Phát hiện lỗi 403 từ request:', xhr._url);
-                    handle403Error();
-                }
-                
-                // Log response
-                if (requestInfo && xhr.responseText) {
-                    const responseLog = {
-                        url: requestInfo.url,
-                        response: xhr.responseText,
-                        timestamp: new Date().toISOString()
-                    };
-                    console.log(`[XHR RESPONSE]`, responseLog);
-                    
-                    // Lưu vào requestLogs
-                    if (typeof window.requestLogs === 'undefined') {
-                        window.requestLogs = [];
-                    }
-                    window.requestLogs.push(responseLog);
-                }
+            if (xhr.readyState === 4 && xhr.status === 403) {
+                console.log('[AUTO RESET 403] Phát hiện lỗi 403 từ request:', xhr._url);
+                handle403Error();
             }
         };
         
