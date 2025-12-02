@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DUC LOI - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
-// @version      38.0
+// @version      19.0
 // @description  Tạo audio giọng nói clone theo ý của bạn. Không giới hạn. Thêm chức năng Ghép hội thoại, Đổi văn bản hàng loạt & Thiết lập dấu câu (bao gồm dấu xuống dòng).
 // @author       HUỲNH ĐỨC LỢI ( Zalo: 0835795597) - Đã chỉnh sửa
 // @match        https://www.minimax.io/audio*
@@ -1246,7 +1246,7 @@ button:disabled {
         
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Loading quota...</div>
         </div> 
-    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <h2>Activity Log</h2> <div id="log-container" class="log-container"> <div class="log-entry">Ready to monitor chunks...</div> </div> <button id="clear-log-btn" class="clear-log-btn">Clear Log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 38.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div><button id="settings-toggle-btn">Nếu ren bị lỗi hãy liên hệ admin để cấp mail mới sẽ ren được</button></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
+    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <h2>Activity Log</h2> <div id="log-container" class="log-container"> <div class="log-entry">Ready to monitor chunks...</div> </div> <button id="clear-log-btn" class="clear-log-btn">Clear Log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 19.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div><button id="settings-toggle-btn">Nếu ren bị lỗi hãy liên hệ admin để cấp mail mới sẽ ren được</button></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
     <div class="text-input-options">
         <div class="input-tabs">
             <button id="text-tab" class="tab-btn active">Nhập trực tiếp</button>
@@ -3857,6 +3857,196 @@ async function uSTZrHUt_IC() {
         const possibleRegenerateTexts = ['Regenerate', 'Tạo lại'];
         const allButtonTexts = [...possibleGenerateTexts, ...possibleRegenerateTexts];
         
+        // =======================================================
+        // == HỆ THỐNG INTERCEPT VÀ GỬI REQUEST TRỰC TIẾP ==
+        // =======================================================
+        
+        /**
+         * Phân tích form/button để lấy thông tin request (URL, payload, headers)
+         */
+        function analyzeRequestFromButton(button, text) {
+            const form = button.closest('form');
+            const currentUrl = window.location.href;
+            let apiUrl = null;
+            let method = 'POST';
+            let payload = null;
+            let headers = {};
+            
+            try {
+                // 1. Tìm URL từ form
+                if (form && form.action) {
+                    apiUrl = form.action.startsWith('http') ? form.action : new URL(form.action, currentUrl).href;
+                    method = form.method ? form.method.toUpperCase() : 'POST';
+                }
+                
+                // 2. Tìm URL từ button attributes
+                if (!apiUrl && button.dataset.url) {
+                    apiUrl = button.dataset.url.startsWith('http') ? button.dataset.url : new URL(button.dataset.url, currentUrl).href;
+                }
+                if (!apiUrl && button.dataset.action) {
+                    apiUrl = button.dataset.action.startsWith('http') ? button.dataset.action : new URL(button.dataset.action, currentUrl).href;
+                }
+                
+                // 3. Tìm API endpoint từ các script/event listeners trên button
+                // Kiểm tra onclick handler hoặc data attributes
+                if (!apiUrl) {
+                    const onClickAttr = button.getAttribute('onclick');
+                    if (onClickAttr) {
+                        // Tìm URL trong onclick handler
+                        const urlMatch = onClickAttr.match(/['"](https?:\/\/[^'"]+)['"]/);
+                        if (urlMatch) {
+                            apiUrl = urlMatch[1];
+                        }
+                    }
+                }
+                
+                // 4. Nếu vẫn chưa có URL, tìm từ các API endpoints phổ biến của minimax
+                if (!apiUrl) {
+                    // Thử các endpoint phổ biến
+                    const commonEndpoints = [
+                        '/v1/api/audio/voice/generate',
+                        '/v1/api/audio/voice/regenerate',
+                        '/api/audio/generate',
+                        '/api/audio/regenerate'
+                    ];
+                    // Sẽ được xác định khi intercept XHR
+                    apiUrl = currentUrl; // Fallback
+                }
+                
+                // 5. Tạo payload từ form data
+                if (form) {
+                    const formData = new FormData(form);
+                    // Tìm textarea trong form và set text
+                    const textarea = form.querySelector('textarea');
+                    if (textarea) {
+                        // Lấy tên field từ textarea
+                        const fieldName = textarea.name || textarea.id || 'text';
+                        formData.set(fieldName, text);
+                    } else {
+                        // Nếu không có textarea, thêm text vào formData
+                        formData.set('text', text);
+                    }
+                    payload = formData;
+                } else {
+                    // Nếu không có form, tạo payload JSON
+                    // Tìm textarea trên trang để lấy field name
+                    const textarea = document.getElementById('gemini-main-textarea') || 
+                                   document.querySelector('textarea');
+                    if (textarea) {
+                        payload = JSON.stringify({ 
+                            [textarea.name || 'text']: text 
+                        });
+                    } else {
+                        payload = JSON.stringify({ text: text });
+                    }
+                    headers['Content-Type'] = 'application/json';
+                }
+                
+                // 6. Lấy headers từ form hoặc button
+                if (form && form.enctype) {
+                    if (form.enctype === 'multipart/form-data') {
+                        // FormData tự động set Content-Type với boundary
+                    } else {
+                        headers['Content-Type'] = form.enctype;
+                    }
+                }
+                
+                // 7. Thêm headers mặc định từ browser
+                headers['Accept'] = 'application/json, text/plain, */*';
+                headers['X-Requested-With'] = 'XMLHttpRequest';
+                
+                // 8. Copy headers từ các request hiện có (nếu có)
+                if (typeof window.lastRequestHeaders !== 'undefined') {
+                    Object.assign(headers, window.lastRequestHeaders);
+                }
+                
+            } catch (e) {
+                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi phân tích request: ${e.message}`, 'warning');
+            }
+            
+            return {
+                url: apiUrl || currentUrl,
+                method: method,
+                payload: payload,
+                headers: headers,
+                text: text
+            };
+        }
+        
+        /**
+         * Gửi request trực tiếp qua fetch API
+         */
+        async function sendRequestDirectly(requestInfo) {
+            try {
+                addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Gửi request trực tiếp đến: ${requestInfo.url}`, 'info');
+                addLogEntry(`   Method: ${requestInfo.method}`, 'info');
+                addLogEntry(`   Payload type: ${requestInfo.payload instanceof FormData ? 'FormData' : typeof requestInfo.payload}`, 'info');
+                
+                // Chuẩn bị fetch options
+                const fetchOptions = {
+                    method: requestInfo.method,
+                    headers: requestInfo.headers,
+                    body: requestInfo.payload,
+                    credentials: 'include', // Bao gồm cookies
+                    mode: 'cors',
+                    cache: 'no-cache'
+                };
+                
+                // Nếu payload là FormData, không set Content-Type (browser sẽ tự động set với boundary)
+                if (requestInfo.payload instanceof FormData) {
+                    delete fetchOptions.headers['Content-Type'];
+                }
+                
+                // Gửi request
+                const response = await fetch(requestInfo.url, fetchOptions);
+                const responseData = await response.text();
+                
+                // Log response
+                addLogEntry(`📥 [Chunk ${ttuo$y_KhCV + 1}] Response status: ${response.status}`, response.status === 200 ? 'success' : 'warning');
+                if (responseData.length < 500) {
+                    addLogEntry(`   Response data: ${responseData.substring(0, 200)}`, 'info');
+                }
+                
+                // Lưu log request/response theo format mẫu
+                if (typeof window.requestLogs === 'undefined') {
+                    window.requestLogs = [];
+                }
+                
+                // Tạo log entry theo format mẫu
+                const logEntry = {
+                    url: requestInfo.url,
+                    response: responseData,
+                    timestamp: new Date().toISOString()
+                };
+                
+                window.requestLogs.push(logEntry);
+                
+                // Lưu vào console để debug
+                console.log(`[REQUEST LOG] Chunk ${ttuo$y_KhCV + 1}:`, logEntry);
+                
+                // Xử lý response
+                let responseJson = null;
+                try {
+                    responseJson = JSON.parse(responseData);
+                } catch (e) {
+                    // Response không phải JSON
+                }
+                
+                return {
+                    success: response.ok,
+                    status: response.status,
+                    data: responseData,
+                    json: responseJson,
+                    response: response
+                };
+                
+            } catch (error) {
+                addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Lỗi gửi request: ${error.message}`, 'error');
+                console.error(`[REQUEST ERROR] Chunk ${ttuo$y_KhCV + 1}:`, error);
+                throw error;
+            }
+        }
+        
         // Ưu tiên: Nếu chunk = 0 thì ưu tiên Generate, nếu chunk > 0 thì ưu tiên Regenerate
         // Nhưng nếu không tìm thấy nút ưu tiên, sẽ tìm bất kỳ nút nào có sẵn
         let targetButton = null;
@@ -4590,42 +4780,21 @@ async function uSTZrHUt_IC() {
             addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set lại text trước khi click`, 'success');
         }
         
-        // ✅ THAY ĐỔI: Thay vì click button (gây lỗi rate limit), phân tích và tạo JSON để duyệt
-        // Thu thập đầy đủ thông tin request
-        const currentUrl = window.location.href;
+        // ✅ NÂNG CẤP: Phân tích request và gửi trực tiếp qua payload (không click button)
+        // Phân tích request từ button/form
+        const requestInfo = analyzeRequestFromButton(targetButton, chunkText);
         
-        // Phân tích form/button để lấy URL API endpoint thực tế
-        let apiUrl = currentUrl;
-        try {
-            // Tìm form chứa button
-            const form = targetButton.closest('form');
-            if (form && form.action) {
-                apiUrl = form.action.startsWith('http') ? form.action : new URL(form.action, currentUrl).href;
-            } else if (targetButton.form && targetButton.form.action) {
-                apiUrl = targetButton.form.action.startsWith('http') ? targetButton.form.action : new URL(targetButton.form.action, currentUrl).href;
-            }
-            
-            // Nếu button có data-url hoặc data-action
-            if (targetButton.dataset.url) {
-                apiUrl = targetButton.dataset.url.startsWith('http') ? targetButton.dataset.url : new URL(targetButton.dataset.url, currentUrl).href;
-            }
-            if (targetButton.dataset.action) {
-                apiUrl = targetButton.dataset.action.startsWith('http') ? targetButton.dataset.action : new URL(targetButton.dataset.action, currentUrl).href;
-            }
-        } catch (e) {
-            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Không thể phân tích URL API: ${e.message}`, 'warning');
-        }
-        
-        // Tạo JSON theo format mẫu
+        // Tạo JSON theo format mẫu để hiển thị
         const requestJSON = {
-            url: apiUrl, // URL API endpoint thực tế
+            url: requestInfo.url,
             response: chunkText, // Text sẽ gửi đi
             timestamp: new Date().toISOString()
         };
         
         // Log thông tin phân tích
         addLogEntry(`📊 [Chunk ${ttuo$y_KhCV + 1}] Đã phân tích request:`, 'info');
-        addLogEntry(`   URL: ${apiUrl}`, 'info');
+        addLogEntry(`   URL: ${requestInfo.url}`, 'info');
+        addLogEntry(`   Method: ${requestInfo.method}`, 'info');
         addLogEntry(`   Text length: ${chunkText.length} ký tự`, 'info');
         addLogEntry(`   Button: ${targetButton ? targetButton.textContent : 'N/A'}`, 'info');
         
@@ -4671,7 +4840,7 @@ async function uSTZrHUt_IC() {
             title.style.cssText = 'margin-top: 0; color: #8be9fd;';
             
             const infoText = document.createElement('p');
-            infoText.textContent = `⚠️ Tool đã tự động phân tích request để tránh lỗi rate limit. Vui lòng duyệt trước khi gửi.`;
+            infoText.textContent = `⚠️ Tool sẽ gửi request trực tiếp qua payload (không click button) để tránh lỗi rate limit.`;
             infoText.style.cssText = 'color: #ffb86c; margin: 10px 0; font-size: 14px;';
             
             const jsonDisplay = document.createElement('pre');
@@ -4714,24 +4883,96 @@ async function uSTZrHUt_IC() {
                 font-weight: bold;
             `;
             
+            // Hàm xử lý sau khi gửi request thành công
+            const handleRequestSuccess = async (result) => {
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Request đã được gửi thành công!`, 'success');
+                
+                // Reset flag sendingChunk
+                window.sendingChunk = null;
+                
+                // Đánh dấu chunk đang pending (đang chờ audio xuất hiện)
+                if (typeof window.chunkStatus === 'undefined') {
+                    window.chunkStatus = new Array(SI$acY.length).fill('pending');
+                }
+                window.chunkStatus[ttuo$y_KhCV] = 'pending';
+                
+                // QUAN TRỌNG: Gọi igyo$uwVChUzI() để tạo MutationObserver detect audio element
+                // MutationObserver sẽ tự động detect khi audio xuất hiện và xử lý
+                addLogEntry(`👁️ [Chunk ${ttuo$y_KhCV + 1}] Đang chờ audio element xuất hiện...`, 'info');
+                igyo$uwVChUzI();
+                
+                // Nếu response có chứa audio URL hoặc blob trực tiếp, xử lý ngay
+                if (result.json) {
+                    // Kiểm tra xem response có chứa audio URL không
+                    const audioUrl = result.json.audio_url || result.json.url || result.json.src || result.json.data;
+                    if (audioUrl && typeof audioUrl === 'string') {
+                        addLogEntry(`🎵 [Chunk ${ttuo$y_KhCV + 1}] Phát hiện audio URL trong response, đang tải...`, 'info');
+                        // Tạo audio element và xử lý như MutationObserver
+                        try {
+                            const audio = document.createElement('audio');
+                            audio.src = audioUrl;
+                            audio.onloadeddata = async () => {
+                                // Xử lý audio như MutationObserver callback
+                                // (Code này sẽ được thêm vào MutationObserver callback)
+                            };
+                            document.body.appendChild(audio);
+                        } catch (e) {
+                            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Không thể tạo audio element từ URL: ${e.message}`, 'warning');
+                        }
+                    }
+                }
+            };
+            
+            // Hàm xử lý sau khi gửi request thất bại
+            const handleRequestFailure = (error, status) => {
+                addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Request thất bại${status ? ` với status: ${status}` : ''}${error ? `: ${error.message}` : ''}`, 'error');
+                
+                // Reset flag sendingChunk
+                window.sendingChunk = null;
+                
+                // Đánh dấu chunk này là failed
+                if (typeof window.chunkStatus === 'undefined') {
+                    window.chunkStatus = new Array(SI$acY.length).fill('pending');
+                }
+                window.chunkStatus[ttuo$y_KhCV] = 'failed';
+                if (!window.failedChunks.includes(ttuo$y_KhCV)) {
+                    window.failedChunks.push(ttuo$y_KhCV);
+                }
+                
+                // Retry logic sẽ được xử lý bởi uSTZrHUt_IC() sau
+                addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Sẽ được retry sau...`, 'info');
+            };
+            
             // Tự động approve sau 5 giây nếu người dùng không tương tác
             let autoApproveTimeout = setTimeout(() => {
                 addLogEntry(`⏰ [Chunk ${ttuo$y_KhCV + 1}] Tự động approve sau 5 giây (không có tương tác)`, 'info');
                 reviewModal.remove();
-                // Sau khi duyệt, thực hiện click với delay để tránh rate limit
-                setTimeout(() => {
-                    KxTOuAJu(targetButton);
-                }, 1000); // Thêm delay 1 giây trước khi click
+                // Gửi request trực tiếp thay vì click button
+                sendRequestDirectly(requestInfo).then(result => {
+                    if (result.success) {
+                        handleRequestSuccess(result);
+                    } else {
+                        handleRequestFailure(null, result.status);
+                    }
+                }).catch(error => {
+                    handleRequestFailure(error);
+                });
             }, 5000);
             
             approveBtn.onclick = () => {
                 clearTimeout(autoApproveTimeout);
                 reviewModal.remove();
-                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Request đã được approve, đang gửi...`, 'success');
-                // Sau khi duyệt, thực hiện click với delay để tránh rate limit
-                setTimeout(() => {
-                    KxTOuAJu(targetButton);
-                }, 1000); // Thêm delay 1 giây trước khi click
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Request đã được approve, đang gửi trực tiếp...`, 'success');
+                // Gửi request trực tiếp thay vì click button
+                sendRequestDirectly(requestInfo).then(result => {
+                    if (result.success) {
+                        handleRequestSuccess(result);
+                    } else {
+                        handleRequestFailure(null, result.status);
+                    }
+                }).catch(error => {
+                    handleRequestFailure(error);
+                });
             };
             
             rejectBtn.onclick = () => {
@@ -8070,17 +8311,61 @@ async function waitForVoiceModelReady() {
         console.log('[AUTO RESET 403] Đã tắt cơ chế tự động reset');
     }
     
-    // Override XMLHttpRequest để bắt lỗi 403
+    // Override XMLHttpRequest để bắt lỗi 403 VÀ intercept requests
     const originalXHROpen = XMLHttpRequest.prototype.open;
     const originalXHRSend = XMLHttpRequest.prototype.send;
     
+    // Lưu trữ request info để intercept
+    if (typeof window.pendingXHRRequests === 'undefined') {
+        window.pendingXHRRequests = new Map();
+    }
+    
     XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+        this._method = method;
         this._url = url;
+        this._requestId = Date.now() + Math.random();
+        
+        // Lưu request info để intercept sau
+        window.pendingXHRRequests.set(this._requestId, {
+            method: method,
+            url: url,
+            xhr: this
+        });
+        
         return originalXHROpen.apply(this, arguments);
     };
     
     XMLHttpRequest.prototype.send = function(data) {
         const xhr = this;
+        const requestInfo = window.pendingXHRRequests.get(xhr._requestId);
+        
+        // Log request để debug
+        if (requestInfo) {
+            console.log(`[XHR INTERCEPT] Method: ${requestInfo.method}, URL: ${requestInfo.url}`);
+            
+            // Lưu headers để dùng sau
+            if (typeof window.lastRequestHeaders === 'undefined') {
+                window.lastRequestHeaders = {};
+            }
+            // Copy headers từ XHR
+            try {
+                const xhrHeaders = {};
+                if (xhr.getAllResponseHeaders) {
+                    const headers = xhr.getAllResponseHeaders();
+                    if (headers) {
+                        headers.split('\r\n').forEach(line => {
+                            const [key, value] = line.split(': ');
+                            if (key && value) {
+                                xhrHeaders[key] = value;
+                            }
+                        });
+                    }
+                }
+                Object.assign(window.lastRequestHeaders, xhrHeaders);
+            } catch (e) {
+                // Bỏ qua lỗi
+            }
+        }
         
         // Override onreadystatechange
         const originalOnReadyStateChange = xhr.onreadystatechange;
@@ -8089,9 +8374,32 @@ async function waitForVoiceModelReady() {
                 originalOnReadyStateChange.apply(this, arguments);
             }
             
-            if (xhr.readyState === 4 && xhr.status === 403) {
-                console.log('[AUTO RESET 403] Phát hiện lỗi 403 từ request:', xhr._url);
-                handle403Error();
+            if (xhr.readyState === 4) {
+                // Xóa request khỏi pending
+                if (requestInfo) {
+                    window.pendingXHRRequests.delete(xhr._requestId);
+                }
+                
+                if (xhr.status === 403) {
+                    console.log('[AUTO RESET 403] Phát hiện lỗi 403 từ request:', xhr._url);
+                    handle403Error();
+                }
+                
+                // Log response
+                if (requestInfo && xhr.responseText) {
+                    const responseLog = {
+                        url: requestInfo.url,
+                        response: xhr.responseText,
+                        timestamp: new Date().toISOString()
+                    };
+                    console.log(`[XHR RESPONSE]`, responseLog);
+                    
+                    // Lưu vào requestLogs
+                    if (typeof window.requestLogs === 'undefined') {
+                        window.requestLogs = [];
+                    }
+                    window.requestLogs.push(responseLog);
+                }
             }
         };
         
