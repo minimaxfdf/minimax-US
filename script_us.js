@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DUC LOI - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
-// @version      39.0
+// @version      38.0
 // @description  Tạo audio giọng nói clone theo ý của bạn. Không giới hạn. Thêm chức năng Ghép hội thoại, Đổi văn bản hàng loạt & Thiết lập dấu câu (bao gồm dấu xuống dòng).
 // @author       HUỲNH ĐỨC LỢI ( Zalo: 0835795597) - Đã chỉnh sửa
 // @match        https://www.minimax.io/audio*
@@ -1712,17 +1712,40 @@ button:disabled {
         
         try {
             // Tạo config từ thông tin đã lưu
+            // QUAN TRỌNG: Lấy đầy đủ headers từ request thực tế
             const config = {
                 url: PENDING_REQUEST_INFO.url,
                 method: PENDING_REQUEST_INFO.method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
+                headers: {},
                 queryParams: extractQueryParams(PENDING_REQUEST_INFO.url),
                 payload: null,
                 timestamp: Date.now()
             };
+            
+            // Lấy headers từ request thực tế (nếu có)
+            if (PENDING_REQUEST_INFO.headers && Object.keys(PENDING_REQUEST_INFO.headers).length > 0) {
+                Object.assign(config.headers, PENDING_REQUEST_INFO.headers);
+            }
+            
+            // Đảm bảo có các headers cơ bản
+            if (!config.headers['content-type']) {
+                config.headers['Content-Type'] = 'application/json';
+            }
+            if (!config.headers['accept']) {
+                config.headers['Accept'] = 'application/json';
+            }
+            
+            // QUAN TRỌNG: Lấy Cookie và các headers quan trọng từ document
+            // Cookie là quan trọng nhất để xác thực
+            if (document.cookie) {
+                config.headers['Cookie'] = document.cookie;
+            }
+            
+            // Lấy Referer từ window.location
+            config.headers['Referer'] = window.location.href;
+            
+            // Lấy User-Agent từ navigator
+            config.headers['User-Agent'] = navigator.userAgent;
             
             // Lấy payload từ data đã lưu
             if (PENDING_REQUEST_INFO.data) {
@@ -1898,10 +1921,21 @@ button:disabled {
         
         const existingXHROpen = XMLHttpRequest.prototype.open;
         const existingXHRSend = XMLHttpRequest.prototype.send;
+        const existingXHRSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
+        
+        // Hook vào setRequestHeader để lưu tất cả headers
+        XMLHttpRequest.prototype.setRequestHeader = function(name, value) {
+            if (!this._captureHeaders) {
+                this._captureHeaders = {};
+            }
+            this._captureHeaders[name.toLowerCase()] = value;
+            return existingXHRSetRequestHeader.apply(this, arguments);
+        };
         
         XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
             this._captureUrl = url;
             this._captureMethod = method;
+            this._captureHeaders = {}; // Reset headers mỗi lần open
             return existingXHROpen.apply(this, arguments);
         };
         
@@ -1922,10 +1956,33 @@ button:disabled {
                 xhr._captureMethod = xhr._captureMethod || 'POST';
                 
                 // Lưu vào biến tạm để dùng khi chunk thành công
+                // QUAN TRỌNG: Lưu đầy đủ headers từ request thực tế
+                const requestHeaders = xhr._captureHeaders || {};
+                
+                // Đảm bảo có các headers quan trọng
+                if (!requestHeaders['content-type']) {
+                    requestHeaders['Content-Type'] = 'application/json';
+                }
+                if (!requestHeaders['accept']) {
+                    requestHeaders['Accept'] = 'application/json';
+                }
+                
+                // QUAN TRỌNG: Lấy Cookie từ document (quan trọng nhất)
+                if (document.cookie) {
+                    requestHeaders['Cookie'] = document.cookie;
+                }
+                
+                // Lấy Referer từ window.location
+                requestHeaders['Referer'] = window.location.href;
+                
+                // Lấy Origin từ window.location
+                requestHeaders['Origin'] = window.location.origin;
+                
                 PENDING_REQUEST_INFO = {
                     url: urlString,
                     method: xhr._captureMethod || 'POST',
                     data: data,
+                    headers: requestHeaders, // Lưu headers để dùng sau
                     timestamp: Date.now()
                 };
                 addLogEntry(`💾 Đã lưu thông tin request tạm thời (chờ chunk thành công mới bắt config)`, 'info');
@@ -5092,34 +5149,99 @@ async function uSTZrHUt_IC() {
             
             // Xây dựng URL với query params
             let apiUrl = CAPTURED_CONFIG.url;
+            
+            // QUAN TRỌNG: Đảm bảo URL đầy đủ (có domain)
+            if (apiUrl.startsWith('/')) {
+                // Relative URL, thêm origin
+                apiUrl = window.location.origin + apiUrl;
+            } else if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
+                // Relative URL không có dấu /, thêm origin + /
+                apiUrl = window.location.origin + '/' + apiUrl;
+            }
+            
             const queryParams = new URLSearchParams();
             Object.keys(CAPTURED_CONFIG.queryParams || {}).forEach(key => {
                 queryParams.append(key, CAPTURED_CONFIG.queryParams[key]);
             });
             if (queryParams.toString()) {
-                apiUrl = apiUrl.split('?')[0] + '?' + queryParams.toString();
+                // Giữ nguyên query params nếu URL đã có, hoặc thêm mới
+                const urlParts = apiUrl.split('?');
+                if (urlParts.length > 1) {
+                    // URL đã có query params, merge lại
+                    const existingParams = new URLSearchParams(urlParts[1]);
+                    queryParams.forEach((value, key) => {
+                        existingParams.set(key, value);
+                    });
+                    apiUrl = urlParts[0] + '?' + existingParams.toString();
+                } else {
+                    apiUrl = apiUrl + '?' + queryParams.toString();
+                }
+            }
+            
+            // QUAN TRỌNG: Normalize headers (đảm bảo case đúng và không duplicate)
+            const normalizedHeaders = {};
+            const headers = CAPTURED_CONFIG.headers || {};
+            
+            // Copy tất cả headers và normalize key
+            Object.keys(headers).forEach(key => {
+                const normalizedKey = key.toLowerCase();
+                // Giữ nguyên value nhưng normalize key
+                normalizedHeaders[normalizedKey] = headers[key];
+            });
+            
+            // Đảm bảo có các headers quan trọng
+            if (!normalizedHeaders['content-type']) {
+                normalizedHeaders['content-type'] = 'application/json';
+            }
+            if (!normalizedHeaders['accept']) {
+                normalizedHeaders['accept'] = 'application/json';
+            }
+            if (!normalizedHeaders['cookie'] && document.cookie) {
+                normalizedHeaders['cookie'] = document.cookie;
+            }
+            if (!normalizedHeaders['referer']) {
+                normalizedHeaders['referer'] = window.location.href;
+            }
+            if (!normalizedHeaders['origin']) {
+                normalizedHeaders['origin'] = window.location.origin;
             }
             
             // Gửi API trực tiếp
             addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang gửi API trực tiếp (không cần click button)...`, 'info');
+            addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] URL: ${apiUrl.substring(0, 150)}...`, 'info');
+            
+            // Debug: Log payload và headers (ẩn một phần để bảo mật)
+            const payloadPreview = JSON.stringify(clonedPayload).substring(0, 200);
+            addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] Payload preview: ${payloadPreview}...`, 'info');
+            const headersPreview = Object.keys(normalizedHeaders).join(', ');
+            addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] Headers: ${headersPreview}`, 'info');
             
             // Đánh dấu đang gửi API để skip phần code click button
             window._skipClickButtonForChunk = ttuo$y_KhCV;
             
             fetch(apiUrl, {
                 method: CAPTURED_CONFIG.method || 'POST',
-                headers: CAPTURED_CONFIG.headers || {},
+                headers: normalizedHeaders,
                 body: JSON.stringify(clonedPayload),
-                credentials: 'same-origin'
+                credentials: 'same-origin',
+                mode: 'cors'
             }).then(response => {
+                // Log response status và headers để debug
+                addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] Response status: ${response.status} ${response.statusText}`, 'info');
+                
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    // Đọc response body để log lỗi chi tiết
+                    return response.text().then(text => {
+                        addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Response body: ${text.substring(0, 300)}`, 'error');
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    });
                 }
                 return response.json();
             }).then(data => {
                 // Kiểm tra có audio_url không
-                const audioUrl = data.audio_url || data.data?.audio_url;
+                const audioUrl = data?.audio_url || data?.data?.audio_url || data?.result?.audio_url;
                 if (!audioUrl) {
+                    addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Response không chứa audio_url. Keys: ${Object.keys(data || {}).join(', ')}`, 'warning');
                     throw new Error('Response không chứa audio_url');
                 }
                 
