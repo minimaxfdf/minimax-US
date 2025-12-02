@@ -1440,296 +1440,139 @@ button:disabled {
     // Nhiệm vụ: Thay thế hoàn toàn hành vi Click chuột bằng API call
     
     /**
-     * [FIXED] Hàm gọi API clone_v2 trực tiếp
-     * Cập nhật: Tự động lấy URL chuẩn và Payload sạch để tránh lỗi 400
+     * [FIXED] Hàm gọi API clone_v2
+     * Fix: Bypass giới hạn 300 ký tự của preview_text bằng cách đẩy full text vào trường 'text'
      * @param {string} text - Đoạn văn bản cần đọc
      * @param {number} chunkIndex - Chỉ số chunk (để log)
      * @returns {Promise<Blob|null>} - Trả về Blob audio hoặc null nếu lỗi
      */
     async function generateAudioViaAPI(text, chunkIndex = 0) {
-        // Kiểm tra config
         if (!window.MMX_CONFIG || !window.MMX_CONFIG.file_id) {
-            addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Chưa cấu hình API! Vui lòng bấm "Cấu hình" trước.`, 'error');
+            addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Chưa cấu hình API!`, 'error');
             return null;
         }
         
         const config = window.MMX_CONFIG;
-        addLogEntry(`🚀 [Module 2] Chunk ${chunkIndex + 1}: Đang gọi API trực tiếp...`, 'info');
-        
-        // DEBUG: Kiểm tra payloadTemplate có tồn tại không
-        if (!config.payloadTemplate) {
-            console.warn('[MODULE 2 WARNING] Không có payloadTemplate! Config:', config);
-            addLogEntry(`⚠️ [Module 2] Cảnh báo: Không có payloadTemplate, sẽ dùng fallback`, 'warning');
-        } else {
-            console.log('[MODULE 2] PayloadTemplate có sẵn, keys:', Object.keys(config.payloadTemplate));
-        }
+        addLogEntry(`🚀 [Module 2] Chunk ${chunkIndex + 1}: Đang gọi API...`, 'info');
         
         try {
-            // [FIX 1] Tái tạo URL từ chính URL đã bắt được (thay vì hardcode)
-            // Điều này giúp giữ nguyên các tham số version_code, biz_id, app_id đúng với tài khoản của bạn
+            // 1. Tái tạo URL với UUID và Timestamp mới để tránh cache
             let targetUrl;
             try {
                 const capturedUrl = new URL(config.url);
-                // Cập nhật uuid mới (random) và thời gian unix mới
                 capturedUrl.searchParams.set('uuid', 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
                     const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
                     return v.toString(16);
                 }));
-                capturedUrl.searchParams.set('unix', Math.floor(Date.now() / 1000).toString());
+                capturedUrl.searchParams.set('unix', Date.now().toString());
                 targetUrl = capturedUrl.toString();
             } catch (e) {
-                // Dự phòng nếu URL bắt được bị lỗi (hiếm khi xảy ra)
-                targetUrl = 'https://www.minimax.io/v1/api/audio/voice/clone_v2?device_platform=web&app_id=3001&version_code=22201&biz_id=1&unix=' + Math.floor(Date.now() / 1000);
+                targetUrl = 'https://www.minimax.io/v1/api/audio/voice/clone_v2?device_platform=web&app_id=3001&version_code=22201&biz_id=1&unix=' + Date.now();
             }
             
-            // [FIX 2] Xây dựng Payload thông minh (Clone & Patch - Chuyển từ Preview sang Generate)
-            // VẤN ĐỀ: PayloadTemplate từ Preview mode chỉ có preview_text (giới hạn 300 ký tự)
-            // GIẢI PHÁP: Dùng text cho nội dung đầy đủ, XÓA preview_text để tránh xung đột
+            // 2. Xử lý Payload: Tách text và preview_text
             let payload;
             if (config.payloadTemplate) {
-                // Copy nguyên xi mẫu gốc để giữ TẤT CẢ các tham số (timbre_weights, voice_id, ...)
-                // Sử dụng deep clone để đảm bảo giữ nguyên cả nested objects
+                // Clone mẫu gốc để giữ lại timbre_weights, voice_id...
                 payload = JSON.parse(JSON.stringify(config.payloadTemplate));
                 
-                // QUAN TRỌNG: Logic thông minh dựa trên template gốc
-                // Nếu template gốc có preview_text -> Giữ nguyên preview_text và thêm text
-                // Nếu template gốc có text -> Chỉ cập nhật text
-                // Server có thể yêu cầu cả 2 trường hoặc chỉ 1 trường tùy vào template gốc
+                // [QUAN TRỌNG] Gán nội dung đầy đủ vào 'text'
+                payload.text = text;
                 
-                const hasPreviewText = typeof config.payloadTemplate.preview_text !== 'undefined';
-                const hasText = typeof config.payloadTemplate.text !== 'undefined';
-                
-                if (hasPreviewText && !hasText) {
-                    // Template chỉ có preview_text -> CẮT preview_text xuống 200 ký tự và thêm text
-                    // QUAN TRỌNG: preview_text KHÔNG được vượt quá 300 ký tự (giới hạn của server)
-                    // 1. Gán full text vào trường 'text'
-                    payload.text = text;
-                    
-                    // 2. Cắt ngắn trường 'preview_text' để đánh lừa bộ lọc của server
-                    // Nếu text dài hơn 200 ký tự, chỉ lấy 200 ký tự đầu (không thêm "...")
-                    if (text.length > 200) {
-                        payload.preview_text = text.substring(0, 200);
-                    } else {
-                        payload.preview_text = text;
-                    }
-                    
-                    // DEBUG: Xác nhận độ dài preview_text
-                    console.log('[MODULE 2 DEBUG] preview_text sau khi cắt:', payload.preview_text.length, 'ký tự');
-                    console.log('[MODULE 2 DEBUG] preview_text value (50 ký tự đầu):', payload.preview_text.substring(0, 50) + '...');
-                    console.log('[MODULE 2 DEBUG] text length:', payload.text.length, 'ký tự');
-                    
-                    // Kiểm tra lại để đảm bảo < 300 ký tự
-                    if (payload.preview_text.length > 300) {
-                        console.error('[MODULE 2 ERROR] preview_text vẫn quá dài sau khi cắt:', payload.preview_text.length, 'ký tự');
-                        // Cắt lại một lần nữa xuống 200 ký tự
-                        payload.preview_text = payload.preview_text.substring(0, 200);
-                        console.warn('[MODULE 2 WARNING] Đã cắt lại preview_text xuống còn:', payload.preview_text.length, 'ký tự');
-                    }
-                    
-                    addLogEntry(`💡 [Module 2] Template có preview_text -> preview_text (${payload.preview_text.length} ký tự) + text (${text.length} ký tự)`, 'info');
-                } else if (hasText) {
-                    // Template có text -> Chỉ cập nhật text
-                    payload.text = text;
-                    // Xóa preview_text nếu có để tránh xung đột
-                    if (payload.preview_text !== undefined) {
-                        delete payload.preview_text;
-                    }
-                    addLogEntry(`💡 [Module 2] Template có text -> Chỉ dùng text (${text.length} ký tự)`, 'info');
+                // [QUAN TRỌNG] Cắt ngắn 'preview_text' xuống < 300 ký tự để server không báo lỗi 400
+                if (text.length > 200) {
+                    payload.preview_text = text.substring(0, 200) + "..."; 
                 } else {
-                    // Template không có cả 2 -> Thêm text
-                    payload.text = text;
-                    addLogEntry(`💡 [Module 2] Template không có text/preview_text -> Thêm text (${text.length} ký tự)`, 'info');
+                    payload.preview_text = text;
                 }
                 
-                // Cập nhật language_tag từ selection của tool (nếu có)
+                // Cập nhật ngôn ngữ
                 const langSelect = document.getElementById('gemini-language-select');
                 if (langSelect && langSelect.value) {
                     payload.language_tag = langSelect.value;
                 }
                 
-                // ĐẢM BẢO: Kiểm tra và giữ nguyên các trường quan trọng từ template
-                // Nếu template có các trường đặc biệt, đảm bảo chúng được giữ lại
-                if (config.payloadTemplate.timbre_weights !== undefined) {
-                    payload.timbre_weights = config.payloadTemplate.timbre_weights;
-                }
-                if (config.payloadTemplate.voice_id !== undefined) {
-                    payload.voice_id = config.payloadTemplate.voice_id;
-                }
-                if (config.payloadTemplate.speed !== undefined) {
-                    payload.speed = config.payloadTemplate.speed;
-                }
-                if (config.payloadTemplate.pitch !== undefined) {
-                    payload.pitch = config.payloadTemplate.pitch;
-                }
-                // Giữ nguyên files array nếu có
-                if (Array.isArray(config.payloadTemplate.files)) {
-                    payload.files = JSON.parse(JSON.stringify(config.payloadTemplate.files));
-                }
-                
-                // DEBUG: Log chi tiết để kiểm tra
-                console.log('[MODULE 2 DEBUG] ========== PAYLOAD DEBUG ==========');
-                console.log('[MODULE 2 DEBUG] PayloadTemplate gốc:', JSON.stringify(config.payloadTemplate, null, 2));
-                console.log('[MODULE 2 DEBUG] PayloadTemplate keys:', Object.keys(config.payloadTemplate).sort());
-                console.log('[MODULE 2 DEBUG] Payload sau khi clone & patch:', JSON.stringify(payload, null, 2));
-                console.log('[MODULE 2 DEBUG] Payload keys:', Object.keys(payload).sort());
-                console.log('[MODULE 2 DEBUG] Text length:', text.length);
-                console.log('[MODULE 2 DEBUG] Có preview_text trong payload:', typeof payload.preview_text !== 'undefined');
-                console.log('[MODULE 2 DEBUG] Có text trong payload:', typeof payload.text !== 'undefined');
-                
-                // So sánh keys để đảm bảo không mất trường nào
-                const templateKeys = Object.keys(config.payloadTemplate).sort();
-                const payloadKeys = Object.keys(payload).sort();
-                const missingKeys = templateKeys.filter(k => !payloadKeys.includes(k));
-                const extraKeys = payloadKeys.filter(k => !templateKeys.includes(k));
-                
-                if (missingKeys.length > 0) {
-                    console.warn('[MODULE 2 WARNING] Các trường bị thiếu trong payload:', missingKeys);
-                }
-                if (extraKeys.length > 0) {
-                    console.log('[MODULE 2 INFO] Các trường mới thêm vào payload:', extraKeys);
-                }
-                console.log('[MODULE 2 DEBUG] ====================================');
-                
-                // Log vào UI để user có thể xem
-                addLogEntry(`🔍 [Debug] Payload có ${Object.keys(payload).length} trường (template: ${Object.keys(config.payloadTemplate).length}), text: ${text.length} ký tự`, 'info');
-                if (missingKeys.length > 0) {
-                    addLogEntry(`⚠️ [Debug] CẢNH BÁO: Thiếu ${missingKeys.length} trường từ template: ${missingKeys.join(', ')}`, 'warning');
-                }
+                // DEBUG: Log payload
+                console.log('[MODULE 2 DEBUG] Payload:', JSON.stringify(payload, null, 2));
+                console.log('[MODULE 2 DEBUG] preview_text length:', payload.preview_text ? payload.preview_text.length : 'N/A');
+                console.log('[MODULE 2 DEBUG] text length:', payload.text ? payload.text.length : 'N/A');
             } else {
-                // Fallback cực kỳ cơ bản (ít dùng, chỉ khi không bắt được mẫu)
-                // Dùng text thay vì preview_text để tránh giới hạn 300 ký tự
+                // Fallback payload
                 payload = {
-                    files: [{
-                        file_id: config.file_id,
-                        file_name: config.file_name
-                    }],
-                    text: text, // Dùng text thay vì preview_text
+                    files: [{ file_id: config.file_id, file_name: config.file_name }],
+                    text: text,
+                    preview_text: text.length > 200 ? text.substring(0, 200) + "..." : text,
                     language_tag: config.language_tag || 'Vietnamese',
                     need_noise_reduction: false
                 };
-                addLogEntry(`⚠️ [Module 2] Không có payloadTemplate, dùng fallback với text`, 'warning');
             }
             
-            // Tạo headers (sử dụng headers đã bắt được)
-            const headers = {
-                'Content-Type': 'application/json',
-                ...config.headers
-            };
-            
-            // Xóa các header tự động của trình duyệt để tránh xung đột
-            delete headers['content-length'];
+            // 3. Chuẩn bị Headers
+            const headers = { 'Content-Type': 'application/json', ...config.headers };
+            delete headers['content-length']; 
             delete headers['host'];
             delete headers['origin'];
-            // Xóa Referer để trình duyệt tự điền (tránh lỗi bảo mật)
             delete headers['referer']; 
-            delete headers['Referer'];
             
-            // KHÔNG xóa preview_text nữa - để logic trên quyết định
-            
-            // DEBUG: Kiểm tra độ dài preview_text trước khi gửi
-            if (payload.preview_text !== undefined) {
-                const previewTextLength = payload.preview_text.length;
-                if (previewTextLength > 300) {
-                    console.error('[MODULE 2 ERROR] preview_text quá dài trước khi gửi:', previewTextLength, 'ký tự');
-                    console.error('[MODULE 2 ERROR] preview_text value:', payload.preview_text.substring(0, 100) + '...');
-                    // Cắt lại để đảm bảo < 300 ký tự
-                    payload.preview_text = payload.preview_text.substring(0, 200);
-                    console.warn('[MODULE 2 WARNING] Đã cắt preview_text xuống còn:', payload.preview_text.length, 'ký tự');
-                }
-            }
-            
-            // DEBUG: Log URL và headers trước khi gửi
-            console.log('[MODULE 2 DEBUG] URL:', targetUrl);
-            console.log('[MODULE 2 DEBUG] Headers:', JSON.stringify(headers, null, 2));
-            console.log('[MODULE 2 DEBUG] Body (payload):', JSON.stringify(payload, null, 2));
-            console.log('[MODULE 2 DEBUG] Payload có preview_text:', typeof payload.preview_text !== 'undefined', payload.preview_text ? `(${payload.preview_text.length} ký tự)` : '');
-            console.log('[MODULE 2 DEBUG] Payload có text:', typeof payload.text !== 'undefined', payload.text ? `(${payload.text.length} ký tự)` : '');
-            
-            // Gọi API
+            // 4. Gửi Request
             const response = await fetch(targetUrl, {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify(payload),
-                credentials: 'include', // Quan trọng: Dùng cookie của trình duyệt
+                credentials: 'include',
                 mode: 'cors'
             });
             
-            // Xử lý response
+            // 5. Xử lý lỗi
             if (!response.ok) {
-                if (response.status === 429) {
-                    addLogEntry(`⚠️ [Module 2] Chunk ${chunkIndex + 1}: Lỗi 429 (Too Many Requests) - Đang nghỉ...`, 'warning');
-                    throw new Error('429_TOO_MANY_REQUESTS');
-                } else if (response.status === 403) {
-                    addLogEntry(`🚨 [Module 2] Chunk ${chunkIndex + 1}: Lỗi 403 (Forbidden) - Cookie lỗi!`, 'error');
-                    throw new Error('403_FORBIDDEN');
-                } else {
-                    const errorText = await response.text().catch(() => 'Unknown error');
-                    // Log chi tiết lỗi để debug
-                    console.error('[MODULE 2 ERROR] ========== ERROR DETAILS ==========');
-                    console.error('[MODULE 2 ERROR] Status:', response.status);
-                    console.error('[MODULE 2 ERROR] Error Response:', errorText);
-                    console.error('[MODULE 2 ERROR] Payload đã gửi:', JSON.stringify(payload, null, 2));
-                    console.error('[MODULE 2 ERROR] URL:', targetUrl);
-                    console.error('[MODULE 2 ERROR] ====================================');
-                    
-                    // Lưu payload lỗi vào window để debug
-                    window.LAST_FAILED_PAYLOAD = {
-                        payload: payload,
-                        url: targetUrl,
-                        error: errorText,
-                        chunkIndex: chunkIndex,
-                        textLength: text.length,
-                        timestamp: new Date().toISOString()
-                    };
-                    
-                    // Hiển thị payload lỗi vào textarea
-                    const errorTextarea = document.getElementById('payload-error-textarea');
-                    if (errorTextarea) {
-                        try {
-                            const errorData = JSON.parse(errorText);
-                            errorTextarea.value = JSON.stringify({
-                                chunk: chunkIndex + 1,
-                                status: response.status,
-                                url: targetUrl,
-                                payload: payload,
-                                error: errorData,
-                                timestamp: new Date().toISOString()
-                            }, null, 2);
-                        } catch (e) {
-                            errorTextarea.value = JSON.stringify({
-                                chunk: chunkIndex + 1,
-                                status: response.status,
-                                url: targetUrl,
-                                payload: payload,
-                                error: errorText,
-                                timestamp: new Date().toISOString()
-                            }, null, 2);
-                        }
+                if (response.status === 429) throw new Error('429_TOO_MANY_REQUESTS');
+                if (response.status === 403) throw new Error('403_FORBIDDEN');
+                const errText = await response.text();
+                
+                // Lưu payload lỗi vào window để debug
+                window.LAST_FAILED_PAYLOAD = {
+                    payload: payload,
+                    url: targetUrl,
+                    error: errText,
+                    chunkIndex: chunkIndex,
+                    textLength: text.length,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Hiển thị payload lỗi vào textarea
+                const errorTextarea = document.getElementById('payload-error-textarea');
+                if (errorTextarea) {
+                    try {
+                        const errorData = JSON.parse(errText);
+                        errorTextarea.value = JSON.stringify({
+                            chunk: chunkIndex + 1,
+                            status: response.status,
+                            url: targetUrl,
+                            payload: payload,
+                            error: errorData,
+                            timestamp: new Date().toISOString()
+                        }, null, 2);
+                    } catch (e) {
+                        errorTextarea.value = JSON.stringify({
+                            chunk: chunkIndex + 1,
+                            status: response.status,
+                            url: targetUrl,
+                            payload: payload,
+                            error: errText,
+                            timestamp: new Date().toISOString()
+                        }, null, 2);
                     }
-                    
-                    // So sánh với payload thành công (nếu có)
-                    if (window.LAST_SUCCESS_PAYLOAD) {
-                        console.log('[MODULE 2 COMPARE] ========== SO SÁNH PAYLOAD ==========');
-                        console.log('[MODULE 2 COMPARE] Payload thành công (chunk', window.LAST_SUCCESS_PAYLOAD.chunkIndex + '):', JSON.stringify(window.LAST_SUCCESS_PAYLOAD.payload, null, 2));
-                        console.log('[MODULE 2 COMPARE] Payload lỗi (chunk', chunkIndex + '):', JSON.stringify(payload, null, 2));
-                        console.log('[MODULE 2 COMPARE] Keys thành công:', Object.keys(window.LAST_SUCCESS_PAYLOAD.payload).sort());
-                        console.log('[MODULE 2 COMPARE] Keys lỗi:', Object.keys(payload).sort());
-                        console.log('[MODULE 2 COMPARE] ====================================');
-                    }
-                    
-                    addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Lỗi ${response.status}: ${errorText.substring(0, 50)}...`, 'error');
-                    addLogEntry(`🔍 [Debug] Xem payload lỗi trong ô "Payload gửi đi THẤT BẠI" phía dưới`, 'info');
-                    throw new Error(`API_ERROR_${response.status}`);
                 }
+                
+                addLogEntry(`❌ API Lỗi ${response.status}: ${errText.substring(0, 100)}`, 'error');
+                throw new Error(`API_ERROR_${response.status}`);
             }
             
-            // Parse response
+            // 6. Lấy kết quả Blob
             const responseData = await response.json().catch(async () => {
                 const blob = await response.blob();
-                if (blob.type.startsWith('audio/')) {
-                    return { blob: blob };
-                }
-                throw new Error('Invalid response format');
+                if (blob.type.startsWith('audio/')) return { blob: blob };
+                throw new Error('Invalid response');
             });
             
             // DEBUG: Lưu payload thành công để so sánh
@@ -1740,7 +1583,6 @@ button:disabled {
                 textLength: text.length,
                 timestamp: new Date().toISOString()
             };
-            console.log('[MODULE 2 SUCCESS] Payload thành công đã lưu vào window.LAST_SUCCESS_PAYLOAD');
             
             // Hiển thị payload thành công vào textarea
             const successTextarea = document.getElementById('payload-success-textarea');
@@ -1753,33 +1595,21 @@ button:disabled {
                 }, null, 2);
             }
             
-            // Xử lý kết quả trả về
-            let audioUrl = null;
-            if (responseData.audio_url) {
-                audioUrl = responseData.audio_url;
-            } else if (responseData.data && responseData.data.audio_url) {
-                audioUrl = responseData.data.audio_url;
-            } else if (responseData.blob) {
-                return responseData.blob; // Thành công ngay
-            }
+            let audioUrl = responseData.audio_url || (responseData.data && responseData.data.audio_url);
+            if (responseData.blob) return responseData.blob;
             
-            if (!audioUrl) {
-                addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Không tìm thấy audio_url. Server trả về: ${JSON.stringify(responseData)}`, 'error');
-                return null;
-            }
+            if (!audioUrl) return null;
             
-            // Tải audio từ URL
-            const audioResponse = await fetch(audioUrl);
-            if (!audioResponse.ok) return null;
+            const audioRes = await fetch(audioUrl);
+            if (!audioRes.ok) return null;
             
-            const audioBlob = await audioResponse.blob();
+            const audioBlob = await audioRes.blob();
             addLogEntry(`✅ [Module 2] Chunk ${chunkIndex + 1}: Thành công! (${Math.round(audioBlob.size/1024)}KB)`, 'success');
             return audioBlob;
             
         } catch (error) {
-            // Quăng lỗi ra ngoài để Module 3 xử lý retry
             if (error.message.includes('429') || error.message.includes('403')) throw error;
-            addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Lỗi - ${error.message}`, 'error');
+            addLogEntry(`❌ [Module 2] Lỗi: ${error.message}`, 'error');
             throw error;
         }
     }
