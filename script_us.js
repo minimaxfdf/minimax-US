@@ -4832,6 +4832,44 @@ async function uSTZrHUt_IC() {
                 text: chunkText
             };
             
+            // ✅ QUAN TRỌNG: Cập nhật uuid và unix trong URL để tránh lỗi 400
+            try {
+                // Xử lý cả relative và absolute URL
+                let url;
+                if (requestInfo.url.startsWith('http://') || requestInfo.url.startsWith('https://')) {
+                    url = new URL(requestInfo.url);
+                } else {
+                    url = new URL(requestInfo.url, window.location.origin);
+                }
+                
+                // Tạo uuid mới (UUID v4 format)
+                const newUuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    const r = Math.random() * 16 | 0;
+                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+                
+                // Cập nhật timestamp hiện tại (milliseconds)
+                const newUnix = Date.now();
+                
+                // Cập nhật các query parameters
+                url.searchParams.set('uuid', newUuid);
+                url.searchParams.set('unix', newUnix.toString());
+                
+                // Cập nhật lại URL với uuid và unix mới
+                // Giữ lại format gốc (relative hoặc absolute)
+                if (requestInfo.url.startsWith('http://') || requestInfo.url.startsWith('https://')) {
+                    requestInfo.url = url.href;
+                } else {
+                    requestInfo.url = url.pathname + url.search;
+                }
+                
+                addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đã cập nhật uuid và unix mới trong URL`, 'info');
+            } catch (e) {
+                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Không thể cập nhật uuid/unix: ${e.message}`, 'warning');
+                // Nếu không parse được URL, vẫn tiếp tục với URL cũ
+            }
+            
             // Cập nhật payload với text mới
             if (requestInfo.payload instanceof FormData) {
                 // Tìm và cập nhật text trong FormData
