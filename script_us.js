@@ -1279,7 +1279,6 @@ button:disabled {
         </div>
     </div>
 
-    <div id="config-status-message" style="margin-top: 10px;"></div>
     <button id="gemini-start-queue-btn" disabled style="width: 100%; margin-top: 15px;">Bắt đầu tạo âm thanh</button>
 
     <div class="sales-announcement">
@@ -1610,767 +1609,6 @@ button:disabled {
     
     // =======================================================
     // == KẾT THÚC: KHỐI LOGIC QUOTA ==
-    // =======================================================
-
-    // =======================================================
-    // == PHẦN MỚI: AUTO-CAPTURE "MỒI & BẮT" ==
-    // =======================================================
-    
-    // Biến toàn cục để lưu trạng thái config
-    let IS_CONFIG_READY = false;
-    let CAPTURED_CONFIG = null;
-    const CONFIG_STORAGE_KEY = 'DUC_LOI_CAPTURED_CONFIG_V1';
-    
-    // Biến tạm để lưu request info khi gửi đi (chờ chunk thành công mới lưu config)
-    let PENDING_REQUEST_INFO = null;
-    
-    // Hàm load config từ localStorage
-    function loadCapturedConfig() {
-        try {
-            const savedConfig = localStorage.getItem(CONFIG_STORAGE_KEY);
-            if (savedConfig) {
-                CAPTURED_CONFIG = JSON.parse(savedConfig);
-                IS_CONFIG_READY = true;
-                addLogEntry('✅ Đã tải cấu hình đã lưu từ lần trước', 'success');
-                updateConfigUI();
-                return true;
-            }
-        } catch (error) {
-            console.error('Lỗi khi load config:', error);
-            addLogEntry('⚠️ Lỗi khi tải cấu hình đã lưu', 'warning');
-        }
-        return false;
-    }
-    
-    // Hàm lưu config vào localStorage
-    function saveCapturedConfig(config) {
-        try {
-            localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config));
-            CAPTURED_CONFIG = config;
-            IS_CONFIG_READY = true;
-            addLogEntry('✅ Đã lưu cấu hình thành công', 'success');
-            updateConfigUI();
-        } catch (error) {
-            console.error('Lỗi khi lưu config:', error);
-            addLogEntry('❌ Lỗi khi lưu cấu hình', 'error');
-        }
-    }
-    
-    // Hàm cập nhật UI dựa trên trạng thái config
-    function updateConfigUI() {
-        const startButton = document.getElementById('gemini-start-queue-btn');
-        const configStatusDiv = document.getElementById('config-status-message');
-        
-        if (IS_CONFIG_READY) {
-            if (startButton) {
-                // Enable nút nếu có text và quota OK
-                const mainTextarea = document.getElementById('gemini-main-textarea');
-                if (mainTextarea && mainTextarea.value.trim() !== '') {
-                    startButton.disabled = false;
-                }
-            }
-            if (configStatusDiv) {
-                configStatusDiv.innerHTML = '<div style="color: #50fa7b; padding: 10px; background: #44475a; border-radius: 4px; margin-top: 10px;">✅ Đã bắt được cấu hình! Bạn có thể bắt đầu tạo âm thanh.</div>';
-            }
-        } else {
-            if (startButton) {
-                startButton.disabled = true;
-            }
-            if (configStatusDiv) {
-                configStatusDiv.innerHTML = '<div style="color: #ffb86c; padding: 10px; background: #44475a; border-radius: 4px; margin-top: 10px;">⚠️ Vui lòng tạo thử 1 đoạn âm thanh trên web để Tool học cấu hình</div>';
-            }
-        }
-    }
-    
-    // Hàm trích xuất query parameters từ URL
-    function extractQueryParams(url) {
-        const params = {};
-        try {
-            const urlObj = new URL(url);
-            urlObj.searchParams.forEach((value, key) => {
-                params[key] = value;
-            });
-        } catch (e) {
-            // Nếu URL không hợp lệ, thử parse thủ công
-            const queryString = url.split('?')[1];
-            if (queryString) {
-                queryString.split('&').forEach(param => {
-                    const [key, value] = param.split('=');
-                    if (key) params[decodeURIComponent(key)] = decodeURIComponent(value || '');
-                });
-            }
-        }
-        return params;
-    }
-    
-    // Hàm bắt config từ chunk 1 thành công (được gọi khi chunk 1 thành công)
-    function captureConfigFromChunk1(audioUrl) {
-        if (!PENDING_REQUEST_INFO) {
-            addLogEntry(`⚠️ [Chunk 1] Không có thông tin request đã lưu`, 'warning');
-            return;
-        }
-        
-        try {
-            // Tạo config từ thông tin đã lưu
-            // QUAN TRỌNG: Lấy đầy đủ headers từ request thực tế
-            const config = {
-                url: PENDING_REQUEST_INFO.url,
-                method: PENDING_REQUEST_INFO.method,
-                headers: {},
-                queryParams: extractQueryParams(PENDING_REQUEST_INFO.url),
-                payload: null,
-                timestamp: Date.now()
-            };
-            
-            // Lấy headers từ request thực tế (nếu có)
-            if (PENDING_REQUEST_INFO.headers && Object.keys(PENDING_REQUEST_INFO.headers).length > 0) {
-                Object.assign(config.headers, PENDING_REQUEST_INFO.headers);
-            }
-            
-            // Đảm bảo có các headers cơ bản
-            if (!config.headers['content-type']) {
-                config.headers['Content-Type'] = 'application/json';
-            }
-            if (!config.headers['accept']) {
-                config.headers['Accept'] = 'application/json';
-            }
-            
-            // QUAN TRỌNG: Lấy Cookie và các headers quan trọng từ document
-            // Cookie là quan trọng nhất để xác thực
-            if (document.cookie) {
-                config.headers['Cookie'] = document.cookie;
-            }
-            
-            // Lấy Referer từ window.location
-            config.headers['Referer'] = window.location.href;
-            
-            // Lấy User-Agent từ navigator
-            config.headers['User-Agent'] = navigator.userAgent;
-            
-            // Lấy payload từ data đã lưu
-            if (PENDING_REQUEST_INFO.data) {
-                try {
-                    let parsedPayload = null;
-                    if (typeof PENDING_REQUEST_INFO.data === 'string') {
-                        parsedPayload = JSON.parse(PENDING_REQUEST_INFO.data);
-                    } else if (!(PENDING_REQUEST_INFO.data instanceof FormData)) {
-                        parsedPayload = PENDING_REQUEST_INFO.data;
-                    }
-                    
-                    if (parsedPayload) {
-                        // Log payload gốc để debug
-                        addLogEntry(`🔍 [Chunk 1] Payload gốc từ request: ${JSON.stringify(parsedPayload).substring(0, 300)}...`, 'info');
-                        
-                        // QUAN TRỌNG: Nếu là Voice Clone mode (có files), ép buộc need_noise_reduction = false
-                        // Và xóa speed, vol, pitch ngay lập tức
-                        if (parsedPayload.files && parsedPayload.files.length > 0) {
-                            const oldValue = parsedPayload.need_noise_reduction;
-                            parsedPayload.need_noise_reduction = false;
-                            addLogEntry(`🔧 [Chunk 1] Đã sửa need_noise_reduction từ ${oldValue} thành false (Voice Clone mode)`, 'info');
-                            
-                            // Xóa speed, vol, pitch ngay lập tức (Voice Clone mode không có)
-                            if (parsedPayload.speed !== undefined) {
-                                delete parsedPayload.speed;
-                                addLogEntry(`🧹 [Chunk 1] Đã xóa speed ngay khi capture (Voice Clone mode)`, 'info');
-                            }
-                            if (parsedPayload.vol !== undefined) {
-                                delete parsedPayload.vol;
-                                addLogEntry(`🧹 [Chunk 1] Đã xóa vol ngay khi capture (Voice Clone mode)`, 'info');
-                            }
-                            if (parsedPayload.pitch !== undefined) {
-                                delete parsedPayload.pitch;
-                                addLogEntry(`🧹 [Chunk 1] Đã xóa pitch ngay khi capture (Voice Clone mode)`, 'info');
-                            }
-                            // Xóa text nếu có (Voice Clone mode dùng preview_text)
-                            if (parsedPayload.text !== undefined) {
-                                delete parsedPayload.text;
-                                addLogEntry(`🧹 [Chunk 1] Đã xóa text ngay khi capture (Voice Clone mode dùng preview_text)`, 'info');
-                            }
-                        }
-                        
-                        config.payload = parsedPayload;
-                    }
-                } catch (e) {
-                    addLogEntry(`⚠️ [Chunk 1] Lỗi khi parse payload: ${e.message}`, 'warning');
-                }
-            }
-            
-            // Nếu không có payload từ data, thử lấy từ textarea hoặc chunk text
-            if (!config.payload) {
-                const textarea = document.getElementById('gemini-hidden-text-for-request');
-                if (textarea && textarea.value) {
-                    config.payload = { text: textarea.value };
-                    addLogEntry(`💡 [Chunk 1] Đã lấy text từ textarea làm payload`, 'info');
-                } else if (SI$acY && SI$acY[0]) {
-                    config.payload = { text: SI$acY[0] };
-                    addLogEntry(`💡 [Chunk 1] Đã lấy text từ chunk đầu tiên làm payload`, 'info');
-                }
-            }
-            
-            // === [FIX LỖI 400] QUAN TRỌNG: Chuẩn hóa payload khi bắt config ===
-            // Xóa các trường không cần thiết từ payload preview/upload
-            // Và bổ sung các tham số thiếu (speed, vol, pitch)
-            if (config.payload) {
-                // Xóa preview_text nếu có (từ preview request)
-                if (config.payload.preview_text) {
-                    delete config.payload.preview_text;
-                    addLogEntry(`🧹 [Chunk 1] Đã xóa preview_text khỏi payload`, 'info');
-                }
-                
-                // QUAN TRỌNG: Nếu là Voice Clone mode (có files), không thêm speed/vol/pitch
-                // Voice Clone mode chỉ có: language_tag, files, need_noise_reduction, preview_text
-                if (config.payload.files && config.payload.files.length > 0) {
-                    // Xóa speed, vol, pitch nếu có (Voice Clone mode không có)
-                    if (config.payload.speed !== undefined) {
-                        delete config.payload.speed;
-                        addLogEntry(`🧹 [Chunk 1] Đã xóa speed (Voice Clone mode không có)`, 'info');
-                    }
-                    if (config.payload.vol !== undefined) {
-                        delete config.payload.vol;
-                        addLogEntry(`🧹 [Chunk 1] Đã xóa vol (Voice Clone mode không có)`, 'info');
-                    }
-                    if (config.payload.pitch !== undefined) {
-                        delete config.payload.pitch;
-                        addLogEntry(`🧹 [Chunk 1] Đã xóa pitch (Voice Clone mode không có)`, 'info');
-                    }
-                    // Xóa text nếu có (Voice Clone mode dùng preview_text)
-                    if (config.payload.text !== undefined) {
-                        delete config.payload.text;
-                        addLogEntry(`🧹 [Chunk 1] Đã xóa text (Voice Clone mode dùng preview_text)`, 'info');
-                    }
-                    // Giữ nguyên preview_text (sẽ được thay thế khi gửi chunk tiếp theo)
-                } else {
-                    // Chế độ khác: Xử lý preview_text và text
-                    if (!config.payload.text && config.payload.preview_text) {
-                        addLogEntry(`⚠️ [Chunk 1] Phát hiện payload từ preview request! Đang tìm payload từ chunk 1...`, 'warning');
-                        // Thử lấy từ textarea (chứa text của chunk 1)
-                        const textarea = document.getElementById('gemini-hidden-text-for-request');
-                        if (textarea && textarea.value) {
-                            config.payload.text = textarea.value;
-                            delete config.payload.preview_text;
-                            addLogEntry(`✅ [Chunk 1] Đã lấy text từ textarea thay cho preview_text`, 'success');
-                        } else {
-                            // Fallback: Dùng preview_text làm text tạm thời
-                            config.payload.text = config.payload.preview_text;
-                            delete config.payload.preview_text;
-                            addLogEntry(`⚠️ [Chunk 1] Đã dùng preview_text làm text tạm thời`, 'warning');
-                        }
-                    }
-                }
-                
-                // === [FIX LỖI 400] BỔ SUNG CÁC THAM SỐ THIẾU ===
-                // QUAN TRỌNG: Chỉ bổ sung speed/vol/pitch cho chế độ KHÔNG phải Voice Clone
-                // Voice Clone mode KHÔNG có speed, vol, pitch
-                const isVoiceCloneMode = config.payload.files && config.payload.files.length > 0;
-                
-                if (!isVoiceCloneMode) {
-                    // Chế độ khác: Bổ sung speed, vol, pitch nếu thiếu
-                    const isPreviewRequest = !config.payload.speed && !config.payload.vol && !config.payload.pitch;
-                    
-                    if (isPreviewRequest) {
-                        addLogEntry(`⚠️ [Chunk 1] Phát hiện payload từ preview request (thiếu speed/vol/pitch)`, 'warning');
-                    }
-                    
-                    // Bổ sung speed nếu thiếu
-                    if (typeof config.payload.speed === 'undefined' || config.payload.speed === null) {
-                        config.payload.speed = 1.0;
-                        addLogEntry(`➕ [Chunk 1] Đã bổ sung speed = 1.0 (thiếu trong payload)`, 'info');
-                    }
-                    
-                    // Bổ sung vol nếu thiếu
-                    if (typeof config.payload.vol === 'undefined' || config.payload.vol === null) {
-                        config.payload.vol = 1.0;
-                        addLogEntry(`➕ [Chunk 1] Đã bổ sung vol = 1.0 (thiếu trong payload)`, 'info');
-                    }
-                    
-                    // Bổ sung pitch nếu thiếu
-                    if (typeof config.payload.pitch === 'undefined' || config.payload.pitch === null) {
-                        config.payload.pitch = 0;
-                        addLogEntry(`➕ [Chunk 1] Đã bổ sung pitch = 0 (thiếu trong payload)`, 'info');
-                    }
-                    
-                    addLogEntry(`✅ [Chunk 1] Đã bổ sung đầy đủ tham số cho payload từ preview request`, 'success');
-                } else {
-                    addLogEntry(`✅ [Chunk 1] Voice Clone mode - Không bổ sung speed/vol/pitch (không cần)`, 'success');
-                }
-                
-                // Log payload đã chuẩn hóa
-                addLogEntry(`🔍 [Chunk 1] Payload đã chuẩn hóa: ${JSON.stringify(config.payload).substring(0, 400)}...`, 'info');
-            }
-            // ====================================================
-            
-            // Lưu config
-            saveCapturedConfig(config);
-            addLogEntry('🎯 Đã bắt được cấu hình từ Chunk 1 thành công!', 'success');
-            addLogEntry('✅ Từ chunk tiếp theo, tool sẽ gửi API trực tiếp (không cần click button)', 'success');
-            
-            // Xóa thông tin tạm
-            PENDING_REQUEST_INFO = null;
-            
-            // Kích hoạt tiếp tục với chunk 2
-            if (typeof uSTZrHUt_IC === 'function') {
-                setTimeout(() => {
-                    addLogEntry(`🚀 Đã có config, tiếp tục với chunk 2...`, 'success');
-                    uSTZrHUt_IC();
-                }, 500);
-            }
-        } catch (error) {
-            addLogEntry(`❌ [Chunk 1] Lỗi khi bắt config: ${error.message}`, 'error');
-            console.error('[CAPTURE] Chi tiết lỗi:', error);
-        }
-    }
-    
-    // Hàm bắt request clone_v2 thành công
-    function captureCloneV2Config(requestUrl, requestOptions, response) {
-        // Chỉ bắt một lần duy nhất (trừ khi chưa có config)
-        if (IS_CONFIG_READY && CAPTURED_CONFIG) {
-            return;
-        }
-        
-        try {
-            // Kiểm tra response có hợp lệ không
-            if (!response || response.status !== 200) {
-                return;
-            }
-            
-            // Parse response body để kiểm tra có audio_url không
-            response.clone().json().then(data => {
-                // Kiểm tra có audio_url hoặc dữ liệu hợp lệ
-                if (!data || (!data.audio_url && !data.data?.audio_url)) {
-                    return;
-                }
-                
-                // Trích xuất config
-                const config = {
-                    url: requestUrl,
-                    method: requestOptions?.method || 'POST',
-                    headers: {},
-                    queryParams: extractQueryParams(requestUrl),
-                    payload: null,
-                    timestamp: Date.now()
-                };
-                
-                // Lấy headers từ requestOptions
-                if (requestOptions?.headers) {
-                    // Clone headers object
-                    if (requestOptions.headers instanceof Headers) {
-                        requestOptions.headers.forEach((value, key) => {
-                            config.headers[key] = value;
-                        });
-                    } else {
-                        Object.assign(config.headers, requestOptions.headers);
-                    }
-                }
-                
-                // Lấy payload từ requestOptions
-                if (requestOptions?.body) {
-                    try {
-                        if (typeof requestOptions.body === 'string') {
-                            config.payload = JSON.parse(requestOptions.body);
-                        } else {
-                            config.payload = requestOptions.body;
-                        }
-                    } catch (e) {
-                        // Nếu không parse được, lưu dạng string
-                        config.payload = requestOptions.body;
-                    }
-                }
-                
-                // Lưu config
-                saveCapturedConfig(config);
-                addLogEntry('🎯 Đã bắt được cấu hình từ request thành công!', 'success');
-                addLogEntry('✅ Từ chunk tiếp theo, tool sẽ gửi API trực tiếp (không cần click button)', 'success');
-                
-            }).catch(error => {
-                // Nếu không parse được JSON, có thể response không hợp lệ
-                console.log('[CAPTURE] Response không phải JSON hoặc lỗi:', error);
-            });
-            
-        } catch (error) {
-            console.error('[CAPTURE] Lỗi khi bắt config:', error);
-        }
-    }
-    
-    // Hook vào fetch để bắt request clone_v2
-    // Lưu ý: Có thể đã có originalFetch được định nghĩa ở phần khác (auto reset 403)
-    // Sử dụng wrapper để không conflict và đảm bảo hook luôn hoạt động
-    (function() {
-        // Lưu reference đến fetch gốc (có thể đã bị wrap bởi code khác)
-        let existingFetch = window.fetch;
-        
-        // Nếu fetch đã bị wrap, tìm fetch gốc
-        while (existingFetch && existingFetch._originalFetch) {
-            existingFetch = existingFetch._originalFetch;
-        }
-        
-        // Đánh dấu để tránh wrap nhiều lần
-        if (window.fetch._captureHookInstalled) {
-            return; // Hook đã được cài đặt
-        }
-        
-        const originalFetchWrapper = function(url, options) {
-            const urlString = typeof url === 'string' ? url : url.toString();
-            
-            // Kiểm tra có phải request clone_v2 không
-            if (urlString.includes('/voice/clone_v2') || urlString.includes('clone_v2')) {
-                addLogEntry(`🔍 Phát hiện request clone_v2: ${urlString.substring(0, 100)}...`, 'info');
-                return existingFetch.apply(this, arguments).then(response => {
-                    // Bắt config khi response thành công
-                    if (response.status === 200) {
-                        addLogEntry(`✅ Response clone_v2 thành công, đang bắt cấu hình...`, 'info');
-                        captureCloneV2Config(urlString, options, response);
-                    }
-                    return response;
-                }).catch(error => {
-                    addLogEntry(`❌ Request clone_v2 lỗi: ${error.message}`, 'error');
-                    throw error;
-                });
-            }
-            
-            return existingFetch.apply(this, arguments);
-        };
-        
-        // Đánh dấu đã cài đặt
-        originalFetchWrapper._captureHookInstalled = true;
-        originalFetchWrapper._originalFetch = existingFetch;
-        
-        window.fetch = originalFetchWrapper;
-    })();
-    
-    // Hook vào XMLHttpRequest để bắt request clone_v2
-    // Lưu ý: Có thể đã có originalXHROpen/originalXHRSend được định nghĩa ở phần khác
-    // Sử dụng wrapper để không conflict và đảm bảo hook luôn hoạt động
-    (function() {
-        // Kiểm tra xem đã hook chưa
-        if (XMLHttpRequest.prototype.open._captureHookInstalled) {
-            return; // Hook đã được cài đặt
-        }
-        
-        const existingXHROpen = XMLHttpRequest.prototype.open;
-        const existingXHRSend = XMLHttpRequest.prototype.send;
-        const existingXHRSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
-        
-        // Hook vào setRequestHeader để lưu tất cả headers
-        XMLHttpRequest.prototype.setRequestHeader = function(name, value) {
-            if (!this._captureHeaders) {
-                this._captureHeaders = {};
-            }
-            this._captureHeaders[name.toLowerCase()] = value;
-            return existingXHRSetRequestHeader.apply(this, arguments);
-        };
-        
-        XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
-            this._captureUrl = url;
-            this._captureMethod = method;
-            this._captureHeaders = {}; // Reset headers mỗi lần open
-            return existingXHROpen.apply(this, arguments);
-        };
-        
-        // Đánh dấu đã cài đặt
-        XMLHttpRequest.prototype.open._captureHookInstalled = true;
-        
-        XMLHttpRequest.prototype.send = function(data) {
-            const xhr = this;
-            const urlString = this._captureUrl || '';
-            
-            // Kiểm tra có phải request clone_v2 không
-            if (urlString.includes('/voice/clone_v2') || urlString.includes('clone_v2')) {
-                addLogEntry(`🔍 Phát hiện XMLHttpRequest clone_v2: ${urlString.substring(0, 100)}...`, 'info');
-                
-                // Lưu data và thông tin request để dùng sau khi chunk thành công
-                xhr._captureData = data;
-                xhr._captureUrl = urlString;
-                xhr._captureMethod = xhr._captureMethod || 'POST';
-                
-                // QUAN TRỌNG: Luôn lưu request để có thể so sánh và capture lại config
-                // Đặc biệt quan trọng: Capture lại config từ request thành công của chunk 1
-                // (để có config đúng từ request thực tế, không phải preview)
-                const isChunk1Request = ttuo$y_KhCV === 0 || (typeof window.currentChunkIndex !== 'undefined' && window.currentChunkIndex === 0);
-                
-                // Luôn lưu request để có thể capture lại config từ request thành công
-                if (!IS_CONFIG_READY || (IS_CONFIG_READY && isChunk1Request)) {
-                    // Lưu vào biến tạm để dùng khi chunk thành công
-                    // QUAN TRỌNG: Lưu đầy đủ headers từ request thực tế
-                    const requestHeaders = xhr._captureHeaders || {};
-                    
-                    // Đảm bảo có các headers quan trọng
-                    if (!requestHeaders['content-type']) {
-                        requestHeaders['Content-Type'] = 'application/json';
-                    }
-                    if (!requestHeaders['accept']) {
-                        requestHeaders['Accept'] = 'application/json';
-                    }
-                    
-                    // QUAN TRỌNG: Lấy Cookie từ document (quan trọng nhất)
-                    if (document.cookie) {
-                        requestHeaders['Cookie'] = document.cookie;
-                    }
-                    
-                    // Lấy Referer từ window.location
-                    requestHeaders['Referer'] = window.location.href;
-                    
-                    // Lấy Origin từ window.location
-                    requestHeaders['Origin'] = window.location.origin;
-                    
-                    // QUAN TRỌNG: Luôn cập nhật PENDING_REQUEST_INFO với request mới nhất
-                    // Đặc biệt quan trọng: Capture lại config từ request thành công của chunk 1
-                    // Parse data để lưu payload đầy đủ
-                    let parsedData = data;
-                    if (typeof data === 'string') {
-                        try {
-                            parsedData = JSON.parse(data);
-                        } catch (e) {
-                            // Giữ nguyên string nếu không parse được
-                        }
-                    }
-                    
-                    PENDING_REQUEST_INFO = {
-                        url: urlString,
-                        method: xhr._captureMethod || 'POST',
-                        data: parsedData, // Lưu payload đã parse
-                        headers: requestHeaders, // Lưu headers để dùng sau
-                        timestamp: Date.now(),
-                        isChunk1: isChunk1Request
-                    };
-                    
-                    // Log chi tiết để debug
-                    if (parsedData && typeof parsedData === 'object') {
-                        addLogEntry(`💾 [CAPTURE] Đã lưu request: URL=${urlString.substring(0, 80)}..., Payload keys=${Object.keys(parsedData).join(', ')}, need_noise_reduction=${parsedData.need_noise_reduction}`, 'info');
-                    } else {
-                        addLogEntry(`💾 Đã lưu thông tin request tạm thời (chờ chunk thành công mới bắt config)`, 'info');
-                    }
-                } else {
-                    addLogEntry(`ℹ️ Đã có config, không lưu request này`, 'info');
-                }
-                
-                // Hook vào onreadystatechange
-                const originalOnReadyStateChange = xhr.onreadystatechange;
-                xhr.onreadystatechange = function() {
-                    if (originalOnReadyStateChange) {
-                        originalOnReadyStateChange.apply(this, arguments);
-                    }
-                    
-                    // Bắt config khi response thành công
-                    if (xhr.readyState === 4 && xhr.status === 200) {
-                        try {
-                            addLogEntry(`🔍 [CAPTURE XHR] Đang xử lý response clone_v2...`, 'info');
-                            const responseText = xhr.responseText;
-                            
-                            if (!responseText || responseText.trim() === '') {
-                                addLogEntry(`⚠️ [CAPTURE XHR] Response rỗng`, 'warning');
-                                return;
-                            }
-                            
-                            const responseData = JSON.parse(responseText);
-                            addLogEntry(`🔍 [CAPTURE XHR] Response data: ${JSON.stringify(responseData).substring(0, 200)}...`, 'info');
-                            
-                            // Kiểm tra có audio_url không
-                            const audioUrl = responseData?.audio_url || responseData?.data?.audio_url || responseData?.result?.audio_url;
-                            
-                            if (!audioUrl) {
-                                addLogEntry(`⚠️ [CAPTURE XHR] Response không chứa audio_url. Keys: ${Object.keys(responseData || {}).join(', ')}`, 'warning');
-                                return;
-                            }
-                            
-                            addLogEntry(`✅ [CAPTURE XHR] Tìm thấy audio_url: ${audioUrl.substring(0, 100)}...`, 'success');
-                            
-                            const config = {
-                                url: urlString,
-                                method: xhr._captureMethod || 'POST',
-                                headers: {},
-                                queryParams: extractQueryParams(urlString),
-                                payload: null,
-                                timestamp: Date.now()
-                            };
-                            
-                                // QUAN TRỌNG: Lấy payload từ PENDING_REQUEST_INFO.data (đã được parse sẵn)
-                                // Thay vì lấy từ xhr._captureData (có thể là string chưa parse)
-                                if (PENDING_REQUEST_INFO && PENDING_REQUEST_INFO.data) {
-                                    try {
-                                        // PENDING_REQUEST_INFO.data đã được parse sẵn trong hook send()
-                                        config.payload = typeof PENDING_REQUEST_INFO.data === 'string' 
-                                            ? JSON.parse(PENDING_REQUEST_INFO.data) 
-                                            : PENDING_REQUEST_INFO.data;
-                                        addLogEntry(`✅ [CAPTURE XHR] Đã lấy payload từ PENDING_REQUEST_INFO`, 'success');
-                                    } catch (e) {
-                                        addLogEntry(`⚠️ [CAPTURE XHR] Lỗi khi parse payload từ PENDING_REQUEST_INFO: ${e.message}`, 'warning');
-                                        // Fallback: Thử lấy từ xhr._captureData
-                                        const captureData = xhr._captureData;
-                                        if (captureData) {
-                                            try {
-                                                if (typeof captureData === 'string') {
-                                                    config.payload = JSON.parse(captureData);
-                                                } else {
-                                                    config.payload = captureData;
-                                                }
-                                            } catch (e2) {
-                                                addLogEntry(`⚠️ [CAPTURE XHR] Lỗi khi parse payload từ xhr._captureData: ${e2.message}`, 'warning');
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    // Fallback: Lấy từ xhr._captureData
-                                    const captureData = xhr._captureData;
-                                    if (captureData) {
-                                        try {
-                                            if (typeof captureData === 'string') {
-                                                config.payload = JSON.parse(captureData);
-                                            } else if (captureData instanceof FormData) {
-                                                addLogEntry(`⚠️ [CAPTURE XHR] Payload là FormData, không thể lưu`, 'warning');
-                                            } else {
-                                                config.payload = captureData;
-                                            }
-                                        } catch (e) {
-                                            addLogEntry(`⚠️ [CAPTURE XHR] Lỗi khi parse payload: ${e.message}`, 'warning');
-                                        }
-                                    }
-                                }
-                            
-                            // Nếu không có payload từ data, thử lấy từ textarea
-                            if (!config.payload) {
-                                const textarea = document.getElementById('gemini-hidden-text-for-request');
-                                if (textarea && textarea.value) {
-                                    // Tạo payload mẫu dựa trên textarea
-                                    config.payload = {
-                                        text: textarea.value
-                                    };
-                                    addLogEntry(`💡 [CAPTURE XHR] Đã lấy text từ textarea làm payload`, 'info');
-                                }
-                            }
-                            
-                            // KHÔNG lưu config ngay ở đây
-                            // Chỉ lưu vào PENDING_REQUEST_INFO để bắt sau khi chunk thành công
-                            // Lý do: Cần đợi chunk thành công để có đủ thông tin (audio_url từ audio element)
-                            // QUAN TRỌNG: Chỉ lưu request thành công (có audio_url)
-                            // QUAN TRỌNG: Cập nhật PENDING_REQUEST_INFO nếu có audio_url (request thành công)
-                            // Cho phép bắt lại config từ request thành công của chunk 1 (khi click button)
-                            if (audioUrl) {
-                                // Request thành công (có audio_url)
-                                if (PENDING_REQUEST_INFO) {
-                                    PENDING_REQUEST_INFO.responseData = responseData;
-                                    PENDING_REQUEST_INFO.audioUrl = audioUrl;
-                                    addLogEntry(`💾 [CAPTURE XHR] Đã cập nhật thông tin request thành công (có audio_url)`, 'success');
-                                    
-                                    // QUAN TRỌNG: Nếu đã có config nhưng đây là request thành công của chunk 1
-                                    // Cho phép bắt lại config để có config đúng từ request thực tế (không phải preview)
-                                    if (IS_CONFIG_READY && PENDING_REQUEST_INFO) {
-                                        addLogEntry(`🔄 [CAPTURE XHR] Phát hiện request thành công của chunk 1, sẽ bắt lại config`, 'info');
-                                        // Config sẽ được bắt lại khi chunk 1 thành công trong MutationObserver
-                                    }
-                                } else {
-                                    addLogEntry(`⚠️ [CAPTURE XHR] PENDING_REQUEST_INFO không tồn tại, không thể cập nhật`, 'warning');
-                                }
-                            } else {
-                                // Request không thành công (không có audio_url)
-                                addLogEntry(`⚠️ [CAPTURE XHR] Request không thành công (không có audio_url), bỏ qua`, 'warning');
-                                // Xóa PENDING_REQUEST_INFO nếu đây là request không thành công
-                                if (PENDING_REQUEST_INFO && PENDING_REQUEST_INFO.url === urlString) {
-                                    addLogEntry(`🧹 [CAPTURE XHR] Đã xóa PENDING_REQUEST_INFO của request không thành công`, 'info');
-                                    PENDING_REQUEST_INFO = null;
-                                }
-                            }
-                            
-                        } catch (error) {
-                            addLogEntry(`❌ [CAPTURE XHR] Lỗi khi bắt config: ${error.message}`, 'error');
-                            console.error('[CAPTURE XHR] Chi tiết lỗi:', error);
-                            console.error('[CAPTURE XHR] Response text:', xhr.responseText?.substring(0, 500));
-                        }
-                    } else if (xhr.readyState === 4) {
-                        // Response đã hoàn thành nhưng status không phải 200
-                        addLogEntry(`⚠️ [CAPTURE XHR] Response status: ${xhr.status} (không phải 200)`, 'warning');
-                    }
-                };
-                
-                // Hook vào addEventListener để bắt response (nếu web dùng addEventListener thay vì onreadystatechange)
-                const originalAddEventListener = xhr.addEventListener;
-                xhr.addEventListener = function(type, listener, options) {
-                    if (type === 'load' || type === 'loadend') {
-                        const wrappedListener = function(event) {
-                            listener.apply(this, arguments);
-                            
-                            // Bắt config khi response thành công
-                            if (xhr.readyState === 4 && xhr.status === 200) {
-                                try {
-                                    addLogEntry(`🔍 [CAPTURE XHR] Đang xử lý response từ addEventListener(${type})...`, 'info');
-                                    const responseText = xhr.responseText;
-                                    
-                                    if (!responseText || responseText.trim() === '') {
-                                        return;
-                                    }
-                                    
-                                    const responseData = JSON.parse(responseText);
-                                    const audioUrl = responseData?.audio_url || responseData?.data?.audio_url || responseData?.result?.audio_url;
-                                    
-                                    if (audioUrl && !IS_CONFIG_READY) {
-                                        addLogEntry(`✅ [CAPTURE XHR] Tìm thấy audio_url từ addEventListener`, 'success');
-                                        
-                                        const config = {
-                                            url: urlString,
-                                            method: xhr._captureMethod || 'POST',
-                                            headers: {},
-                                            queryParams: extractQueryParams(urlString),
-                                            payload: null,
-                                            timestamp: Date.now()
-                                        };
-                                        
-                                        // Lấy payload từ data
-                                        const captureData = xhr._captureData;
-                                        if (captureData) {
-                                            try {
-                                                if (typeof captureData === 'string') {
-                                                    config.payload = JSON.parse(captureData);
-                                                } else if (!(captureData instanceof FormData)) {
-                                                    config.payload = captureData;
-                                                }
-                                            } catch (e) {
-                                                // Bỏ qua
-                                            }
-                                        }
-                                        
-                                        // Nếu không có payload từ data, thử lấy từ textarea
-                                        if (!config.payload) {
-                                            const textarea = document.getElementById('gemini-hidden-text-for-request');
-                                            if (textarea && textarea.value) {
-                                                config.payload = { text: textarea.value };
-                                            }
-                                        }
-                                        
-                                        // KHÔNG lưu config ngay ở đây
-                                        // Chỉ cập nhật PENDING_REQUEST_INFO
-                                        if (!IS_CONFIG_READY && PENDING_REQUEST_INFO) {
-                                            PENDING_REQUEST_INFO.responseData = responseData;
-                                            PENDING_REQUEST_INFO.audioUrl = audioUrl;
-                                            addLogEntry(`💾 [CAPTURE XHR] Đang cập nhật thông tin request từ addEventListener (chờ chunk thành công)...`, 'info');
-                                        }
-                                    }
-                                } catch (error) {
-                                    // Bỏ qua lỗi để không ảnh hưởng đến listener gốc
-                                }
-                            }
-                        };
-                        return originalAddEventListener.call(this, type, wrappedListener, options);
-                    }
-                    return originalAddEventListener.apply(this, arguments);
-                };
-            }
-            
-            return existingXHRSend.apply(this, arguments);
-        };
-    })();
-    
-    // Khởi tạo: Load config và cập nhật UI
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            loadCapturedConfig();
-            updateConfigUI();
-        });
-    } else {
-        loadCapturedConfig();
-        setTimeout(updateConfigUI, 500);
-    }
-    
-    // =======================================================
-    // == KẾT THÚC: AUTO-CAPTURE "MỒI & BẮT" ==
     // =======================================================
 
     // =======================================================
@@ -3488,9 +2726,23 @@ function dExAbhXwTJeTJBIjWr(EARfsfSN_QdgxH){const tENdSoNDV_gGwQKLZv$sYaZKhl=AP$
 // Sử dụng window.chunkBlobs nếu có và có dữ liệu, nếu không thì dùng ZTQj$LF$o
 let finalBlobs = ZTQj$LF$o; // Mặc định dùng ZTQj$LF$o như code gốc
 if (window.chunkBlobs && window.chunkBlobs.length > 0) {
-    const validBlobs = window.chunkBlobs.filter(blob => blob !== null);
-    if (validBlobs.length > 0) {
-        finalBlobs = validBlobs; // Chỉ dùng window.chunkBlobs nếu có dữ liệu
+    // ✅ SỬA LỖI: Giữ lại index gốc để sắp xếp đúng thứ tự
+    const chunksWithIndex = [];
+    for (let i = 0; i < window.chunkBlobs.length; i++) {
+        if (window.chunkBlobs[i] !== null && window.chunkBlobs[i] !== undefined) {
+            chunksWithIndex.push({
+                index: i,
+                blob: window.chunkBlobs[i]
+            });
+        }
+    }
+    
+    if (chunksWithIndex.length > 0) {
+        // ✅ Sắp xếp lại theo index gốc để đảm bảo thứ tự đúng
+        chunksWithIndex.sort((a, b) => a.index - b.index);
+        // Lấy ra mảng blob đã được sắp xếp đúng thứ tự
+        finalBlobs = chunksWithIndex.map(item => item.blob);
+        addLogEntry(`✅ Đã sắp xếp lại ${finalBlobs.length} chunks theo thứ tự index gốc (0-${chunksWithIndex[chunksWithIndex.length - 1].index})`, 'info');
     }
 }
 
@@ -3511,11 +2763,12 @@ if (finalBlobs.length === 0) {
     return;
 }
 
-// Kiểm tra chunks null/undefined
+// ✅ Đã xử lý null/undefined ở trên rồi, không cần filter lại
+// Kiểm tra lại một lần nữa để đảm bảo an toàn (nhưng không mất index vì đã sắp xếp)
 const validFinalBlobs = finalBlobs.filter(blob => blob !== null && blob !== undefined);
 if (validFinalBlobs.length !== finalBlobs.length) {
     const removedCount = finalBlobs.length - validFinalBlobs.length;
-    addLogEntry(`⚠️ Phát hiện ${removedCount} chunk null/undefined, đã loại bỏ`, 'warning');
+    addLogEntry(`⚠️ Phát hiện ${removedCount} chunk null/undefined sau khi sắp xếp, đã loại bỏ`, 'warning');
     finalBlobs = validFinalBlobs;
 }
 
@@ -4087,29 +3340,6 @@ async function uSTZrHUt_IC() {
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
     if (MEpJezGZUsmpZdAgFRBRZW) return;
     
-    // =======================================================
-    // == CHẶN CHUNK 2 TRỞ ĐI NẾU CHƯA CÓ CONFIG ==
-    // =======================================================
-    // QUAN TRỌNG: Chỉ cho phép chunk 1 chạy khi chưa có config
-    // Chunk 2 trở đi phải đợi chunk 1 thành công và bắt được config
-    if (!IS_CONFIG_READY && ttuo$y_KhCV > 0) {
-        addLogEntry(`⏸️ [Chunk ${ttuo$y_KhCV + 1}] Đang đợi chunk 1 thành công và bắt được cấu hình...`, 'info');
-        addLogEntry(`💡 Chỉ chunk 1 được phép chạy khi chưa có config. Chunk ${ttuo$y_KhCV + 1} sẽ đợi...`, 'info');
-        
-        // Kiểm tra lại sau 2 giây
-        setTimeout(() => {
-            if (!IS_CONFIG_READY) {
-                addLogEntry(`⏸️ [Chunk ${ttuo$y_KhCV + 1}] Vẫn chưa có config, tiếp tục đợi...`, 'info');
-                uSTZrHUt_IC();
-            } else {
-                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã có config! Tiếp tục xử lý...`, 'success');
-                uSTZrHUt_IC();
-            }
-        }, 2000);
-        return; // Dừng lại, không tiếp tục xử lý chunk này
-    }
-    // =======================================================
-    
     // GUARD: Kiểm tra độ sâu recursive calls ở đầu hàm
     if (typeof window.recursiveCallDepth === 'undefined') {
         window.recursiveCallDepth = 0;
@@ -4308,10 +3538,23 @@ async function uSTZrHUt_IC() {
             }
         }
 
-        // Nếu có chunk thất bại và chưa kiểm tra cuối
+        // ✅ SỬA LỖI: Chỉ chuyển sang retry mode khi ĐÃ RENDER HẾT TẤT CẢ CHUNKS
+        // Kiểm tra xem còn chunks đang được xử lý không (pending hoặc đang processing)
+        const processingChunks = window.processingChunks || new Set();
+        const pendingChunks = [];
+        for (let i = 0; i < totalChunks; i++) {
+            const status = window.chunkStatus && window.chunkStatus[i];
+            const hasTimeout = window.chunkTimeoutIds && window.chunkTimeoutIds[i];
+            // Chunk chưa được xử lý xong nếu: pending/undefined hoặc đang có timeout/processing
+            if ((!status || status === 'pending') && (hasTimeout || processingChunks.has(i))) {
+                pendingChunks.push(i);
+            }
+        }
+        
+        // Nếu có chunk thất bại và chưa kiểm tra cuối VÀ không còn chunks đang xử lý
         // CHỈ reset khi 1 chunk cụ thể render lỗi, không reset khi retry failed chunks
-        if (failedChunks.length > 0 && !window.isFinalCheck) {
-            addLogEntry(`🔍 Phát hiện ${failedChunks.length} chunk thất bại. Bắt đầu xử lý lại...`, 'warning');
+        if (failedChunks.length > 0 && !window.isFinalCheck && pendingChunks.length === 0) {
+            addLogEntry(`🔍 Phát hiện ${failedChunks.length} chunk thất bại. Tất cả chunks đã được render xong. Bắt đầu xử lý lại...`, 'warning');
             addLogEntry(`📋 Danh sách chunk thất bại: ${failedChunks.map(i => i + 1).join(', ')}`, 'info');
             window.isFinalCheck = true;
             window.retryCount = 0; // Reset bộ đếm retry
@@ -4328,6 +3571,12 @@ async function uSTZrHUt_IC() {
                 addLogEntry(`⏳ Rate limiting: Chờ ${Math.round(retryStartDelay)}ms trước khi bắt đầu retry...`, 'info');
                 setTimeout(uSTZrHUt_IC, retryStartDelay);
             })();
+            return;
+        } else if (failedChunks.length > 0 && !window.isFinalCheck && pendingChunks.length > 0) {
+            // ✅ Còn chunks đang xử lý, CHƯA retry - tiếp tục đợi render hết
+            addLogEntry(`⏳ Phát hiện ${failedChunks.length} chunk thất bại, nhưng còn ${pendingChunks.length} chunks đang được xử lý (${pendingChunks.map(i => i + 1).join(', ')}). Tiếp tục đợi render hết trước khi retry...`, 'info');
+            const waitDelay = 3000 + Math.random() * 2000; // 3000-5000ms
+            setTimeout(uSTZrHUt_IC, waitDelay);
             return;
         }
 
@@ -4539,13 +3788,15 @@ async function uSTZrHUt_IC() {
             
             // QUAN TRỌNG: Kiểm tra lại sau khi nhảy đến chunk lỗi
             // Nếu chunk hiện tại đã thành công (có thể đã được xử lý trong lần retry trước), nhảy đến chunk lỗi tiếp theo
-            if (window.chunkStatus[ttuo$y_KhCV] === 'success') {
+            if (window.chunkStatus && window.chunkStatus[ttuo$y_KhCV] === 'success') {
                 // Chunk này đã thành công
-                if (window.failedChunks.includes(ttuo$y_KhCV)) {
+                if (window.failedChunks && window.failedChunks.includes(ttuo$y_KhCV)) {
                     // Chunk này đã thành công nhưng vẫn trong danh sách failedChunks (chưa được loại bỏ)
                     // Loại bỏ khỏi danh sách failedChunks
+                    const beforeCount = window.failedChunks.length;
                     window.failedChunks = window.failedChunks.filter(idx => idx !== ttuo$y_KhCV);
-                    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã thành công, loại bỏ khỏi danh sách lỗi`, 'success');
+                    const afterCount = window.failedChunks.length;
+                    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã thành công, loại bỏ khỏi danh sách lỗi (${beforeCount} → ${afterCount} failed chunks)`, 'success');
                 }
                 
                 // Nhảy đến chunk lỗi tiếp theo (bỏ qua chunk đã thành công)
@@ -4571,14 +3822,21 @@ async function uSTZrHUt_IC() {
         }
         
         // QUAN TRỌNG: Nếu đang trong RETRY MODE và chunk này không phải failed, không xử lý
-        if (window.isFinalCheck && window.chunkStatus[ttuo$y_KhCV] === 'success') {
+        if (window.isFinalCheck && window.chunkStatus && window.chunkStatus[ttuo$y_KhCV] === 'success') {
             // Chunk này đã thành công, không cần xử lý lại
+            // Đảm bảo loại bỏ khỏi failedChunks nếu vẫn còn trong đó
+            if (window.failedChunks && window.failedChunks.includes(ttuo$y_KhCV)) {
+                const beforeCount = window.failedChunks.length;
+                window.failedChunks = window.failedChunks.filter(idx => idx !== ttuo$y_KhCV);
+                const afterCount = window.failedChunks.length;
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã thành công, loại bỏ khỏi danh sách lỗi (${beforeCount} → ${afterCount} failed chunks)`, 'success');
+            }
             addLogEntry(`⏭️ [Chunk ${ttuo$y_KhCV + 1}] Đã thành công, bỏ qua trong retry mode`, 'info');
             // Nhảy đến chunk lỗi tiếp theo
-            const remainingFailedChunks = window.failedChunks.filter(idx => idx > ttuo$y_KhCV);
+            const remainingFailedChunks = window.failedChunks ? window.failedChunks.filter(idx => idx > ttuo$y_KhCV) : [];
             if (remainingFailedChunks.length > 0) {
                 const nextFailedIndex = Math.min(...remainingFailedChunks);
-                addLogEntry(`⏭️ Nhảy thẳng đến chunk ${nextFailedIndex + 1} (chunk lỗi tiếp theo)`, 'info');
+                addLogEntry(`⏭️ Nhảy thẳng đến chunk ${nextFailedIndex + 1} (chunk lỗi tiếp theo, còn ${remainingFailedChunks.length} chunks)`, 'info');
                 ttuo$y_KhCV = nextFailedIndex;
                 const retryDelay = 3000 + Math.random() * 2000; // 3000-5000ms
                 setTimeout(uSTZrHUt_IC, retryDelay);
@@ -5332,331 +4590,180 @@ async function uSTZrHUt_IC() {
             addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set lại text trước khi click`, 'success');
         }
         
-        // =======================================================
-        // == PHẦN MỚI: GỬI API TRỰC TIẾP THAY VÌ CLICK BUTTON ==
-        // =======================================================
+        // ✅ THAY ĐỔI: Thay vì click button (gây lỗi rate limit), phân tích và tạo JSON để duyệt
+        // Thu thập đầy đủ thông tin request
+        const currentUrl = window.location.href;
         
-        // QUAN TRỌNG: Chunk 1 LUÔN LUÔN click button (không bao giờ gửi API trực tiếp)
-        // Chỉ sau khi chunk 1 thành công mới bắt config
-        // Chunk 2 trở đi mới dùng API trực tiếp nếu đã có config
-        if (ttuo$y_KhCV === 0) {
-            // Chunk 1: Luôn luôn click button bình thường, không kiểm tra config
-            KxTOuAJu(targetButton);
-        } else if (!IS_CONFIG_READY || !CAPTURED_CONFIG) {
-            // Chunk 2 trở đi nhưng chưa có config: Đợi config từ chunk 1
-            addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Đang đợi config từ chunk 1...`, 'warning');
-            // Fallback: Vẫn click button như cũ
-            KxTOuAJu(targetButton);
-        } else {
-            // Chunk 2 trở đi và đã có config: Gửi API trực tiếp
-            // Clone config và thay đổi text
-            const clonedPayload = JSON.parse(JSON.stringify(CAPTURED_CONFIG.payload));
-            
-            // === [FIX TOÀN DIỆN LỖI 400] Chuẩn hóa payload theo mẫu Voice Clone ===
-            
-            // Log payload gốc trước khi sửa
-            addLogEntry(`🔍 [C#${ttuo$y_KhCV + 1}] Payload gốc: ${JSON.stringify(clonedPayload).substring(0, 300)}...`, 'info');
-            
-            // === [FIX LỖI 400] CHỈ THAY ĐỔI NỘI DUNG TEXT ===
-            // QUAN TRỌNG: Giữ nguyên 100% cấu trúc payload từ chunk 1 thành công
-            // Chỉ thay đổi nội dung của trường text/preview_text, không làm gì khác
-            
-            if (clonedPayload.files && clonedPayload.files.length > 0) {
-                addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Phát hiện Voice Clone mode - Fix lỗi 400...`, 'info');
-                addLogEntry(`🔍 [C#${ttuo$y_KhCV + 1}] need_noise_reduction TRƯỚC KHI SỬA: ${clonedPayload.need_noise_reduction}`, 'warning');
-                
-                // 1. BẮT BUỘC: need_noise_reduction phải là false
-                clonedPayload.need_noise_reduction = false;
-                
-                // 2. QUAN TRỌNG: Xóa speed, vol, pitch (Voice Clone mode không có các trường này)
-                if (Object.prototype.hasOwnProperty.call(clonedPayload, 'speed')) {
-                    delete clonedPayload.speed;
-                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa speed (Voice Clone mode không có)`, 'info');
-                }
-                if (Object.prototype.hasOwnProperty.call(clonedPayload, 'vol')) {
-                    delete clonedPayload.vol;
-                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa vol (Voice Clone mode không có)`, 'info');
-                }
-                if (Object.prototype.hasOwnProperty.call(clonedPayload, 'pitch')) {
-                    delete clonedPayload.pitch;
-                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa pitch (Voice Clone mode không có)`, 'info');
-                }
-                
-                // 3. Xóa trường 'text' thừa nếu có (Voice Clone mode dùng preview_text)
-                if (Object.prototype.hasOwnProperty.call(clonedPayload, 'text')) {
-                    delete clonedPayload.text;
-                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa text (Voice Clone mode dùng preview_text)`, 'info');
-                }
-                
-                // 4. Gán nội dung chunk vào preview_text
-                clonedPayload.preview_text = chunkText;
-                
-                // 5. Đảm bảo language_tag tồn tại
-                if (!clonedPayload.language_tag) {
-                    clonedPayload.language_tag = "Vietnamese";
-                }
-                
-                addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã force need_noise_reduction=false & gán preview_text`, 'success');
-                addLogEntry(`🔍 [C#${ttuo$y_KhCV + 1}] need_noise_reduction SAU KHI SỬA: ${clonedPayload.need_noise_reduction}`, 'success');
-            } else {
-                // Chế độ khác: Thay đổi text
-                if (clonedPayload.text !== undefined) {
-                    clonedPayload.text = chunkText;
-                    addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã thay đổi text`, 'info');
-                } else {
-                    // Nếu không có text, thử dùng preview_text
-                    clonedPayload.preview_text = chunkText;
-                    addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã thay đổi preview_text (không có text)`, 'info');
-                }
-            }
-            // ====================================================
-            
-            // Debug: Log payload đầy đủ sau khi sửa
-            addLogEntry(`🔍 [C#${ttuo$y_KhCV + 1}] Payload đầy đủ (sau khi sửa): ${JSON.stringify(clonedPayload)}`, 'info');
-            
-            // Debug: Log chi tiết payload structure
-            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Payload keys: ${Object.keys(clonedPayload).join(', ')}`, 'info');
-            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Payload language_tag: ${clonedPayload.language_tag}`, 'info');
-            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Payload files count: ${clonedPayload.files?.length || 0}`, 'info');
-            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Payload need_noise_reduction: ${clonedPayload.need_noise_reduction}`, 'info');
-            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Payload preview_text length: ${clonedPayload.preview_text?.length || 0}`, 'info');
-            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Payload text length: ${clonedPayload.text?.length || 0}`, 'info');
-            
-            // Xây dựng URL với query params
-            let apiUrl = CAPTURED_CONFIG.url;
-            addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] URL gốc từ config: ${apiUrl}`, 'info');
-            
-            // QUAN TRỌNG: Đảm bảo URL đầy đủ (có domain)
-            if (apiUrl.startsWith('/')) {
-                // Relative URL, thêm origin
-                apiUrl = window.location.origin + apiUrl;
-                addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] Đã thêm origin vào URL: ${apiUrl}`, 'info');
-            } else if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
-                // Relative URL không có dấu /, thêm origin + /
-                apiUrl = window.location.origin + '/' + apiUrl;
-                addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] Đã thêm origin + / vào URL: ${apiUrl}`, 'info');
+        // Phân tích form/button để lấy URL API endpoint thực tế
+        let apiUrl = currentUrl;
+        try {
+            // Tìm form chứa button
+            const form = targetButton.closest('form');
+            if (form && form.action) {
+                apiUrl = form.action.startsWith('http') ? form.action : new URL(form.action, currentUrl).href;
+            } else if (targetButton.form && targetButton.form.action) {
+                apiUrl = targetButton.form.action.startsWith('http') ? targetButton.form.action : new URL(targetButton.form.action, currentUrl).href;
             }
             
-            const queryParams = new URLSearchParams();
-            Object.keys(CAPTURED_CONFIG.queryParams || {}).forEach(key => {
-                queryParams.append(key, CAPTURED_CONFIG.queryParams[key]);
-            });
-            
-            // QUAN TRỌNG: Cập nhật timestamp 'unix' thành giá trị hiện tại
-            // Server có thể từ chối request có timestamp cũ
-            const currentUnix = Date.now();
-            if (queryParams.has('unix')) {
-                queryParams.set('unix', currentUnix.toString());
-                addLogEntry(`🔄 [C#${ttuo$y_KhCV + 1}] Đã cập nhật unix timestamp: ${currentUnix}`, 'info');
-            } else {
-                queryParams.append('unix', currentUnix.toString());
-                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm unix timestamp: ${currentUnix}`, 'info');
+            // Nếu button có data-url hoặc data-action
+            if (targetButton.dataset.url) {
+                apiUrl = targetButton.dataset.url.startsWith('http') ? targetButton.dataset.url : new URL(targetButton.dataset.url, currentUrl).href;
             }
-            
-            addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] Query params sau khi cập nhật: ${queryParams.toString()}`, 'info');
-            
-            if (queryParams.toString()) {
-                // Giữ nguyên query params nếu URL đã có, hoặc thêm mới
-                const urlParts = apiUrl.split('?');
-                if (urlParts.length > 1) {
-                    // URL đã có query params, merge lại
-                    const existingParams = new URLSearchParams(urlParts[1]);
-                    addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] URL đã có query params: ${urlParts[1]}`, 'info');
-                    // Cập nhật unix trong existing params
-                    existingParams.set('unix', currentUnix.toString());
-                    queryParams.forEach((value, key) => {
-                        existingParams.set(key, value);
-                    });
-                    apiUrl = urlParts[0] + '?' + existingParams.toString();
-                    addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] URL sau khi merge: ${apiUrl}`, 'info');
-                } else {
-                    apiUrl = apiUrl + '?' + queryParams.toString();
-                    addLogEntry(`🔗 [C#${ttuo$y_KhCV + 1}] URL sau khi thêm query params: ${apiUrl}`, 'info');
-                }
+            if (targetButton.dataset.action) {
+                apiUrl = targetButton.dataset.action.startsWith('http') ? targetButton.dataset.action : new URL(targetButton.dataset.action, currentUrl).href;
             }
-            
-            // QUAN TRỌNG: Giữ nguyên headers từ config (không normalize case)
-            // Một số headers như op_ticket, yy có thể case-sensitive
-            const normalizedHeaders = {};
-            const headers = CAPTURED_CONFIG.headers || {};
-            
-            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Headers gốc từ config: ${JSON.stringify(headers)}`, 'info');
-            
-            // Copy tất cả headers từ config (giữ nguyên case của key)
-            // QUAN TRỌNG: Giữ nguyên case để đảm bảo headers đặc biệt như op_ticket, yy hoạt động đúng
-            Object.keys(headers).forEach(key => {
-                // Giữ nguyên key và value từ config
-                normalizedHeaders[key] = headers[key];
-            });
-            
-            // Đảm bảo có các headers quan trọng
-            if (!normalizedHeaders['content-type']) {
-                normalizedHeaders['content-type'] = 'application/json';
-                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm content-type: application/json`, 'info');
-            }
-            if (!normalizedHeaders['accept']) {
-                normalizedHeaders['accept'] = 'application/json';
-                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm accept: application/json`, 'info');
-            }
-            if (!normalizedHeaders['cookie'] && document.cookie) {
-                normalizedHeaders['cookie'] = document.cookie;
-                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm cookie từ document.cookie`, 'info');
-            }
-            if (!normalizedHeaders['referer']) {
-                normalizedHeaders['referer'] = window.location.href;
-                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm referer: ${window.location.href}`, 'info');
-            }
-            if (!normalizedHeaders['origin']) {
-                normalizedHeaders['origin'] = window.location.origin;
-                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm origin: ${window.location.origin}`, 'info');
-            }
-            
-            // QUAN TRỌNG: Thêm User-Agent và các headers khác mà browser tự động thêm
-            if (!normalizedHeaders['user-agent']) {
-                normalizedHeaders['user-agent'] = navigator.userAgent;
-                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm user-agent`, 'info');
-            }
-            
-            // Thêm Accept-Language nếu có
-            if (!normalizedHeaders['accept-language'] && navigator.language) {
-                normalizedHeaders['accept-language'] = navigator.language + ',' + navigator.languages.join(',');
-                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm accept-language`, 'info');
-            }
-            
-            // Thêm Accept-Encoding (browser tự động thêm)
-            if (!normalizedHeaders['accept-encoding']) {
-                normalizedHeaders['accept-encoding'] = 'gzip, deflate, br';
-                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm accept-encoding`, 'info');
-            }
-            
-            // Thêm Connection
-            if (!normalizedHeaders['connection']) {
-                normalizedHeaders['connection'] = 'keep-alive';
-                addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã thêm connection: keep-alive`, 'info');
-            }
-            
-            // QUAN TRỌNG: Ép buộc need_noise_reduction = false một lần nữa trước khi gửi (đảm bảo không bị ghi đè)
-            if (clonedPayload.files && clonedPayload.files.length > 0) {
-                clonedPayload.need_noise_reduction = false;
-                addLogEntry(`🔒 [C#${ttuo$y_KhCV + 1}] Đã ép buộc need_noise_reduction=false lần cuối trước khi gửi`, 'success');
-            }
-            
-            // Gửi API trực tiếp
-            addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang gửi API trực tiếp (không cần click button)...`, 'info');
-            addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] URL đầy đủ: ${apiUrl}`, 'info');
-            
-            // Debug: Log payload và headers chi tiết
-            addLogEntry(`📦 [C#${ttuo$y_KhCV + 1}] Payload JSON đầy đủ: ${JSON.stringify(clonedPayload)}`, 'info');
-            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Headers đầy đủ: ${JSON.stringify(normalizedHeaders)}`, 'info');
-            addLogEntry(`📋 [C#${ttuo$y_KhCV + 1}] Headers keys: ${Object.keys(normalizedHeaders).join(', ')}`, 'info');
-            
-            // Đánh dấu đang gửi API để skip phần code click button
-            window._skipClickButtonForChunk = ttuo$y_KhCV;
-            
-            // QUAN TRỌNG: Dùng XMLHttpRequest thay vì fetch() để giống hệt với cách web gửi
-            // fetch() có thể thiếu một số headers tự động hoặc xử lý khác với XMLHttpRequest
-            addLogEntry(`🔧 [C#${ttuo$y_KhCV + 1}] Sử dụng XMLHttpRequest thay vì fetch() để giống với web`, 'info');
-            
-            return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open(CAPTURED_CONFIG.method || 'POST', apiUrl, true);
-                
-                // Set headers - QUAN TRỌNG: Giữ nguyên case của key
-                Object.keys(normalizedHeaders).forEach(key => {
-                    try {
-                        xhr.setRequestHeader(key, normalizedHeaders[key]);
-                    } catch (e) {
-                        addLogEntry(`⚠️ [C#${ttuo$y_KhCV + 1}] Lỗi khi set header ${key}: ${e.message}`, 'warning');
-                    }
-                });
-                
-                xhr.onload = function() {
-                    addLogEntry(`🔍 [Chunk ${ttuo$y_KhCV + 1}] Response status: ${xhr.status}`, 'info');
-                    
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        try {
-                            const data = JSON.parse(xhr.responseText);
-                            resolve(data);
-                        } catch (e) {
-                            addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Lỗi parse response: ${e.message}`, 'error');
-                            reject(new Error(`Failed to parse response: ${e.message}`));
-                        }
-                    } else {
-                        // Lỗi HTTP - Log chi tiết để debug
-                        const responseText = xhr.responseText;
-                        addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Response body: ${responseText.substring(0, 500)}`, 'error');
-                        
-                        // QUAN TRỌNG: So sánh với request thành công của chunk 1
-                        if (CAPTURED_CONFIG && CAPTURED_CONFIG.payload) {
-                            addLogEntry(`🔍 [DEBUG] So sánh với config từ chunk 1:`, 'info');
-                            addLogEntry(`🔍 [DEBUG] Config payload keys: ${Object.keys(CAPTURED_CONFIG.payload).join(', ')}`, 'info');
-                            addLogEntry(`🔍 [DEBUG] Config payload need_noise_reduction: ${CAPTURED_CONFIG.payload.need_noise_reduction}`, 'info');
-                            addLogEntry(`🔍 [DEBUG] Request payload need_noise_reduction: ${clonedPayload.need_noise_reduction}`, 'info');
-                            addLogEntry(`🔍 [DEBUG] Config headers keys: ${Object.keys(CAPTURED_CONFIG.headers || {}).join(', ')}`, 'info');
-                            addLogEntry(`🔍 [DEBUG] Request headers keys: ${Object.keys(normalizedHeaders).join(', ')}`, 'info');
-                        }
-                        
-                        reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText || 'Unknown error'}`));
-                    }
-                };
-                
-                xhr.onerror = function() {
-                    addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Network error`, 'error');
-                    reject(new Error('Network error'));
-                };
-                
-                xhr.send(JSON.stringify(clonedPayload));
-            }).then(data => {
-                // Kiểm tra có audio_url không
-                const audioUrl = data?.audio_url || data?.data?.audio_url || data?.result?.audio_url;
-                if (!audioUrl) {
-                    addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Response không chứa audio_url. Keys: ${Object.keys(data || {}).join(', ')}`, 'warning');
-                    throw new Error('Response không chứa audio_url');
-                }
-                
-                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] API trả về thành công!`, 'success');
-                
-                // Tìm container audio của web (thường là trong clone-voice-ux-v2)
-                const audioContainer = document.querySelector('.clone-voice-ux-v2') || document.body;
-                
-                // Tạo audio element giống như web tạo
-                const audio = document.createElement('audio');
-                audio.src = audioUrl;
-                audio.controls = true;
-                audio.style.display = 'block';
-                audio.setAttribute('data-chunk-index', ttuo$y_KhCV.toString());
-                
-                // Thêm vào container để MutationObserver phát hiện
-                audioContainer.appendChild(audio);
-                
-                // Trigger các event để MutationObserver phát hiện
-                setTimeout(() => {
-                    audio.dispatchEvent(new Event('load'));
-                    audio.dispatchEvent(new Event('loadeddata'));
-                }, 100);
-                
-                // Xóa flag để cho phép chunk tiếp theo
-                if (window._skipClickButtonForChunk === ttuo$y_KhCV) {
-                    delete window._skipClickButtonForChunk;
-                }
-                
-            }).catch(error => {
-                addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi gửi API: ${error.message}`, 'error');
-                addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Fallback: Sử dụng click button...`, 'warning');
-                // Fallback: Click button như cũ
-                if (window._skipClickButtonForChunk === ttuo$y_KhCV) {
-                    delete window._skipClickButtonForChunk;
-                }
-                KxTOuAJu(targetButton);
-            });
-            
-            // Return ngay để không chạy phần code click button phía dưới
-            // MutationObserver sẽ tự động phát hiện audio element mới
-            return;
+        } catch (e) {
+            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Không thể phân tích URL API: ${e.message}`, 'warning');
         }
         
-        // Thực hiện click (chỉ khi không có config)
-        KxTOuAJu(targetButton);
+        // Tạo JSON theo format mẫu
+        const requestJSON = {
+            url: apiUrl, // URL API endpoint thực tế
+            response: chunkText, // Text sẽ gửi đi
+            timestamp: new Date().toISOString()
+        };
+        
+        // Log thông tin phân tích
+        addLogEntry(`📊 [Chunk ${ttuo$y_KhCV + 1}] Đã phân tích request:`, 'info');
+        addLogEntry(`   URL: ${apiUrl}`, 'info');
+        addLogEntry(`   Text length: ${chunkText.length} ký tự`, 'info');
+        addLogEntry(`   Button: ${targetButton ? targetButton.textContent : 'N/A'}`, 'info');
+        
+        // Hiển thị JSON để người dùng duyệt
+        const jsonString = JSON.stringify(requestJSON, null, 2);
+        addLogEntry(`📋 [Chunk ${ttuo$y_KhCV + 1}] JSON Request (chờ duyệt):`, 'info');
+        addLogEntry(jsonString, 'info');
+        
+        // Tạo modal để hiển thị JSON và cho phép người dùng duyệt
+        const modalId = `request-review-modal-${ttuo$y_KhCV}`;
+        let reviewModal = document.getElementById(modalId);
+        
+        if (!reviewModal) {
+            reviewModal = document.createElement('div');
+            reviewModal.id = modalId;
+            reviewModal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.7);
+                z-index: 999999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: #282a36;
+                color: #f8f8f2;
+                padding: 20px;
+                border-radius: 8px;
+                max-width: 80%;
+                max-height: 80%;
+                overflow: auto;
+                font-family: monospace;
+            `;
+            
+            const title = document.createElement('h3');
+            title.textContent = `📋 Review Request - Chunk ${ttuo$y_KhCV + 1}/${SI$acY.length}`;
+            title.style.cssText = 'margin-top: 0; color: #8be9fd;';
+            
+            const infoText = document.createElement('p');
+            infoText.textContent = `⚠️ Tool đã tự động phân tích request để tránh lỗi rate limit. Vui lòng duyệt trước khi gửi.`;
+            infoText.style.cssText = 'color: #ffb86c; margin: 10px 0; font-size: 14px;';
+            
+            const jsonDisplay = document.createElement('pre');
+            jsonDisplay.textContent = jsonString;
+            jsonDisplay.style.cssText = `
+                background: #1e1e1e;
+                padding: 15px;
+                border-radius: 4px;
+                overflow-x: auto;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                max-height: 400px;
+                overflow-y: auto;
+            `;
+            
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.cssText = 'margin-top: 15px; display: flex; gap: 10px; justify-content: flex-end;';
+            
+            const approveBtn = document.createElement('button');
+            approveBtn.textContent = '✅ Approve & Send';
+            approveBtn.style.cssText = `
+                background: #50fa7b;
+                color: #282a36;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-weight: bold;
+            `;
+            
+            const rejectBtn = document.createElement('button');
+            rejectBtn.textContent = '❌ Reject';
+            rejectBtn.style.cssText = `
+                background: #ff5555;
+                color: #fff;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-weight: bold;
+            `;
+            
+            // Tự động approve sau 5 giây nếu người dùng không tương tác
+            let autoApproveTimeout = setTimeout(() => {
+                addLogEntry(`⏰ [Chunk ${ttuo$y_KhCV + 1}] Tự động approve sau 5 giây (không có tương tác)`, 'info');
+                reviewModal.remove();
+                // Sau khi duyệt, thực hiện click với delay để tránh rate limit
+                setTimeout(() => {
+                    KxTOuAJu(targetButton);
+                }, 1000); // Thêm delay 1 giây trước khi click
+            }, 5000);
+            
+            approveBtn.onclick = () => {
+                clearTimeout(autoApproveTimeout);
+                reviewModal.remove();
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Request đã được approve, đang gửi...`, 'success');
+                // Sau khi duyệt, thực hiện click với delay để tránh rate limit
+                setTimeout(() => {
+                    KxTOuAJu(targetButton);
+                }, 1000); // Thêm delay 1 giây trước khi click
+            };
+            
+            rejectBtn.onclick = () => {
+                clearTimeout(autoApproveTimeout);
+                reviewModal.remove();
+                addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Request bị từ chối bởi người dùng`, 'error');
+                // Đánh dấu chunk này là failed
+                window.chunkStatus[ttuo$y_KhCV] = 'failed';
+                if (!window.failedChunks.includes(ttuo$y_KhCV)) {
+                    window.failedChunks.push(ttuo$y_KhCV);
+                }
+                // Chuyển sang chunk tiếp theo
+                ttuo$y_KhCV++;
+                if (ttuo$y_KhCV < SI$acY.length) {
+                    setTimeout(uSTZrHUt_IC, 1000);
+                }
+            };
+            
+            buttonContainer.appendChild(rejectBtn);
+            buttonContainer.appendChild(approveBtn);
+            
+            modalContent.appendChild(title);
+            modalContent.appendChild(infoText);
+            modalContent.appendChild(jsonDisplay);
+            modalContent.appendChild(buttonContainer);
+            reviewModal.appendChild(modalContent);
+            
+            document.body.appendChild(reviewModal);
+        }
+        
+        // Dừng lại ở đây, chờ người dùng duyệt
+        return;
         
         // Lớp 5: Kiểm tra và giám sát text SAU KHI CLICK (nhiều lần trong 2 giây)
         // QUAN TRỌNG: Website có thể reset text về mặc định sau khi click
@@ -6552,107 +5659,6 @@ function igyo$uwVChUzI() {
                         }
                         
                         // =======================================================
-                        // == PHẦN MỚI: BẮT CONFIG KHI CHUNK 1 THÀNH CÔNG ==
-                        // =======================================================
-                        // QUAN TRỌNG: Chỉ bắt config SAU KHI chunk 1 thành công (có audio_url từ response)
-                        // Cho phép bắt lại config từ request thành công của chunk 1 (khi click button)
-                        // để có config đúng từ request thực tế, không phải preview request
-                        // Debug: Log trạng thái để kiểm tra
-                        if (currentChunkIndex === 0) {
-                            addLogEntry(`🔍 [Chunk 1] Debug: currentChunkIndex=${currentChunkIndex}, IS_CONFIG_READY=${IS_CONFIG_READY}, PENDING_REQUEST_INFO=${PENDING_REQUEST_INFO ? 'có' : 'không'}`, 'info');
-                            if (PENDING_REQUEST_INFO) {
-                                addLogEntry(`🔍 [Chunk 1] Debug: PENDING_REQUEST_INFO.url=${PENDING_REQUEST_INFO.url?.substring(0, 100)}...`, 'info');
-                                addLogEntry(`🔍 [Chunk 1] Debug: PENDING_REQUEST_INFO.audioUrl=${PENDING_REQUEST_INFO.audioUrl ? 'có' : 'không'}`, 'info');
-                                if (PENDING_REQUEST_INFO.data) {
-                                    try {
-                                        const payload = typeof PENDING_REQUEST_INFO.data === 'string' ? JSON.parse(PENDING_REQUEST_INFO.data) : PENDING_REQUEST_INFO.data;
-                                        addLogEntry(`🔍 [Chunk 1] Debug: Payload keys: ${Object.keys(payload || {}).join(', ')}`, 'info');
-                                        addLogEntry(`🔍 [Chunk 1] Debug: Payload có preview_text: ${payload?.preview_text ? 'có' : 'không'}`, 'info');
-                                        addLogEntry(`🔍 [Chunk 1] Debug: Payload có text: ${payload?.text ? 'có' : 'không'}`, 'info');
-                                    } catch (e) {
-                                        // Bỏ qua
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // Cho phép bắt lại config từ request thành công của chunk 1
-                        // (kể cả khi đã có config, để có config đúng từ request thực tế)
-                        // QUAN TRỌNG: Capture lại config ngay cả khi response không có audio_url trong body
-                        // (vì audio_url có thể được lấy từ audio element trong DOM)
-                        if (currentChunkIndex === 0 && PENDING_REQUEST_INFO) {
-                            addLogEntry(`🎯 [Chunk 1] Đã thành công! Đang bắt cấu hình từ request đã lưu...`, 'info');
-                            
-                            try {
-                                // QUAN TRỌNG: Lấy audio_url từ audio element (src của audio tag)
-                                // Đây là cách chắc chắn nhất vì audio element đã được tạo với src chính xác
-                                const audioElement = TYRNWSSd$QOYZe;
-                                let audioUrl = null;
-                                
-                                if (audioElement) {
-                                    // Thử nhiều cách để lấy src
-                                    audioUrl = audioElement.src || 
-                                              audioElement.getAttribute('src') ||
-                                              audioElement.currentSrc ||
-                                              (audioElement.querySelector('source') && audioElement.querySelector('source').src);
-                                }
-                                
-                                // Fallback: Tìm audio element trong DOM
-                                if (!audioUrl) {
-                                    const allAudios = document.querySelectorAll('audio');
-                                    for (const audio of allAudios) {
-                                        const src = audio.src || audio.getAttribute('src') || audio.currentSrc;
-                                        if (src && (src.includes('.mp3') || src.includes('.wav') || src.includes('audio'))) {
-                                            audioUrl = src;
-                                            addLogEntry(`💡 [Chunk 1] Tìm thấy audio_url từ audio element khác trong DOM`, 'info');
-                                            break;
-                                        }
-                                    }
-                                }
-                                
-                                // Fallback cuối: Lấy từ response đã lưu
-                                if (!audioUrl && PENDING_REQUEST_INFO.responseData) {
-                                    audioUrl = PENDING_REQUEST_INFO.responseData.audio_url || 
-                                              PENDING_REQUEST_INFO.responseData.data?.audio_url || 
-                                              PENDING_REQUEST_INFO.responseData.result?.audio_url ||
-                                              PENDING_REQUEST_INFO.audioUrl;
-                                }
-                                
-                                if (!audioUrl) {
-                                    addLogEntry(`⚠️ [Chunk 1] Không tìm thấy audio_url từ audio element hoặc response`, 'warning');
-                                    addLogEntry(`💡 [Chunk 1] Đang tìm lại audio element trong DOM...`, 'info');
-                                    
-                                    // Tìm lại sau 1 giây (có thể audio chưa được tạo)
-                                    setTimeout(() => {
-                                        const retryAudios = document.querySelectorAll('audio');
-                                        for (const audio of retryAudios) {
-                                            const src = audio.src || audio.getAttribute('src');
-                                            if (src && src.length > 0) {
-                                                addLogEntry(`✅ [Chunk 1] Tìm thấy audio_url sau khi retry: ${src.substring(0, 100)}...`, 'success');
-                                                // Gọi lại hàm bắt config với audio_url này
-                                                captureConfigFromChunk1(src);
-                                                return;
-                                            }
-                                        }
-                                        addLogEntry(`❌ [Chunk 1] Vẫn không tìm thấy audio_url sau khi retry`, 'error');
-                                    }, 1000);
-                                    return; // Dừng lại, chờ retry
-                                } else {
-                                    addLogEntry(`✅ [Chunk 1] Tìm thấy audio_url: ${audioUrl.substring(0, 100)}...`, 'success');
-                                    
-                                    // Gọi hàm bắt config
-                                    captureConfigFromChunk1(audioUrl);
-                                }
-                            } catch (error) {
-                                addLogEntry(`❌ [Chunk 1] Lỗi khi bắt config: ${error.message}`, 'error');
-                                console.error('[CAPTURE] Chi tiết lỗi:', error);
-                            }
-                        } else if (currentChunkIndex === 0 && !IS_CONFIG_READY && !PENDING_REQUEST_INFO) {
-                            addLogEntry(`⚠️ [Chunk 1] Chưa có thông tin request. Config sẽ được bắt từ chunk tiếp theo.`, 'warning');
-                        }
-                        // =======================================================
-                        
-                        // =======================================================
                         // == ĐÁNH DẤU THÀNH CÔNG: SAU KHI TẤT CẢ KIỂM TRA ĐỀU HỢP LỆ ==
                         // =======================================================
                         // QUAN TRỌNG: Chỉ đánh dấu success SAU KHI đã kiểm tra dung lượng và lưu blob thành công
@@ -6688,10 +5694,11 @@ function igyo$uwVChUzI() {
                             addLogEntry(`✅ [Chunk 1] Đã thành công - Reset flag kiểm tra cấu hình`, 'success');
                         }
 
-                        // Nếu đang trong giai đoạn kiểm tra cuối, loại bỏ chunk này khỏi danh sách thất bại
-                        if (window.isFinalCheck && window.failedChunks.includes(currentChunkIndex)) {
+                        // QUAN TRỌNG: Luôn loại bỏ chunk này khỏi danh sách thất bại khi thành công (không chỉ trong isFinalCheck)
+                        if (window.failedChunks && window.failedChunks.includes(currentChunkIndex)) {
                             window.failedChunks = window.failedChunks.filter(index => index !== currentChunkIndex);
-                            addLogEntry(`🎉 [Chunk ${currentChunkIndex + 1}] Đã khôi phục thành công từ trạng thái thất bại!`, 'success');
+                            addLogEntry(`🎉 [Chunk ${currentChunkIndex + 1}] Đã khôi phục thành công từ trạng thái thất bại! (Đã loại bỏ khỏi failedChunks)`, 'success');
+                            addLogEntry(`📊 [Chunk ${currentChunkIndex + 1}] Còn lại ${window.failedChunks.length} chunks thất bại`, 'info');
                         }
                         // =======================================================
                         // == END: ĐÁNH DẤU THÀNH CÔNG ==
@@ -6750,30 +5757,6 @@ function igyo$uwVChUzI() {
                         // Không phải retry mode: XỬ LÝ TUẦN TỰ TUYỆT ĐỐI
                         // Chỉ chuyển sang chunk tiếp theo nếu chunk hiện tại đã hoàn toàn xong
                         if (isCurrentChunk) {
-                            // QUAN TRỌNG: Nếu chunk 1 thành công nhưng chưa có config, KHÔNG chuyển sang chunk 2
-                            // Phải đợi đến khi bắt được config mới tiếp tục
-                            if (currentChunkIndex === 0 && !IS_CONFIG_READY) {
-                                addLogEntry(`⏸️ [Chunk 1] Đã thành công nhưng chưa có config. Đang đợi bắt config...`, 'info');
-                                addLogEntry(`💡 Chunk 2 sẽ chỉ chạy sau khi đã bắt được config từ chunk 1`, 'info');
-                                // KHÔNG tăng ttuo$y_KhCV, giữ nguyên để đợi config
-                                // Kiểm tra lại sau 1 giây
-                                setTimeout(() => {
-                                    if (!IS_CONFIG_READY) {
-                                        addLogEntry(`⏸️ [Chunk 1] Vẫn chưa có config, tiếp tục đợi...`, 'info');
-                                        // Gọi lại để kiểm tra
-                                        uSTZrHUt_IC();
-                                    } else {
-                                        addLogEntry(`✅ [Chunk 1] Đã có config! Tiếp tục với chunk 2...`, 'success');
-                                        // Tiếp tục với chunk 2
-                                        if (ttuo$y_KhCV + 1 < SI$acY.length) {
-                                            ttuo$y_KhCV++;
-                                            uSTZrHUt_IC();
-                                        }
-                                    }
-                                }, 1000);
-                                return; // Dừng lại, không tiếp tục
-                            }
-                            
                             // Chunk hiện tại đã thành công, chuyển sang chunk tiếp theo
                             // QUAN TRỌNG: Kiểm tra không vượt quá số lượng chunks ban đầu
                             if (ttuo$y_KhCV + 1 < SI$acY.length) {
@@ -9562,511 +8545,3 @@ async function waitForVoiceModelReady() {
             errorObserver.disconnect();
         }
     });
-    
-    // ====================================================
-    // == HÀM TEST: Test logic gửi API trực tiếp ==
-    // ====================================================
-    // Sử dụng: Mở Console và chạy: window.testDirectAPI("text test")
-    // Đảm bảo hàm được định nghĩa ở scope global
-    if (typeof window !== 'undefined') {
-        window.testDirectAPI = function(testText) {
-            if (!CAPTURED_CONFIG || !CAPTURED_CONFIG.payload) {
-                console.error('❌ Chưa có config! Vui lòng chạy chunk 1 thành công trước.');
-                return Promise.reject('Chưa có config');
-            }
-            
-            console.log('🧪 [TEST] Bắt đầu test gửi API trực tiếp...');
-            console.log('📋 [TEST] Config payload keys:', Object.keys(CAPTURED_CONFIG.payload));
-            console.log('📋 [TEST] Config headers keys:', Object.keys(CAPTURED_CONFIG.headers || {}));
-            
-            // Clone payload từ config
-            const clonedPayload = JSON.parse(JSON.stringify(CAPTURED_CONFIG.payload));
-            const testChunkText = testText || 'Test text để kiểm tra API';
-            
-            // Xử lý payload giống như khi gửi chunk 2
-            if (clonedPayload.files && clonedPayload.files.length > 0) {
-                console.log('🎯 [TEST] Voice Clone mode');
-                clonedPayload.need_noise_reduction = false;
-                
-                // Xóa speed, vol, pitch
-                if (clonedPayload.speed !== undefined) delete clonedPayload.speed;
-                if (clonedPayload.vol !== undefined) delete clonedPayload.vol;
-                if (clonedPayload.pitch !== undefined) delete clonedPayload.pitch;
-                if (clonedPayload.text !== undefined) delete clonedPayload.text;
-                
-                clonedPayload.preview_text = testChunkText;
-                console.log('✅ [TEST] Payload sau khi xử lý:', JSON.stringify(clonedPayload, null, 2));
-            } else {
-                clonedPayload.text = testChunkText;
-                if (clonedPayload.preview_text) delete clonedPayload.preview_text;
-                console.log('✅ [TEST] Payload sau khi xử lý:', JSON.stringify(clonedPayload, null, 2));
-            }
-            
-            // Xây dựng URL
-            let apiUrl = CAPTURED_CONFIG.url;
-            if (apiUrl.startsWith('/')) {
-                apiUrl = window.location.origin + apiUrl;
-            }
-            
-            // Cập nhật unix timestamp
-            try {
-                const urlObj = new URL(apiUrl);
-                urlObj.searchParams.set('unix', Date.now().toString());
-                apiUrl = urlObj.toString();
-            } catch (e) {
-                console.warn('⚠️ [TEST] Lỗi khi parse URL:', e);
-            }
-            
-            console.log('🔗 [TEST] URL:', apiUrl);
-            
-            // Xử lý headers
-            const normalizedHeaders = {};
-            const headers = CAPTURED_CONFIG.headers || {};
-            Object.keys(headers).forEach(key => {
-                normalizedHeaders[key] = headers[key];
-            });
-            
-            // Đảm bảo có các headers quan trọng
-            if (!normalizedHeaders['content-type'] && !normalizedHeaders['Content-Type']) {
-                normalizedHeaders['content-type'] = 'application/json';
-            }
-            if (!normalizedHeaders['accept'] && !normalizedHeaders['Accept']) {
-                normalizedHeaders['accept'] = 'application/json';
-            }
-            if (!normalizedHeaders['cookie'] && !normalizedHeaders['Cookie'] && document.cookie) {
-                normalizedHeaders['cookie'] = document.cookie;
-            }
-            if (!normalizedHeaders['referer'] && !normalizedHeaders['Referer']) {
-                normalizedHeaders['referer'] = window.location.href;
-            }
-            if (!normalizedHeaders['origin'] && !normalizedHeaders['Origin']) {
-                normalizedHeaders['origin'] = window.location.origin;
-            }
-            
-            console.log('📋 [TEST] Headers:', JSON.stringify(normalizedHeaders, null, 2));
-            
-            // Gửi request test
-            return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open(CAPTURED_CONFIG.method || 'POST', apiUrl, true);
-                
-                // Set headers
-                Object.keys(normalizedHeaders).forEach(key => {
-                    try {
-                        xhr.setRequestHeader(key, normalizedHeaders[key]);
-                    } catch (e) {
-                        console.warn(`⚠️ [TEST] Lỗi khi set header ${key}:`, e.message);
-                    }
-                });
-                
-                xhr.onload = function() {
-                    console.log(`🔍 [TEST] Response status: ${xhr.status}`);
-                    console.log(`📦 [TEST] Response body:`, xhr.responseText);
-                    
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        try {
-                            const data = JSON.parse(xhr.responseText);
-                            console.log('✅ [TEST] THÀNH CÔNG!', data);
-                            resolve(data);
-                        } catch (e) {
-                            console.error('❌ [TEST] Lỗi parse response:', e);
-                            reject(e);
-                        }
-                    } else {
-                        console.error(`❌ [TEST] LỖI HTTP ${xhr.status}:`, xhr.responseText);
-                        reject(new Error(`HTTP ${xhr.status}`));
-                    }
-                };
-                
-                xhr.onerror = function() {
-                    console.error('❌ [TEST] Network error');
-                    reject(new Error('Network error'));
-                };
-                
-                console.log('🚀 [TEST] Đang gửi request...');
-                xhr.send(JSON.stringify(clonedPayload));
-            });
-        };
-        
-        window.compareConfigWithSuccess = window.compareConfigWithSuccess || function() {
-            if (!CAPTURED_CONFIG) {
-                console.error('❌ Chưa có config!');
-                return;
-            }
-            
-            console.log('📊 [COMPARE] So sánh Config với Request thành công:');
-            console.log('📋 [COMPARE] Config payload:', JSON.stringify(CAPTURED_CONFIG.payload, null, 2));
-            console.log('📋 [COMPARE] Config headers:', JSON.stringify(CAPTURED_CONFIG.headers, null, 2));
-            console.log('📋 [COMPARE] Config URL:', CAPTURED_CONFIG.url);
-            
-            if (PENDING_REQUEST_INFO) {
-                console.log('📋 [COMPARE] PENDING_REQUEST_INFO payload:', JSON.stringify(PENDING_REQUEST_INFO.data, null, 2));
-                console.log('📋 [COMPARE] PENDING_REQUEST_INFO headers:', JSON.stringify(PENDING_REQUEST_INFO.headers, null, 2));
-                console.log('📋 [COMPARE] PENDING_REQUEST_INFO URL:', PENDING_REQUEST_INFO.url);
-            } else {
-                console.log('⚠️ [COMPARE] Không có PENDING_REQUEST_INFO');
-            }
-        };
-        
-        console.log('✅ [TEST] Đã load hàm test. Sử dụng:');
-        console.log('   - window.testDirectAPI("text test") - Test gửi API trực tiếp');
-        console.log('   - window.compareConfigWithSuccess() - So sánh config với request thành công');
-    }
-    
-    // ====================================================
-    // == ĐỊNH NGHĨA HÀM TEST Ở SCOPE GLOBAL (ĐỂ TEST) ==
-    // ====================================================
-    // Đảm bảo hàm luôn được expose ra window, không phụ thuộc vào scope
-    (function() {
-        'use strict';
-        // Kiểm tra và định nghĩa hàm test
-        if (typeof window !== 'undefined') {
-            // Định nghĩa lại hàm test ở scope global tuyệt đối
-            window.testDirectAPI = function(testText) {
-                try {
-                    // Kiểm tra biến global
-                    if (typeof CAPTURED_CONFIG === 'undefined' || !CAPTURED_CONFIG || !CAPTURED_CONFIG.payload) {
-                        console.error('❌ [TEST] Chưa có config! Vui lòng chạy chunk 1 thành công trước.');
-                        console.log('💡 [TEST] Hãy đảm bảo đã có CAPTURED_CONFIG trong localStorage hoặc đã chạy chunk 1 thành công.');
-                        return Promise.reject('Chưa có config');
-                    }
-                    
-                    console.log('🧪 [TEST] Bắt đầu test gửi API trực tiếp...');
-                    console.log('📋 [TEST] Config payload keys:', Object.keys(CAPTURED_CONFIG.payload));
-                    console.log('📋 [TEST] Config headers keys:', Object.keys(CAPTURED_CONFIG.headers || {}));
-                    
-                    // Clone payload từ config
-                    const clonedPayload = JSON.parse(JSON.stringify(CAPTURED_CONFIG.payload));
-                    const testChunkText = testText || 'Test text để kiểm tra API';
-                    
-                    // Xử lý payload giống như khi gửi chunk 2
-                    if (clonedPayload.files && clonedPayload.files.length > 0) {
-                        console.log('🎯 [TEST] Voice Clone mode');
-                        clonedPayload.need_noise_reduction = false;
-                        
-                        // Xóa speed, vol, pitch
-                        if (clonedPayload.speed !== undefined) delete clonedPayload.speed;
-                        if (clonedPayload.vol !== undefined) delete clonedPayload.vol;
-                        if (clonedPayload.pitch !== undefined) delete clonedPayload.pitch;
-                        if (clonedPayload.text !== undefined) delete clonedPayload.text;
-                        
-                        clonedPayload.preview_text = testChunkText;
-                        console.log('✅ [TEST] Payload sau khi xử lý:', JSON.stringify(clonedPayload, null, 2));
-                    } else {
-                        clonedPayload.text = testChunkText;
-                        if (clonedPayload.preview_text) delete clonedPayload.preview_text;
-                        console.log('✅ [TEST] Payload sau khi xử lý:', JSON.stringify(clonedPayload, null, 2));
-                    }
-                    
-                    // Xây dựng URL
-                    let apiUrl = CAPTURED_CONFIG.url;
-                    if (apiUrl.startsWith('/')) {
-                        apiUrl = window.location.origin + apiUrl;
-                    }
-                    
-                    // Cập nhật unix timestamp
-                    try {
-                        const urlObj = new URL(apiUrl);
-                        urlObj.searchParams.set('unix', Date.now().toString());
-                        apiUrl = urlObj.toString();
-                    } catch (e) {
-                        console.warn('⚠️ [TEST] Lỗi khi parse URL:', e);
-                    }
-                    
-                    console.log('🔗 [TEST] URL:', apiUrl);
-                    
-                    // Xử lý headers
-                    const normalizedHeaders = {};
-                    const headers = CAPTURED_CONFIG.headers || {};
-                    Object.keys(headers).forEach(key => {
-                        normalizedHeaders[key] = headers[key];
-                    });
-                    
-                    // Đảm bảo có các headers quan trọng
-                    if (!normalizedHeaders['content-type'] && !normalizedHeaders['Content-Type']) {
-                        normalizedHeaders['content-type'] = 'application/json';
-                    }
-                    if (!normalizedHeaders['accept'] && !normalizedHeaders['Accept']) {
-                        normalizedHeaders['accept'] = 'application/json';
-                    }
-                    if (!normalizedHeaders['cookie'] && !normalizedHeaders['Cookie'] && document.cookie) {
-                        normalizedHeaders['cookie'] = document.cookie;
-                    }
-                    if (!normalizedHeaders['referer'] && !normalizedHeaders['Referer']) {
-                        normalizedHeaders['referer'] = window.location.href;
-                    }
-                    if (!normalizedHeaders['origin'] && !normalizedHeaders['Origin']) {
-                        normalizedHeaders['origin'] = window.location.origin;
-                    }
-                    
-                    console.log('📋 [TEST] Headers:', JSON.stringify(normalizedHeaders, null, 2));
-                    
-                    // Gửi request test
-                    return new Promise((resolve, reject) => {
-                        const xhr = new XMLHttpRequest();
-                        xhr.open(CAPTURED_CONFIG.method || 'POST', apiUrl, true);
-                        
-                        // Set headers
-                        Object.keys(normalizedHeaders).forEach(key => {
-                            try {
-                                xhr.setRequestHeader(key, normalizedHeaders[key]);
-                            } catch (e) {
-                                console.warn(`⚠️ [TEST] Lỗi khi set header ${key}:`, e.message);
-                            }
-                        });
-                        
-                        xhr.onload = function() {
-                            console.log(`🔍 [TEST] Response status: ${xhr.status}`);
-                            console.log(`📦 [TEST] Response body:`, xhr.responseText);
-                            
-                            if (xhr.status >= 200 && xhr.status < 300) {
-                                try {
-                                    const data = JSON.parse(xhr.responseText);
-                                    console.log('✅ [TEST] THÀNH CÔNG!', data);
-                                    resolve(data);
-                                } catch (e) {
-                                    console.error('❌ [TEST] Lỗi parse response:', e);
-                                    reject(e);
-                                }
-                            } else {
-                                console.error(`❌ [TEST] LỖI HTTP ${xhr.status}:`, xhr.responseText);
-                                reject(new Error(`HTTP ${xhr.status}`));
-                            }
-                        };
-                        
-                        xhr.onerror = function() {
-                            console.error('❌ [TEST] Network error');
-                            reject(new Error('Network error'));
-                        };
-                        
-                        console.log('🚀 [TEST] Đang gửi request...');
-                        xhr.send(JSON.stringify(clonedPayload));
-                    });
-                } catch (error) {
-                    console.error('❌ [TEST] Lỗi trong hàm test:', error);
-                    return Promise.reject(error);
-                }
-            };
-            
-            window.compareConfigWithSuccess = function() {
-                try {
-                    if (typeof CAPTURED_CONFIG === 'undefined' || !CAPTURED_CONFIG) {
-                        console.error('❌ Chưa có config!');
-                        return;
-                    }
-                    
-                    console.log('📊 [COMPARE] So sánh Config với Request thành công:');
-                    console.log('📋 [COMPARE] Config payload:', JSON.stringify(CAPTURED_CONFIG.payload, null, 2));
-                    console.log('📋 [COMPARE] Config headers:', JSON.stringify(CAPTURED_CONFIG.headers, null, 2));
-                    console.log('📋 [COMPARE] Config URL:', CAPTURED_CONFIG.url);
-                    
-                    if (typeof PENDING_REQUEST_INFO !== 'undefined' && PENDING_REQUEST_INFO) {
-                        console.log('📋 [COMPARE] PENDING_REQUEST_INFO payload:', JSON.stringify(PENDING_REQUEST_INFO.data, null, 2));
-                        console.log('📋 [COMPARE] PENDING_REQUEST_INFO headers:', JSON.stringify(PENDING_REQUEST_INFO.headers, null, 2));
-                        console.log('📋 [COMPARE] PENDING_REQUEST_INFO URL:', PENDING_REQUEST_INFO.url);
-                    } else {
-                        console.log('⚠️ [COMPARE] Không có PENDING_REQUEST_INFO');
-                    }
-                } catch (error) {
-                    console.error('❌ [COMPARE] Lỗi:', error);
-                }
-            };
-            
-            // Log để xác nhận hàm đã được load
-            console.log('✅ [TEST GLOBAL] Đã định nghĩa hàm test ở scope global:');
-            console.log('   - window.testDirectAPI("text test") - Test gửi API trực tiếp');
-            console.log('   - window.compareConfigWithSuccess() - So sánh config với request thành công');
-        }
-    })();
-    
-    // ====================================================
-    // == ĐỊNH NGHĨA HÀM TEST Ở CUỐI FILE (ĐẢM BẢO CHẠY) ==
-    // ====================================================
-    // Định nghĩa trực tiếp ở scope global, không phụ thuộc vào điều kiện
-    if (typeof window !== 'undefined') {
-        // Hàm test với khả năng tự lấy config từ localStorage
-        window.testDirectAPI = window.testDirectAPI || function(testText) {
-            console.log('🧪 [TEST] Bắt đầu test gửi API trực tiếp...');
-            
-            // Lấy config từ nhiều nguồn
-            let config = null;
-            
-            // 1. Thử lấy từ biến global CAPTURED_CONFIG
-            if (typeof CAPTURED_CONFIG !== 'undefined' && CAPTURED_CONFIG && CAPTURED_CONFIG.payload) {
-                config = CAPTURED_CONFIG;
-                console.log('✅ [TEST] Đã lấy config từ biến global CAPTURED_CONFIG');
-            }
-            // 2. Thử lấy từ localStorage
-            else {
-                try {
-                    const savedConfig = localStorage.getItem('DUC_LOI_CAPTURED_CONFIG_V1');
-                    if (savedConfig) {
-                        config = JSON.parse(savedConfig);
-                        console.log('✅ [TEST] Đã lấy config từ localStorage');
-                    }
-                } catch (e) {
-                    console.warn('⚠️ [TEST] Lỗi khi đọc localStorage:', e);
-                }
-            }
-            
-            if (!config || !config.payload) {
-                console.error('❌ [TEST] Chưa có config!');
-                console.log('💡 [TEST] Hãy đảm bảo:');
-                console.log('   1. Đã chạy chunk 1 thành công');
-                console.log('   2. Hoặc có config trong localStorage với key: DUC_LOI_CAPTURED_CONFIG_V1');
-                console.log('   3. Hoặc có biến CAPTURED_CONFIG trong scope global');
-                return Promise.reject('Chưa có config');
-            }
-            
-            console.log('📋 [TEST] Config payload keys:', Object.keys(config.payload));
-            console.log('📋 [TEST] Config headers keys:', Object.keys(config.headers || {}));
-            
-            // Clone payload từ config
-            const clonedPayload = JSON.parse(JSON.stringify(config.payload));
-            const testChunkText = testText || 'Test text để kiểm tra API';
-            
-            // Xử lý payload giống như khi gửi chunk 2
-            if (clonedPayload.files && clonedPayload.files.length > 0) {
-                console.log('🎯 [TEST] Voice Clone mode');
-                clonedPayload.need_noise_reduction = false;
-                
-                // Xóa speed, vol, pitch
-                if (clonedPayload.speed !== undefined) delete clonedPayload.speed;
-                if (clonedPayload.vol !== undefined) delete clonedPayload.vol;
-                if (clonedPayload.pitch !== undefined) delete clonedPayload.pitch;
-                if (clonedPayload.text !== undefined) delete clonedPayload.text;
-                
-                clonedPayload.preview_text = testChunkText;
-                console.log('✅ [TEST] Payload sau khi xử lý:', JSON.stringify(clonedPayload, null, 2));
-            } else {
-                clonedPayload.text = testChunkText;
-                if (clonedPayload.preview_text) delete clonedPayload.preview_text;
-                console.log('✅ [TEST] Payload sau khi xử lý:', JSON.stringify(clonedPayload, null, 2));
-            }
-            
-            // Xây dựng URL
-            let apiUrl = config.url;
-            if (apiUrl.startsWith('/')) {
-                apiUrl = window.location.origin + apiUrl;
-            }
-            
-            // Cập nhật unix timestamp
-            try {
-                const urlObj = new URL(apiUrl);
-                urlObj.searchParams.set('unix', Date.now().toString());
-                apiUrl = urlObj.toString();
-            } catch (e) {
-                console.warn('⚠️ [TEST] Lỗi khi parse URL:', e);
-            }
-            
-            console.log('🔗 [TEST] URL:', apiUrl);
-            
-            // Xử lý headers
-            const normalizedHeaders = {};
-            const headers = config.headers || {};
-            Object.keys(headers).forEach(key => {
-                normalizedHeaders[key] = headers[key];
-            });
-            
-            // Đảm bảo có các headers quan trọng
-            if (!normalizedHeaders['content-type'] && !normalizedHeaders['Content-Type']) {
-                normalizedHeaders['content-type'] = 'application/json';
-            }
-            if (!normalizedHeaders['accept'] && !normalizedHeaders['Accept']) {
-                normalizedHeaders['accept'] = 'application/json';
-            }
-            if (!normalizedHeaders['cookie'] && !normalizedHeaders['Cookie'] && document.cookie) {
-                normalizedHeaders['cookie'] = document.cookie;
-            }
-            if (!normalizedHeaders['referer'] && !normalizedHeaders['Referer']) {
-                normalizedHeaders['referer'] = window.location.href;
-            }
-            if (!normalizedHeaders['origin'] && !normalizedHeaders['Origin']) {
-                normalizedHeaders['origin'] = window.location.origin;
-            }
-            
-            console.log('📋 [TEST] Headers:', JSON.stringify(normalizedHeaders, null, 2));
-            
-            // Gửi request test
-            return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open(config.method || 'POST', apiUrl, true);
-                
-                // Set headers
-                Object.keys(normalizedHeaders).forEach(key => {
-                    try {
-                        xhr.setRequestHeader(key, normalizedHeaders[key]);
-                    } catch (e) {
-                        console.warn(`⚠️ [TEST] Lỗi khi set header ${key}:`, e.message);
-                    }
-                });
-                
-                xhr.onload = function() {
-                    console.log(`🔍 [TEST] Response status: ${xhr.status}`);
-                    console.log(`📦 [TEST] Response body:`, xhr.responseText);
-                    
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        try {
-                            const data = JSON.parse(xhr.responseText);
-                            console.log('✅ [TEST] THÀNH CÔNG!', data);
-                            resolve(data);
-                        } catch (e) {
-                            console.error('❌ [TEST] Lỗi parse response:', e);
-                            reject(e);
-                        }
-                    } else {
-                        console.error(`❌ [TEST] LỖI HTTP ${xhr.status}:`, xhr.responseText);
-                        reject(new Error(`HTTP ${xhr.status}`));
-                    }
-                };
-                
-                xhr.onerror = function() {
-                    console.error('❌ [TEST] Network error');
-                    reject(new Error('Network error'));
-                };
-                
-                console.log('🚀 [TEST] Đang gửi request...');
-                xhr.send(JSON.stringify(clonedPayload));
-            });
-        };
-        
-        window.compareConfigWithSuccess = window.compareConfigWithSuccess || function() {
-            let config = null;
-            
-            if (typeof CAPTURED_CONFIG !== 'undefined' && CAPTURED_CONFIG) {
-                config = CAPTURED_CONFIG;
-            } else {
-                try {
-                    const savedConfig = localStorage.getItem('DUC_LOI_CAPTURED_CONFIG_V1');
-                    if (savedConfig) {
-                        config = JSON.parse(savedConfig);
-                    }
-                } catch (e) {
-                    console.warn('⚠️ [COMPARE] Lỗi khi đọc localStorage:', e);
-                }
-            }
-            
-            if (!config) {
-                console.error('❌ Chưa có config!');
-                return;
-            }
-            
-            console.log('📊 [COMPARE] So sánh Config với Request thành công:');
-            console.log('📋 [COMPARE] Config payload:', JSON.stringify(config.payload, null, 2));
-            console.log('📋 [COMPARE] Config headers:', JSON.stringify(config.headers, null, 2));
-            console.log('📋 [COMPARE] Config URL:', config.url);
-            
-            if (typeof PENDING_REQUEST_INFO !== 'undefined' && PENDING_REQUEST_INFO) {
-                console.log('📋 [COMPARE] PENDING_REQUEST_INFO payload:', JSON.stringify(PENDING_REQUEST_INFO.data, null, 2));
-                console.log('📋 [COMPARE] PENDING_REQUEST_INFO headers:', JSON.stringify(PENDING_REQUEST_INFO.headers, null, 2));
-                console.log('📋 [COMPARE] PENDING_REQUEST_INFO URL:', PENDING_REQUEST_INFO.url);
-            } else {
-                console.log('⚠️ [COMPARE] Không có PENDING_REQUEST_INFO');
-            }
-        };
-        
-        // Log xác nhận
-        console.log('✅ [TEST FINAL] Đã định nghĩa hàm test ở cuối file:');
-        console.log('   - window.testDirectAPI("text test") - Test gửi API trực tiếp');
-        console.log('   - window.compareConfigWithSuccess() - So sánh config');
-    }
