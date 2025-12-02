@@ -5271,10 +5271,8 @@ async function uSTZrHUt_IC() {
                 // 1. Lưu lại các giá trị quan trọng từ config cũ
                 const keepLanguage = clonedPayload.language_tag || "Vietnamese";
                 const keepFiles = clonedPayload.files;
-                // Giữ giá trị noise reduction nếu có, mặc định là false
-                const keepNoise = (typeof clonedPayload.need_noise_reduction !== 'undefined') ? clonedPayload.need_noise_reduction : false;
                 
-                // 2. Xóa sạch TẤT CẢ các trường trong object hiện tại để tránh rác lạ (ví dụ preview_text)
+                // 2. Xóa sạch TẤT CẢ các trường trong object hiện tại để tránh rác lạ
                 for (const key in clonedPayload) {
                     if (Object.prototype.hasOwnProperty.call(clonedPayload, key)) {
                         delete clonedPayload[key];
@@ -5282,14 +5280,14 @@ async function uSTZrHUt_IC() {
                 }
                 
                 // 3. Xây dựng lại object (ĐÚNG 100% THEO MẪU WEB)
-                // Mẫu web chỉ có: language_tag, files, need_noise_reduction, text
-                // KHÔNG có speed, vol, pitch trong Voice Clone mode
+                // Mẫu web có: language_tag, files, need_noise_reduction, preview_text
+                // QUAN TRỌNG: Trường tên phải là preview_text, không phải text!
                 clonedPayload.language_tag = keepLanguage;
                 clonedPayload.files = keepFiles;
-                clonedPayload.need_noise_reduction = keepNoise;
-                // Note: trường 'text' sẽ được gán ở dòng code phía dưới (thay cho preview_text)
+                clonedPayload.need_noise_reduction = false; // Bắt buộc false theo mẫu
+                // Note: trường 'preview_text' sẽ được gán ở dòng code phía dưới với nội dung chunk
                 
-                addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã tái tạo Payload đúng mẫu web (language, files, need_noise_reduction)`, 'success');
+                addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã tái tạo Payload đúng mẫu web (language, files, need_noise_reduction=false)`, 'success');
                 
             } else {
                 // CHẾ ĐỘ KHÁC (Text-to-Speech thường): Giữ logic cũ
@@ -5302,7 +5300,13 @@ async function uSTZrHUt_IC() {
             }
             // ====================================================
             
-            clonedPayload.text = chunkText; // Gán text chuẩn vào
+            // QUAN TRỌNG: Trong Voice Clone mode, trường tên phải là preview_text, không phải text
+            if (clonedPayload.files && clonedPayload.files.length > 0) {
+                clonedPayload.preview_text = chunkText; // Gán vào preview_text cho Voice Clone mode
+                addLogEntry(`✅ [C#${ttuo$y_KhCV + 1}] Đã gán text vào preview_text (Voice Clone mode)`, 'info');
+            } else {
+                clonedPayload.text = chunkText; // Gán vào text cho chế độ khác
+            }
             
             // Debug: Log payload đầy đủ sau khi sửa
             addLogEntry(`🔍 [C#${ttuo$y_KhCV + 1}] Payload đầy đủ (sau khi sửa): ${JSON.stringify(clonedPayload)}`, 'info');
