@@ -1477,7 +1477,7 @@ button:disabled {
             
             // [FIX 2] Xây dựng Payload thông minh (Clone & Patch - Chuyển từ Preview sang Generate)
             // VẤN ĐỀ: PayloadTemplate từ Preview mode chỉ có preview_text (giới hạn 300 ký tự)
-            // GIẢI PHÁP: Luôn dùng text cho nội dung đầy đủ, preview_text chỉ để đánh lừa server
+            // GIẢI PHÁP: Dùng text cho nội dung đầy đủ, XÓA preview_text để tránh xung đột
             let payload;
             if (config.payloadTemplate) {
                 // Copy nguyên xi mẫu gốc để giữ TẤT CẢ các tham số (timbre_weights, voice_id, ...)
@@ -1486,12 +1486,12 @@ button:disabled {
                 // QUAN TRỌNG: Luôn gán nội dung đầy đủ vào payload.text (không giới hạn)
                 payload.text = text;
                 
-                // Nếu mẫu gốc có preview_text → chỉ gán 200 ký tự đầu (đánh lừa server là đang preview đúng luật)
-                // Điều này giúp server không báo lỗi "preview_text quá dài"
-                if (typeof config.payloadTemplate.preview_text !== 'undefined') {
-                    // Chỉ lấy 200 ký tự đầu để đảm bảo < 300 ký tự (giới hạn preview)
-                    payload.preview_text = text.substring(0, 200);
-                    addLogEntry(`💡 [Module 2] Đã chuyển từ Preview mode sang Generate mode (text: ${text.length} ký tự, preview_text: 200 ký tự)`, 'info');
+                // QUAN TRỌNG: XÓA preview_text để tránh server báo lỗi "thừa tham số" hoặc "preview_text quá dài"
+                // Server Minimax chỉ cần MỘT trong hai: text HOẶC preview_text, không phải cả hai
+                // Nếu giữ cả 2, server sẽ ưu tiên preview_text và báo lỗi khi > 300 ký tự
+                if (payload.preview_text !== undefined) {
+                    delete payload.preview_text;
+                    addLogEntry(`💡 [Module 2] Đã xóa preview_text, chỉ dùng text (${text.length} ký tự)`, 'info');
                 }
                 
                 // Cập nhật language_tag từ selection của tool (nếu có)
@@ -1505,22 +1505,26 @@ button:disabled {
                 console.log('[MODULE 2 DEBUG] PayloadTemplate gốc:', JSON.stringify(config.payloadTemplate, null, 2));
                 console.log('[MODULE 2 DEBUG] Payload sau khi clone & patch:', JSON.stringify(payload, null, 2));
                 console.log('[MODULE 2 DEBUG] Text length:', text.length);
-                console.log('[MODULE 2 DEBUG] Preview_text length:', payload.preview_text ? payload.preview_text.length : 'N/A');
+                console.log('[MODULE 2 DEBUG] Có preview_text trong payload:', typeof payload.preview_text !== 'undefined');
+                console.log('[MODULE 2 DEBUG] Có text trong payload:', typeof payload.text !== 'undefined');
+                console.log('[MODULE 2 DEBUG] Payload keys:', Object.keys(payload).sort());
                 console.log('[MODULE 2 DEBUG] ====================================');
                 
                 // Log vào UI để user có thể xem
                 addLogEntry(`🔍 [Debug] Payload có ${Object.keys(payload).length} trường, text: ${text.length} ký tự`, 'info');
             } else {
                 // Fallback cực kỳ cơ bản (ít dùng, chỉ khi không bắt được mẫu)
+                // Dùng text thay vì preview_text để tránh giới hạn 300 ký tự
                 payload = {
                     files: [{
                         file_id: config.file_id,
                         file_name: config.file_name
                     }],
-                    preview_text: text, // Chỉ dùng preview_text
+                    text: text, // Dùng text thay vì preview_text
                     language_tag: config.language_tag || 'Vietnamese',
                     need_noise_reduction: false
                 };
+                addLogEntry(`⚠️ [Module 2] Không có payloadTemplate, dùng fallback với text`, 'warning');
             }
             
             // Tạo headers (sử dụng headers đã bắt được)
@@ -1574,8 +1578,20 @@ button:disabled {
                         payload: payload,
                         url: targetUrl,
                         error: errorText,
+                        chunkIndex: chunkIndex,
+                        textLength: text.length,
                         timestamp: new Date().toISOString()
                     };
+                    
+                    // So sánh với payload thành công (nếu có)
+                    if (window.LAST_SUCCESS_PAYLOAD) {
+                        console.log('[MODULE 2 COMPARE] ========== SO SÁNH PAYLOAD ==========');
+                        console.log('[MODULE 2 COMPARE] Payload thành công (chunk', window.LAST_SUCCESS_PAYLOAD.chunkIndex + '):', JSON.stringify(window.LAST_SUCCESS_PAYLOAD.payload, null, 2));
+                        console.log('[MODULE 2 COMPARE] Payload lỗi (chunk', chunkIndex + '):', JSON.stringify(payload, null, 2));
+                        console.log('[MODULE 2 COMPARE] Keys thành công:', Object.keys(window.LAST_SUCCESS_PAYLOAD.payload).sort());
+                        console.log('[MODULE 2 COMPARE] Keys lỗi:', Object.keys(payload).sort());
+                        console.log('[MODULE 2 COMPARE] ====================================');
+                    }
                     
                     addLogEntry(`❌ [Module 2] Chunk ${chunkIndex + 1}: Lỗi ${response.status}: ${errorText.substring(0, 50)}...`, 'error');
                     addLogEntry(`🔍 [Debug] Xem console để xem payload chi tiết. Hoặc gõ: window.LAST_FAILED_PAYLOAD`, 'info');
@@ -1591,6 +1607,16 @@ button:disabled {
                 }
                 throw new Error('Invalid response format');
             });
+            
+            // DEBUG: Lưu payload thành công để so sánh
+            window.LAST_SUCCESS_PAYLOAD = {
+                payload: payload,
+                url: targetUrl,
+                chunkIndex: chunkIndex,
+                textLength: text.length,
+                timestamp: new Date().toISOString()
+            };
+            console.log('[MODULE 2 SUCCESS] Payload thành công đã lưu vào window.LAST_SUCCESS_PAYLOAD');
             
             // Xử lý kết quả trả về
             let audioUrl = null;
