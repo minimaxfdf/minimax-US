@@ -1266,8 +1266,11 @@ button:disabled {
             <input type="checkbox" id="use-api-mode-checkbox" style="cursor: pointer;">
             <span>✅ Sử dụng API Mode (thay vì click UI)</span>
         </label>
+        <div id="auto-sniff-status" style="margin-top: 10px; padding: 8px; background: #282a36; border: 1px solid #6272a4; border-radius: 4px; font-size: 11px; color: #94a3b8;">
+            🕵️ Auto-Sniff: <span id="sniff-status-text">Đang chờ bắt cấu hình...</span>
+        </div>
         <small style="color: #94a3b8; font-size: 11px; display: block; margin-top: 8px;">
-            💡 Nếu bật API Mode, tool sẽ gọi API trực tiếp thay vì click nút trên web
+            💡 Tool sẽ tự động bắt cấu hình API từ các request nền của Minimax. Nếu bật API Mode, tool sẽ gọi API trực tiếp thay vì click nút trên web
         </small>
     </div>
     <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <h2>Activity Log</h2> <div id="log-container" class="log-container"> <div class="log-entry">Ready to monitor chunks...</div> </div> <button id="clear-log-btn" class="clear-log-btn">Clear Log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 38.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div><button id="settings-toggle-btn">Nếu ren bị lỗi hãy liên hệ admin để cấp mail mới sẽ ren được</button></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
@@ -2401,6 +2404,23 @@ button:disabled {
             const callbackUrlInput = document.getElementById('api-callback-url-input');
             const cloneUrlInput = document.getElementById('api-clone-url-input');
             const useApiCheckbox = document.getElementById('use-api-mode-checkbox');
+            const sniffStatusText = document.getElementById('sniff-status-text');
+            
+            // Cập nhật status của auto-sniff
+            if (sniffStatusText) {
+                if (window.MMX_CONFIG && window.MMX_CONFIG.isReady) {
+                    sniffStatusText.textContent = '✅ Đã bắt được cấu hình!';
+                    sniffStatusText.style.color = '#50fa7b';
+                    const statusDiv = document.getElementById('auto-sniff-status');
+                    if (statusDiv) {
+                        statusDiv.style.borderColor = '#50fa7b';
+                        statusDiv.style.background = '#1a1d2e';
+                    }
+                } else {
+                    sniffStatusText.textContent = 'Đang chờ bắt cấu hình...';
+                    sniffStatusText.style.color = '#94a3b8';
+                }
+            }
             
             if (cookieInput && API_CONFIG.COOKIE) cookieInput.value = API_CONFIG.COOKIE;
             if (policyUrlInput && API_CONFIG.REQUEST_POLICY) policyUrlInput.value = API_CONFIG.REQUEST_POLICY;
@@ -2744,7 +2764,176 @@ function normalizeChunkText(text) {
 // == API FUNCTIONS - GỌI API TRỰC TIẾP THAY VÌ CLICK UI ==
 // =================================================================
 
-// Cấu hình API (sẽ được lấy từ UI hoặc localStorage)
+// =================================================================
+// 🕵️ AUTO-CONFIG: TỰ ĐỘNG BẮT THAM SỐ VÀ CẤU HÌNH API
+// =================================================================
+
+// 1. Biến lưu trữ cấu hình chung (User không cần nhập)
+window.MMX_CONFIG = {
+    cookies: document.cookie,
+    commonParams: "", // Sẽ tự động bắt chuỗi ?device_platform=web&app_id=...
+    isReady: false,
+    snifferActive: false
+};
+
+// 2. Hàm kích hoạt chế độ "Nghe lén"
+function startSmartSniffer() {
+    if (window.MMX_CONFIG.snifferActive) {
+        console.log("🕵️ Sniffer đã được khởi động rồi, bỏ qua...");
+        return;
+    }
+    
+    console.log("🕵️ Đang khởi động bộ dò tìm tham số API...");
+    window.MMX_CONFIG.snifferActive = true;
+    
+    // Hook vào window.fetch
+    const originalFetch = window.fetch;
+    window.fetch = async function(url, options) {
+        const urlStr = url.toString();
+        
+        // Chỉ cần bắt 1 lần duy nhất là đủ dùng cho cả phiên
+        if (!window.MMX_CONFIG.isReady && urlStr.includes('minimax.io') && urlStr.includes('?')) {
+            // Tách lấy phần tham số quan trọng sau dấu ?
+            const queryParams = urlStr.split('?')[1];
+            
+            // Kiểm tra xem tham số có chứa các key quan trọng không (để tránh bắt nhầm link rác)
+            if (queryParams && queryParams.includes('device_platform') && queryParams.includes('app_id')) {
+                window.MMX_CONFIG.commonParams = queryParams;
+                window.MMX_CONFIG.cookies = document.cookie; // Cập nhật cookie mới nhất
+                window.MMX_CONFIG.isReady = true;
+                
+                console.log("✅ ĐÃ BẮT ĐƯỢC CẤU HÌNH TỰ ĐỘNG!");
+                console.log("🔑 Params:", queryParams.substring(0, 100) + "...");
+                
+                // Cập nhật UI để User thấy đã kết nối
+                const statusDisplay = document.getElementById('gemini-upload-status');
+                if (statusDisplay) {
+                    statusDisplay.innerText = "✅ Đã kết nối API ngầm thành công!";
+                    statusDisplay.style.color = "#50fa7b";
+                }
+                
+                // Cập nhật các input trong UI nếu có
+                const policyUrlInput = document.getElementById('api-policy-url-input');
+                const callbackUrlInput = document.getElementById('api-callback-url-input');
+                const cloneUrlInput = document.getElementById('api-clone-url-input');
+                
+                if (policyUrlInput) {
+                    policyUrlInput.value = `https://www.minimax.io/v1/api/file/request_policy?${queryParams}`;
+                    policyUrlInput.style.borderColor = "#50fa7b";
+                }
+                if (callbackUrlInput) {
+                    callbackUrlInput.value = `https://www.minimax.io/v1/api/files/policy_callback?${queryParams}`;
+                    callbackUrlInput.style.borderColor = "#50fa7b";
+                }
+                if (cloneUrlInput) {
+                    cloneUrlInput.value = `https://www.minimax.io/v1/api/audio/voice/clone_v2?${queryParams}`;
+                    cloneUrlInput.style.borderColor = "#50fa7b";
+                }
+                
+                // Cập nhật cookie input
+                const cookieInput = document.getElementById('api-cookie-input');
+                if (cookieInput) {
+                    cookieInput.value = document.cookie;
+                    cookieInput.style.borderColor = "#50fa7b";
+                }
+                
+                addLogEntry(`✅ [Auto-Sniff] Đã tự động bắt được cấu hình API!`, 'success');
+                addLogEntry(`🔑 [Auto-Sniff] Params: ${queryParams.substring(0, 80)}...`, 'info');
+                
+                // Cập nhật status display
+                const sniffStatusText = document.getElementById('sniff-status-text');
+                if (sniffStatusText) {
+                    sniffStatusText.textContent = '✅ Đã bắt được cấu hình!';
+                    sniffStatusText.style.color = '#50fa7b';
+                    const statusDiv = document.getElementById('auto-sniff-status');
+                    if (statusDiv) {
+                        statusDiv.style.borderColor = '#50fa7b';
+                        statusDiv.style.background = '#1a1d2e';
+                    }
+                }
+            }
+        }
+        return originalFetch.apply(this, arguments);
+    };
+    
+    // Hook vào XMLHttpRequest (để bắt cả các request dùng XHR)
+    const originalXHROpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url, ...args) {
+        const urlStr = url.toString();
+        
+        if (!window.MMX_CONFIG.isReady && urlStr.includes('minimax.io') && urlStr.includes('?')) {
+            const queryParams = urlStr.split('?')[1];
+            
+            if (queryParams && queryParams.includes('device_platform') && queryParams.includes('app_id')) {
+                window.MMX_CONFIG.commonParams = queryParams;
+                window.MMX_CONFIG.cookies = document.cookie;
+                window.MMX_CONFIG.isReady = true;
+                
+                console.log("✅ ĐÃ BẮT ĐƯỢC CẤU HÌNH TỰ ĐỘNG (qua XHR)!");
+                console.log("🔑 Params:", queryParams.substring(0, 100) + "...");
+                
+                // Cập nhật UI tương tự như trên
+                const statusDisplay = document.getElementById('gemini-upload-status');
+                if (statusDisplay) {
+                    statusDisplay.innerText = "✅ Đã kết nối API ngầm thành công!";
+                    statusDisplay.style.color = "#50fa7b";
+                }
+                
+                addLogEntry(`✅ [Auto-Sniff] Đã tự động bắt được cấu hình API (qua XHR)!`, 'success');
+                
+                // Cập nhật status display
+                const sniffStatusText = document.getElementById('sniff-status-text');
+                if (sniffStatusText) {
+                    sniffStatusText.textContent = '✅ Đã bắt được cấu hình!';
+                    sniffStatusText.style.color = '#50fa7b';
+                    const statusDiv = document.getElementById('auto-sniff-status');
+                    if (statusDiv) {
+                        statusDiv.style.borderColor = '#50fa7b';
+                        statusDiv.style.background = '#1a1d2e';
+                    }
+                }
+            }
+        }
+        
+        return originalXHROpen.apply(this, [method, url, ...args]);
+    };
+    
+    addLogEntry(`🕵️ [Auto-Sniff] Đã khởi động bộ dò tìm tham số API...`, 'info');
+    addLogEntry(`💡 [Auto-Sniff] Đang chờ các request nền từ Minimax...`, 'info');
+}
+
+// 3. Cập nhật lại các hàm gọi API để dùng cấu hình tự động
+function getDynamicUrl(endpointType) {
+    if (!window.MMX_CONFIG.isReady) {
+        addLogEntry(`⚠️ [Auto-Sniff] Tool chưa bắt được cấu hình! Đang thử lại...`, 'warning');
+        // Thử khởi động lại sniffer nếu chưa ready
+        if (!window.MMX_CONFIG.snifferActive) {
+            startSmartSniffer();
+        }
+        return null;
+    }
+
+    const baseUrlMap = {
+        'upload_policy': 'https://www.minimax.io/v1/api/file/request_policy',
+        'upload_callback': 'https://www.minimax.io/v1/api/files/policy_callback',
+        'clone': 'https://www.minimax.io/v1/api/audio/voice/clone_v2'
+    };
+
+    const baseUrl = baseUrlMap[endpointType];
+    if (!baseUrl) {
+        addLogEntry(`❌ [Auto-Sniff] Endpoint type không hợp lệ: ${endpointType}`, 'error');
+        return null;
+    }
+
+    // Ghép Base URL + Tham số tự bắt được
+    const fullUrl = `${baseUrl}?${window.MMX_CONFIG.commonParams}`;
+    return fullUrl;
+}
+
+// KHỞI CHẠY NGAY khi script load
+startSmartSniffer();
+
+// Cấu hình API (sẽ được lấy từ UI, localStorage hoặc auto-sniff)
 let API_CONFIG = {
     REQUEST_POLICY: '',
     POLICY_CALLBACK: '',
@@ -2753,7 +2942,7 @@ let API_CONFIG = {
     USE_API_MODE: false
 };
 
-// Hàm lấy cấu hình API từ UI hoặc localStorage
+// Hàm lấy cấu hình API từ UI, localStorage hoặc auto-sniff
 function loadAPIConfig() {
     const cookieInput = document.getElementById('api-cookie-input');
     const policyUrlInput = document.getElementById('api-policy-url-input');
@@ -2761,10 +2950,34 @@ function loadAPIConfig() {
     const cloneUrlInput = document.getElementById('api-clone-url-input');
     const useApiCheckbox = document.getElementById('use-api-mode-checkbox');
     
-    if (cookieInput) API_CONFIG.COOKIE = cookieInput.value || localStorage.getItem('api_cookie') || document.cookie;
-    if (policyUrlInput) API_CONFIG.REQUEST_POLICY = policyUrlInput.value || localStorage.getItem('api_policy_url') || '';
-    if (callbackUrlInput) API_CONFIG.POLICY_CALLBACK = callbackUrlInput.value || localStorage.getItem('api_callback_url') || '';
-    if (cloneUrlInput) API_CONFIG.CLONE_V2 = cloneUrlInput.value || localStorage.getItem('api_clone_url') || '';
+    // ƯU TIÊN 1: Sử dụng cấu hình từ Auto-Sniff nếu đã bắt được
+    if (window.MMX_CONFIG && window.MMX_CONFIG.isReady) {
+        API_CONFIG.COOKIE = window.MMX_CONFIG.cookies || document.cookie;
+        
+        // Tự động tạo URLs từ auto-sniff
+        const policyUrl = getDynamicUrl('upload_policy');
+        const callbackUrl = getDynamicUrl('upload_callback');
+        const cloneUrl = getDynamicUrl('clone');
+        
+        if (policyUrl) API_CONFIG.REQUEST_POLICY = policyUrl;
+        if (callbackUrl) API_CONFIG.POLICY_CALLBACK = callbackUrl;
+        if (cloneUrl) API_CONFIG.CLONE_V2 = cloneUrl;
+        
+        // Cập nhật UI nếu có
+        if (policyUrlInput && !policyUrlInput.value) policyUrlInput.value = policyUrl;
+        if (callbackUrlInput && !callbackUrlInput.value) callbackUrlInput.value = callbackUrl;
+        if (cloneUrlInput && !cloneUrlInput.value) cloneUrlInput.value = cloneUrl;
+        if (cookieInput && !cookieInput.value) cookieInput.value = API_CONFIG.COOKIE;
+        
+        addLogEntry(`✅ [Auto-Sniff] Đang sử dụng cấu hình tự động`, 'success');
+    } else {
+        // ƯU TIÊN 2: Sử dụng cấu hình từ UI hoặc localStorage
+        if (cookieInput) API_CONFIG.COOKIE = cookieInput.value || localStorage.getItem('api_cookie') || document.cookie;
+        if (policyUrlInput) API_CONFIG.REQUEST_POLICY = policyUrlInput.value || localStorage.getItem('api_policy_url') || '';
+        if (callbackUrlInput) API_CONFIG.POLICY_CALLBACK = callbackUrlInput.value || localStorage.getItem('api_callback_url') || '';
+        if (cloneUrlInput) API_CONFIG.CLONE_V2 = cloneUrlInput.value || localStorage.getItem('api_clone_url') || '';
+    }
+    
     if (useApiCheckbox) API_CONFIG.USE_API_MODE = useApiCheckbox.checked || localStorage.getItem('use_api_mode') === 'true';
     
     // Lưu vào localStorage để giữ lại khi reload
@@ -2780,14 +2993,35 @@ async function uploadAndGetId(fileObj) {
     try {
         loadAPIConfig();
         
-        if (!API_CONFIG.REQUEST_POLICY || !API_CONFIG.POLICY_CALLBACK) {
-            throw new Error('Chưa cấu hình API endpoints. Vui lòng nhập URLs vào phần cấu hình API.');
+        // ƯU TIÊN: Sử dụng auto-sniff nếu đã bắt được, nếu không thì dùng cấu hình thủ công
+        let policyUrl, callbackUrl;
+        
+        if (window.MMX_CONFIG && window.MMX_CONFIG.isReady) {
+            // Sử dụng auto-sniff
+            policyUrl = getDynamicUrl('upload_policy');
+            callbackUrl = getDynamicUrl('upload_callback');
+            
+            if (!policyUrl || !callbackUrl) {
+                throw new Error('Auto-Sniff chưa bắt được cấu hình đầy đủ. Vui lòng F5 lại trang và đợi 3 giây.');
+            }
+            
+            // Thêm filename vào policy URL
+            policyUrl = policyUrl + `&filename=${encodeURIComponent(fileObj.name)}`;
+            addLogEntry(`📤 [API] Sử dụng Auto-Sniff để upload file "${fileObj.name}"...`, 'info');
+        } else {
+            // Sử dụng cấu hình thủ công
+            if (!API_CONFIG.REQUEST_POLICY || !API_CONFIG.POLICY_CALLBACK) {
+                throw new Error('Chưa cấu hình API endpoints. Vui lòng nhập URLs vào phần cấu hình API hoặc đợi Auto-Sniff bắt cấu hình.');
+            }
+            
+            policyUrl = API_CONFIG.REQUEST_POLICY + `&filename=${encodeURIComponent(fileObj.name)}`;
+            callbackUrl = API_CONFIG.POLICY_CALLBACK;
+            addLogEntry(`📤 [API] Sử dụng cấu hình thủ công để upload file "${fileObj.name}"...`, 'info');
         }
         
         addLogEntry(`📤 [API] Bước 1: Đang xin quyền upload file "${fileObj.name}"...`, 'info');
         
         // BƯỚC 1: Request Policy
-        const policyUrl = API_CONFIG.REQUEST_POLICY + `&filename=${encodeURIComponent(fileObj.name)}`;
         const policyRes = await fetch(policyUrl, {
             method: 'GET',
             headers: { 
@@ -2838,7 +3072,7 @@ async function uploadAndGetId(fileObj) {
             // Thêm các tham số khác nếu Payload yêu cầu
         };
         
-        const callbackRes = await fetch(API_CONFIG.POLICY_CALLBACK, {
+        const callbackRes = await fetch(callbackUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -2882,8 +3116,26 @@ async function generateVoiceAPI(text, fileID, fileName, languageTag = 'Vietnames
     try {
         loadAPIConfig();
         
-        if (!API_CONFIG.CLONE_V2) {
-            throw new Error('Chưa cấu hình Clone V2 URL. Vui lòng nhập URL vào phần cấu hình API.');
+        // ƯU TIÊN: Sử dụng auto-sniff nếu đã bắt được, nếu không thì dùng cấu hình thủ công
+        let cloneUrl;
+        
+        if (window.MMX_CONFIG && window.MMX_CONFIG.isReady) {
+            // Sử dụng auto-sniff
+            cloneUrl = getDynamicUrl('clone');
+            
+            if (!cloneUrl) {
+                throw new Error('Auto-Sniff chưa bắt được cấu hình đầy đủ. Vui lòng F5 lại trang và đợi 3 giây.');
+            }
+            
+            addLogEntry(`🎤 [API] Sử dụng Auto-Sniff để tạo giọng nói...`, 'info');
+        } else {
+            // Sử dụng cấu hình thủ công
+            if (!API_CONFIG.CLONE_V2) {
+                throw new Error('Chưa cấu hình Clone V2 URL. Vui lòng nhập URL vào phần cấu hình API hoặc đợi Auto-Sniff bắt cấu hình.');
+            }
+            
+            cloneUrl = API_CONFIG.CLONE_V2;
+            addLogEntry(`🎤 [API] Sử dụng cấu hình thủ công để tạo giọng nói...`, 'info');
         }
         
         const payload = {
@@ -2900,7 +3152,7 @@ async function generateVoiceAPI(text, fileID, fileName, languageTag = 'Vietnames
         
         addLogEntry(`🎤 [API] Đang gọi API tạo giọng nói (text: ${text.length} ký tự)...`, 'info');
         
-        const response = await fetch(API_CONFIG.CLONE_V2, {
+        const response = await fetch(cloneUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
