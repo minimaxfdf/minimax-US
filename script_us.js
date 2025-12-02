@@ -5265,75 +5265,36 @@ async function uSTZrHUt_IC() {
             addLogEntry(`🔍 [C#${ttuo$y_KhCV + 1}] Payload gốc: ${JSON.stringify(clonedPayload).substring(0, 300)}...`, 'info');
             
             // QUAN TRỌNG: Nếu có files (Voice Clone mode), payload phải đúng 100% theo mẫu
-            // Mẫu: {language_tag, files, need_noise_reduction, text}
-            // KHÔNG có speed, vol, pitch, voice_id trong Voice Clone mode
-            
             if (clonedPayload.files && clonedPayload.files.length > 0) {
-                // CHẾ ĐỘ VOICE CLONE: Chỉ giữ đúng các tham số trong mẫu
-                addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Phát hiện Voice Clone mode (có files)`, 'info');
+                addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Phát hiện Voice Clone mode - Đang tái tạo Payload chuẩn...`, 'info');
                 
-                // 1. Xóa preview_text và thay bằng text
-                if (clonedPayload.preview_text) {
-                    delete clonedPayload.preview_text;
-                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa preview_text`, 'info');
-                }
+                // 1. Lưu lại các giá trị quan trọng từ config cũ
+                const keepLanguage = clonedPayload.language_tag || "Vietnamese";
+                const keepFiles = clonedPayload.files;
                 
-                // 2. Xóa các tham số KHÔNG có trong mẫu Voice Clone
-                if (clonedPayload.speed !== undefined) {
-                    delete clonedPayload.speed;
-                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa speed (không có trong mẫu Voice Clone)`, 'info');
-                }
-                if (clonedPayload.vol !== undefined) {
-                    delete clonedPayload.vol;
-                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa vol (không có trong mẫu Voice Clone)`, 'info');
-                }
-                if (clonedPayload.pitch !== undefined) {
-                    delete clonedPayload.pitch;
-                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa pitch (không có trong mẫu Voice Clone)`, 'info');
-                }
-                if (clonedPayload.voice_id !== undefined) {
-                    delete clonedPayload.voice_id;
-                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa voice_id (không có trong mẫu Voice Clone)`, 'info');
+                // 2. Xóa sạch TẤT CẢ các trường trong object hiện tại để tránh rác
+                for (const key in clonedPayload) {
+                    if (Object.prototype.hasOwnProperty.call(clonedPayload, key)) {
+                        delete clonedPayload[key];
+                    }
                 }
                 
-                // 3. Đảm bảo có các tham số bắt buộc theo mẫu
-                if (!clonedPayload.language_tag) {
-                    clonedPayload.language_tag = "Vietnamese"; // Mặc định
-                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung language_tag = "Vietnamese"`, 'info');
-                }
-                // QUAN TRỌNG: need_noise_reduction PHẢI là false theo mẫu (không phải true)
-                clonedPayload.need_noise_reduction = false; // Bắt buộc false theo mẫu
-                addLogEntry(`🔧 [C#${ttuo$y_KhCV + 1}] Đã set need_noise_reduction = false (bắt buộc theo mẫu)`, 'info');
+                // 3. Xây dựng lại object sạch sẽ (Giống hệt mẫu Web của bạn)
+                clonedPayload.language_tag = keepLanguage;
+                clonedPayload.files = keepFiles;
+                clonedPayload.need_noise_reduction = false; // Web mẫu của bạn là false
+                // Note: trường 'text' sẽ được gán ở dòng code phía dưới
+                
+                addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã làm sạch Payload hoàn toàn (chỉ giữ language, files, noise_reduction)`, 'success');
                 
             } else {
-                // CHẾ ĐỘ KHÁC (không phải Voice Clone): Có thể cần speed, vol, pitch
-                addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Không phải Voice Clone mode (không có files)`, 'info');
-                
-                // 1. Xóa preview_text
-                if (clonedPayload.preview_text) {
-                    delete clonedPayload.preview_text;
-                    addLogEntry(`🧹 [C#${ttuo$y_KhCV + 1}] Đã xóa preview_text`, 'info');
-                }
-                
-                // 2. Bổ sung speed, vol, pitch nếu thiếu (cho chế độ khác)
-                if (typeof clonedPayload.speed === 'undefined' || clonedPayload.speed === null) {
-                    clonedPayload.speed = 1.0;
-                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung speed = 1.0`, 'info');
-                }
-                if (typeof clonedPayload.vol === 'undefined' || clonedPayload.vol === null) {
-                    clonedPayload.vol = 1.0;
-                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung vol = 1.0`, 'info');
-                }
-                if (typeof clonedPayload.pitch === 'undefined' || clonedPayload.pitch === null) {
-                    clonedPayload.pitch = 0;
-                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung pitch = 0`, 'info');
-                }
-                
-                // 3. Xử lý voice_id cho chế độ khác
-                if (!clonedPayload.voice_id) {
-                    clonedPayload.voice_id = "male-qn-01"; // ID dự phòng
-                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung voice_id = "male-qn-01"`, 'info');
-                }
+                // CHẾ ĐỘ KHÁC (Text-to-Speech thường): Giữ logic cũ
+                addLogEntry(`🎯 [C#${ttuo$y_KhCV + 1}] Không phải Voice Clone mode`, 'info');
+                if (clonedPayload.preview_text) delete clonedPayload.preview_text;
+                if (typeof clonedPayload.speed === 'undefined') clonedPayload.speed = 1.0;
+                if (typeof clonedPayload.vol === 'undefined') clonedPayload.vol = 1.0;
+                if (typeof clonedPayload.pitch === 'undefined') clonedPayload.pitch = 0;
+                if (!clonedPayload.voice_id) clonedPayload.voice_id = "male-qn-01";
             }
             // ====================================================
             
