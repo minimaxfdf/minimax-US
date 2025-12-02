@@ -5301,10 +5301,9 @@ async function uSTZrHUt_IC() {
                     clonedPayload.language_tag = "Vietnamese"; // Mặc định
                     addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung language_tag = "Vietnamese"`, 'info');
                 }
-                if (typeof clonedPayload.need_noise_reduction === 'undefined') {
-                    clonedPayload.need_noise_reduction = false; // Mặc định theo mẫu
-                    addLogEntry(`➕ [C#${ttuo$y_KhCV + 1}] Đã bổ sung need_noise_reduction = false`, 'info');
-                }
+                // QUAN TRỌNG: need_noise_reduction PHẢI là false theo mẫu (không phải true)
+                clonedPayload.need_noise_reduction = false; // Bắt buộc false theo mẫu
+                addLogEntry(`🔧 [C#${ttuo$y_KhCV + 1}] Đã set need_noise_reduction = false (bắt buộc theo mẫu)`, 'info');
                 
             } else {
                 // CHẾ ĐỘ KHÁC (không phải Voice Clone): Có thể cần speed, vol, pitch
