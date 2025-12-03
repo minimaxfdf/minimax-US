@@ -63,40 +63,185 @@
             }
         }
         
-        // Hàm kiểm tra và xóa text mặc định trong payload
-        function cleanPayloadText(text) {
+        // Hàm kiểm tra và thay thế text mặc định trong payload bằng text đúng của chunk
+        function cleanPayloadText(text, correctText = null) {
             if (!text || typeof text !== 'string') return text;
             
+            // Lấy text đúng từ window nếu không được truyền vào
+            if (!correctText && window.currentChunkText) {
+                correctText = window.currentChunkText;
+            }
+            
             let cleaned = text;
+            let hasDefaultText = false;
             
-            // Xóa câu chào tiếng Anh
-            cleaned = cleaned.replace(/Hello, I'm delighted[\s\S]*?journey together/gi, "");
+            // Kiểm tra có chứa text mặc định không
+            const hasEnglishGreeting = /Hello, I'm delighted[\s\S]*?journey together/gi.test(text);
+            const hasVietnameseGreeting = /Xin chào, tôi rất vui[\s\S]*?sáng tạo âm thanh nhé\.?/gi.test(text);
+            const hasChooseVoiceEN = /Choose a voice that resonates with you/gi.test(text);
+            const hasChooseVoiceVN = /Hãy chọn một giọng nói phù hợp/gi.test(text);
             
-            // Xóa câu chào tiếng Việt
-            cleaned = cleaned.replace(/Xin chào, tôi rất vui[\s\S]*?sáng tạo âm thanh nhé\.?/gi, "");
-            
-            // Xóa các phần lặp lại
-            cleaned = cleaned.replace(/Choose a voice that resonates with you/gi, "");
-            cleaned = cleaned.replace(/Hãy chọn một giọng nói phù hợp/gi, "");
-            
-            // Nếu có thay đổi, log cảnh báo
-            if (cleaned !== text) {
-                const removed = text.length - cleaned.length;
-                const logMsg = `🛡️ [NETWORK INTERCEPTOR] Phát hiện text mặc định trong payload, đã xóa ${removed} ký tự (${text.length} → ${cleaned.length} ký tự)`;
-                console.warn('[NETWORK INTERCEPTOR] Phát hiện text mặc định trong payload, đã xóa:', {
-                    originalLength: text.length,
-                    cleanedLength: cleaned.length,
-                    removed: removed
-                });
-                logToUI(logMsg, 'warning');
+            if (hasEnglishGreeting || hasVietnameseGreeting || hasChooseVoiceEN || hasChooseVoiceVN) {
+                hasDefaultText = true;
+                
+                // Nếu có text đúng, thay thế toàn bộ bằng text đúng
+                if (correctText && typeof correctText === 'string' && correctText.trim().length > 0) {
+                    cleaned = correctText;
+                    const logMsg = `🛡️ [NETWORK INTERCEPTOR] Phát hiện text mặc định trong payload, đã THAY THẾ bằng text đúng của chunk (${text.length} → ${cleaned.length} ký tự)`;
+                    console.warn('[NETWORK INTERCEPTOR] Phát hiện text mặc định, đã thay thế bằng text đúng:', {
+                        originalLength: text.length,
+                        replacedLength: cleaned.length,
+                        hasCorrectText: true
+                    });
+                    logToUI(logMsg, 'warning');
+                } else {
+                    // Nếu không có text đúng, xóa text mặc định như cũ
+                    cleaned = cleaned.replace(/Hello, I'm delighted[\s\S]*?journey together/gi, "");
+                    cleaned = cleaned.replace(/Xin chào, tôi rất vui[\s\S]*?sáng tạo âm thanh nhé\.?/gi, "");
+                    cleaned = cleaned.replace(/Choose a voice that resonates with you/gi, "");
+                    cleaned = cleaned.replace(/Hãy chọn một giọng nói phù hợp/gi, "");
+                    
+                    const removed = text.length - cleaned.length;
+                    const logMsg = `🛡️ [NETWORK INTERCEPTOR] Phát hiện text mặc định trong payload, đã xóa ${removed} ký tự (${text.length} → ${cleaned.length} ký tự) - KHÔNG có text đúng để thay thế`;
+                    console.warn('[NETWORK INTERCEPTOR] Phát hiện text mặc định, đã xóa (không có text đúng):', {
+                        originalLength: text.length,
+                        cleanedLength: cleaned.length,
+                        removed: removed
+                    });
+                    logToUI(logMsg, 'warning');
+                }
             }
             
             return cleaned;
         }
         
+        // Hàm xác minh payload có chứa text mặc định không (chỉ kiểm tra, không sửa)
+        function verifyPayloadText(payload) {
+            if (!payload) return { hasDefaultText: false, details: 'Payload rỗng' };
+            
+            let foundDefaultText = false;
+            let foundInFields = [];
+            let sampleText = '';
+            
+            // Nếu là string (JSON)
+            if (typeof payload === 'string') {
+                try {
+                    const parsed = JSON.parse(payload);
+                    if (parsed && typeof parsed === 'object') {
+                        const textFields = ['text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
+                        
+                        for (const field of textFields) {
+                            if (parsed[field] && typeof parsed[field] === 'string') {
+                                const text = parsed[field];
+                                // Kiểm tra có chứa text mặc định không
+                                if (text.includes('Hello, I\'m delighted') || 
+                                    text.includes('Xin chào, tôi rất vui') ||
+                                    text.includes('journey together') ||
+                                    text.includes('sáng tạo âm thanh nhé') ||
+                                    text.includes('Choose a voice') ||
+                                    text.includes('Hãy chọn một giọng nói')) {
+                                    foundDefaultText = true;
+                                    foundInFields.push(field);
+                                    sampleText = text.substring(0, 100) + '...';
+                                }
+                            }
+                        }
+                        
+                        // Kiểm tra nested objects
+                        function checkNested(obj, path = '') {
+                            if (!obj || typeof obj !== 'object') return;
+                            for (const key in obj) {
+                                const currentPath = path ? `${path}.${key}` : key;
+                                if (typeof obj[key] === 'string') {
+                                    const text = obj[key];
+                                    if (text.includes('Hello, I\'m delighted') || 
+                                        text.includes('Xin chào, tôi rất vui') ||
+                                        text.includes('journey together') ||
+                                        text.includes('sáng tạo âm thanh nhé') ||
+                                        text.includes('Choose a voice') ||
+                                        text.includes('Hãy chọn một giọng nói')) {
+                                        foundDefaultText = true;
+                                        foundInFields.push(currentPath);
+                                        if (!sampleText) sampleText = text.substring(0, 100) + '...';
+                                    }
+                                } else if (typeof obj[key] === 'object') {
+                                    checkNested(obj[key], currentPath);
+                                }
+                            }
+                        }
+                        checkNested(parsed);
+                    } else if (typeof parsed === 'string') {
+                        const text = parsed;
+                        if (text.includes('Hello, I\'m delighted') || 
+                            text.includes('Xin chào, tôi rất vui') ||
+                            text.includes('journey together') ||
+                            text.includes('sáng tạo âm thanh nhé') ||
+                            text.includes('Choose a voice') ||
+                            text.includes('Hãy chọn một giọng nói')) {
+                            foundDefaultText = true;
+                            foundInFields.push('root');
+                            sampleText = text.substring(0, 100) + '...';
+                        }
+                    }
+                } catch (e) {
+                    // Không phải JSON, kiểm tra trực tiếp như string
+                    const text = payload;
+                    if (text.includes('Hello, I\'m delighted') || 
+                        text.includes('Xin chào, tôi rất vui') ||
+                        text.includes('journey together') ||
+                        text.includes('sáng tạo âm thanh nhé') ||
+                        text.includes('Choose a voice') ||
+                        text.includes('Hãy chọn một giọng nói')) {
+                        foundDefaultText = true;
+                        foundInFields.push('raw_string');
+                        sampleText = text.substring(0, 100) + '...';
+                    }
+                }
+            }
+            
+            // Nếu là FormData
+            if (payload instanceof FormData) {
+                for (const [key, value] of payload.entries()) {
+                    if (typeof value === 'string') {
+                        if (value.includes('Hello, I\'m delighted') || 
+                            value.includes('Xin chào, tôi rất vui') ||
+                            value.includes('journey together') ||
+                            value.includes('sáng tạo âm thanh nhé') ||
+                            value.includes('Choose a voice') ||
+                            value.includes('Hãy chọn một giọng nói')) {
+                            foundDefaultText = true;
+                            foundInFields.push(`FormData.${key}`);
+                            if (!sampleText) sampleText = value.substring(0, 100) + '...';
+                        }
+                    }
+                }
+            }
+            
+            return {
+                hasDefaultText: foundDefaultText,
+                foundInFields: foundInFields,
+                sampleText: sampleText,
+                details: foundDefaultText ? 
+                    `⚠️ PHÁT HIỆN text mặc định trong các trường: ${foundInFields.join(', ')}` : 
+                    '✅ Payload SẠCH, không có text mặc định'
+            };
+        }
+        
         // Hàm xử lý payload (có thể là string JSON hoặc FormData)
-        function processPayload(payload) {
+        function processPayload(payload, url = '') {
             if (!payload) return payload;
+            
+            // XÁC MINH: Kiểm tra payload trước khi xử lý
+            const verification = verifyPayloadText(payload);
+            if (verification.hasDefaultText) {
+                logToUI(`🔍 [NETWORK INTERCEPTOR] XÁC MINH PAYLOAD: ${verification.details}`, 'warning');
+                logToUI(`🔍 [NETWORK INTERCEPTOR] Mẫu text phát hiện: ${verification.sampleText}`, 'warning');
+            } else {
+                // Chỉ log khi là request quan trọng (audio generation)
+                if (url.includes('audio') || url.includes('voice') || url.includes('clone')) {
+                    logToUI(`✅ [NETWORK INTERCEPTOR] XÁC MINH PAYLOAD: ${verification.details}`, 'info');
+                }
+            }
             
             // Nếu là string (JSON)
             if (typeof payload === 'string') {
@@ -104,7 +249,7 @@
                     const parsed = JSON.parse(payload);
                     if (parsed && typeof parsed === 'object') {
                         // Tìm các trường có thể chứa text (text, content, message, prompt, input, etc.)
-                        const textFields = ['text', 'content', 'message', 'prompt', 'input', 'data', 'value'];
+                        const textFields = ['text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
                         let modified = false;
                         
                         for (const field of textFields) {
@@ -135,6 +280,12 @@
                         cleanNested(parsed);
                         
                         if (modified) {
+                            const correctText = window.currentChunkText || null;
+                            if (correctText) {
+                                logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã làm sạch payload: Thay thế text mặc định bằng text đúng của chunk trong JSON`, 'warning');
+                            } else {
+                                logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã làm sạch payload: Xóa text mặc định khỏi JSON (không có text đúng để thay thế)`, 'warning');
+                            }
                             return JSON.stringify(parsed);
                         }
                     } else if (typeof parsed === 'string') {
@@ -150,12 +301,24 @@
             // Nếu là FormData
             if (payload instanceof FormData) {
                 const newFormData = new FormData();
+                let formModified = false;
                 for (const [key, value] of payload.entries()) {
                     if (typeof value === 'string') {
                         const cleaned = cleanPayloadText(value);
+                        if (cleaned !== value) {
+                            formModified = true;
+                        }
                         newFormData.append(key, cleaned);
                     } else {
                         newFormData.append(key, value);
+                    }
+                }
+                if (formModified) {
+                    const correctText = window.currentChunkText || null;
+                    if (correctText) {
+                        logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã làm sạch payload: Thay thế text mặc định bằng text đúng của chunk trong FormData`, 'warning');
+                    } else {
+                        logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã làm sạch payload: Xóa text mặc định khỏi FormData (không có text đúng để thay thế)`, 'warning');
                     }
                 }
                 return newFormData;
@@ -168,11 +331,14 @@
         const originalFetch = window.fetch;
         window.fetch = function(...args) {
             const [url, options = {}] = args;
+            const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : '');
             
             // Chỉ intercept các request đến Minimax API
-            if (typeof url === 'string' && (url.includes('minimax') || url.includes('api'))) {
-                // Log khi intercept request
-                logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã chặn fetch request đến: ${url.substring(0, 80)}...`, 'info');
+            if (urlStr && (urlStr.includes('minimax') || urlStr.includes('api') || urlStr.includes('audio') || urlStr.includes('voice'))) {
+                // Log khi intercept request (chỉ log request quan trọng)
+                if (urlStr.includes('audio') || urlStr.includes('voice') || urlStr.includes('clone')) {
+                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã chặn fetch request đến: ${urlStr.substring(0, 100)}...`, 'info');
+                }
                 
                 // Clone options để không modify original
                 const newOptions = { ...options };
@@ -180,9 +346,39 @@
                 // Xử lý body nếu có
                 if (newOptions.body) {
                     const originalBody = newOptions.body;
-                    newOptions.body = processPayload(newOptions.body);
+                    newOptions.body = processPayload(newOptions.body, urlStr);
                     if (originalBody !== newOptions.body) {
-                        logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã làm sạch payload trong fetch request`, 'warning');
+                        // Xác minh lại payload sau khi sửa
+                        const recheck = verifyPayloadText(newOptions.body);
+                        if (recheck.hasDefaultText) {
+                            logToUI(`⚠️ [NETWORK INTERCEPTOR] CẢNH BÁO: Payload VẪN còn text mặc định sau khi sửa!`, 'error');
+                        } else {
+                            // Lấy thông tin payload để log
+                            let payloadInfo = '';
+                            try {
+                                if (typeof newOptions.body === 'string') {
+                                    const parsed = JSON.parse(newOptions.body);
+                                    if (parsed && typeof parsed === 'object') {
+                                        const textFields = ['text', 'content', 'message', 'prompt', 'input'];
+                                        for (const field of textFields) {
+                                            if (parsed[field] && typeof parsed[field] === 'string') {
+                                                payloadInfo = `Trường "${field}": ${parsed[field].length} ký tự`;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (e) {
+                                // Bỏ qua
+                            }
+                            logToUI(`✅ [NETWORK INTERCEPTOR] Xác minh lại: Payload đã SẠCH, sẽ gửi request với payload đã sửa${payloadInfo ? ` (${payloadInfo})` : ''}`, 'info');
+                        }
+                    } else {
+                        // Payload không bị thay đổi, xác minh để chắc chắn
+                        const check = verifyPayloadText(newOptions.body);
+                        if (check.hasDefaultText) {
+                            logToUI(`⚠️ [NETWORK INTERCEPTOR] CẢNH BÁO: Payload KHÔNG bị sửa nhưng VẪN có text mặc định!`, 'error');
+                        }
                     }
                 }
                 
@@ -203,14 +399,46 @@
         
         XMLHttpRequest.prototype.send = function(data) {
             // Chỉ intercept các request đến Minimax API
-            if (this._interceptedUrl && (this._interceptedUrl.includes('minimax') || this._interceptedUrl.includes('api'))) {
-                // Log khi intercept request
-                logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã chặn XHR request đến: ${this._interceptedUrl.substring(0, 80)}...`, 'info');
+            if (this._interceptedUrl && (this._interceptedUrl.includes('minimax') || this._interceptedUrl.includes('api') || this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice'))) {
+                // Log khi intercept request (chỉ log request quan trọng)
+                if (this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice') || this._interceptedUrl.includes('clone')) {
+                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã chặn XHR request đến: ${this._interceptedUrl.substring(0, 100)}...`, 'info');
+                }
                 
                 const originalData = data;
-                const cleanedData = processPayload(data);
+                const cleanedData = processPayload(data, this._interceptedUrl);
                 if (originalData !== cleanedData) {
-                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã làm sạch payload trong XHR request`, 'warning');
+                    // Xác minh lại payload sau khi sửa
+                    const recheck = verifyPayloadText(cleanedData);
+                    if (recheck.hasDefaultText) {
+                        logToUI(`⚠️ [NETWORK INTERCEPTOR] CẢNH BÁO: Payload VẪN còn text mặc định sau khi sửa!`, 'error');
+                    } else {
+                        // Lấy thông tin payload để log
+                        let payloadInfo = '';
+                        try {
+                            if (typeof cleanedData === 'string') {
+                                const parsed = JSON.parse(cleanedData);
+                                if (parsed && typeof parsed === 'object') {
+                                    const textFields = ['text', 'content', 'message', 'prompt', 'input'];
+                                    for (const field of textFields) {
+                                        if (parsed[field] && typeof parsed[field] === 'string') {
+                                            payloadInfo = `Trường "${field}": ${parsed[field].length} ký tự`;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            // Bỏ qua
+                        }
+                        logToUI(`✅ [NETWORK INTERCEPTOR] Xác minh lại: Payload đã SẠCH, sẽ gửi XHR request với payload đã sửa${payloadInfo ? ` (${payloadInfo})` : ''}`, 'info');
+                    }
+                } else {
+                    // Payload không bị thay đổi, xác minh để chắc chắn
+                    const check = verifyPayloadText(cleanedData);
+                    if (check.hasDefaultText) {
+                        logToUI(`⚠️ [NETWORK INTERCEPTOR] CẢNH BÁO: Payload KHÔNG bị sửa nhưng VẪN có text mặc định!`, 'error');
+                    }
                 }
                 return originalXHRSend.apply(this, [cleanedData]);
             }
@@ -3714,6 +3942,14 @@ async function uSTZrHUt_IC() {
             addLogEntry(`🧩 [Chunk ${ttuo$y_KhCV + 1}] Ghi nhớ độ dài sau chuẩn hóa: ${chunkText.length} ký tự`, 'info');
         } catch (e) {
             console.warn('Không thể lưu expectedChunkLengths:', e);
+        }
+        
+        // LƯU TEXT CHUNK ĐÚNG VÀO WINDOW ĐỂ NETWORK INTERCEPTOR CÓ THỂ SỬ DỤNG
+        try {
+            window.currentChunkText = chunkText;
+            window.currentChunkIndex = ttuo$y_KhCV;
+        } catch (e) {
+            console.warn('Không thể lưu currentChunkText:', e);
         }
         
         // =======================================================
