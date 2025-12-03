@@ -2553,6 +2553,9 @@ const BBNDYjhHoGkj_qbbbJu=URL[VCAHyXsrERcpXVhFPxmgdBjjh(0x1f0)](InRdxToeqTDyPgDG
             window.isMerging = false;
             addLogEntry(`✅ Hoàn tất merge file!`, 'success');
 
+            // Dừng keep-alive loop khi job đã hoàn toàn kết thúc
+            stopKeepAliveLoop();
+
 if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[VCAHyXsrERcpXVhFPxmgdBjjh(0x26c)]();typeof WaveSurfer===VCAHyXsrERcpXVhFPxmgdBjjh(0x24d)&&await new Promise(dyvridmApUsyBfpYIHkxv=>setTimeout(dyvridmApUsyBfpYIHkxv,parseInt(0xf61)+Math.ceil(-parseInt(0x1e0))+-parseInt(0xb8d))),n_WwsStaC$jzsWjOIjRqedTG=WaveSurfer[VCAHyXsrERcpXVhFPxmgdBjjh(0x240)]({'container':VCAHyXsrERcpXVhFPxmgdBjjh(0x274),'waveColor':VCAHyXsrERcpXVhFPxmgdBjjh(0x26a),'progressColor':VCAHyXsrERcpXVhFPxmgdBjjh(0x228),'cursorColor':VCAHyXsrERcpXVhFPxmgdBjjh(0x20c),'barWidth':0x3,'barRadius':0x3,'cursorWidth':0x1,'height':0x64,'barGap':0x3}),n_WwsStaC$jzsWjOIjRqedTG[VCAHyXsrERcpXVhFPxmgdBjjh(0x1d5)](BBNDYjhHoGkj_qbbbJu),n_WwsStaC$jzsWjOIjRqedTG['on'](VCAHyXsrERcpXVhFPxmgdBjjh(0x1d6),()=>{const Ipo_CDaCvNEfh=VCAHyXsrERcpXVhFPxmgdBjjh;XvyPnqSRdJtYjSxingI[Ipo_CDaCvNEfh(0x1c7)]='⏸️';}),n_WwsStaC$jzsWjOIjRqedTG['on'](VCAHyXsrERcpXVhFPxmgdBjjh(0x22d),()=>{const NdVplyNSVhdzFR=VCAHyXsrERcpXVhFPxmgdBjjh;XvyPnqSRdJtYjSxingI[NdVplyNSVhdzFR(0x1c7)]='▶️';});
 
         // --- BẮT ĐẦU NÂNG CẤP: THÊM NÚT TẢI CHUNKS (ZIP) ---
@@ -3004,10 +3007,59 @@ function getRandomChunkDelay() {
     return delay;
 }
 
+// KEEP-ALIVE: Giữ tab "bận rộn" bằng requestAnimationFrame để giảm nguy cơ browser làm chậm timer
+function startKeepAliveLoop() {
+    try {
+        if (window.mmxKeepAliveRunning) return; // Đã chạy
+        window.mmxKeepAliveRunning = true;
+
+        const loop = () => {
+            if (!window.mmxKeepAliveRunning) {
+                window.mmxKeepAliveId = null;
+                return;
+            }
+
+            // Ghi lại tick cuối cùng để debug / watchdog nếu cần
+            window.mmxLastKeepAliveTick = performance.now();
+
+            try {
+                window.mmxKeepAliveId = requestAnimationFrame(loop);
+            } catch (e) {
+                window.mmxKeepAliveRunning = false;
+                window.mmxKeepAliveId = null;
+            }
+        };
+
+        window.mmxKeepAliveId = requestAnimationFrame(loop);
+        if (typeof addLogEntry === 'function') {
+            addLogEntry('🩺 Keep-Alive: Đã kích hoạt vòng requestAnimationFrame để giữ tốc độ render ổn định.', 'info');
+        }
+    } catch (e) {
+        console.warn('Không thể khởi động keep-alive loop:', e);
+    }
+}
+
+function stopKeepAliveLoop() {
+    try {
+        window.mmxKeepAliveRunning = false;
+        if (window.mmxKeepAliveId && typeof cancelAnimationFrame === 'function') {
+            cancelAnimationFrame(window.mmxKeepAliveId);
+        }
+        window.mmxKeepAliveId = null;
+        if (typeof addLogEntry === 'function') {
+            addLogEntry('🩺 Keep-Alive: Đã dừng vòng requestAnimationFrame (job kết thúc).', 'info');
+        }
+    } catch (e) {
+        console.warn('Không thể dừng keep-alive loop:', e);
+    }
+}
+
 async function uSTZrHUt_IC() {
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
     if (MEpJezGZUsmpZdAgFRBRZW) return;
     
+    // Bật keep-alive loop trong suốt thời gian render các chunk
+    startKeepAliveLoop();
     // GUARD: Kiểm tra độ sâu recursive calls ở đầu hàm
     if (typeof window.recursiveCallDepth === 'undefined') {
         window.recursiveCallDepth = 0;
