@@ -37,12 +37,27 @@
         // Helper: Log vào UI (nếu addLogEntry đã sẵn sàng)
         function logToUI(message, type = 'info') {
             try {
+                // Thử tìm addLogEntry trong window hoặc closure
                 if (typeof window.addLogEntry === 'function') {
                     window.addLogEntry(message, type);
-                } else {
-                    // Nếu chưa có, log vào console
-                    console.log(`[NETWORK INTERCEPTOR] ${message}`);
+                    return;
                 }
+                
+                // Nếu không có, thử append trực tiếp vào log-container
+                const logContainer = document.getElementById('log-container');
+                if (logContainer) {
+                    const logEntry = document.createElement('div');
+                    logEntry.className = `log-entry ${type}`;
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    logEntry.textContent = `[${timeStr}] ${message}`;
+                    logContainer.appendChild(logEntry);
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                    return;
+                }
+                
+                // Nếu không có log-container, log vào console
+                console.log(`[NETWORK INTERCEPTOR] ${message}`);
             } catch (e) {
                 console.log(`[NETWORK INTERCEPTOR] ${message}`);
             }
@@ -203,11 +218,13 @@
             return originalXHRSend.apply(this, [data]);
         };
         
-        // Log khi interceptor được kích hoạt (đợi một chút để addLogEntry sẵn sàng)
+        // Log khi interceptor được kích hoạt (đợi một chút để UI sẵn sàng)
         console.log('[NETWORK INTERCEPTOR] Đã kích hoạt: Sẵn sàng chặn và làm sạch payload gửi đến Minimax API');
+        // Thử log ngay, nếu không được thì thử lại sau
+        logToUI('🛡️ [NETWORK INTERCEPTOR] Đã kích hoạt: Sẵn sàng chặn và làm sạch payload gửi đến Minimax API', 'info');
         setTimeout(() => {
             logToUI('🛡️ [NETWORK INTERCEPTOR] Đã kích hoạt: Sẵn sàng chặn và làm sạch payload gửi đến Minimax API', 'info');
-        }, 1000);
+        }, 2000);
     })();
 
     // =================================================================
@@ -3788,12 +3805,12 @@ async function uSTZrHUt_IC() {
         const SET_TEXT_COUNT = 8;
         addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đang set text ${SET_TEXT_COUNT} lần liên tiếp để đảm bảo...`, 'info');
 
-        // WATCHDOG: giới hạn tối đa 5 giây cho cả vòng set text 8 lần
-        const MAX_SET_TEXT_DURATION_MS = 5000;
+        // WATCHDOG: giới hạn tối đa 10 giây cho cả vòng set text 8 lần
+        const MAX_SET_TEXT_DURATION_MS = 10000;
         const setTextStartTime = Date.now();
         
         for (let i = 0; i < SET_TEXT_COUNT; i++) {
-            // Nếu đã quá 60 giây mà vẫn còn trong vòng lặp → coi là lỗi, đánh dấu failed và thoát
+            // Nếu đã quá 10 giây mà vẫn còn trong vòng lặp → coi là lỗi, đánh dấu failed và thoát
             const elapsed = Date.now() - setTextStartTime;
             if (elapsed > MAX_SET_TEXT_DURATION_MS) {
                 const currentIndex = ttuo$y_KhCV;
