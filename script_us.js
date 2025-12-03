@@ -2987,13 +2987,6 @@ function getRandomChunkDelay() {
     const min = 8000; // 8s
     const max = 15000; // 15s
     const delay = Math.floor(Math.random() * (max - min + 1)) + min;
-    try {
-        if (typeof addLogEntry === 'function') {
-            addLogEntry(`⏳ Đợi ngẫu nhiên ${Math.round(delay / 1000)} giây trước khi gửi chunk tiếp theo...`, 'info');
-        }
-    } catch (e) {
-        // Bỏ qua lỗi log
-    }
     return delay;
 }
 
