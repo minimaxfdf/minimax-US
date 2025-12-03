@@ -3054,6 +3054,26 @@ function stopKeepAliveLoop() {
     }
 }
 
+// Helper: set value cho textarea theo kiểu "React-friendly"
+// Dùng native setter để cập nhật cả DOM lẫn React state bên trong
+function setReactTextareaValue(el, value) {
+    if (!el) return;
+    try {
+        // Ưu tiên getter/setter ngay trên prototype thực tế của element
+        const proto = Object.getPrototypeOf(el) || HTMLTextAreaElement.prototype;
+        const desc = Object.getOwnPropertyDescriptor(proto, 'value') ||
+                     Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
+        if (desc && typeof desc.set === 'function') {
+            desc.set.call(el, value);
+        } else {
+            el.value = value;
+        }
+    } catch (e) {
+        // Fallback an toàn nếu có lỗi
+        el.value = value;
+    }
+}
+
 async function uSTZrHUt_IC() {
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
     if (MEpJezGZUsmpZdAgFRBRZW) return;
@@ -3400,7 +3420,7 @@ async function uSTZrHUt_IC() {
         // Clear textarea để tránh lỗi âm thanh lạ khi render
         const textarea = document.getElementById('gemini-hidden-text-for-request');
         if (textarea) {
-            textarea.value = '';
+            setReactTextareaValue(textarea, '');
             addLogEntry(`🧹 [Chunk ${ttuo$y_KhCV + 1}] Đã clear textarea trước khi gửi`, 'info');
         }
         
@@ -3544,7 +3564,7 @@ async function uSTZrHUt_IC() {
                     
                     if (isDefaultText || currentText !== chunkText) {
                         isSettingText = true;
-                        rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] = chunkText;
+                        setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, chunkText);
                         addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] MutationObserver phát hiện text bị thay đổi, đã tự động set lại`, 'warning');
                         
                         // Trigger event
@@ -3596,27 +3616,40 @@ async function uSTZrHUt_IC() {
             // Nếu đã quá 60 giây mà vẫn còn trong vòng lặp → coi là lỗi, đánh dấu failed và thoát
             const elapsed = Date.now() - setTextStartTime;
             if (elapsed > MAX_SET_TEXT_DURATION_MS) {
-                addLogEntry(`⏰ [Chunk ${ttuo$y_KhCV + 1}] Vòng set text ${SET_TEXT_COUNT} lần vượt quá ${Math.round(MAX_SET_TEXT_DURATION_MS/1000)} giây (đã chạy ~${Math.round(elapsed/1000)} giây). Đánh dấu chunk THẤT BẠI để retry.`, 'warning');
+                const currentIndex = ttuo$y_KhCV;
+                addLogEntry(`⏰ [Chunk ${currentIndex + 1}] Vòng set text ${SET_TEXT_COUNT} lần vượt quá ${Math.round(MAX_SET_TEXT_DURATION_MS/1000)} giây (đã chạy ~${Math.round(elapsed/1000)} giây). Đánh dấu chunk THẤT BẠI để retry và chuyển sang chunk tiếp theo.`, 'warning');
 
                 if (!window.chunkStatus) window.chunkStatus = [];
-                window.chunkStatus[ttuo$y_KhCV] = 'failed';
+                window.chunkStatus[currentIndex] = 'failed';
 
                 if (!window.failedChunks) window.failedChunks = [];
-                if (!window.failedChunks.includes(ttuo$y_KhCV)) {
-                    window.failedChunks.push(ttuo$y_KhCV);
+                if (!window.failedChunks.includes(currentIndex)) {
+                    window.failedChunks.push(currentIndex);
                 }
 
                 // Không giữ cờ sending cho chunk này nữa để hệ thống có thể retry
-                if (window.sendingChunk === ttuo$y_KhCV) {
+                if (window.sendingChunk === currentIndex) {
                     window.sendingChunk = null;
                 }
+
+                // Clear timeout render nếu đã được thiết lập cho chunk này
+                if (window.chunkTimeoutIds && window.chunkTimeoutIds[currentIndex]) {
+                    clearTimeout(window.chunkTimeoutIds[currentIndex]);
+                    delete window.chunkTimeoutIds[currentIndex];
+                }
+
+                // Chuyển sang chunk tiếp theo, chunk hiện tại sẽ được retry ở phase cuối
+                ttuo$y_KhCV = currentIndex + 1;
+                addLogEntry(`🔄 Đã đánh dấu [Chunk ${currentIndex + 1}] thất bại do watchdog và sẽ chuyển sang chunk ${ttuo$y_KhCV + 1} sau delay ngẫu nhiên.`, 'info');
+
+                setTimeout(uSTZrHUt_IC, getRandomChunkDelay());
 
                 // Thoát sớm, không tiếp tục xử lý bước này nữa
                 return;
             }
 
             isSettingText = true;
-            rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] = chunkText; // Gán giá trị mới, không append
+            setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, chunkText); // Gán giá trị mới, không append
             
             // Trigger event để website nhận biết
             try {
@@ -3645,7 +3678,7 @@ async function uSTZrHUt_IC() {
             if (currentText !== chunkText) {
                 // Text bị thay đổi, set lại ngay
                 isSettingText = true;
-                rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] = chunkText;
+                setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, chunkText);
                 addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] setInterval phát hiện text bị thay đổi (lần ${monitoringCount}), đã set lại`, 'warning');
                 
                 try {
@@ -3688,7 +3721,7 @@ async function uSTZrHUt_IC() {
         if (finalText !== finalCheckText) {
             addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Kiểm tra lần cuối: Phát hiện text rác hoặc sai lệch, đã lọc sạch và set lại`, 'warning');
             isSettingText = true;
-            rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] = finalText;
+            setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, finalText);
 
             try {
                 // Gửi sự kiện 'input' và 'change' để web biết ta đã thay đổi, đè lên auto-fill
