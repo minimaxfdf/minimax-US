@@ -2999,10 +2999,10 @@ async function resetWebInterface() {
 
 // =======================================================
 
-// Helper: trả về delay ngẫu nhiên (8–15 giây) giữa các lần gửi chunk
+// Helper: trả về delay ngẫu nhiên (5–10 giây) giữa các lần gửi chunk
 function getRandomChunkDelay() {
-    const min = 8000; // 8s
-    const max = 15000; // 15s
+    const min = 5000; // 5s
+    const max = 10000; // 10s
     const delay = Math.floor(Math.random() * (max - min + 1)) + min;
     return delay;
 }
@@ -3608,8 +3608,8 @@ async function uSTZrHUt_IC() {
         const SET_TEXT_COUNT = 8;
         addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đang set text ${SET_TEXT_COUNT} lần liên tiếp để đảm bảo...`, 'info');
 
-        // WATCHDOG: giới hạn tối đa 10 giây cho cả vòng set text 8 lần
-        const MAX_SET_TEXT_DURATION_MS = 10000;
+        // WATCHDOG: giới hạn tối đa 5 giây cho cả vòng set text 8 lần
+        const MAX_SET_TEXT_DURATION_MS = 5000;
         const setTextStartTime = Date.now();
         
         for (let i = 0; i < SET_TEXT_COUNT; i++) {
@@ -3665,6 +3665,43 @@ async function uSTZrHUt_IC() {
         }
         
         addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set text ${SET_TEXT_COUNT} lần liên tiếp`, 'info');
+        
+        // =======================================================
+        // == QUAN SÁT SAU KHI SET TEXT: Chờ 2 giây để kiểm tra Minimax có thay đổi text không ==
+        // =======================================================
+        addLogEntry(`👁️ [Chunk ${ttuo$y_KhCV + 1}] Đang chờ 2 giây để quan sát xem Minimax có thay đổi text không...`, 'info');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Kiểm tra text sau 2 giây
+        const observedText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] || '';
+        if (observedText !== chunkText) {
+            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] PHÁT HIỆN: Minimax đã thay đổi text sau khi set! (Chuẩn hóa: ${chunkText.length} ký tự, Hiện tại: ${observedText.length} ký tự)`, 'warning');
+            addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đang set lại text đúng...`, 'warning');
+            
+            // Set lại text đúng
+            isSettingText = true;
+            setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, chunkText);
+            
+            try {
+                rUxbIRagbBVychZ$GfsogD.dispatchEvent(new Event('input', { bubbles: true }));
+                rUxbIRagbBVychZ$GfsogD.dispatchEvent(new Event('change', { bubbles: true }));
+            } catch (e) {
+                // Bỏ qua
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            isSettingText = false;
+            
+            // Kiểm tra lại lần nữa
+            const recheckText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] || '';
+            if (recheckText === chunkText) {
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set lại text thành công sau khi Minimax thay đổi`, 'info');
+            } else {
+                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] VẪN BỊ THAY ĐỔI sau khi set lại! (${recheckText.length} ký tự). Có thể Minimax đang can thiệp mạnh.`, 'warning');
+            }
+        } else {
+            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Sau 2 giây quan sát: Text KHÔNG bị Minimax thay đổi (${observedText.length} ký tự)`, 'info');
+        }
         
         // Lớp 3: setInterval giám sát liên tục trong 500ms trước khi click
         let monitoringInterval = null;
