@@ -3587,8 +3587,34 @@ async function uSTZrHUt_IC() {
         // => KHÔNG BỊ LẶP LẠI TEXT
         const SET_TEXT_COUNT = 8;
         addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đang set text ${SET_TEXT_COUNT} lần liên tiếp để đảm bảo...`, 'info');
+
+        // WATCHDOG: giới hạn tối đa 60 giây cho cả vòng set text 8 lần
+        const MAX_SET_TEXT_DURATION_MS = 60000;
+        const setTextStartTime = Date.now();
         
         for (let i = 0; i < SET_TEXT_COUNT; i++) {
+            // Nếu đã quá 60 giây mà vẫn còn trong vòng lặp → coi là lỗi, đánh dấu failed và thoát
+            const elapsed = Date.now() - setTextStartTime;
+            if (elapsed > MAX_SET_TEXT_DURATION_MS) {
+                addLogEntry(`⏰ [Chunk ${ttuo$y_KhCV + 1}] Vòng set text ${SET_TEXT_COUNT} lần vượt quá ${Math.round(MAX_SET_TEXT_DURATION_MS/1000)} giây (đã chạy ~${Math.round(elapsed/1000)} giây). Đánh dấu chunk THẤT BẠI để retry.`, 'warning');
+
+                if (!window.chunkStatus) window.chunkStatus = [];
+                window.chunkStatus[ttuo$y_KhCV] = 'failed';
+
+                if (!window.failedChunks) window.failedChunks = [];
+                if (!window.failedChunks.includes(ttuo$y_KhCV)) {
+                    window.failedChunks.push(ttuo$y_KhCV);
+                }
+
+                // Không giữ cờ sending cho chunk này nữa để hệ thống có thể retry
+                if (window.sendingChunk === ttuo$y_KhCV) {
+                    window.sendingChunk = null;
+                }
+
+                // Thoát sớm, không tiếp tục xử lý bước này nữa
+                return;
+            }
+
             isSettingText = true;
             rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] = chunkText; // Gán giá trị mới, không append
             
