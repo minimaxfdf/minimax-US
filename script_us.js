@@ -3179,12 +3179,62 @@ async function uSTZrHUt_IC() {
                     } catch (FBleqcOZcLNC$NKSlfC) {}
                     const currentChunkNum = ttuo$y_KhCV + 1;
                     ttuo$y_KhCV++;
-                    // Thêm delay ngẫu nhiên từ 10-20 giây trước khi gửi chunk tiếp theo
-                    const randomDelay = Math.floor(Math.random() * 10000) + 10000; // 10000-20000ms (10-20 giây)
-                    addLogEntry(`⏳ [Chunk ${currentChunkNum}] Đã thành công! trước khi gửi chunk tiếp theo.`, 'info');
-                    window.isProcessingChunk = false; // Reset flag trước khi schedule
-                    scheduleNextChunk(randomDelay);
-                    return;
+                    
+                    // =======================================================
+                    // == LOGIC THÔNG MINH: KIỂM TRA ĐÃ ĐỦ CHUNK CHƯA ==
+                    // =======================================================
+                    // QUAN TRỌNG: Sử dụng SI$acY hoặc window.SI$acY để đảm bảo không bị lỗi
+                    const safeSI$acY = (SI$acY && SI$acY.length > 0) ? SI$acY : (window.SI$acY || []);
+                    const totalChunks = safeSI$acY.length;
+                    const successfulChunks = window.chunkStatus ? window.chunkStatus.filter(status => status === 'success').length : 0;
+                    const failedChunks = window.failedChunks || [];
+                    
+                    // Filter lại failedChunks để chỉ lấy các chunk THỰC SỰ failed
+                    const actuallyFailedChunks = failedChunks.filter(chunkIndex => {
+                        const status = window.chunkStatus && window.chunkStatus[chunkIndex];
+                        return status === 'failed';
+                    });
+                    
+                    addLogEntry(`📊 Kiểm tra: ${successfulChunks}/${totalChunks} chunks đã thành công`, 'info');
+                    
+                    // Nếu đã đủ số chunk (ví dụ 15/15) VÀ không có chunk failed → ghép file ngay
+                    if (successfulChunks >= totalChunks && actuallyFailedChunks.length === 0) {
+                        addLogEntry(`✅ Đã đủ ${successfulChunks}/${totalChunks} chunks và không có chunk lỗi!`, 'success');
+                        addLogEntry(`🎉 Tất cả chunks đã thành công! Bắt đầu ghép file...`, 'success');
+                        window.isProcessingChunk = false;
+                        window.isFinalCheck = false;
+                        window.retryCount = 0;
+                        // Clear timeout để tránh tiếp tục retry
+                        if (window.nextChunkTimeoutId) {
+                            clearTimeout(window.nextChunkTimeoutId);
+                            window.nextChunkTimeoutId = null;
+                        }
+                        tt__SfNwBHDebpWJOqrSTR(); // Ghép file ngay
+                        return;
+                    }
+                    
+                    // Nếu có chunk failed → kích hoạt retry (nhưng chỉ khi chưa trong retry mode)
+                    if (actuallyFailedChunks.length > 0 && !window.isFinalCheck) {
+                        addLogEntry(`⚠️ Phát hiện ${actuallyFailedChunks.length} chunk lỗi. Sẽ kích hoạt retry sau khi render xong tất cả chunks.`, 'warning');
+                        // Tiếp tục render các chunk còn lại trước, sau đó mới retry
+                    }
+                    
+                    // Nếu chưa đủ chunk → tiếp tục chunk tiếp theo
+                    if (ttuo$y_KhCV < totalChunks) {
+                        // Thêm delay ngẫu nhiên từ 10-20 giây trước khi gửi chunk tiếp theo
+                        const randomDelay = Math.floor(Math.random() * 10000) + 10000; // 10000-20000ms (10-20 giây)
+                        addLogEntry(`⏳ [Chunk ${currentChunkNum}] Đã thành công! trước khi gửi chunk tiếp theo.`, 'info');
+                        window.isProcessingChunk = false; // Reset flag trước khi schedule
+                        scheduleNextChunk(randomDelay);
+                        return;
+                    } else {
+                        // Đã render xong tất cả chunks, kiểm tra lại
+                        addLogEntry(`📊 Đã render xong tất cả ${totalChunks} chunks. Kiểm tra lại...`, 'info');
+                        // Hàm uSTZrHUt_IC sẽ tự động kiểm tra và quyết định ghép file hoặc retry
+                        window.isProcessingChunk = false;
+                        scheduleNextChunk(1000); // Chờ ngắn rồi kiểm tra lại
+                        return;
+                    }
                 }
             }
         }
