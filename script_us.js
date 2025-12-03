@@ -27,8 +27,188 @@
 (function () {
     'use strict';
 
-
-
+    // =================================================================
+    // == LỚP BẢO VỆ THỨ 6: NETWORK INTERCEPTION (CHẶN MẠNG) ==
+    // == Chặn và kiểm tra payload trước khi gửi đến Minimax API ==
+    // =================================================================
+    (function() {
+        'use strict';
+        
+        // Helper: Log vào UI (nếu addLogEntry đã sẵn sàng)
+        function logToUI(message, type = 'info') {
+            try {
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry(message, type);
+                } else {
+                    // Nếu chưa có, log vào console
+                    console.log(`[NETWORK INTERCEPTOR] ${message}`);
+                }
+            } catch (e) {
+                console.log(`[NETWORK INTERCEPTOR] ${message}`);
+            }
+        }
+        
+        // Hàm kiểm tra và xóa text mặc định trong payload
+        function cleanPayloadText(text) {
+            if (!text || typeof text !== 'string') return text;
+            
+            let cleaned = text;
+            
+            // Xóa câu chào tiếng Anh
+            cleaned = cleaned.replace(/Hello, I'm delighted[\s\S]*?journey together/gi, "");
+            
+            // Xóa câu chào tiếng Việt
+            cleaned = cleaned.replace(/Xin chào, tôi rất vui[\s\S]*?sáng tạo âm thanh nhé\.?/gi, "");
+            
+            // Xóa các phần lặp lại
+            cleaned = cleaned.replace(/Choose a voice that resonates with you/gi, "");
+            cleaned = cleaned.replace(/Hãy chọn một giọng nói phù hợp/gi, "");
+            
+            // Nếu có thay đổi, log cảnh báo
+            if (cleaned !== text) {
+                const removed = text.length - cleaned.length;
+                const logMsg = `🛡️ [NETWORK INTERCEPTOR] Phát hiện text mặc định trong payload, đã xóa ${removed} ký tự (${text.length} → ${cleaned.length} ký tự)`;
+                console.warn('[NETWORK INTERCEPTOR] Phát hiện text mặc định trong payload, đã xóa:', {
+                    originalLength: text.length,
+                    cleanedLength: cleaned.length,
+                    removed: removed
+                });
+                logToUI(logMsg, 'warning');
+            }
+            
+            return cleaned;
+        }
+        
+        // Hàm xử lý payload (có thể là string JSON hoặc FormData)
+        function processPayload(payload) {
+            if (!payload) return payload;
+            
+            // Nếu là string (JSON)
+            if (typeof payload === 'string') {
+                try {
+                    const parsed = JSON.parse(payload);
+                    if (parsed && typeof parsed === 'object') {
+                        // Tìm các trường có thể chứa text (text, content, message, prompt, input, etc.)
+                        const textFields = ['text', 'content', 'message', 'prompt', 'input', 'data', 'value'];
+                        let modified = false;
+                        
+                        for (const field of textFields) {
+                            if (parsed[field] && typeof parsed[field] === 'string') {
+                                const cleaned = cleanPayloadText(parsed[field]);
+                                if (cleaned !== parsed[field]) {
+                                    parsed[field] = cleaned;
+                                    modified = true;
+                                }
+                            }
+                        }
+                        
+                        // Kiểm tra nested objects
+                        function cleanNested(obj) {
+                            if (!obj || typeof obj !== 'object') return;
+                            for (const key in obj) {
+                                if (typeof obj[key] === 'string') {
+                                    const cleaned = cleanPayloadText(obj[key]);
+                                    if (cleaned !== obj[key]) {
+                                        obj[key] = cleaned;
+                                        modified = true;
+                                    }
+                                } else if (typeof obj[key] === 'object') {
+                                    cleanNested(obj[key]);
+                                }
+                            }
+                        }
+                        cleanNested(parsed);
+                        
+                        if (modified) {
+                            return JSON.stringify(parsed);
+                        }
+                    } else if (typeof parsed === 'string') {
+                        // Nếu parse ra là string (không phải object), clean trực tiếp
+                        return cleanPayloadText(parsed);
+                    }
+                } catch (e) {
+                    // Không phải JSON, clean trực tiếp như string
+                    return cleanPayloadText(payload);
+                }
+            }
+            
+            // Nếu là FormData
+            if (payload instanceof FormData) {
+                const newFormData = new FormData();
+                for (const [key, value] of payload.entries()) {
+                    if (typeof value === 'string') {
+                        const cleaned = cleanPayloadText(value);
+                        newFormData.append(key, cleaned);
+                    } else {
+                        newFormData.append(key, value);
+                    }
+                }
+                return newFormData;
+            }
+            
+            return payload;
+        }
+        
+        // Intercept fetch API
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+            const [url, options = {}] = args;
+            
+            // Chỉ intercept các request đến Minimax API
+            if (typeof url === 'string' && (url.includes('minimax') || url.includes('api'))) {
+                // Log khi intercept request
+                logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã chặn fetch request đến: ${url.substring(0, 80)}...`, 'info');
+                
+                // Clone options để không modify original
+                const newOptions = { ...options };
+                
+                // Xử lý body nếu có
+                if (newOptions.body) {
+                    const originalBody = newOptions.body;
+                    newOptions.body = processPayload(newOptions.body);
+                    if (originalBody !== newOptions.body) {
+                        logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã làm sạch payload trong fetch request`, 'warning');
+                    }
+                }
+                
+                return originalFetch.apply(this, [url, newOptions]);
+            }
+            
+            return originalFetch.apply(this, args);
+        };
+        
+        // Intercept XMLHttpRequest
+        const originalXHROpen = XMLHttpRequest.prototype.open;
+        const originalXHRSend = XMLHttpRequest.prototype.send;
+        
+        XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+            this._interceptedUrl = url;
+            return originalXHROpen.apply(this, [method, url, ...rest]);
+        };
+        
+        XMLHttpRequest.prototype.send = function(data) {
+            // Chỉ intercept các request đến Minimax API
+            if (this._interceptedUrl && (this._interceptedUrl.includes('minimax') || this._interceptedUrl.includes('api'))) {
+                // Log khi intercept request
+                logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã chặn XHR request đến: ${this._interceptedUrl.substring(0, 80)}...`, 'info');
+                
+                const originalData = data;
+                const cleanedData = processPayload(data);
+                if (originalData !== cleanedData) {
+                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã làm sạch payload trong XHR request`, 'warning');
+                }
+                return originalXHRSend.apply(this, [cleanedData]);
+            }
+            
+            return originalXHRSend.apply(this, [data]);
+        };
+        
+        // Log khi interceptor được kích hoạt (đợi một chút để addLogEntry sẵn sàng)
+        console.log('[NETWORK INTERCEPTOR] Đã kích hoạt: Sẵn sàng chặn và làm sạch payload gửi đến Minimax API');
+        setTimeout(() => {
+            logToUI('🛡️ [NETWORK INTERCEPTOR] Đã kích hoạt: Sẵn sàng chặn và làm sạch payload gửi đến Minimax API', 'info');
+        }, 1000);
+    })();
 
     // =================================================================
     // == PHẦN CSS VÀ CÁC HÀM KHÁC ==
