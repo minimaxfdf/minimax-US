@@ -3111,6 +3111,19 @@ async function uSTZrHUt_IC() {
         for (const qcgcrPbku_NfOSGWmbTlMZNUOu of w$KFkMtMom_agF) {
             for (const TYRNWSSd$QOYZe of qcgcrPbku_NfOSGWmbTlMZNUOu[ndkpgKnjg(0x1db)]) {
                 if (TYRNWSSd$QOYZe[ndkpgKnjg(0x217)] === 0x7fd * parseInt(-0x3) + 0xa02 + 0xdf6 && TYRNWSSd$QOYZe[ndkpgKnjg(0x1cd)](ndkpgKnjg(0x1f2))) {
+
+                    // =======================================================
+                    // GUARD CHỐNG DOUBLE-CALLBACK:
+                    // Nếu chunk này đã được đánh dấu 'success' VÀ đã có blob trong window.chunkBlobs,
+                    // thì bỏ qua callback trùng lặp để tránh lưu sai vị trí / tăng index hai lần.
+                    // =======================================================
+                    const currentIndexForObserver = ttuo$y_KhCV;
+                    if (window.chunkStatus && window.chunkStatus[currentIndexForObserver] === 'success'
+                        && window.chunkBlobs && window.chunkBlobs[currentIndexForObserver]) {
+                        addLogEntry(`⏭️ [Chunk ${currentIndexForObserver + 1}] Đã xử lý & lưu trước đó, bỏ qua callback trùng lặp của MutationObserver`, 'info');
+                        return;
+                    }
+
                     clearTimeout(Srnj$swt);
                     GrmINfCyEsyqJbigpyT[ndkpgKnjg(0x24e)]();
 
