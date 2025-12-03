@@ -87,28 +87,14 @@
                 // Nếu có text đúng, thay thế toàn bộ bằng text đúng
                 if (correctText && typeof correctText === 'string' && correctText.trim().length > 0) {
                     cleaned = correctText;
-                    const logMsg = `🛡️ [NETWORK INTERCEPTOR] Phát hiện text mặc định trong payload, đã THAY THẾ bằng text đúng của chunk (${text.length} → ${cleaned.length} ký tự)`;
-                    console.warn('[NETWORK INTERCEPTOR] Phát hiện text mặc định, đã thay thế bằng text đúng:', {
-                        originalLength: text.length,
-                        replacedLength: cleaned.length,
-                        hasCorrectText: true
-                    });
-                    logToUI(logMsg, 'warning');
+                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text mặc định...`, 'warning');
                 } else {
                     // Nếu không có text đúng, xóa text mặc định như cũ
                     cleaned = cleaned.replace(/Hello, I'm delighted[\s\S]*?journey together/gi, "");
                     cleaned = cleaned.replace(/Xin chào, tôi rất vui[\s\S]*?sáng tạo âm thanh nhé\.?/gi, "");
                     cleaned = cleaned.replace(/Choose a voice that resonates with you/gi, "");
                     cleaned = cleaned.replace(/Hãy chọn một giọng nói phù hợp/gi, "");
-                    
-                    const removed = text.length - cleaned.length;
-                    const logMsg = `🛡️ [NETWORK INTERCEPTOR] Phát hiện text mặc định trong payload, đã xóa ${removed} ký tự (${text.length} → ${cleaned.length} ký tự) - KHÔNG có text đúng để thay thế`;
-                    console.warn('[NETWORK INTERCEPTOR] Phát hiện text mặc định, đã xóa (không có text đúng):', {
-                        originalLength: text.length,
-                        cleanedLength: cleaned.length,
-                        removed: removed
-                    });
-                    logToUI(logMsg, 'warning');
+                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã xóa text mặc định...`, 'warning');
                 }
             }
             
@@ -234,12 +220,11 @@
             // XÁC MINH: Kiểm tra payload trước khi xử lý
             const verification = verifyPayloadText(payload);
             if (verification.hasDefaultText) {
-                logToUI(`🔍 [NETWORK INTERCEPTOR] XÁC MINH PAYLOAD: ${verification.details}`, 'warning');
-                logToUI(`🔍 [NETWORK INTERCEPTOR] Mẫu text phát hiện: ${verification.sampleText}`, 'warning');
+                logToUI(`⚠️ [NETWORK INTERCEPTOR] Phát hiện text mặc định...`, 'warning');
             } else {
                 // Chỉ log khi là request quan trọng (audio generation)
                 if (url.includes('audio') || url.includes('voice') || url.includes('clone')) {
-                    logToUI(`✅ [NETWORK INTERCEPTOR] XÁC MINH PAYLOAD: ${verification.details}`, 'info');
+                    logToUI(`✅ [NETWORK INTERCEPTOR]`, 'info');
                 }
             }
             
@@ -280,12 +265,7 @@
                         cleanNested(parsed);
                         
                         if (modified) {
-                            const correctText = window.currentChunkText || null;
-                            if (correctText) {
-                                logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã làm sạch payload: Thay thế text mặc định bằng text đúng của chunk trong JSON`, 'warning');
-                            } else {
-                                logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã làm sạch payload: Xóa text mặc định khỏi JSON (không có text đúng để thay thế)`, 'warning');
-                            }
+                            logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã làm sạch payload...`, 'warning');
                             return JSON.stringify(parsed);
                         }
                     } else if (typeof parsed === 'string') {
@@ -314,12 +294,7 @@
                     }
                 }
                 if (formModified) {
-                    const correctText = window.currentChunkText || null;
-                    if (correctText) {
-                        logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã làm sạch payload: Thay thế text mặc định bằng text đúng của chunk trong FormData`, 'warning');
-                    } else {
-                        logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã làm sạch payload: Xóa text mặc định khỏi FormData (không có text đúng để thay thế)`, 'warning');
-                    }
+                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã làm sạch payload...`, 'warning');
                 }
                 return newFormData;
             }
@@ -337,7 +312,7 @@
             if (urlStr && (urlStr.includes('minimax') || urlStr.includes('api') || urlStr.includes('audio') || urlStr.includes('voice'))) {
                 // Log khi intercept request (chỉ log request quan trọng)
                 if (urlStr.includes('audio') || urlStr.includes('voice') || urlStr.includes('clone')) {
-                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã chặn fetch request đến: ${urlStr.substring(0, 100)}...`, 'info');
+                    logToUI(`🛡️ [NETWORK INTERCEPTOR]`, 'info');
                 }
                 
                 // Clone options để không modify original
@@ -351,33 +326,15 @@
                         // Xác minh lại payload sau khi sửa
                         const recheck = verifyPayloadText(newOptions.body);
                         if (recheck.hasDefaultText) {
-                            logToUI(`⚠️ [NETWORK INTERCEPTOR] CẢNH BÁO: Payload VẪN còn text mặc định sau khi sửa!`, 'error');
+                            logToUI(`⚠️ [NETWORK INTERCEPTOR]`, 'error');
                         } else {
-                            // Lấy thông tin payload để log
-                            let payloadInfo = '';
-                            try {
-                                if (typeof newOptions.body === 'string') {
-                                    const parsed = JSON.parse(newOptions.body);
-                                    if (parsed && typeof parsed === 'object') {
-                                        const textFields = ['text', 'content', 'message', 'prompt', 'input'];
-                                        for (const field of textFields) {
-                                            if (parsed[field] && typeof parsed[field] === 'string') {
-                                                payloadInfo = `Trường "${field}": ${parsed[field].length} ký tự`;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            } catch (e) {
-                                // Bỏ qua
-                            }
-                            logToUI(`✅ [NETWORK INTERCEPTOR] Xác minh lại: Payload đã SẠCH, sẽ gửi request với payload đã sửa${payloadInfo ? ` (${payloadInfo})` : ''}`, 'info');
+                            logToUI(`✅ [NETWORK INTERCEPTOR]`, 'info');
                         }
                     } else {
                         // Payload không bị thay đổi, xác minh để chắc chắn
                         const check = verifyPayloadText(newOptions.body);
                         if (check.hasDefaultText) {
-                            logToUI(`⚠️ [NETWORK INTERCEPTOR] CẢNH BÁO: Payload KHÔNG bị sửa nhưng VẪN có text mặc định!`, 'error');
+                            logToUI(`⚠️ [NETWORK INTERCEPTOR]`, 'error');
                         }
                     }
                 }
@@ -402,7 +359,7 @@
             if (this._interceptedUrl && (this._interceptedUrl.includes('minimax') || this._interceptedUrl.includes('api') || this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice'))) {
                 // Log khi intercept request (chỉ log request quan trọng)
                 if (this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice') || this._interceptedUrl.includes('clone')) {
-                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã chặn XHR request đến: ${this._interceptedUrl.substring(0, 100)}...`, 'info');
+                    logToUI(`🛡️ [NETWORK INTERCEPTOR]`, 'info');
                 }
                 
                 const originalData = data;
@@ -411,33 +368,15 @@
                     // Xác minh lại payload sau khi sửa
                     const recheck = verifyPayloadText(cleanedData);
                     if (recheck.hasDefaultText) {
-                        logToUI(`⚠️ [NETWORK INTERCEPTOR] CẢNH BÁO: Payload VẪN còn text mặc định sau khi sửa!`, 'error');
+                        logToUI(`⚠️ [NETWORK INTERCEPTOR]`, 'error');
                     } else {
-                        // Lấy thông tin payload để log
-                        let payloadInfo = '';
-                        try {
-                            if (typeof cleanedData === 'string') {
-                                const parsed = JSON.parse(cleanedData);
-                                if (parsed && typeof parsed === 'object') {
-                                    const textFields = ['text', 'content', 'message', 'prompt', 'input'];
-                                    for (const field of textFields) {
-                                        if (parsed[field] && typeof parsed[field] === 'string') {
-                                            payloadInfo = `Trường "${field}": ${parsed[field].length} ký tự`;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (e) {
-                            // Bỏ qua
-                        }
-                        logToUI(`✅ [NETWORK INTERCEPTOR] Xác minh lại: Payload đã SẠCH, sẽ gửi XHR request với payload đã sửa${payloadInfo ? ` (${payloadInfo})` : ''}`, 'info');
+                        logToUI(`✅ [NETWORK INTERCEPTOR]`, 'info');
                     }
                 } else {
                     // Payload không bị thay đổi, xác minh để chắc chắn
                     const check = verifyPayloadText(cleanedData);
                     if (check.hasDefaultText) {
-                        logToUI(`⚠️ [NETWORK INTERCEPTOR] CẢNH BÁO: Payload KHÔNG bị sửa nhưng VẪN có text mặc định!`, 'error');
+                        logToUI(`⚠️ [NETWORK INTERCEPTOR]`, 'error');
                     }
                 }
                 return originalXHRSend.apply(this, [cleanedData]);
@@ -447,11 +386,11 @@
         };
         
         // Log khi interceptor được kích hoạt (đợi một chút để UI sẵn sàng)
-        console.log('[NETWORK INTERCEPTOR] Đã kích hoạt: Sẵn sàng chặn và làm sạch payload gửi đến Minimax API');
+        console.log('[NETWORK INTERCEPTOR] Đã kích hoạt');
         // Thử log ngay, nếu không được thì thử lại sau
-        logToUI('🛡️ [NETWORK INTERCEPTOR] Đã kích hoạt: Sẵn sàng chặn và làm sạch payload gửi đến Minimax API', 'info');
+        logToUI('🛡️ [NETWORK INTERCEPTOR]', 'info');
         setTimeout(() => {
-            logToUI('🛡️ [NETWORK INTERCEPTOR] Đã kích hoạt: Sẵn sàng chặn và làm sạch payload gửi đến Minimax API', 'info');
+            logToUI('🛡️ [NETWORK INTERCEPTOR]', 'info');
         }, 2000);
     })();
 
