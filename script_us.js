@@ -3421,6 +3421,17 @@ async function uSTZrHUt_IC() {
         console.log(`[DEBUG] Đang chuẩn hóa chunk ${ttuo$y_KhCV + 1}, độ dài: ${SI$acY[ttuo$y_KhCV].length}`);
         const chunkText = normalizeChunkText(SI$acY[ttuo$y_KhCV]);
         console.log(`[DEBUG] Sau chuẩn hóa, độ dài: ${chunkText.length}`);
+
+        // LƯU LẠI ĐỘ DÀI VĂN BẢN ĐÃ CHUẨN HÓA ĐỂ KIỂM TRA SAU KHI GỬI
+        try {
+            if (!window.expectedChunkLengths) {
+                window.expectedChunkLengths = {};
+            }
+            window.expectedChunkLengths[ttuo$y_KhCV] = chunkText.length;
+            addLogEntry(`🧩 [Chunk ${ttuo$y_KhCV + 1}] Ghi nhớ độ dài sau chuẩn hóa: ${chunkText.length} ký tự`, 'info');
+        } catch (e) {
+            console.warn('Không thể lưu expectedChunkLengths:', e);
+        }
         
         // =======================================================
         // == KIỂM TRA: NGĂN GỬI CHUNK NHIỀU LẦN ==
@@ -3603,6 +3614,49 @@ async function uSTZrHUt_IC() {
         
         // Thực hiện click
         KxTOuAJu(targetButton);
+
+        // =======================================================
+        // VÒNG XÁC MINH BỔ SUNG SAU KHI GỬI (CHỜ 3 GIÂY)
+        // Nếu sau 3 giây độ dài trong textarea KHÁC với độ dài đã chuẩn hóa,
+        // coi như Minimax đã chèn thêm văn bản → đánh dấu chunk thất bại
+        // để hệ thống retry lại giống các chunk lỗi khác.
+        // =======================================================
+        try {
+            setTimeout(() => {
+                try {
+                    if (!window.expectedChunkLengths) return;
+                    const expectedLen = window.expectedChunkLengths[ttuo$y_KhCV];
+                    if (typeof expectedLen !== 'number') return;
+
+                    const currentText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] || '';
+                    const actualLen = currentText.length;
+
+                    if (actualLen !== expectedLen) {
+                        addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Phát hiện văn bản bị thay đổi sau khi gửi (chuẩn hóa: ${expectedLen} ký tự, hiện tại: ${actualLen} ký tự). Đánh dấu chunk THẤT BẠI để retry.`, 'warning');
+
+                        // Đánh dấu thất bại giống các nhánh lỗi khác
+                        if (!window.chunkStatus) window.chunkStatus = [];
+                        window.chunkStatus[ttuo$y_KhCV] = 'failed';
+
+                        if (!window.failedChunks) window.failedChunks = [];
+                        if (!window.failedChunks.includes(ttuo$y_KhCV)) {
+                            window.failedChunks.push(ttuo$y_KhCV);
+                        }
+
+                        // Không giữ cờ sending cho chunk này nữa
+                        if (window.sendingChunk === ttuo$y_KhCV) {
+                            window.sendingChunk = null;
+                        }
+                    } else {
+                        addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Xác minh độ dài sau khi gửi: KHỚP (${actualLen} ký tự)`, 'info');
+                    }
+                } catch (lengthCheckError) {
+                    console.warn('Lỗi khi kiểm tra lại độ dài chunk sau 3 giây:', lengthCheckError);
+                }
+            }, 3000);
+        } catch (e) {
+            console.warn('Không thể thiết lập vòng xác minh độ dài sau khi gửi chunk:', e);
+        }
         
         // Cleanup: Dừng MutationObserver sau khi click (chờ 1 giây để đảm bảo click đã được xử lý)
         setTimeout(() => {
