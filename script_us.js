@@ -3608,8 +3608,8 @@ async function uSTZrHUt_IC() {
         const SET_TEXT_COUNT = 8;
         addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đang set text ${SET_TEXT_COUNT} lần liên tiếp để đảm bảo...`, 'info');
 
-        // WATCHDOG: giới hạn tối đa 60 giây cho cả vòng set text 8 lần
-        const MAX_SET_TEXT_DURATION_MS = 60000;
+        // WATCHDOG: giới hạn tối đa 10 giây cho cả vòng set text 8 lần
+        const MAX_SET_TEXT_DURATION_MS = 10000;
         const setTextStartTime = Date.now();
         
         for (let i = 0; i < SET_TEXT_COUNT; i++) {
