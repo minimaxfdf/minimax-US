@@ -1910,6 +1910,60 @@ const InRdxToeqTDyPgDGZb=new Blob(finalBlobs,{'type':VCAHyXsrERcpXVhFPxmgdBjjh(0
         // --- KẾT THÚC NÂNG CẤP ---
 
         // =======================================================
+        // == QUAN TRỌNG: CẬP NHẬT UI TRƯỚC KHI RESET ==
+        // =======================================================
+        // Lưu lại số chunk tổng cộng TRƯỚC KHI reset để cập nhật progress bar đúng
+        const mergeSI$acY = (SI$acY && SI$acY.length > 0) ? SI$acY : (window.SI$acY || []);
+        const totalChunksForUI = mergeSI$acY.length;
+        
+        // QUAN TRỌNG: Tính số chunk thực tế đã thành công từ window.chunkStatus
+        const successfulChunksForUI = window.chunkStatus ? window.chunkStatus.filter(status => status === 'success').length : 0;
+        
+        // 1. Cập nhật progress bar lên 100% TRƯỚC KHI reset
+        // Sử dụng số chunk thực tế đã thành công để đảm bảo đồng bộ
+        if (totalChunksForUI > 0) {
+            try {
+                // Đảm bảo progress bar hiển thị đúng số chunk đã thành công
+                const finalSuccessfulChunks = successfulChunksForUI > 0 ? successfulChunksForUI : totalChunksForUI;
+                nWHrScjZnIyNYzztyEWwM(finalSuccessfulChunks, totalChunksForUI);
+                addLogEntry(`📊 Đã cập nhật progress bar lên 100% (${finalSuccessfulChunks}/${totalChunksForUI})`, 'info');
+            } catch (e) {
+                addLogEntry(`⚠️ Lỗi khi cập nhật progress bar: ${e.message}`, 'warning');
+            }
+        }
+        
+        // 2. Hiển thị lại nút "Bắt đầu tạo âm thanh" và ẩn nút "Tạm dừng"/"Dừng hẳn" TRƯỚC KHI reset
+        try {
+            const startBtn = document.getElementById('gemini-start-queue-btn');
+            const pauseBtn = document.getElementById('gemini-pause-btn');
+            const stopBtn = document.getElementById('gemini-stop-btn');
+            const progressContainer = document.getElementById('gemini-progress-container');
+            
+            if (startBtn) {
+                startBtn.style.display = 'block';
+                startBtn.disabled = false;
+                startBtn.textContent = 'Bắt đầu tạo âm thanh';
+            }
+            if (pauseBtn) {
+                pauseBtn.style.display = 'none';
+            }
+            if (stopBtn) {
+                stopBtn.style.display = 'none';
+            }
+            if (progressContainer) {
+                // Giữ progress container hiển thị để người dùng thấy kết quả
+                // Không ẩn progress container ngay
+            }
+            
+            addLogEntry(`🔄 Đã cập nhật UI: Hiển thị nút "Bắt đầu tạo âm thanh" và ẩn nút "Tạm dừng"`, 'info');
+        } catch (e) {
+            addLogEntry(`⚠️ Lỗi khi cập nhật UI: ${e.message}`, 'warning');
+        }
+        
+        // Chờ một chút để UI kịp cập nhật trước khi reset
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // =======================================================
         // == QUAN TRỌNG: RESET TẤT CẢ BIẾN VÀ CƠ CHẾ VỀ TRẠNG THÁI BAN ĐẦU SAU KHI GHÉP FILE XONG ==
         // =======================================================
         addLogEntry(`🔄 Đang reset tất cả biến và cơ chế về trạng thái ban đầu để sẵn sàng cho job mới...`, 'info');
