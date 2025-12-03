@@ -2281,6 +2281,18 @@ function normalizeChunkText(text) {
             .trim();
         
         // KHÔNG XÓA BẤT KỲ KÝ TỰ NÀO KHÁC - Giữ nguyên tất cả ký tự Unicode
+
+        // --- FIX BỞI GEMINI: Regex linh hoạt hơn, bất chấp xuống dòng hay dấu câu lạ ---
+        // Xóa câu chào tiếng Anh (Bắt đầu bằng Hello... kết thúc bằng together)
+        normalized = normalized.replace(/Hello, I'm delighted[\s\S]*?journey together/gi, " ");
+
+        // Xóa câu chào tiếng Việt (Bắt đầu bằng Xin chào... kết thúc bằng nhé)
+        normalized = normalized.replace(/Xin chào, tôi rất vui[\s\S]*?sáng tạo âm thanh nhé\.?/gi, " ");
+
+        // Xóa bổ sung: Đôi khi nó lặp lại một phần
+        normalized = normalized.replace(/Choose a voice that resonates with you/gi, " ");
+        normalized = normalized.replace(/Hãy chọn một giọng nói phù hợp/gi, " ");
+        // -----------------------------------------------------------------------
         
         // Log debug message với thông tin chi tiết - LUÔN HIỂN THỊ (với try-catch để đảm bảo)
         try {
@@ -2970,6 +2982,21 @@ async function resetWebInterface() {
 
 // =======================================================
 
+// Helper: trả về delay ngẫu nhiên (8–15 giây) giữa các lần gửi chunk
+function getRandomChunkDelay() {
+    const min = 8000; // 8s
+    const max = 15000; // 15s
+    const delay = Math.floor(Math.random() * (max - min + 1)) + min;
+    try {
+        if (typeof addLogEntry === 'function') {
+            addLogEntry(`⏳ Đợi ngẫu nhiên ${Math.round(delay / 1000)} giây trước khi gửi chunk tiếp theo...`, 'info');
+        }
+    } catch (e) {
+        // Bỏ qua lỗi log
+    }
+    return delay;
+}
+
 async function uSTZrHUt_IC() {
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
     if (MEpJezGZUsmpZdAgFRBRZW) return;
@@ -3179,7 +3206,7 @@ async function uSTZrHUt_IC() {
                 if (ttuo$y_KhCV >= SI$acY.length) {
                     ttuo$y_KhCV = SI$acY.length;
                 }
-                setTimeout(uSTZrHUt_IC, 500);
+                setTimeout(uSTZrHUt_IC, getRandomChunkDelay());
                 return;
             }
         }
@@ -3552,19 +3579,29 @@ async function uSTZrHUt_IC() {
         }
         
         // Lớp 4: Kiểm tra lần cuối và force set nếu cần
+        // --- FIX: Kiểm tra và xóa text rác lần cuối ngay trên ô input ---
         const finalCheckText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)];
-        if (finalCheckText !== chunkText) {
-            addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Kiểm tra lần cuối: Text bị thay đổi, force set lại và click ngay...`, 'warning');
+        let finalText = chunkText;
+
+        // Regex lọc rác (giống logic trong normalizeChunkText)
+        finalText = finalText.replace(/Hello, I'm delighted[\s\S]*?journey together/gi, "");
+        finalText = finalText.replace(/Xin chào, tôi rất vui[\s\S]*?sáng tạo âm thanh nhé\.?/gi, "");
+        finalText = finalText.replace(/Choose a voice that resonates with you/gi, "");
+        finalText = finalText.replace(/Hãy chọn một giọng nói phù hợp/gi, "");
+
+        if (finalText !== finalCheckText) {
+            addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Kiểm tra lần cuối: Phát hiện text rác hoặc sai lệch, đã lọc sạch và set lại`, 'warning');
             isSettingText = true;
-            rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] = chunkText;
-            
+            rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] = finalText;
+
             try {
-                const inputEvent = new Event('input', { bubbles: true, cancelable: true });
-                rUxbIRagbBVychZ$GfsogD.dispatchEvent(inputEvent);
+                // Gửi sự kiện 'input' và 'change' để web biết ta đã thay đổi, đè lên auto-fill
+                rUxbIRagbBVychZ$GfsogD.dispatchEvent(new Event('input', { bubbles: true }));
+                rUxbIRagbBVychZ$GfsogD.dispatchEvent(new Event('change', { bubbles: true }));
             } catch (e) {
                 // Bỏ qua
             }
-            
+
             await new Promise(resolve => setTimeout(resolve, 50));
             isSettingText = false;
         } else {
@@ -3654,7 +3691,7 @@ async function uSTZrHUt_IC() {
             addLogEntry(`🔄 Sau khi reset, tiếp tục với chunk ${ttuo$y_KhCV + 1}...`, 'info');
             addLogEntry(`📊 Trạng thái: ${window.chunkStatus.filter(s => s === 'success' || s === 'failed').length}/${SI$acY.length} chunks đã xử lý`, 'info');
             addLogEntry(`💡 Chunk bị timeout sẽ được retry vô hạn sau khi xong tất cả chunks`, 'info');
-            setTimeout(uSTZrHUt_IC, 2000); // Chờ 2 giây rồi tiếp tục với chunk tiếp theo
+            setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Chờ ngẫu nhiên 8–15 giây rồi tiếp tục với chunk tiếp theo
         }, 60000); // Timeout 60 giây cho mỗi chunk
         
         // QUAN TRỌNG: Gọi igyo$uwVChUzI() để tạo MutationObserver detect audio element
@@ -3820,7 +3857,7 @@ async function uSTZrHUt_IC() {
             
             addLogEntry(`➡️ Chuyển sang chunk ${ttuo$y_KhCV + 1}...`, 'info');
             addLogEntry(`📊 Trạng thái: ${window.chunkStatus.filter(s => s === 'success' || s === 'failed').length}/${SI$acY.length} chunks đã xử lý`, 'info');
-            setTimeout(uSTZrHUt_IC, 2000); // Tiếp tục với chunk tiếp theo
+            setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Tiếp tục với chunk tiếp theo sau delay ngẫu nhiên 8–15 giây
         }
     }
 }
