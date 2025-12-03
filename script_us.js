@@ -4831,11 +4831,34 @@ async function waitForVoiceModelReady() {
             const applyPunctuationBtn = document.getElementById('apply-punctuation-btn');
             const mainTextarea = document.getElementById('gemini-main-textarea');
 
-            // Đơn giản: ẩn nút khi bấm "Tạo âm thanh"
+            // Khi bấm "Bắt đầu tạo âm thanh" thì:
+            // - Ẩn nút
+            // - Reset thanh tiến trình về 0% cho JOB MỚI
+            // - Reset lại bộ đếm progress tối đa & trạng thái chunk
             if (startQueueBtn) {
                 startQueueBtn.addEventListener('click', function() {
-                    // Ẩn nút ngay khi bấm
+                    // Ẩn nút ngay khi bấm (giữ hành vi cũ)
                     startQueueBtn.style.display = 'none';
+
+                    // Reset thanh progress về 0% cho lần chạy mới
+                    try {
+                        const progressBar = document.getElementById('gemini-progress-bar');
+                        const progressLabel = document.getElementById('gemini-progress-label');
+                        if (progressBar) {
+                            progressBar.style.width = '0%';
+                        }
+                        if (progressLabel) {
+                            progressLabel.textContent = '0% (Chunk 0/0)';
+                        }
+
+                        // Reset biến trạng thái progress
+                        window.maxProgress = 0;
+                        window.chunkStatus = [];
+                        window.failedChunks = [];
+                    } catch (e) {
+                        // Bỏ qua nếu có lỗi nhỏ
+                        console.warn('Không thể reset progress bar khi bắt đầu job mới:', e);
+                    }
                 });
             }
             const closeBtn = modal.querySelector('.punctuation-modal-close-btn');
