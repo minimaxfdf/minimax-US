@@ -4394,14 +4394,15 @@ function igyo$uwVChUzI() {
                         setTimeout(() => {
                             window.recursiveCallDepth = 0;
                             uSTZrHUt_IC();
-                        }, 2000);
+                        }, getRandomChunkDelay());
                         return;
                     }
                     
+                    // Sau khi xử lý xong chunk hiện tại, luôn đợi ngẫu nhiên 8–15 giây rồi mới xử lý chunk tiếp theo
                     setTimeout(() => {
                         window.recursiveCallDepth = Math.max(0, window.recursiveCallDepth - 1); // Giảm độ sâu sau mỗi lần gọi
                         uSTZrHUt_IC();
-                    }, -parseInt(0x1) * -parseInt(0x25de) + Math.max(-0x19, -parseInt(0x19)) * -0x18a + Math.trunc(-0x467c));
+                    }, getRandomChunkDelay());
                     return;
                 }
             }
