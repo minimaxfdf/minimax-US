@@ -2465,23 +2465,32 @@ button:disabled {
         
         // Hàm bắt đầu đếm thời gian
         function startJobTimer() {
+            console.log('⏱️ [TIMER] startJobTimer() được gọi');
+            
             // Reset về 0 khi bắt đầu job mới
             jobElapsedSeconds = 0;
             jobStartTime = Date.now();
             
             // Cập nhật hiển thị ngay lập tức
             updateJobTimerDisplay();
+            console.log('⏱️ [TIMER] Đã cập nhật hiển thị lần đầu');
             
             // Xóa interval cũ nếu có
             if (jobTimerInterval) {
                 clearInterval(jobTimerInterval);
+                console.log('⏱️ [TIMER] Đã xóa interval cũ');
             }
             
             // Bắt đầu đếm mỗi giây
             jobTimerInterval = setInterval(() => {
                 jobElapsedSeconds++;
                 updateJobTimerDisplay();
+                if (jobElapsedSeconds % 10 === 0) {
+                    console.log(`⏱️ [TIMER] Đang đếm: ${jobElapsedSeconds} giây`);
+                }
             }, 1000);
+            
+            console.log('⏱️ [TIMER] Đã tạo interval mới, timer đang chạy');
             
             // Log
             if (typeof addLogEntry === 'function') {
@@ -7480,8 +7489,22 @@ async function waitForVoiceModelReady() {
             }
 
             // Bắt đầu đếm thời gian khi bắt đầu job mới
+            console.log('🔍 [TIMER DEBUG] Đang kiểm tra startJobTimer...');
             if (typeof window.startJobTimer === 'function') {
+                console.log('✅ [TIMER DEBUG] startJobTimer tồn tại, đang gọi...');
                 window.startJobTimer();
+                console.log('✅ [TIMER DEBUG] Đã gọi startJobTimer');
+            } else {
+                console.error('❌ [TIMER DEBUG] startJobTimer KHÔNG tồn tại!');
+                // Thử gọi lại sau 100ms nếu chưa sẵn sàng
+                setTimeout(() => {
+                    if (typeof window.startJobTimer === 'function') {
+                        console.log('✅ [TIMER DEBUG] startJobTimer đã sẵn sàng sau delay, đang gọi...');
+                        window.startJobTimer();
+                    } else {
+                        console.error('❌ [TIMER DEBUG] startJobTimer vẫn KHÔNG tồn tại sau delay!');
+                    }
+                }, 100);
             }
 
             // 2. Lấy các DOM element (Từ code legacy)
