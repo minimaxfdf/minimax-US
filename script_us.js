@@ -4445,6 +4445,7 @@ async function uSTZrHUt_IC() {
         addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đang set text ${SET_TEXT_COUNT} lần liên tiếp để đảm bảo...`, 'info');
 
         // WATCHDOG: giới hạn tối đa 10 giây cho cả vòng set text 5 lần
+        // GIỮ NGUYÊN delay logic, chỉ đổi hành vi retry (retry lại đúng chunk, không nhảy chunk mới)
         const MAX_SET_TEXT_DURATION_MS = 10000;
         const setTextStartTime = Date.now();
         
@@ -4453,7 +4454,7 @@ async function uSTZrHUt_IC() {
             const elapsed = Date.now() - setTextStartTime;
             if (elapsed > MAX_SET_TEXT_DURATION_MS) {
                 const currentIndex = ttuo$y_KhCV;
-                addLogEntry(`⏰ [Chunk ${currentIndex + 1}] Vòng set text ${SET_TEXT_COUNT} lần vượt quá ${Math.round(MAX_SET_TEXT_DURATION_MS/1000)} giây (đã chạy ~${Math.round(elapsed/1000)} giây). Đánh dấu chunk THẤT BẠI để retry và chuyển sang chunk tiếp theo.`, 'warning');
+                addLogEntry(`⏰ [Chunk ${currentIndex + 1}] Vòng set text ${SET_TEXT_COUNT} lần vượt quá ${Math.round(MAX_SET_TEXT_DURATION_MS/1000)} giây (đã chạy ~${Math.round(elapsed/1000)} giây). Đánh dấu chunk THẤT BẠI và sẽ RETRY LẠI CHÍNH CHUNK NÀY (không nhảy sang chunk mới).`, 'warning');
 
                 if (!window.chunkStatus) window.chunkStatus = [];
                 window.chunkStatus[currentIndex] = 'failed';
@@ -4474,10 +4475,13 @@ async function uSTZrHUt_IC() {
                     delete window.chunkTimeoutIds[currentIndex];
                 }
 
-                // Chuyển sang chunk tiếp theo, chunk hiện tại sẽ được retry ở phase cuối
-                ttuo$y_KhCV = currentIndex + 1;
-                addLogEntry(`🔄 Đã đánh dấu [Chunk ${currentIndex + 1}] thất bại do watchdog và sẽ chuyển sang chunk ${ttuo$y_KhCV + 1} sau delay ngẫu nhiên.`, 'info');
+                // Cơ chế mới: KHÔNG tăng ttuo$y_KhCV, nhưng GIỮ NGUYÊN delay cũ (getRandomChunkDelay)
+                if (typeof window.retryCount === 'undefined') window.retryCount = 0;
+                window.retryCount++;
 
+                addLogEntry(`🔁 [Chunk ${currentIndex + 1}] Sẽ retry lại CHÍNH CHUNK NÀY sau delay ngẫu nhiên (giữ nguyên delay cũ, chỉ thay đổi cơ chế retry)`, 'warning');
+
+                // Giữ nguyên: dùng getRandomChunkDelay(), chỉ khác là retry lại CHÍNH CHUNK NÀY
                 setTimeout(uSTZrHUt_IC, getRandomChunkDelay());
 
                 // Thoát sớm, không tiếp tục xử lý bước này nữa
@@ -4613,7 +4617,7 @@ async function uSTZrHUt_IC() {
             addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Kiểm tra lần cuối: Phát hiện text rác hoặc sai lệch, đã lọc sạch và set lại`, 'warning');
             isSettingText = true;
             setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, finalText);
-
+            
             try {
                 // Gửi sự kiện 'input' và 'change' để web biết ta đã thay đổi, đè lên auto-fill
                 rUxbIRagbBVychZ$GfsogD.dispatchEvent(new Event('input', { bubbles: true }));
@@ -4621,7 +4625,7 @@ async function uSTZrHUt_IC() {
             } catch (e) {
                 // Bỏ qua
             }
-
+            
             await new Promise(resolve => setTimeout(resolve, 50));
             isSettingText = false;
         } else {
@@ -4905,15 +4909,16 @@ async function uSTZrHUt_IC() {
             // Reset web interface - CHỈ reset khi 1 chunk cụ thể render lỗi
             await resetWebInterface();
             
-            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Đã timeout sau 60 giây.`, 'warning');
-            
-            // Sau khi reset, tiếp tục với chunk tiếp theo (không retry chunk lỗi ngay)
-            window.retryCount = 0; // Reset bộ đếm retry
-            ttuo$y_KhCV++; // Chuyển sang chunk tiếp theo
-            addLogEntry(`🔄 Sau khi reset, tiếp tục với chunk ${ttuo$y_KhCV + 1}...`, 'info');
-            addLogEntry(`📊 Trạng thái: ${window.chunkStatus.filter(s => s === 'success' || s === 'failed').length}/${SI$acY.length} chunks đã xử lý`, 'info');
-            addLogEntry(`💡 Chunk bị timeout sẽ được retry vô hạn sau khi xong tất cả chunks`, 'info');
-            setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Chờ ngẫu nhiên 8–15 giây rồi tiếp tục với chunk tiếp theo
+            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Đã timeout sau 60 giây. Sẽ RETRY LẠI CHÍNH CHUNK NÀY (không nhảy sang chunk mới).`, 'warning');
+
+            // Cơ chế mới: retry lại CHÍNH CHUNK NÀY, nhưng GIỮ NGUYÊN delay cũ (getRandomChunkDelay)
+            if (typeof window.retryCount === 'undefined') window.retryCount = 0;
+            window.retryCount++;
+
+            addLogEntry(`🔁 [Chunk ${ttuo$y_KhCV + 1}] Sau timeout, sẽ retry lại CHÍNH CHUNK NÀY sau delay ngẫu nhiên (giữ nguyên delay cũ)`, 'warning');
+
+            // Giữ nguyên: dùng getRandomChunkDelay(), chỉ khác là không nhảy sang chunk mới
+            setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Retry lại chính chunk hiện tại
         }, 60000); // Timeout 60 giây cho mỗi chunk
         
         // QUAN TRỌNG: Gọi igyo$uwVChUzI() để tạo MutationObserver detect audio element
@@ -4953,11 +4958,12 @@ async function uSTZrHUt_IC() {
             return; // Dừng xử lý chunk này
         }
         
-        const MAX_RETRIES = 5;
+        // CƠ CHẾ MỚI: Retry VÔ HẠN cho chính chunk hiện tại (không nhảy sang chunk mới)
+        // GIỮ NGUYÊN delay cũ: 2000 * retryCount (backoff tuyến tính)
+        if (typeof window.retryCount === 'undefined') window.retryCount = 0;
         window.retryCount++;
 
-        if (window.retryCount <= MAX_RETRIES) {
-            addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Thử lại lần ${window.retryCount}/${MAX_RETRIES}...`, 'warning');
+        addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Thử lại lần ${window.retryCount} (retry vô hạn, giữ nguyên delay 2000ms * retryCount)...`, 'warning');
 
             // QUAN TRỌNG: Khi chunk render lỗi, LUÔN reset web trước khi retry
             // Không kiểm tra checkWebReady() vì chunk đã lỗi, cần reset để đảm bảo trạng thái sạch
@@ -5040,46 +5046,11 @@ async function uSTZrHUt_IC() {
                 }
             }
 
-            setTimeout(uSTZrHUt_IC, 2000 * window.retryCount); // Chờ lâu hơn sau mỗi lần thử
-        } else {
-            addLogEntry(`🚫 [Chunk ${ttuo$y_KhCV + 1}] Thất bại sau ${MAX_RETRIES} lần thử. Bỏ qua chunk này.`, 'error');
-            // Đánh dấu chunk này là thất bại
-            window.chunkStatus[ttuo$y_KhCV] = 'failed';
-            if (!window.failedChunks.includes(ttuo$y_KhCV)) {
-                window.failedChunks.push(ttuo$y_KhCV);
-            }
-            
-            // QUAN TRỌNG: Đảm bảo vị trí này để trống (null) để sau này retry có thể lưu vào
-            if (typeof window.chunkBlobs === 'undefined') {
-                window.chunkBlobs = new Array(SI$acY.length).fill(null);
-            }
-            // Đảm bảo window.chunkBlobs có đủ độ dài
-            while (window.chunkBlobs.length <= ttuo$y_KhCV) {
-                window.chunkBlobs.push(null);
-            }
-            window.chunkBlobs[ttuo$y_KhCV] = null; // Đảm bảo vị trí này để trống
-            
-            // ĐỒNG BỘ HÓA ZTQj$LF$o: Đảm bảo ZTQj$LF$o cũng để trống
-            while (ZTQj$LF$o.length <= ttuo$y_KhCV) {
-                ZTQj$LF$o.push(null);
-            }
-            ZTQj$LF$o[ttuo$y_KhCV] = null; // Đảm bảo vị trí này để trống
-            
-            addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đã đánh dấu thất bại và để trống vị trí ${ttuo$y_KhCV} để retry sau`, 'info');
-            
-            // Reset flag sendingChunk khi chunk thất bại
-            if (window.sendingChunk === ttuo$y_KhCV) {
-                window.sendingChunk = null;
-            }
-            
-            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Đã bị lỗi.`, 'warning');
-            
-            window.retryCount = 0; // Reset bộ đếm retry
-            ttuo$y_KhCV++; // Chuyển sang chunk tiếp theo
-            
-            addLogEntry(`➡️ Chuyển sang chunk ${ttuo$y_KhCV + 1}...`, 'info');
-            addLogEntry(`📊 Trạng thái: ${window.chunkStatus.filter(s => s === 'success' || s === 'failed').length}/${SI$acY.length} chunks đã xử lý`, 'info');
-            setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Tiếp tục với chunk tiếp theo sau delay ngẫu nhiên 8–15 giây
+            // Tính delay retry với backoff tuyến tính như cũ (GIỮ NGUYÊN 2000 * retryCount)
+            const retryDelay = 2000 * window.retryCount;
+            addLogEntry(`🔁 [Chunk ${ttuo$y_KhCV + 1}] Sau khi reset, sẽ retry lại CHÍNH CHUNK NÀY sau ~${Math.round(retryDelay/1000)} giây (giữ nguyên delay cũ)`, 'warning');
+
+            setTimeout(uSTZrHUt_IC, retryDelay); // Retry lại chính chunk hiện tại
         }
     }
 }
