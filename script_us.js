@@ -258,48 +258,72 @@
                     // Nếu là string (JSON)
                     if (typeof payload === 'string') {
                         try {
+                            // Debug: Log payload gốc để xem cấu trúc
+                            if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
+                                console.log(`[DEBUG] Payload gốc (500 ký tự đầu):`, payload.substring(0, 500));
+                            }
                             const parsed = JSON.parse(payload);
                             if (parsed && typeof parsed === 'object') {
-                                // Tìm các trường có thể chứa text và thay trực tiếp
+                                // Tìm các trường có thể chứa text và thay trực tiếp (ưu tiên 'text')
                                 const textFields = ['text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
                                 let modified = false;
+                                let foundField = null;
                                 
-                                for (const field of textFields) {
-                                    if (parsed[field] && typeof parsed[field] === 'string') {
-                                        parsed[field] = interceptText;
-                                        modified = true;
-                                    }
-                                }
-                                
-                                // Kiểm tra nested objects
-                                function replaceNested(obj) {
-                                    if (!obj || typeof obj !== 'object') return;
-                                    for (const key in obj) {
-                                        if (typeof obj[key] === 'string') {
-                                            obj[key] = interceptText;
+                                // Ưu tiên tìm field 'text' trước
+                                if (parsed.text && typeof parsed.text === 'string') {
+                                    parsed.text = interceptText;
+                                    modified = true;
+                                    foundField = 'text';
+                                } else {
+                                    // Nếu không có 'text', tìm các field khác
+                                    for (const field of textFields) {
+                                        if (parsed[field] && typeof parsed[field] === 'string') {
+                                            parsed[field] = interceptText;
                                             modified = true;
-                                        } else if (typeof obj[key] === 'object') {
-                                            replaceNested(obj[key]);
+                                            foundField = field;
+                                            break; // Chỉ thay field đầu tiên tìm thấy
                                         }
                                     }
                                 }
-                                replaceNested(parsed);
+                                
+                                // Nếu không tìm thấy ở root level, tìm trong nested objects (nhưng chỉ tìm field 'text')
+                                if (!modified) {
+                                    function findAndReplaceText(obj, path = '') {
+                                        if (!obj || typeof obj !== 'object') return false;
+                                        for (const key in obj) {
+                                            const currentPath = path ? `${path}.${key}` : key;
+                                            if (key === 'text' && typeof obj[key] === 'string') {
+                                                obj[key] = interceptText;
+                                                foundField = currentPath;
+                                                return true;
+                                            } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                                                if (findAndReplaceText(obj[key], currentPath)) {
+                                                    return true;
+                                                }
+                                            }
+                                        }
+                                        return false;
+                                    }
+                                    modified = findAndReplaceText(parsed);
+                                }
                                 
                                 if (modified) {
                                     // Chỉ log một lần cho mỗi chunk (dùng flag global)
                                     if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
-                                        logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                                        logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload (field: ${foundField}) bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
                                         // Debug: Log payload sau khi thay thế (chỉ log một phần để không spam)
-                                        const debugPayload = JSON.stringify(parsed).substring(0, 200);
-                                        console.log(`[DEBUG] Payload sau khi thay thế (200 ký tự đầu): ${debugPayload}...`);
+                                        const debugPayload = JSON.stringify(parsed).substring(0, 300);
+                                        console.log(`[DEBUG] Payload sau khi thay thế (300 ký tự đầu): ${debugPayload}...`);
                                         window._interceptLoggedForChunk = currentIndex;
                                     }
                                     const result = JSON.stringify(parsed);
-                                    console.log(`[DEBUG] Payload đã được stringify, độ dài: ${result.length} ký tự`);
+                                    console.log(`[DEBUG] Payload đã được stringify, độ dài: ${result.length} ký tự, field thay thế: ${foundField}`);
                                     return result;
                                 } else {
-                                    // Nếu không modified, có thể không tìm thấy field text
-                                    console.warn(`[DEBUG] Không tìm thấy field text trong payload để thay thế. Payload gốc:`, payload.substring(0, 200));
+                                    // Nếu không modified, log để debug
+                                    console.warn(`[DEBUG] Không tìm thấy field text trong payload để thay thế. Payload gốc:`, payload.substring(0, 500));
+                                    // Trả về payload gốc để không làm hỏng request
+                                    return payload;
                                 }
                             } else if (typeof parsed === 'string') {
                                 // Chỉ log một lần cho mỗi chunk
