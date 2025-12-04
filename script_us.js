@@ -289,9 +289,17 @@
                                     // Chỉ log một lần cho mỗi chunk (dùng flag global)
                                     if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
                                         logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                                        // Debug: Log payload sau khi thay thế (chỉ log một phần để không spam)
+                                        const debugPayload = JSON.stringify(parsed).substring(0, 200);
+                                        console.log(`[DEBUG] Payload sau khi thay thế (200 ký tự đầu): ${debugPayload}...`);
                                         window._interceptLoggedForChunk = currentIndex;
                                     }
-                                    return JSON.stringify(parsed);
+                                    const result = JSON.stringify(parsed);
+                                    console.log(`[DEBUG] Payload đã được stringify, độ dài: ${result.length} ký tự`);
+                                    return result;
+                                } else {
+                                    // Nếu không modified, có thể không tìm thấy field text
+                                    console.warn(`[DEBUG] Không tìm thấy field text trong payload để thay thế. Payload gốc:`, payload.substring(0, 200));
                                 }
                             } else if (typeof parsed === 'string') {
                                 // Chỉ log một lần cho mỗi chunk
@@ -453,24 +461,62 @@
             
             // Chỉ intercept các request đến Minimax API
             if (urlStr && (urlStr.includes('minimax') || urlStr.includes('api') || urlStr.includes('audio') || urlStr.includes('voice'))) {
-                // Clone options để không modify original
-                const newOptions = { ...options };
-                
-                // Xử lý body nếu có
-                if (newOptions.body) {
-                    const originalBody = newOptions.body;
-                    newOptions.body = processPayload(newOptions.body, urlStr);
-                    // Chỉ log khi payload thực sự thay đổi và là request quan trọng
-                    if (originalBody !== newOptions.body && (urlStr.includes('audio') || urlStr.includes('voice') || urlStr.includes('clone'))) {
-                        // Xác minh lại payload sau khi sửa (không log thêm, đã log trong processPayload)
-                        const recheck = verifyPayloadText(newOptions.body);
-                        if (recheck.hasDefaultText) {
-                            logToUI(`⚠️ [NETWORK INTERCEPTOR] Vẫn còn text mặc định sau khi thay thế`, 'error');
-                        }
+                try {
+                    // Clone options để không modify original (clone sâu hơn để đảm bảo body được copy đúng)
+                    const newOptions = { ...options };
+                    if (options.headers) {
+                        newOptions.headers = new Headers(options.headers);
                     }
+                    
+                    // Xử lý body nếu có
+                    let payloadModified = false;
+                    if (newOptions.body) {
+                        const originalBody = newOptions.body;
+                        newOptions.body = processPayload(newOptions.body, urlStr);
+                        payloadModified = (originalBody !== newOptions.body);
+                        
+                        // Log cho request quan trọng (audio generation)
+                        if (urlStr.includes('audio') || urlStr.includes('voice') || urlStr.includes('clone')) {
+                            if (payloadModified) {
+                                // Xác minh lại payload sau khi sửa
+                                const recheck = verifyPayloadText(newOptions.body);
+                                if (recheck.hasDefaultText) {
+                                    logToUI(`⚠️ [NETWORK INTERCEPTOR] Vẫn còn text mặc định sau khi thay thế`, 'error');
+                                }
+                                logToUI(`📤 [NETWORK INTERCEPTOR] Đang gửi request với payload đã được thay thế`, 'info');
+                            } else {
+                                logToUI(`📤 [NETWORK INTERCEPTOR] Đang gửi request (payload không thay đổi)`, 'info');
+                            }
+                        }
+                    } else if (urlStr.includes('audio') || urlStr.includes('voice') || urlStr.includes('clone')) {
+                        logToUI(`📤 [NETWORK INTERCEPTOR] Đang gửi request (không có body)`, 'info');
+                    }
+                    
+                    // QUAN TRỌNG: Gửi request đi với payload đã được thay thế và intercept response
+                    const fetchPromise = originalFetch.apply(this, [url, newOptions]);
+                    
+                    // Intercept response để debug
+                    if (urlStr.includes('audio') || urlStr.includes('voice') || urlStr.includes('clone')) {
+                        fetchPromise.then(response => {
+                            console.log(`[DEBUG] Response status: ${response.status}`, response);
+                            if (!response.ok) {
+                                logToUI(`❌ [NETWORK INTERCEPTOR] Response lỗi: ${response.status} ${response.statusText}`, 'error');
+                            } else {
+                                logToUI(`✅ [NETWORK INTERCEPTOR] Response thành công: ${response.status}`, 'info');
+                            }
+                            return response;
+                        }).catch(error => {
+                            logToUI(`❌ [NETWORK INTERCEPTOR] Lỗi khi gửi request: ${error.message}`, 'error');
+                            console.error('[NETWORK INTERCEPTOR] Fetch error:', error);
+                        });
+                    }
+                    
+                    return fetchPromise;
+                } catch (error) {
+                    // Nếu có lỗi khi xử lý payload, log và gửi request gốc
+                    logToUI(`❌ [NETWORK INTERCEPTOR] Lỗi khi xử lý payload: ${error.message}. Gửi request gốc.`, 'error');
+                    return originalFetch.apply(this, args);
                 }
-                
-                return originalFetch.apply(this, [url, newOptions]);
             }
             
             return originalFetch.apply(this, args);
@@ -488,17 +534,49 @@
         XMLHttpRequest.prototype.send = function(data) {
             // Chỉ intercept các request đến Minimax API
             if (this._interceptedUrl && (this._interceptedUrl.includes('minimax') || this._interceptedUrl.includes('api') || this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice'))) {
-                const originalData = data;
-                const cleanedData = processPayload(data, this._interceptedUrl);
-                // Chỉ log khi payload thực sự thay đổi và là request quan trọng
-                if (originalData !== cleanedData && (this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice') || this._interceptedUrl.includes('clone'))) {
-                    // Xác minh lại payload sau khi sửa (không log thêm, đã log trong processPayload)
-                    const recheck = verifyPayloadText(cleanedData);
-                    if (recheck.hasDefaultText) {
-                        logToUI(`⚠️ [NETWORK INTERCEPTOR] Vẫn còn text mặc định sau khi thay thế`, 'error');
+                try {
+                    const originalData = data;
+                    const cleanedData = processPayload(data, this._interceptedUrl);
+                    const payloadModified = (originalData !== cleanedData);
+                    
+                    // Log cho request quan trọng (audio generation)
+                    if (this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice') || this._interceptedUrl.includes('clone')) {
+                        if (payloadModified) {
+                            // Xác minh lại payload sau khi sửa
+                            const recheck = verifyPayloadText(cleanedData);
+                            if (recheck.hasDefaultText) {
+                                logToUI(`⚠️ [NETWORK INTERCEPTOR] Vẫn còn text mặc định sau khi thay thế`, 'error');
+                            }
+                            logToUI(`📤 [NETWORK INTERCEPTOR] Đang gửi XMLHttpRequest với payload đã được thay thế`, 'info');
+                        } else {
+                            logToUI(`📤 [NETWORK INTERCEPTOR] Đang gửi XMLHttpRequest (payload không thay đổi)`, 'info');
+                        }
+                        
+                        // Intercept response để debug
+                        const originalOnReadyStateChange = this.onreadystatechange;
+                        this.onreadystatechange = function() {
+                            if (this.readyState === 4) {
+                                console.log(`[DEBUG] XMLHttpRequest response status: ${this.status}`, this);
+                                if (this.status >= 200 && this.status < 300) {
+                                    logToUI(`✅ [NETWORK INTERCEPTOR] XMLHttpRequest thành công: ${this.status}`, 'info');
+                                } else {
+                                    logToUI(`❌ [NETWORK INTERCEPTOR] XMLHttpRequest lỗi: ${this.status} ${this.statusText}`, 'error');
+                                }
+                            }
+                            if (originalOnReadyStateChange) {
+                                originalOnReadyStateChange.apply(this, arguments);
+                            }
+                        };
                     }
+                    
+                    // QUAN TRỌNG: Gửi request đi với payload đã được thay thế
+                    return originalXHRSend.apply(this, [cleanedData]);
+                } catch (error) {
+                    // Nếu có lỗi khi xử lý payload, log và gửi request gốc
+                    logToUI(`❌ [NETWORK INTERCEPTOR] Lỗi khi xử lý XMLHttpRequest payload: ${error.message}. Gửi request gốc.`, 'error');
+                    console.error('[NETWORK INTERCEPTOR] XMLHttpRequest error:', error);
+                    return originalXHRSend.apply(this, [data]);
                 }
-                return originalXHRSend.apply(this, [cleanedData]);
             }
             
             return originalXHRSend.apply(this, [data]);
@@ -4354,17 +4432,16 @@ async function uSTZrHUt_IC() {
         let isSettingText = false;
         
         if (window.USE_PAYLOAD_MODE) {
-            // CHẾ ĐỘ MỚI: Set text placeholder ngắn vào textarea, text thật sẽ được thay trong payload
-            addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang dùng chế độ PAYLOAD MODE - Text thật chỉ đi qua network`, 'info');
+            // CHẾ ĐỘ MỚI: Set text thật vào textarea một lần ngắn gọn, sau đó interceptor sẽ thay trong payload
+            addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang dùng chế độ PAYLOAD MODE - Set text thật vào textarea một lần, sau đó thay trong payload`, 'info');
             
-            // Set text placeholder ngắn vào textarea (thay vì để trống) để Minimax validate và tạo audio
-            // Text này sẽ bị thay trong payload nên không quan trọng
+            // Set text thật vào textarea một lần để Minimax validate, nhưng không giữ lâu
+            // Interceptor sẽ đảm bảo payload có text thật khi gửi đi
             try {
-                // Dùng text placeholder ngắn thay vì để trống hoàn toàn
-                const placeholderText = '...'; // Text ngắn để Minimax validate
-                setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, placeholderText);
+                // Set text thật vào textarea một lần (ngắn gọn, không cần giữ lâu)
+                setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, chunkText);
                 // Chờ một chút để đảm bảo set hoàn tất
-                await new Promise(resolve => setTimeout(resolve, 100));
+                await new Promise(resolve => setTimeout(resolve, 200));
                 
                 // Trigger event để website nhận biết
                 try {
@@ -4374,9 +4451,9 @@ async function uSTZrHUt_IC() {
                     // Bỏ qua
                 }
                 
-                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set text placeholder vào textarea. Text thật sẽ được thay trong payload khi gửi request`, 'info');
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set text thật vào textarea một lần. Interceptor sẽ đảm bảo payload có text thật khi gửi`, 'info');
             } catch (e) {
-                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi set text placeholder: ${e.message}`, 'warning');
+                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi set text vào textarea: ${e.message}`, 'warning');
             }
         } else {
             // CHẾ ĐỘ CŨ: Set text đầy đủ vào textarea như trước
