@@ -2446,11 +2446,12 @@ button:disabled {
         const textLengthWarning = document.getElementById('text-length-warning');
         
         if (mainTextarea && textLengthWarning) {
-            // Cập nhật cảnh báo khi nhập
-            mainTextarea.addEventListener('input', function() {
-                const currentLength = this.value.length;
+            // Hàm cập nhật cảnh báo
+            function updateTextLengthWarning() {
+                const currentLength = mainTextarea.value.length;
                 if (currentLength > MAX_TEXT_LENGTH) {
-                    textLengthWarning.textContent = `⚠️ CẢNH BÁO: Văn bản vượt quá giới hạn! Hiện tại: ${currentLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()} ký tự. Vui lòng giảm xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
+                    const exceededLength = currentLength - MAX_TEXT_LENGTH;
+                    textLengthWarning.textContent = `⚠️ CẢNH BÁO: Văn bản vượt quá giới hạn! Hiện tại: ${currentLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()} ký tự. Vượt quá: ${exceededLength.toLocaleString()} ký tự. Vui lòng giảm xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
                     textLengthWarning.style.color = '#ff5555';
                     textLengthWarning.style.fontWeight = 'bold';
                 } else {
@@ -2458,35 +2459,123 @@ button:disabled {
                     textLengthWarning.style.color = '#94a3b8';
                     textLengthWarning.style.fontWeight = 'normal';
                 }
+            }
+            
+            // Cập nhật cảnh báo khi nhập
+            mainTextarea.addEventListener('input', updateTextLengthWarning);
+            
+            // Cập nhật cảnh báo khi thay đổi (backup)
+            mainTextarea.addEventListener('change', updateTextLengthWarning);
+            
+            // MutationObserver để theo dõi thay đổi value (nếu có code khác thay đổi)
+            const textareaObserver = new MutationObserver(function() {
+                updateTextLengthWarning();
             });
             
-            // Cập nhật cảnh báo khi paste
-            mainTextarea.addEventListener('paste', function() {
+            textareaObserver.observe(mainTextarea, {
+                attributes: true,
+                attributeFilter: ['value'],
+                childList: false,
+                subtree: false
+            });
+            
+            // Kiểm tra định kỳ (backup safety)
+            setInterval(function() {
+                updateTextLengthWarning();
+            }, 2000); // Kiểm tra mỗi 2 giây
+            
+            // Cập nhật cảnh báo khi paste - Sử dụng nhiều cách để đảm bảo hoạt động
+            mainTextarea.addEventListener('paste', function(e) {
+                // Lấy clipboard data trước khi paste
+                const clipboardData = e.clipboardData || window.clipboardData;
+                let pastedText = '';
+                if (clipboardData) {
+                    pastedText = clipboardData.getData('text/plain');
+                }
+                
+                // Tính toán độ dài sau khi paste
+                const currentLength = this.value.length;
+                const pastedLength = pastedText.length;
+                const newLength = currentLength + pastedLength;
+                
+                // Kiểm tra ngay lập tức
+                if (newLength > MAX_TEXT_LENGTH) {
+                    // Hiển thị cảnh báo ngay
+                    const exceededLength = newLength - MAX_TEXT_LENGTH;
+                    textLengthWarning.textContent = `⚠️ CẢNH BÁO: Sau khi paste sẽ vượt quá giới hạn! (${newLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()} ký tự, vượt ${exceededLength.toLocaleString()} ký tự)`;
+                    textLengthWarning.style.color = '#ff5555';
+                    textLengthWarning.style.fontWeight = 'bold';
+                    
+                    // Hiển thị alert
+                    setTimeout(() => {
+                        const message = `⚠️ CẢNH BÁO: Văn bản sau khi paste sẽ vượt quá giới hạn!\n\n` +
+                                       `📊 Độ dài hiện tại: ${currentLength.toLocaleString()} ký tự\n` +
+                                       `📋 Độ dài sẽ paste: ${pastedLength.toLocaleString()} ký tự\n` +
+                                       `📊 Tổng sau paste: ${newLength.toLocaleString()} ký tự\n` +
+                                       `⚠️ Vượt quá: ${exceededLength.toLocaleString()} ký tự\n` +
+                                       `📏 Giới hạn: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự\n\n` +
+                                       `Vui lòng giảm nội dung paste hoặc xóa bớt văn bản hiện tại.`;
+                        alert(message);
+                    }, 100);
+                }
+                
+                // Kiểm tra lại sau khi paste (với nhiều delay để đảm bảo)
                 setTimeout(() => {
-                    const currentLength = this.value.length;
-                    if (currentLength > MAX_TEXT_LENGTH) {
-                        textLengthWarning.textContent = `⚠️ CẢNH BÁO: Văn bản vượt quá giới hạn! Hiện tại: ${currentLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()} ký tự. Vui lòng giảm xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
+                    const finalLength = this.value.length;
+                    if (finalLength > MAX_TEXT_LENGTH) {
+                        const exceededLength = finalLength - MAX_TEXT_LENGTH;
+                        textLengthWarning.textContent = `⚠️ CẢNH BÁO: Văn bản vượt quá giới hạn! Hiện tại: ${finalLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()} ký tự. Vượt quá: ${exceededLength.toLocaleString()} ký tự. Vui lòng giảm xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
                         textLengthWarning.style.color = '#ff5555';
                         textLengthWarning.style.fontWeight = 'bold';
                     } else {
-                        textLengthWarning.textContent = `⚠️ Giới hạn: Tối đa ${MAX_TEXT_LENGTH.toLocaleString()} ký tự (Hiện tại: ${currentLength.toLocaleString()} ký tự)`;
+                        textLengthWarning.textContent = `⚠️ Giới hạn: Tối đa ${MAX_TEXT_LENGTH.toLocaleString()} ký tự (Hiện tại: ${finalLength.toLocaleString()} ký tự)`;
                         textLengthWarning.style.color = '#94a3b8';
                         textLengthWarning.style.fontWeight = 'normal';
                     }
                 }, 0);
+                
+                setTimeout(() => {
+                    const finalLength = this.value.length;
+                    if (finalLength > MAX_TEXT_LENGTH) {
+                        const exceededLength = finalLength - MAX_TEXT_LENGTH;
+                        textLengthWarning.textContent = `⚠️ CẢNH BÁO: Văn bản vượt quá giới hạn! Hiện tại: ${finalLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()} ký tự. Vượt quá: ${exceededLength.toLocaleString()} ký tự.`;
+                        textLengthWarning.style.color = '#ff5555';
+                        textLengthWarning.style.fontWeight = 'bold';
+                    }
+                }, 100);
             });
         }
         
-        // Validation khi bấm nút "Bắt đầu tạo âm thanh"
-        const startQueueBtn = document.getElementById('gemini-start-queue-btn');
-        if (startQueueBtn) {
-            const originalClickHandler = startQueueBtn.onclick;
-            startQueueBtn.addEventListener('click', function(e) {
+        // Validation khi bấm nút "Bắt đầu tạo âm thanh" - Sử dụng nhiều lớp để đảm bảo hoạt động
+        function attachValidationToStartButton() {
+            const startQueueBtn = document.getElementById('gemini-start-queue-btn');
+            if (!startQueueBtn) {
+                console.log('[VALIDATION] Nút chưa sẵn sàng, sẽ thử lại sau...');
+                return;
+            }
+            
+            // Xóa event listener cũ nếu có (bằng cách clone node)
+            const newBtn = startQueueBtn.cloneNode(true);
+            startQueueBtn.parentNode.replaceChild(newBtn, startQueueBtn);
+            
+            // Thêm event listener mới với capture phase để chạy TRƯỚC các handler khác
+            newBtn.addEventListener('click', function(e) {
+                console.log('[VALIDATION] Nút được click, đang kiểm tra...');
                 const textarea = document.getElementById('gemini-main-textarea');
-                if (textarea && textarea.value.length > MAX_TEXT_LENGTH) {
+                if (!textarea) {
+                    console.log('[VALIDATION] Không tìm thấy textarea');
+                    return;
+                }
+                
+                const currentLength = textarea.value.length;
+                console.log(`[VALIDATION] Độ dài văn bản: ${currentLength}, Giới hạn: ${MAX_TEXT_LENGTH}`);
+                
+                if (currentLength > MAX_TEXT_LENGTH) {
+                    console.log('[VALIDATION] Vượt quá giới hạn, đang chặn...');
                     e.preventDefault();
                     e.stopPropagation();
-                    const currentLength = textarea.value.length;
+                    e.stopImmediatePropagation(); // Chặn tất cả handler khác
+                    
                     const exceededLength = currentLength - MAX_TEXT_LENGTH;
                     const message = `❌ CẢNH BÁO: Văn bản vượt quá quy định!\n\n` +
                                    `📊 Số ký tự hiện tại: ${currentLength.toLocaleString()} ký tự\n` +
@@ -2496,27 +2585,97 @@ button:disabled {
                     
                     // Hiển thị alert để người dùng chú ý
                     alert(message);
+                    console.log('[VALIDATION] Đã hiển thị alert');
                     
                     // Log vào log panel nếu có
                     if (typeof addLogEntry === 'function') {
                         addLogEntry(`❌ CẢNH BÁO: Văn bản vượt quá quy định! Hiện tại: ${currentLength.toLocaleString()} ký tự, vượt quá: ${exceededLength.toLocaleString()} ký tự. Giới hạn: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự.`, 'error');
+                        console.log('[VALIDATION] Đã log vào log panel');
                     }
                     
                     // Cập nhật cảnh báo visual
-                    if (textLengthWarning) {
-                        textLengthWarning.textContent = `❌ CẢNH BÁO: Vượt quá ${exceededLength.toLocaleString()} ký tự! (${currentLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()})`;
-                        textLengthWarning.style.color = '#ff5555';
-                        textLengthWarning.style.fontWeight = 'bold';
+                    const warningEl = document.getElementById('text-length-warning');
+                    if (warningEl) {
+                        warningEl.textContent = `❌ CẢNH BÁO: Vượt quá ${exceededLength.toLocaleString()} ký tự! (${currentLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()})`;
+                        warningEl.style.color = '#ff5555';
+                        warningEl.style.fontWeight = 'bold';
+                        console.log('[VALIDATION] Đã cập nhật cảnh báo visual');
+                    }
+                    
+                    return false;
+                } else {
+                    console.log('[VALIDATION] Văn bản hợp lệ, cho phép tiếp tục');
+                }
+            }, true); // Capture phase - chạy TRƯỚC các event listener khác
+        }
+        
+        // Gắn validation ngay khi DOM sẵn sàng
+        attachValidationToStartButton();
+        
+        // Thử lại sau 1 giây (nếu nút được tạo sau)
+        setTimeout(attachValidationToStartButton, 1000);
+        
+        // Thử lại sau 3 giây (nếu nút được tạo rất muộn)
+        setTimeout(attachValidationToStartButton, 3000);
+        
+        // Sử dụng MutationObserver để theo dõi khi nút được thêm vào DOM
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes.length) {
+                    const startBtn = document.getElementById('gemini-start-queue-btn');
+                    if (startBtn && !startBtn.hasAttribute('data-validation-attached')) {
+                        startBtn.setAttribute('data-validation-attached', 'true');
+                        attachValidationToStartButton();
+                    }
+                }
+            });
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
+        // Event delegation trên document để bắt mọi click vào nút (backup method)
+        document.addEventListener('click', function(e) {
+            const target = e.target;
+            if (target && (target.id === 'gemini-start-queue-btn' || 
+                (target.tagName === 'BUTTON' && target.textContent && 
+                 (target.textContent.includes('Bắt đầu tạo âm thanh') || target.textContent.includes('Bắt đầu'))))) {
+                
+                console.log('[VALIDATION DELEGATION] Phát hiện click vào nút bắt đầu');
+                const textarea = document.getElementById('gemini-main-textarea');
+                if (textarea && textarea.value.length > MAX_TEXT_LENGTH) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    
+                    const currentLength = textarea.value.length;
+                    const exceededLength = currentLength - MAX_TEXT_LENGTH;
+                    const message = `❌ CẢNH BÁO: Văn bản vượt quá quy định!\n\n` +
+                                   `📊 Số ký tự hiện tại: ${currentLength.toLocaleString()} ký tự\n` +
+                                   `⚠️ Vượt quá: ${exceededLength.toLocaleString()} ký tự\n` +
+                                   `📏 Giới hạn cho phép: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự\n\n` +
+                                   `Vui lòng giảm văn bản xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
+                    
+                    alert(message);
+                    console.log('[VALIDATION DELEGATION] Đã hiển thị alert');
+                    
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`❌ CẢNH BÁO: Văn bản vượt quá quy định! Hiện tại: ${currentLength.toLocaleString()} ký tự, vượt quá: ${exceededLength.toLocaleString()} ký tự. Giới hạn: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự.`, 'error');
+                    }
+                    
+                    const warningEl = document.getElementById('text-length-warning');
+                    if (warningEl) {
+                        warningEl.textContent = `❌ CẢNH BÁO: Vượt quá ${exceededLength.toLocaleString()} ký tự! (${currentLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()})`;
+                        warningEl.style.color = '#ff5555';
+                        warningEl.style.fontWeight = 'bold';
                     }
                     
                     return false;
                 }
-                // Nếu validation pass, gọi handler gốc nếu có
-                if (originalClickHandler) {
-                    originalClickHandler.call(this, e);
-                }
-            });
-        }
+            }
+        }, true); // Capture phase
     });
 
 const aZpcvyD_mnWYN_qgEq=DHk$uTvcFuLEMnixYuADkCeA;let SI$acY=[],ZTQj$LF$o=[],ttuo$y_KhCV=Number(0x90d)+Number(0xdac)+parseFloat(-0x16b9),EfNjYNYj_O_CGB=![],MEpJezGZUsmpZdAgFRBRZW=![],xlgJHLP$MATDT$kTXWV=null,Srnj$swt=null,n_WwsStaC$jzsWjOIjRqedTG=null,dqj_t_Mr=null;const FMFjWZYZzPXRHIjRRnOwV_G=JSON[aZpcvyD_mnWYN_qgEq(0x1df)];JSON[aZpcvyD_mnWYN_qgEq(0x1df)]=function(o__htsdYW,...YxPU$_FEFzDUACWyi){const civchWuTNrKOGccx_eNld=aZpcvyD_mnWYN_qgEq;if(o__htsdYW&&typeof o__htsdYW===civchWuTNrKOGccx_eNld(0x231)&&o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]&&o__htsdYW[civchWuTNrKOGccx_eNld(0x208)]){const xlxXwB$xg_wWLUkKDoPeWvBcc=document[civchWuTNrKOGccx_eNld(0x1de)](civchWuTNrKOGccx_eNld(0x235));if(xlxXwB$xg_wWLUkKDoPeWvBcc&&EfNjYNYj_O_CGB){const guKwlTGjKUCtXQplrcc=xlxXwB$xg_wWLUkKDoPeWvBcc[civchWuTNrKOGccx_eNld(0x24c)];guKwlTGjKUCtXQplrcc&&(o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]=guKwlTGjKUCtXQplrcc);}}return FMFjWZYZzPXRHIjRRnOwV_G[civchWuTNrKOGccx_eNld(0x22c)](this,o__htsdYW,...YxPU$_FEFzDUACWyi);},window[aZpcvyD_mnWYN_qgEq(0x25f)](aZpcvyD_mnWYN_qgEq(0x1c9),()=>{const AP$u_huhInYfTj=aZpcvyD_mnWYN_qgEq;function spAghkbWog(){const DWWeZydubZoTFZs$ck_jg=DHk$uTvcFuLEMnixYuADkCeA;GM_addStyle(SCRIPT_CSS);const UdJdhwBFovFArs=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));UdJdhwBFovFArs[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x250),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](UdJdhwBFovFArs);const sIzV_BK=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));sIzV_BK[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x1d2),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](sIzV_BK);const fCNFI$elNjn=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x215));fCNFI$elNjn['id']=DWWeZydubZoTFZs$ck_jg(0x25b),fCNFI$elNjn[DWWeZydubZoTFZs$ck_jg(0x1c7)]=APP_HTML,document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1eb)](fCNFI$elNjn),document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1d9)][DWWeZydubZoTFZs$ck_jg(0x203)](DWWeZydubZoTFZs$ck_jg(0x201)),BZr$GS$CqnCyt(),setTimeout(()=>{const lVvu_IZabWk=DWWeZydubZoTFZs$ck_jg,iItyHbcTDrfnQk=document[lVvu_IZabWk(0x1cd)](lVvu_IZabWk(0x21e));iItyHbcTDrfnQk&&(iItyHbcTDrfnQk[lVvu_IZabWk(0x24c)]=lVvu_IZabWk(0x1c4),iItyHbcTDrfnQk[lVvu_IZabWk(0x1c1)](new Event(lVvu_IZabWk(0x229),{'bubbles':!![]}))),s_BrlXXxPOJaBMKQX();},0x8*parseInt(0x182)+0x17*Math.trunc(parseInt(0xd3))+Math.max(-0x1541,-0x1541));}spAghkbWog();const LrkOcBYz_$AGjPqXLWnyiATpCI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x261)),lraDK$WDOgsXHRO=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1da)),OdKzziXLxtOGjvaBMHm=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23a)),WRVxYBSrPsjcqQs_bXI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x24f)),rUxbIRagbBVychZ$GfsogD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x235)),zQizakWdLEdLjtenmCbNC=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23f)),PEYtOIOW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x230)),PcLAEW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1e7)),yU_jfkzmffcnGgLWrq=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1ba)),VcTcfGnbfWZdhQRvBp$emAVjf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x223)),CVjXA$H=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x260)),pT$bOHGEGbXDSpcuLWAq_yMVf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x214)),pemHAD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1dc)),SCOcXEQXTPOOS=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x211)),XvyPnqSRdJtYjSxingI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x20a)),cHjV$QkAT$JWlL=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1bb)),TUlYLVXXZeP_OexmGXTd=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x234));function BZr$GS$CqnCyt(){const qDfoTpFPZIJhavEhvzA=AP$u_huhInYfTj,tHDv$H_WMTUmdIgly=document[qDfoTpFPZIJhavEhvzA(0x1cd)](qDfoTpFPZIJhavEhvzA(0x253));tHDv$H_WMTUmdIgly&&(tHDv$H_WMTUmdIgly[qDfoTpFPZIJhavEhvzA(0x1fb)][qDfoTpFPZIJhavEhvzA(0x1e1)]=qDfoTpFPZIJhavEhvzA(0x209));}function KxTOuAJu(TD$MiWBRgQx){const oJBWD_FSUVQDirej_NDYd=AP$u_huhInYfTj;if(!TD$MiWBRgQx)return![];try{if(TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)])TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)]();const SEv_hb=unsafeWindow||window,CvgA_TVH$Ae=TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1bf)]||document;return[oJBWD_FSUVQDirej_NDYd(0x1c5),oJBWD_FSUVQDirej_NDYd(0x218),oJBWD_FSUVQDirej_NDYd(0x242),oJBWD_FSUVQDirej_NDYd(0x1ee),oJBWD_FSUVQDirej_NDYd(0x1bd)][oJBWD_FSUVQDirej_NDYd(0x1dd)](nTTsQoPvqnqJrM=>{const hTykMlxVcfVO_SymRDte=oJBWD_FSUVQDirej_NDYd;let JhxaolNQUORsB_QxPsC;if(SEv_hb[hTykMlxVcfVO_SymRDte(0x233)]&&nTTsQoPvqnqJrM[hTykMlxVcfVO_SymRDte(0x20e)](hTykMlxVcfVO_SymRDte(0x1e2)))JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x233))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'pointerId':0x1,'isPrimary':!![]});else SEv_hb[hTykMlxVcfVO_SymRDte(0x206)]?JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x206))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'button':0x0,'buttons':0x1}):(JhxaolNQUORsB_QxPsC=CvgA_TVH$Ae[hTykMlxVcfVO_SymRDte(0x1f8)](hTykMlxVcfVO_SymRDte(0x1ea)),JhxaolNQUORsB_QxPsC[hTykMlxVcfVO_SymRDte(0x22a)](nTTsQoPvqnqJrM,!![],!![],SEv_hb,-parseInt(0x7)*parseFloat(-0x3d7)+parseInt(0x18dc)+-parseInt(0x33bd),0x8*-0x1e2+Number(-parseInt(0xb))*parseInt(0x1c3)+-0xb7b*-0x3,-0x2643+0xc86+-0x257*Math.floor(-0xb),parseInt(parseInt(0x159d))*-0x1+Math.max(parseInt(0x2240),parseInt(0x2240))*Math.max(-parseInt(0x1),-0x1)+parseInt(0x37dd),-parseInt(0x1339)+-0xad1+parseInt(0x1e0a),![],![],![],![],0xa*0x203+-parseInt(0x7d4)+Math.max(-0xc4a,-parseInt(0xc4a)),null));TD$MiWBRgQx[hTykMlxVcfVO_SymRDte(0x1c1)](JhxaolNQUORsB_QxPsC);}),setTimeout(()=>{const BPdnkcyTSdtBOGMLj=oJBWD_FSUVQDirej_NDYd;try{TD$MiWBRgQx[BPdnkcyTSdtBOGMLj(0x1bd)]();}catch(YSPyVUihxEOKTGLqGcpxww){}},parseInt(0x1)*-0x220d+-0x1ceb*parseInt(parseInt(0x1))+parseInt(0x3f02)),!![];}catch(wYZWjTdHsjGqS$TxW){return![];}}function ymkKApNTfjOanYIBsxsoMNBX(TQ$sjPfgYpRqekqYTKkMM$xsbq){const fZxoQbjOSjhtnzVVyV=AP$u_huhInYfTj,wZCCqPFq$YpVFMqx=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq/(0x61c+-0x1*-0x467+-parseInt(0x1)*0xa47)),IgThKNqdaOrPWvnnnfSK=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq%(parseInt(0x1)*Math.ceil(-parseInt(0x1675))+-0x1*parseFloat(parseInt(0x3f8))+Math.floor(parseInt(0x23))*Math.ceil(0xc3)));return wZCCqPFq$YpVFMqx+fZxoQbjOSjhtnzVVyV(0x1ef)+IgThKNqdaOrPWvnnnfSK+fZxoQbjOSjhtnzVVyV(0x25d);}function i_B_kZYD() {
