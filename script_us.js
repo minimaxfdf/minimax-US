@@ -4169,7 +4169,30 @@ function stopKeepAliveLoop() {
 
 async function uSTZrHUt_IC() {
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
-    if (MEpJezGZUsmpZdAgFRBRZW) return;
+    
+    // Kiểm tra và reset MEpJezGZUsmpZdAgFRBRZW nếu cần
+    if (typeof window.MEpJezGZUsmpZdAgFRBRZW !== 'undefined') {
+        MEpJezGZUsmpZdAgFRBRZW = window.MEpJezGZUsmpZdAgFRBRZW;
+    }
+    
+    if (MEpJezGZUsmpZdAgFRBRZW) {
+        addLogEntry(`⏸️ [Chunk ${ttuo$y_KhCV + 1}] Đang tạm dừng, bỏ qua...`, 'info');
+        return;
+    }
+    
+    // Kiểm tra SI$acY có dữ liệu không
+    if (!SI$acY || SI$acY.length === 0) {
+        addLogEntry(`⚠️ Không có chunks để xử lý. SI$acY.length = ${SI$acY ? SI$acY.length : 'undefined'}`, 'warning');
+        return;
+    }
+    
+    // Kiểm tra ttuo$y_KhCV có hợp lệ không (nếu >= length thì reset về 0 cho job mới)
+    if (ttuo$y_KhCV >= SI$acY.length) {
+        // Nếu đã vượt quá số lượng chunks, có thể là job cũ chưa được reset
+        // Reset về 0 để bắt đầu job mới
+        addLogEntry(`🔄 Phát hiện ttuo$y_KhCV (${ttuo$y_KhCV}) >= SI$acY.length (${SI$acY.length}). Reset về 0 để bắt đầu job mới.`, 'warning');
+        ttuo$y_KhCV = 0;
+    }
     
     // Đảm bảo keep-alive loop đang chạy (đã được khởi động tự động khi tool load)
     // Nếu chưa chạy (do lỗi hoặc chưa kịp khởi động), sẽ khởi động ngay
@@ -4196,7 +4219,14 @@ async function uSTZrHUt_IC() {
     }
 
     // Logic xử lý khi đã hoàn thành tất cả các chunk
-    if (ttuo$y_KhCV >= SI$acY[tQqGbytKzpHwhGmeQJucsrq(0x216)]) {
+    // QUAN TRỌNG: Kiểm tra cả SI$acY.length để đảm bảo không bị lỗi khi SI$acY rỗng hoặc undefined
+    const totalChunksCount = SI$acY && SI$acY.length ? SI$acY.length : 0;
+    if (totalChunksCount === 0) {
+        addLogEntry(`⚠️ SI$acY rỗng hoặc không có chunks. Dừng xử lý.`, 'warning');
+        return;
+    }
+    
+    if (ttuo$y_KhCV >= totalChunksCount) {
         // Kiểm tra xem tất cả chunk đã được xử lý đầy đủ chưa
         const totalChunks = SI$acY.length;
         const processedChunks = window.chunkStatus ? window.chunkStatus.filter(status => status === 'success' || status === 'failed').length : 0;
@@ -7804,10 +7834,18 @@ async function waitForVoiceModelReady() {
             window.recursiveCallDepth = 0; // Đếm độ sâu của recursive calls
             window.maxRecursiveDepth = 50; // Giới hạn độ sâu tối đa
             
-            // 4. Reset các biến hệ thống legacy
-            ttuo$y_KhCV = 0; // Index chunk hiện tại (legacy)
-            EfNjYNYj_O_CGB = true; // Cờ đang chạy (legacy)
-            MEpJezGZUsmpZdAgFRBRZW = false; // Cờ tạm dừng (legacy)
+            // 4. Reset các biến hệ thống legacy - QUAN TRỌNG: Reset TRƯỚC khi chia chunk
+            ttuo$y_KhCV = 0; // Index chunk hiện tại (legacy) - RESET VỀ 0
+            EfNjYNYj_O_CGB = true; // Cờ đang chạy (legacy) - SET THÀNH TRUE
+            MEpJezGZUsmpZdAgFRBRZW = false; // Cờ tạm dừng (legacy) - SET THÀNH FALSE
+            
+            // Đảm bảo các biến global được reset đúng
+            if (typeof window.EfNjYNYj_O_CGB !== 'undefined') {
+                window.EfNjYNYj_O_CGB = true;
+            }
+            if (typeof window.MEpJezGZUsmpZdAgFRBRZW !== 'undefined') {
+                window.MEpJezGZUsmpZdAgFRBRZW = false;
+            }
             
             // 5. QUAN TRỌNG: Sử dụng hàm smartSplitter MỚI để chia chunk
             SI$acY = smartSplitter(sanitizedText, 3000); // Mảng chứa text (legacy)
