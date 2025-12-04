@@ -3543,6 +3543,188 @@ function setReactTextareaValue(el, value) {
     }
 }
 
+// =======================================================
+// == KẾ HOẠCH PHÁT TRIỂN: GIẢI PHÁP CHỐNG TAB NGỦ ĐÔNG ==
+// =======================================================
+// Vấn đề: Khi tab bị thu nhỏ hoặc ẩn, trình duyệt sẽ throttle timers,
+// khiến vòng lặp "set text 8 lần" (mỗi lần 50ms) bị kéo dài thành 30 giây.
+//
+// Giải pháp đa lớp:
+// 1. Silent Audio: Phát âm thanh câm liên tục để giữ tab active
+// 2. requestAnimationFrame: Giữ animation loop chạy
+// 3. Visibility API: Theo dõi và cảnh báo khi tab bị ẩn
+// 4. Web Worker (tùy chọn): Chạy timers trong background thread
+// =======================================================
+
+// Tạo AudioContext và buffer âm thanh câm (Silent Audio)
+let silentAudioContext = null;
+let silentAudioSource = null;
+let silentAudioBuffer = null;
+let keepAliveInterval = null;
+
+// Hàm tạo âm thanh câm (Silent Audio)
+function createSilentAudio() {
+    try {
+        // Tạo AudioContext
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) {
+            console.warn('[KEEP-ALIVE] AudioContext không được hỗ trợ');
+            return false;
+        }
+        
+        silentAudioContext = new AudioContextClass();
+        
+        // Tạo buffer âm thanh câm (1 giây, 44.1kHz, mono)
+        const sampleRate = silentAudioContext.sampleRate;
+        const length = sampleRate * 1; // 1 giây
+        silentAudioBuffer = silentAudioContext.createBuffer(1, length, sampleRate);
+        
+        // Buffer đã được tạo với giá trị 0 (âm thanh câm)
+        // Không cần fill vì mặc định đã là 0
+        
+        if (typeof addLogEntry === 'function') {
+            addLogEntry('🔇 [KEEP-ALIVE] Đã tạo Silent Audio buffer', 'info');
+        }
+        return true;
+    } catch (e) {
+        console.warn('[KEEP-ALIVE] Lỗi tạo Silent Audio:', e);
+        return false;
+    }
+}
+
+// Hàm phát âm thanh câm liên tục
+function playSilentAudio() {
+    try {
+        if (!silentAudioContext || !silentAudioBuffer) {
+            if (!createSilentAudio()) {
+                return;
+            }
+        }
+        
+        // Tạo source mới mỗi lần phát
+        if (silentAudioSource) {
+            try {
+                silentAudioSource.stop();
+            } catch (e) {
+                // Bỏ qua nếu đã stop
+            }
+        }
+        
+        silentAudioSource = silentAudioContext.createBufferSource();
+        silentAudioSource.buffer = silentAudioBuffer;
+        silentAudioSource.connect(silentAudioContext.destination);
+        silentAudioSource.loop = true;
+        silentAudioSource.start(0);
+        
+    } catch (e) {
+        // Nếu AudioContext bị suspended, resume nó
+        if (silentAudioContext && silentAudioContext.state === 'suspended') {
+            silentAudioContext.resume().catch(() => {});
+        }
+    }
+}
+
+// Hàm dừng âm thanh câm
+function stopSilentAudio() {
+    try {
+        if (silentAudioSource) {
+            silentAudioSource.stop();
+            silentAudioSource = null;
+        }
+        if (silentAudioContext && silentAudioContext.state !== 'closed') {
+            silentAudioContext.suspend();
+        }
+    } catch (e) {
+        // Bỏ qua lỗi
+    }
+}
+
+// Hàm start keep-alive với Silent Audio + requestAnimationFrame
+function startKeepAliveLoop() {
+    try {
+        if (window.mmxKeepAliveRunning) return; // Đã chạy
+        window.mmxKeepAliveRunning = true;
+        
+        // 1. Khởi tạo Silent Audio
+        createSilentAudio();
+        playSilentAudio();
+        
+        // 2. requestAnimationFrame loop
+        let rafId = null;
+        const rafLoop = () => {
+            if (!window.mmxKeepAliveRunning) {
+                if (rafId) cancelAnimationFrame(rafId);
+                return;
+            }
+            window.mmxLastKeepAliveTick = performance.now();
+            rafId = requestAnimationFrame(rafLoop);
+        };
+        rafId = requestAnimationFrame(rafLoop);
+        window.mmxKeepAliveId = rafId;
+        
+        // 3. Interval để phát lại Silent Audio mỗi 5 giây (đảm bảo không bị dừng)
+        if (keepAliveInterval) {
+            clearInterval(keepAliveInterval);
+        }
+        keepAliveInterval = setInterval(() => {
+            if (window.mmxKeepAliveRunning) {
+                playSilentAudio();
+            } else {
+                clearInterval(keepAliveInterval);
+                keepAliveInterval = null;
+            }
+        }, 5000); // Phát lại mỗi 5 giây
+        
+        // 4. Theo dõi visibility để cảnh báo
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                if (typeof addLogEntry === 'function') {
+                    addLogEntry('⚠️ [KEEP-ALIVE] Tab bị ẩn! Silent Audio đang hoạt động để giữ tab active...', 'warning');
+                }
+            } else {
+                if (typeof addLogEntry === 'function') {
+                    addLogEntry('✅ [KEEP-ALIVE] Tab đã hiện lại', 'info');
+                }
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        
+        if (typeof addLogEntry === 'function') {
+            addLogEntry('🩺 [KEEP-ALIVE] Đã kích hoạt: Silent Audio + requestAnimationFrame để giữ tab active', 'info');
+        }
+    } catch (e) {
+        console.warn('[KEEP-ALIVE] Không thể khởi động:', e);
+    }
+}
+
+// Hàm stop keep-alive
+function stopKeepAliveLoop() {
+    try {
+        window.mmxKeepAliveRunning = false;
+        
+        // Dừng requestAnimationFrame
+        if (window.mmxKeepAliveId && typeof cancelAnimationFrame === 'function') {
+            cancelAnimationFrame(window.mmxKeepAliveId);
+        }
+        window.mmxKeepAliveId = null;
+        
+        // Dừng interval
+        if (keepAliveInterval) {
+            clearInterval(keepAliveInterval);
+            keepAliveInterval = null;
+        }
+        
+        // Dừng Silent Audio
+        stopSilentAudio();
+        
+        if (typeof addLogEntry === 'function') {
+            addLogEntry('🩺 [KEEP-ALIVE] Đã dừng: Silent Audio + requestAnimationFrame (job kết thúc)', 'info');
+        }
+    } catch (e) {
+        console.warn('[KEEP-ALIVE] Không thể dừng:', e);
+    }
+}
+
 async function uSTZrHUt_IC() {
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
     if (MEpJezGZUsmpZdAgFRBRZW) return;
@@ -4128,6 +4310,11 @@ async function uSTZrHUt_IC() {
             isSettingText = true;
             setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, chunkText); // Gán giá trị mới, không append
             
+            // KEEP-ALIVE: Phát Silent Audio để giữ tab active (chống browser throttle)
+            if (window.mmxKeepAliveRunning) {
+                playSilentAudio();
+            }
+            
             // Trigger event để website nhận biết
             try {
                 const inputEvent = new Event('input', { bubbles: true, cancelable: true });
@@ -4147,6 +4334,12 @@ async function uSTZrHUt_IC() {
         // == QUAN SÁT SAU KHI SET TEXT: Chờ 2 giây để kiểm tra Minimax có thay đổi text không ==
         // =======================================================
         addLogEntry(`👁️ [Chunk ${ttuo$y_KhCV + 1}] Đang chờ 2 giây để quan sát xem Minimax có thay đổi text không...`, 'info');
+        
+        // KEEP-ALIVE: Phát Silent Audio trong thời gian chờ
+        if (window.mmxKeepAliveRunning) {
+            playSilentAudio();
+        }
+        
         await new Promise(resolve => setTimeout(resolve, 2000));
         
         // Kiểm tra text sau 2 giây
@@ -4187,6 +4380,12 @@ async function uSTZrHUt_IC() {
         
         monitoringInterval = setInterval(() => {
             monitoringCount++;
+            
+            // KEEP-ALIVE: Phát Silent Audio trong vòng lặp monitoring
+            if (window.mmxKeepAliveRunning) {
+                playSilentAudio();
+            }
+            
             const currentText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)];
             
             if (currentText !== chunkText) {
