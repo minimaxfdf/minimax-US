@@ -6813,11 +6813,46 @@ async function waitForVoiceModelReady() {
                 });
             }
 
-            // Event listener cho nút "Bắt đầu tạo âm thanh" để kiểm tra dấu câu
+            // Event listener cho nút "Bắt đầu tạo âm thanh" để kiểm tra dấu câu VÀ độ dài văn bản
             const startBtn = document.getElementById('gemini-start-queue-btn');
             if (startBtn) {
-                startBtn.addEventListener('click', function() {
+                startBtn.addEventListener('click', function(e) {
                     const text = textarea.value;
+                    const MAX_TEXT_LENGTH = 80000; // Giới hạn 80k ký tự
+                    
+                    // VALIDATION 1: Kiểm tra độ dài văn bản TRƯỚC (ưu tiên cao nhất)
+                    if (text.length > MAX_TEXT_LENGTH) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        
+                        const exceededLength = text.length - MAX_TEXT_LENGTH;
+                        const message = `❌ CẢNH BÁO: Văn bản vượt quá quy định!\n\n` +
+                                       `📊 Số ký tự hiện tại: ${text.length.toLocaleString()} ký tự\n` +
+                                       `⚠️ Vượt quá: ${exceededLength.toLocaleString()} ký tự\n` +
+                                       `📏 Giới hạn cho phép: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự\n\n` +
+                                       `Vui lòng giảm văn bản xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
+                        
+                        alert(message);
+                        console.log('[VALIDATION] Đã chặn do vượt quá giới hạn ký tự');
+                        
+                        // Log vào log panel nếu có
+                        if (typeof addLogEntry === 'function') {
+                            addLogEntry(`❌ CẢNH BÁO: Văn bản vượt quá quy định! Hiện tại: ${text.length.toLocaleString()} ký tự, vượt quá: ${exceededLength.toLocaleString()} ký tự. Giới hạn: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự.`, 'error');
+                        }
+                        
+                        // Cập nhật cảnh báo visual
+                        const warningEl = document.getElementById('text-length-warning');
+                        if (warningEl) {
+                            warningEl.textContent = `❌ CẢNH BÁO: Vượt quá ${exceededLength.toLocaleString()} ký tự! (${text.length.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()})`;
+                            warningEl.style.color = '#ff5555';
+                            warningEl.style.fontWeight = 'bold';
+                        }
+                        
+                        return false;
+                    }
+                    
+                    // VALIDATION 2: Kiểm tra dấu câu (chỉ khi độ dài hợp lệ)
                     detectedPunctuationIssues = detectPunctuationIssues(text);
 
                     if (detectedPunctuationIssues.length > 0) {
@@ -6825,7 +6860,7 @@ async function waitForVoiceModelReady() {
                         // Ngăn không cho bắt đầu tạo âm thanh nếu có lỗi dấu câu
                         return false;
                     }
-                });
+                }, true); // Capture phase để chạy TRƯỚC các handler khác
             }
 
             // Event listener cho modal
@@ -7572,8 +7607,43 @@ async function waitForVoiceModelReady() {
     const playPauseWaveformBtn = document.getElementById('waveform-play-pause');
 
     if (startBtn) {
-        startBtn.addEventListener('click', () => {
+        startBtn.addEventListener('click', (e) => {
             // [BẮT ĐẦU CODE THAY THẾ]
+
+            // VALIDATION: Kiểm tra độ dài văn bản TRƯỚC TIÊN (ưu tiên cao nhất)
+            const MAX_TEXT_LENGTH = 80000;
+            const textLength = mainTextarea.value.length;
+            
+            if (textLength > MAX_TEXT_LENGTH) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                const exceededLength = textLength - MAX_TEXT_LENGTH;
+                const message = `❌ CẢNH BÁO: Văn bản vượt quá quy định!\n\n` +
+                               `📊 Số ký tự hiện tại: ${textLength.toLocaleString()} ký tự\n` +
+                               `⚠️ Vượt quá: ${exceededLength.toLocaleString()} ký tự\n` +
+                               `📏 Giới hạn cho phép: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự\n\n` +
+                               `Vui lòng giảm văn bản xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
+                
+                alert(message);
+                console.log('[VALIDATION MAIN HANDLER] Đã chặn do vượt quá giới hạn ký tự');
+                
+                // Log vào log panel nếu có
+                if (typeof addLogEntry === 'function') {
+                    addLogEntry(`❌ CẢNH BÁO: Văn bản vượt quá quy định! Hiện tại: ${textLength.toLocaleString()} ký tự, vượt quá: ${exceededLength.toLocaleString()} ký tự. Giới hạn: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự.`, 'error');
+                }
+                
+                // Cập nhật cảnh báo visual
+                const warningEl = document.getElementById('text-length-warning');
+                if (warningEl) {
+                    warningEl.textContent = `❌ CẢNH BÁO: Vượt quá ${exceededLength.toLocaleString()} ký tự! (${textLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()})`;
+                    warningEl.style.color = '#ff5555';
+                    warningEl.style.fontWeight = 'bold';
+                }
+                
+                return; // Dừng xử lý
+            }
 
             // 1. Lấy và làm sạch văn bản (Giữ nguyên từ code mới)
             const text = mainTextarea.value.trim();
