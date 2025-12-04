@@ -4186,12 +4186,25 @@ async function uSTZrHUt_IC() {
         return;
     }
     
-    // Kiểm tra ttuo$y_KhCV có hợp lệ không (nếu >= length thì reset về 0 cho job mới)
+    // Kiểm tra ttuo$y_KhCV có hợp lệ không
+    // QUAN TRỌNG: Chỉ reset về 0 nếu tất cả chunks đã thành công và đang trong job mới
+    // Nếu tất cả chunks đã thành công, không reset mà để logic merge xử lý
     if (ttuo$y_KhCV >= SI$acY.length) {
-        // Nếu đã vượt quá số lượng chunks, có thể là job cũ chưa được reset
-        // Reset về 0 để bắt đầu job mới
-        addLogEntry(`🔄 Phát hiện ttuo$y_KhCV (${ttuo$y_KhCV}) >= SI$acY.length (${SI$acY.length}). Reset về 0 để bắt đầu job mới.`, 'warning');
-        ttuo$y_KhCV = 0;
+        // Kiểm tra xem tất cả chunks đã thành công chưa
+        const allChunksSuccess = window.chunkStatus && window.chunkStatus.length === SI$acY.length && 
+                                 window.chunkStatus.every((status, idx) => {
+                                     return status === 'success' && window.chunkBlobs && window.chunkBlobs[idx] !== null;
+                                 });
+        
+        if (allChunksSuccess) {
+            // Tất cả chunks đã thành công, không reset về 0 - để logic merge xử lý
+            // Logic merge sẽ được gọi ở phần dưới (dòng 4337)
+            // Không log gì để tránh spam log
+        } else {
+            // Chưa thành công hết, có thể là job cũ chưa được reset
+            // Không reset ở đây, để logic merge xử lý ở phần dưới
+            // Không log gì để tránh spam log
+        }
     }
     
     // Đảm bảo keep-alive loop đang chạy (đã được khởi động tự động khi tool load)
@@ -4363,14 +4376,30 @@ async function uSTZrHUt_IC() {
             const status = window.chunkStatus && window.chunkStatus[ttuo$y_KhCV];
             const blob = window.chunkBlobs && window.chunkBlobs[ttuo$y_KhCV];
             if (blob && status === 'success') {
-                addLogEntry(`⏭️ [Chunk ${ttuo$y_KhCV + 1}] Đã có blob hợp lệ và trạng thái 'success', bỏ qua và nhảy sang chunk tiếp theo`, 'info');
-                ttuo$y_KhCV++;
-                // Nếu đã vượt quá số chunk, đánh dấu hoàn thành và gọi lại uSTZrHUt_IC để vào nhánh kiểm tra cuối
-                if (ttuo$y_KhCV >= SI$acY.length) {
+                // Kiểm tra xem tất cả chunks đã thành công chưa
+                const allChunksSuccess = window.chunkStatus && window.chunkStatus.length === SI$acY.length && 
+                                         window.chunkStatus.every((s, idx) => {
+                                             return s === 'success' && window.chunkBlobs && window.chunkBlobs[idx] !== null;
+                                         });
+                
+                if (allChunksSuccess) {
+                    // Tất cả chunks đã thành công, không tăng ttuo$y_KhCV nữa, để logic merge xử lý
+                    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã thành công. Tất cả chunks đã hoàn thành, chuyển sang merge.`, 'success');
+                    // Set ttuo$y_KhCV để vào nhánh merge
                     ttuo$y_KhCV = SI$acY.length;
+                    setTimeout(uSTZrHUt_IC, 100);
+                    return;
+                } else {
+                    // Chưa thành công hết, nhảy sang chunk tiếp theo
+                    addLogEntry(`⏭️ [Chunk ${ttuo$y_KhCV + 1}] Đã có blob hợp lệ và trạng thái 'success', bỏ qua và nhảy sang chunk tiếp theo`, 'info');
+                    ttuo$y_KhCV++;
+                    // Nếu đã vượt quá số chunk, đánh dấu hoàn thành và gọi lại uSTZrHUt_IC để vào nhánh kiểm tra cuối
+                    if (ttuo$y_KhCV >= SI$acY.length) {
+                        ttuo$y_KhCV = SI$acY.length;
+                    }
+                    setTimeout(uSTZrHUt_IC, getRandomChunkDelay());
+                    return;
                 }
-                setTimeout(uSTZrHUt_IC, getRandomChunkDelay());
-                return;
             }
         }
         // Nếu đang trong giai đoạn kiểm tra cuối (RETRY MODE)
