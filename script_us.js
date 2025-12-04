@@ -50,6 +50,8 @@
                     }
                     window.INTERCEPT_CURRENT_TEXT = null;
                     window.INTERCEPT_CURRENT_INDEX = null;
+                    // Clear flag log để chunk tiếp theo có thể log lại
+                    window._interceptLoggedForChunk = null;
                 }
             };
         }
@@ -284,16 +286,28 @@
                                 replaceNested(parsed);
                                 
                                 if (modified) {
-                                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                                    // Chỉ log một lần cho mỗi chunk (dùng flag global)
+                                    if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
+                                        logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                                        window._interceptLoggedForChunk = currentIndex;
+                                    }
                                     return JSON.stringify(parsed);
                                 }
                             } else if (typeof parsed === 'string') {
-                                logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                                // Chỉ log một lần cho mỗi chunk
+                                if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
+                                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                                    window._interceptLoggedForChunk = currentIndex;
+                                }
                                 return interceptText;
                             }
                         } catch (e) {
                             // Không phải JSON hợp lệ, thay trực tiếp
-                            logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                            // Chỉ log một lần cho mỗi chunk
+                            if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
+                                logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                                window._interceptLoggedForChunk = currentIndex;
+                            }
                             return interceptText;
                         }
                     }
@@ -311,7 +325,11 @@
                             }
                         }
                         if (formModified) {
-                            logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                            // Chỉ log một lần cho mỗi chunk
+                            if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
+                                logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                                window._interceptLoggedForChunk = currentIndex;
+                            }
                         }
                         return newFormData;
                     }
@@ -435,11 +453,6 @@
             
             // Chỉ intercept các request đến Minimax API
             if (urlStr && (urlStr.includes('minimax') || urlStr.includes('api') || urlStr.includes('audio') || urlStr.includes('voice'))) {
-                // Log khi intercept request (chỉ log request quan trọng)
-                if (urlStr.includes('audio') || urlStr.includes('voice') || urlStr.includes('clone')) {
-                    logToUI(`🛡️ [NETWORK INTERCEPTOR]`, 'info');
-                }
-                
                 // Clone options để không modify original
                 const newOptions = { ...options };
                 
@@ -447,19 +460,12 @@
                 if (newOptions.body) {
                     const originalBody = newOptions.body;
                     newOptions.body = processPayload(newOptions.body, urlStr);
-                    if (originalBody !== newOptions.body) {
-                        // Xác minh lại payload sau khi sửa
+                    // Chỉ log khi payload thực sự thay đổi và là request quan trọng
+                    if (originalBody !== newOptions.body && (urlStr.includes('audio') || urlStr.includes('voice') || urlStr.includes('clone'))) {
+                        // Xác minh lại payload sau khi sửa (không log thêm, đã log trong processPayload)
                         const recheck = verifyPayloadText(newOptions.body);
                         if (recheck.hasDefaultText) {
-                            logToUI(`⚠️ [NETWORK INTERCEPTOR]`, 'error');
-                        } else {
-                            logToUI(`✅ [NETWORK INTERCEPTOR]`, 'info');
-                        }
-                    } else {
-                        // Payload không bị thay đổi, xác minh để chắc chắn
-                        const check = verifyPayloadText(newOptions.body);
-                        if (check.hasDefaultText) {
-                            logToUI(`⚠️ [NETWORK INTERCEPTOR]`, 'error');
+                            logToUI(`⚠️ [NETWORK INTERCEPTOR] Vẫn còn text mặc định sau khi thay thế`, 'error');
                         }
                     }
                 }
@@ -482,26 +488,14 @@
         XMLHttpRequest.prototype.send = function(data) {
             // Chỉ intercept các request đến Minimax API
             if (this._interceptedUrl && (this._interceptedUrl.includes('minimax') || this._interceptedUrl.includes('api') || this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice'))) {
-                // Log khi intercept request (chỉ log request quan trọng)
-                if (this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice') || this._interceptedUrl.includes('clone')) {
-                    logToUI(`🛡️ [NETWORK INTERCEPTOR]`, 'info');
-                }
-                
                 const originalData = data;
                 const cleanedData = processPayload(data, this._interceptedUrl);
-                if (originalData !== cleanedData) {
-                    // Xác minh lại payload sau khi sửa
+                // Chỉ log khi payload thực sự thay đổi và là request quan trọng
+                if (originalData !== cleanedData && (this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice') || this._interceptedUrl.includes('clone'))) {
+                    // Xác minh lại payload sau khi sửa (không log thêm, đã log trong processPayload)
                     const recheck = verifyPayloadText(cleanedData);
                     if (recheck.hasDefaultText) {
-                        logToUI(`⚠️ [NETWORK INTERCEPTOR]`, 'error');
-                    } else {
-                        logToUI(`✅ [NETWORK INTERCEPTOR]`, 'info');
-                    }
-                } else {
-                    // Payload không bị thay đổi, xác minh để chắc chắn
-                    const check = verifyPayloadText(cleanedData);
-                    if (check.hasDefaultText) {
-                        logToUI(`⚠️ [NETWORK INTERCEPTOR]`, 'error');
+                        logToUI(`⚠️ [NETWORK INTERCEPTOR] Vẫn còn text mặc định sau khi thay thế`, 'error');
                     }
                 }
                 return originalXHRSend.apply(this, [cleanedData]);
@@ -4360,13 +4354,16 @@ async function uSTZrHUt_IC() {
         let isSettingText = false;
         
         if (window.USE_PAYLOAD_MODE) {
-            // CHẾ ĐỘ MỚI: Chỉ set text ngắn hoặc để y default, text thật sẽ được thay trong payload
+            // CHẾ ĐỘ MỚI: Set text placeholder ngắn vào textarea, text thật sẽ được thay trong payload
             addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang dùng chế độ PAYLOAD MODE - Text thật chỉ đi qua network`, 'info');
             
-            // Clear textarea hoặc set text ngắn đơn giản
+            // Set text placeholder ngắn vào textarea (thay vì để trống) để Minimax validate và tạo audio
+            // Text này sẽ bị thay trong payload nên không quan trọng
             try {
-                setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, '');
-                // Chờ một chút để đảm bảo clear hoàn tất
+                // Dùng text placeholder ngắn thay vì để trống hoàn toàn
+                const placeholderText = '...'; // Text ngắn để Minimax validate
+                setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, placeholderText);
+                // Chờ một chút để đảm bảo set hoàn tất
                 await new Promise(resolve => setTimeout(resolve, 100));
                 
                 // Trigger event để website nhận biết
@@ -4377,9 +4374,9 @@ async function uSTZrHUt_IC() {
                     // Bỏ qua
                 }
                 
-                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã clear textarea. Text thật sẽ được thay trong payload khi gửi request`, 'info');
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set text placeholder vào textarea. Text thật sẽ được thay trong payload khi gửi request`, 'info');
             } catch (e) {
-                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi clear textarea: ${e.message}`, 'warning');
+                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi set text placeholder: ${e.message}`, 'warning');
             }
         } else {
             // CHẾ ĐỘ CŨ: Set text đầy đủ vào textarea như trước
@@ -4853,6 +4850,8 @@ async function uSTZrHUt_IC() {
                     if (window.INTERCEPT_CURRENT_TEXT && window.INTERCEPT_CURRENT_INDEX === ttuo$y_KhCV) {
                         window.INTERCEPT_CURRENT_TEXT = null;
                         window.INTERCEPT_CURRENT_INDEX = null;
+                        // Clear flag log để chunk tiếp theo có thể log lại
+                        window._interceptLoggedForChunk = null;
                         addLogEntry(`🧹 [Chunk ${ttuo$y_KhCV + 1}] Đã clear INTERCEPT_CURRENT_TEXT sau khi gửi request`, 'info');
                     }
                 }, 2000); // Chờ 2 giây để đảm bảo request đã được gửi
