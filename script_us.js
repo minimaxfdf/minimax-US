@@ -1634,7 +1634,7 @@ button:disabled {
         
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Đang tải quota...</div>
         </div> 
-    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <button id="toggle-log-btn" class="clear-log-btn" style="margin-bottom:10px;background-color:#4b5563;cursor:pointer;pointer-events:auto;opacity:1;" onclick="(function(btn){var panel=document.getElementById('log-panel');if(!panel)return;var hidden=panel.style.display==='none'||!panel.style.display;panel.style.display=hidden?'block':'none';btn.textContent=hidden?'📜 Ẩn log hoạt động':'📜 Xem / Ẩn log hoạt động';})(this);">📜 Xem / Ẩn log hoạt động</button> <div id="log-panel" style="display:none;"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 32.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
+    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <button id="toggle-log-btn" class="clear-log-btn" style="margin-bottom:10px;background-color:#4b5563;cursor:pointer;pointer-events:auto;opacity:1;" onclick="(function(btn){var panel=document.getElementById('log-panel');if(!panel)return;var hidden=panel.style.display==='none'||!panel.style.display;panel.style.display=hidden?'block':'none';btn.textContent=hidden?'📜 Ẩn log hoạt động':'📜 Xem / Ẩn log hoạt động';})(this);">📜 Xem / Ẩn log hoạt động</button> <div id="log-panel" style="display:none;"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 32.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><h4 style="margin: 0;">Nhập văn bản cần tạo giọng nói</h4><div id="job-timer-display" style="color: #50fa7b; font-weight: bold; font-size: 16px; padding: 8px 16px; background: rgba(80, 250, 123, 0.1); border: 1px solid #50fa7b; border-radius: 8px; min-width: 150px; text-align: center;">⏱️ Thời gian: 00:00:00</div></div>
     <div class="text-input-options">
         <div class="input-tabs">
             <button id="text-tab" class="tab-btn active">Nhập trực tiếp</button>
@@ -1645,7 +1645,7 @@ button:disabled {
 ⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
             "></textarea>
             <small id="text-length-warning" style="color: #94a3b8; font-size: 12px; margin-top: 5px; display: block;">
-                ⚠️ Giới hạn: Tối đa 80.000 ký tự
+                ⚠️ Giới hạn: Tối đa 50.000 ký tự
             </small>
         </div>
         <div id="file-input-area" class="input-area">
@@ -2440,18 +2440,96 @@ button:disabled {
             toggleLogBtn.textContent = '📜 Xem log hoạt động';
         }
         
-        // Cảnh báo khi vượt quá 80,000 ký tự (không tự động cắt)
-        const MAX_TEXT_LENGTH = 80000;
+        // =======================================================
+        // == BỘ ĐẾM THỜI GIAN CHẠY JOB ==
+        // =======================================================
+        let jobTimerInterval = null;
+        let jobStartTime = null;
+        let jobElapsedSeconds = 0;
+        
+        // Hàm format thời gian: HH:MM:SS
+        function formatJobTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+        
+        // Hàm cập nhật hiển thị thời gian
+        function updateJobTimerDisplay() {
+            const timerDisplay = document.getElementById('job-timer-display');
+            if (timerDisplay) {
+                timerDisplay.textContent = `⏱️ Thời gian: ${formatJobTime(jobElapsedSeconds)}`;
+            }
+        }
+        
+        // Hàm bắt đầu đếm thời gian
+        function startJobTimer() {
+            // Reset về 0 khi bắt đầu job mới
+            jobElapsedSeconds = 0;
+            jobStartTime = Date.now();
+            
+            // Cập nhật hiển thị ngay lập tức
+            updateJobTimerDisplay();
+            
+            // Xóa interval cũ nếu có
+            if (jobTimerInterval) {
+                clearInterval(jobTimerInterval);
+            }
+            
+            // Bắt đầu đếm mỗi giây
+            jobTimerInterval = setInterval(() => {
+                jobElapsedSeconds++;
+                updateJobTimerDisplay();
+            }, 1000);
+            
+            // Log
+            if (typeof addLogEntry === 'function') {
+                addLogEntry('⏱️ Bộ đếm thời gian đã bắt đầu', 'info');
+            }
+        }
+        
+        // Hàm dừng đếm thời gian
+        function stopJobTimer() {
+            if (jobTimerInterval) {
+                clearInterval(jobTimerInterval);
+                jobTimerInterval = null;
+            }
+            
+            // Log thời gian cuối cùng
+            if (typeof addLogEntry === 'function') {
+                const finalTime = formatJobTime(jobElapsedSeconds);
+                addLogEntry(`⏱️ Bộ đếm thời gian đã dừng. Tổng thời gian: ${finalTime}`, 'info');
+            }
+        }
+        
+        // Hàm reset về 0
+        function resetJobTimer() {
+            jobElapsedSeconds = 0;
+            jobStartTime = null;
+            if (jobTimerInterval) {
+                clearInterval(jobTimerInterval);
+                jobTimerInterval = null;
+            }
+            updateJobTimerDisplay();
+        }
+        
+        // Đưa các hàm ra window để có thể gọi từ nơi khác
+        window.startJobTimer = startJobTimer;
+        window.stopJobTimer = stopJobTimer;
+        window.resetJobTimer = resetJobTimer;
+        
+        // Cảnh báo khi vượt quá 50,000 ký tự (không tự động cắt)
+        const MAX_TEXT_LENGTH = 50000;
         const mainTextarea = document.getElementById('gemini-main-textarea');
         const textLengthWarning = document.getElementById('text-length-warning');
         
         if (mainTextarea && textLengthWarning) {
-            // Hàm cập nhật cảnh báo
-            function updateTextLengthWarning() {
-                const currentLength = mainTextarea.value.length;
+            // Cập nhật cảnh báo khi nhập
+            mainTextarea.addEventListener('input', function() {
+                const currentLength = this.value.length;
                 if (currentLength > MAX_TEXT_LENGTH) {
-                    const exceededLength = currentLength - MAX_TEXT_LENGTH;
-                    textLengthWarning.textContent = `⚠️ CẢNH BÁO: Văn bản vượt quá giới hạn! Hiện tại: ${currentLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()} ký tự. Vượt quá: ${exceededLength.toLocaleString()} ký tự. Vui lòng giảm xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
+                    textLengthWarning.textContent = `⚠️ CẢNH BÁO: Văn bản vượt quá giới hạn! Hiện tại: ${currentLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()} ký tự. Vui lòng giảm xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
                     textLengthWarning.style.color = '#ff5555';
                     textLengthWarning.style.fontWeight = 'bold';
                 } else {
@@ -2459,123 +2537,35 @@ button:disabled {
                     textLengthWarning.style.color = '#94a3b8';
                     textLengthWarning.style.fontWeight = 'normal';
                 }
-            }
-            
-            // Cập nhật cảnh báo khi nhập
-            mainTextarea.addEventListener('input', updateTextLengthWarning);
-            
-            // Cập nhật cảnh báo khi thay đổi (backup)
-            mainTextarea.addEventListener('change', updateTextLengthWarning);
-            
-            // MutationObserver để theo dõi thay đổi value (nếu có code khác thay đổi)
-            const textareaObserver = new MutationObserver(function() {
-                updateTextLengthWarning();
             });
             
-            textareaObserver.observe(mainTextarea, {
-                attributes: true,
-                attributeFilter: ['value'],
-                childList: false,
-                subtree: false
-            });
-            
-            // Kiểm tra định kỳ (backup safety)
-            setInterval(function() {
-                updateTextLengthWarning();
-            }, 2000); // Kiểm tra mỗi 2 giây
-            
-            // Cập nhật cảnh báo khi paste - Sử dụng nhiều cách để đảm bảo hoạt động
-            mainTextarea.addEventListener('paste', function(e) {
-                // Lấy clipboard data trước khi paste
-                const clipboardData = e.clipboardData || window.clipboardData;
-                let pastedText = '';
-                if (clipboardData) {
-                    pastedText = clipboardData.getData('text/plain');
-                }
-                
-                // Tính toán độ dài sau khi paste
-                const currentLength = this.value.length;
-                const pastedLength = pastedText.length;
-                const newLength = currentLength + pastedLength;
-                
-                // Kiểm tra ngay lập tức
-                if (newLength > MAX_TEXT_LENGTH) {
-                    // Hiển thị cảnh báo ngay
-                    const exceededLength = newLength - MAX_TEXT_LENGTH;
-                    textLengthWarning.textContent = `⚠️ CẢNH BÁO: Sau khi paste sẽ vượt quá giới hạn! (${newLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()} ký tự, vượt ${exceededLength.toLocaleString()} ký tự)`;
-                    textLengthWarning.style.color = '#ff5555';
-                    textLengthWarning.style.fontWeight = 'bold';
-                    
-                    // Hiển thị alert
-                    setTimeout(() => {
-                        const message = `⚠️ CẢNH BÁO: Văn bản sau khi paste sẽ vượt quá giới hạn!\n\n` +
-                                       `📊 Độ dài hiện tại: ${currentLength.toLocaleString()} ký tự\n` +
-                                       `📋 Độ dài sẽ paste: ${pastedLength.toLocaleString()} ký tự\n` +
-                                       `📊 Tổng sau paste: ${newLength.toLocaleString()} ký tự\n` +
-                                       `⚠️ Vượt quá: ${exceededLength.toLocaleString()} ký tự\n` +
-                                       `📏 Giới hạn: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự\n\n` +
-                                       `Vui lòng giảm nội dung paste hoặc xóa bớt văn bản hiện tại.`;
-                        alert(message);
-                    }, 100);
-                }
-                
-                // Kiểm tra lại sau khi paste (với nhiều delay để đảm bảo)
+            // Cập nhật cảnh báo khi paste
+            mainTextarea.addEventListener('paste', function() {
                 setTimeout(() => {
-                    const finalLength = this.value.length;
-                    if (finalLength > MAX_TEXT_LENGTH) {
-                        const exceededLength = finalLength - MAX_TEXT_LENGTH;
-                        textLengthWarning.textContent = `⚠️ CẢNH BÁO: Văn bản vượt quá giới hạn! Hiện tại: ${finalLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()} ký tự. Vượt quá: ${exceededLength.toLocaleString()} ký tự. Vui lòng giảm xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
+                    const currentLength = this.value.length;
+                    if (currentLength > MAX_TEXT_LENGTH) {
+                        textLengthWarning.textContent = `⚠️ CẢNH BÁO: Văn bản vượt quá giới hạn! Hiện tại: ${currentLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()} ký tự. Vui lòng giảm xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
                         textLengthWarning.style.color = '#ff5555';
                         textLengthWarning.style.fontWeight = 'bold';
                     } else {
-                        textLengthWarning.textContent = `⚠️ Giới hạn: Tối đa ${MAX_TEXT_LENGTH.toLocaleString()} ký tự (Hiện tại: ${finalLength.toLocaleString()} ký tự)`;
+                        textLengthWarning.textContent = `⚠️ Giới hạn: Tối đa ${MAX_TEXT_LENGTH.toLocaleString()} ký tự (Hiện tại: ${currentLength.toLocaleString()} ký tự)`;
                         textLengthWarning.style.color = '#94a3b8';
                         textLengthWarning.style.fontWeight = 'normal';
                     }
                 }, 0);
-                
-                setTimeout(() => {
-                    const finalLength = this.value.length;
-                    if (finalLength > MAX_TEXT_LENGTH) {
-                        const exceededLength = finalLength - MAX_TEXT_LENGTH;
-                        textLengthWarning.textContent = `⚠️ CẢNH BÁO: Văn bản vượt quá giới hạn! Hiện tại: ${finalLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()} ký tự. Vượt quá: ${exceededLength.toLocaleString()} ký tự.`;
-                        textLengthWarning.style.color = '#ff5555';
-                        textLengthWarning.style.fontWeight = 'bold';
-                    }
-                }, 100);
             });
         }
         
-        // Validation khi bấm nút "Bắt đầu tạo âm thanh" - Sử dụng nhiều lớp để đảm bảo hoạt động
-        function attachValidationToStartButton() {
-            const startQueueBtn = document.getElementById('gemini-start-queue-btn');
-            if (!startQueueBtn) {
-                console.log('[VALIDATION] Nút chưa sẵn sàng, sẽ thử lại sau...');
-                return;
-            }
-            
-            // Xóa event listener cũ nếu có (bằng cách clone node)
-            const newBtn = startQueueBtn.cloneNode(true);
-            startQueueBtn.parentNode.replaceChild(newBtn, startQueueBtn);
-            
-            // Thêm event listener mới với capture phase để chạy TRƯỚC các handler khác
-            newBtn.addEventListener('click', function(e) {
-                console.log('[VALIDATION] Nút được click, đang kiểm tra...');
+        // Validation khi bấm nút "Bắt đầu tạo âm thanh"
+        const startQueueBtn = document.getElementById('gemini-start-queue-btn');
+        if (startQueueBtn) {
+            const originalClickHandler = startQueueBtn.onclick;
+            startQueueBtn.addEventListener('click', function(e) {
                 const textarea = document.getElementById('gemini-main-textarea');
-                if (!textarea) {
-                    console.log('[VALIDATION] Không tìm thấy textarea');
-                    return;
-                }
-                
-                const currentLength = textarea.value.length;
-                console.log(`[VALIDATION] Độ dài văn bản: ${currentLength}, Giới hạn: ${MAX_TEXT_LENGTH}`);
-                
-                if (currentLength > MAX_TEXT_LENGTH) {
-                    console.log('[VALIDATION] Vượt quá giới hạn, đang chặn...');
+                if (textarea && textarea.value.length > MAX_TEXT_LENGTH) {
                     e.preventDefault();
                     e.stopPropagation();
-                    e.stopImmediatePropagation(); // Chặn tất cả handler khác
-                    
+                    const currentLength = textarea.value.length;
                     const exceededLength = currentLength - MAX_TEXT_LENGTH;
                     const message = `❌ CẢNH BÁO: Văn bản vượt quá quy định!\n\n` +
                                    `📊 Số ký tự hiện tại: ${currentLength.toLocaleString()} ký tự\n` +
@@ -2585,97 +2575,27 @@ button:disabled {
                     
                     // Hiển thị alert để người dùng chú ý
                     alert(message);
-                    console.log('[VALIDATION] Đã hiển thị alert');
                     
                     // Log vào log panel nếu có
                     if (typeof addLogEntry === 'function') {
                         addLogEntry(`❌ CẢNH BÁO: Văn bản vượt quá quy định! Hiện tại: ${currentLength.toLocaleString()} ký tự, vượt quá: ${exceededLength.toLocaleString()} ký tự. Giới hạn: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự.`, 'error');
-                        console.log('[VALIDATION] Đã log vào log panel');
                     }
                     
                     // Cập nhật cảnh báo visual
-                    const warningEl = document.getElementById('text-length-warning');
-                    if (warningEl) {
-                        warningEl.textContent = `❌ CẢNH BÁO: Vượt quá ${exceededLength.toLocaleString()} ký tự! (${currentLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()})`;
-                        warningEl.style.color = '#ff5555';
-                        warningEl.style.fontWeight = 'bold';
-                        console.log('[VALIDATION] Đã cập nhật cảnh báo visual');
+                    if (textLengthWarning) {
+                        textLengthWarning.textContent = `❌ CẢNH BÁO: Vượt quá ${exceededLength.toLocaleString()} ký tự! (${currentLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()})`;
+                        textLengthWarning.style.color = '#ff5555';
+                        textLengthWarning.style.fontWeight = 'bold';
                     }
                     
                     return false;
-                } else {
-                    console.log('[VALIDATION] Văn bản hợp lệ, cho phép tiếp tục');
                 }
-            }, true); // Capture phase - chạy TRƯỚC các event listener khác
-        }
-        
-        // Gắn validation ngay khi DOM sẵn sàng
-        attachValidationToStartButton();
-        
-        // Thử lại sau 1 giây (nếu nút được tạo sau)
-        setTimeout(attachValidationToStartButton, 1000);
-        
-        // Thử lại sau 3 giây (nếu nút được tạo rất muộn)
-        setTimeout(attachValidationToStartButton, 3000);
-        
-        // Sử dụng MutationObserver để theo dõi khi nút được thêm vào DOM
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.addedNodes.length) {
-                    const startBtn = document.getElementById('gemini-start-queue-btn');
-                    if (startBtn && !startBtn.hasAttribute('data-validation-attached')) {
-                        startBtn.setAttribute('data-validation-attached', 'true');
-                        attachValidationToStartButton();
-                    }
+                // Nếu validation pass, gọi handler gốc nếu có
+                if (originalClickHandler) {
+                    originalClickHandler.call(this, e);
                 }
             });
-        });
-        
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-        
-        // Event delegation trên document để bắt mọi click vào nút (backup method)
-        document.addEventListener('click', function(e) {
-            const target = e.target;
-            if (target && (target.id === 'gemini-start-queue-btn' || 
-                (target.tagName === 'BUTTON' && target.textContent && 
-                 (target.textContent.includes('Bắt đầu tạo âm thanh') || target.textContent.includes('Bắt đầu'))))) {
-                
-                console.log('[VALIDATION DELEGATION] Phát hiện click vào nút bắt đầu');
-                const textarea = document.getElementById('gemini-main-textarea');
-                if (textarea && textarea.value.length > MAX_TEXT_LENGTH) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    
-                    const currentLength = textarea.value.length;
-                    const exceededLength = currentLength - MAX_TEXT_LENGTH;
-                    const message = `❌ CẢNH BÁO: Văn bản vượt quá quy định!\n\n` +
-                                   `📊 Số ký tự hiện tại: ${currentLength.toLocaleString()} ký tự\n` +
-                                   `⚠️ Vượt quá: ${exceededLength.toLocaleString()} ký tự\n` +
-                                   `📏 Giới hạn cho phép: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự\n\n` +
-                                   `Vui lòng giảm văn bản xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
-                    
-                    alert(message);
-                    console.log('[VALIDATION DELEGATION] Đã hiển thị alert');
-                    
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`❌ CẢNH BÁO: Văn bản vượt quá quy định! Hiện tại: ${currentLength.toLocaleString()} ký tự, vượt quá: ${exceededLength.toLocaleString()} ký tự. Giới hạn: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự.`, 'error');
-                    }
-                    
-                    const warningEl = document.getElementById('text-length-warning');
-                    if (warningEl) {
-                        warningEl.textContent = `❌ CẢNH BÁO: Vượt quá ${exceededLength.toLocaleString()} ký tự! (${currentLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()})`;
-                        warningEl.style.color = '#ff5555';
-                        warningEl.style.fontWeight = 'bold';
-                    }
-                    
-                    return false;
-                }
-            }
-        }, true); // Capture phase
+        }
     });
 
 const aZpcvyD_mnWYN_qgEq=DHk$uTvcFuLEMnixYuADkCeA;let SI$acY=[],ZTQj$LF$o=[],ttuo$y_KhCV=Number(0x90d)+Number(0xdac)+parseFloat(-0x16b9),EfNjYNYj_O_CGB=![],MEpJezGZUsmpZdAgFRBRZW=![],xlgJHLP$MATDT$kTXWV=null,Srnj$swt=null,n_WwsStaC$jzsWjOIjRqedTG=null,dqj_t_Mr=null;const FMFjWZYZzPXRHIjRRnOwV_G=JSON[aZpcvyD_mnWYN_qgEq(0x1df)];JSON[aZpcvyD_mnWYN_qgEq(0x1df)]=function(o__htsdYW,...YxPU$_FEFzDUACWyi){const civchWuTNrKOGccx_eNld=aZpcvyD_mnWYN_qgEq;if(o__htsdYW&&typeof o__htsdYW===civchWuTNrKOGccx_eNld(0x231)&&o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]&&o__htsdYW[civchWuTNrKOGccx_eNld(0x208)]){const xlxXwB$xg_wWLUkKDoPeWvBcc=document[civchWuTNrKOGccx_eNld(0x1de)](civchWuTNrKOGccx_eNld(0x235));if(xlxXwB$xg_wWLUkKDoPeWvBcc&&EfNjYNYj_O_CGB){const guKwlTGjKUCtXQplrcc=xlxXwB$xg_wWLUkKDoPeWvBcc[civchWuTNrKOGccx_eNld(0x24c)];guKwlTGjKUCtXQplrcc&&(o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]=guKwlTGjKUCtXQplrcc);}}return FMFjWZYZzPXRHIjRRnOwV_G[civchWuTNrKOGccx_eNld(0x22c)](this,o__htsdYW,...YxPU$_FEFzDUACWyi);},window[aZpcvyD_mnWYN_qgEq(0x25f)](aZpcvyD_mnWYN_qgEq(0x1c9),()=>{const AP$u_huhInYfTj=aZpcvyD_mnWYN_qgEq;function spAghkbWog(){const DWWeZydubZoTFZs$ck_jg=DHk$uTvcFuLEMnixYuADkCeA;GM_addStyle(SCRIPT_CSS);const UdJdhwBFovFArs=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));UdJdhwBFovFArs[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x250),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](UdJdhwBFovFArs);const sIzV_BK=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));sIzV_BK[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x1d2),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](sIzV_BK);const fCNFI$elNjn=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x215));fCNFI$elNjn['id']=DWWeZydubZoTFZs$ck_jg(0x25b),fCNFI$elNjn[DWWeZydubZoTFZs$ck_jg(0x1c7)]=APP_HTML,document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1eb)](fCNFI$elNjn),document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1d9)][DWWeZydubZoTFZs$ck_jg(0x203)](DWWeZydubZoTFZs$ck_jg(0x201)),BZr$GS$CqnCyt(),setTimeout(()=>{const lVvu_IZabWk=DWWeZydubZoTFZs$ck_jg,iItyHbcTDrfnQk=document[lVvu_IZabWk(0x1cd)](lVvu_IZabWk(0x21e));iItyHbcTDrfnQk&&(iItyHbcTDrfnQk[lVvu_IZabWk(0x24c)]=lVvu_IZabWk(0x1c4),iItyHbcTDrfnQk[lVvu_IZabWk(0x1c1)](new Event(lVvu_IZabWk(0x229),{'bubbles':!![]}))),s_BrlXXxPOJaBMKQX();},0x8*parseInt(0x182)+0x17*Math.trunc(parseInt(0xd3))+Math.max(-0x1541,-0x1541));}spAghkbWog();const LrkOcBYz_$AGjPqXLWnyiATpCI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x261)),lraDK$WDOgsXHRO=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1da)),OdKzziXLxtOGjvaBMHm=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23a)),WRVxYBSrPsjcqQs_bXI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x24f)),rUxbIRagbBVychZ$GfsogD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x235)),zQizakWdLEdLjtenmCbNC=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23f)),PEYtOIOW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x230)),PcLAEW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1e7)),yU_jfkzmffcnGgLWrq=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1ba)),VcTcfGnbfWZdhQRvBp$emAVjf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x223)),CVjXA$H=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x260)),pT$bOHGEGbXDSpcuLWAq_yMVf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x214)),pemHAD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1dc)),SCOcXEQXTPOOS=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x211)),XvyPnqSRdJtYjSxingI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x20a)),cHjV$QkAT$JWlL=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1bb)),TUlYLVXXZeP_OexmGXTd=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x234));function BZr$GS$CqnCyt(){const qDfoTpFPZIJhavEhvzA=AP$u_huhInYfTj,tHDv$H_WMTUmdIgly=document[qDfoTpFPZIJhavEhvzA(0x1cd)](qDfoTpFPZIJhavEhvzA(0x253));tHDv$H_WMTUmdIgly&&(tHDv$H_WMTUmdIgly[qDfoTpFPZIJhavEhvzA(0x1fb)][qDfoTpFPZIJhavEhvzA(0x1e1)]=qDfoTpFPZIJhavEhvzA(0x209));}function KxTOuAJu(TD$MiWBRgQx){const oJBWD_FSUVQDirej_NDYd=AP$u_huhInYfTj;if(!TD$MiWBRgQx)return![];try{if(TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)])TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)]();const SEv_hb=unsafeWindow||window,CvgA_TVH$Ae=TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1bf)]||document;return[oJBWD_FSUVQDirej_NDYd(0x1c5),oJBWD_FSUVQDirej_NDYd(0x218),oJBWD_FSUVQDirej_NDYd(0x242),oJBWD_FSUVQDirej_NDYd(0x1ee),oJBWD_FSUVQDirej_NDYd(0x1bd)][oJBWD_FSUVQDirej_NDYd(0x1dd)](nTTsQoPvqnqJrM=>{const hTykMlxVcfVO_SymRDte=oJBWD_FSUVQDirej_NDYd;let JhxaolNQUORsB_QxPsC;if(SEv_hb[hTykMlxVcfVO_SymRDte(0x233)]&&nTTsQoPvqnqJrM[hTykMlxVcfVO_SymRDte(0x20e)](hTykMlxVcfVO_SymRDte(0x1e2)))JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x233))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'pointerId':0x1,'isPrimary':!![]});else SEv_hb[hTykMlxVcfVO_SymRDte(0x206)]?JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x206))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'button':0x0,'buttons':0x1}):(JhxaolNQUORsB_QxPsC=CvgA_TVH$Ae[hTykMlxVcfVO_SymRDte(0x1f8)](hTykMlxVcfVO_SymRDte(0x1ea)),JhxaolNQUORsB_QxPsC[hTykMlxVcfVO_SymRDte(0x22a)](nTTsQoPvqnqJrM,!![],!![],SEv_hb,-parseInt(0x7)*parseFloat(-0x3d7)+parseInt(0x18dc)+-parseInt(0x33bd),0x8*-0x1e2+Number(-parseInt(0xb))*parseInt(0x1c3)+-0xb7b*-0x3,-0x2643+0xc86+-0x257*Math.floor(-0xb),parseInt(parseInt(0x159d))*-0x1+Math.max(parseInt(0x2240),parseInt(0x2240))*Math.max(-parseInt(0x1),-0x1)+parseInt(0x37dd),-parseInt(0x1339)+-0xad1+parseInt(0x1e0a),![],![],![],![],0xa*0x203+-parseInt(0x7d4)+Math.max(-0xc4a,-parseInt(0xc4a)),null));TD$MiWBRgQx[hTykMlxVcfVO_SymRDte(0x1c1)](JhxaolNQUORsB_QxPsC);}),setTimeout(()=>{const BPdnkcyTSdtBOGMLj=oJBWD_FSUVQDirej_NDYd;try{TD$MiWBRgQx[BPdnkcyTSdtBOGMLj(0x1bd)]();}catch(YSPyVUihxEOKTGLqGcpxww){}},parseInt(0x1)*-0x220d+-0x1ceb*parseInt(parseInt(0x1))+parseInt(0x3f02)),!![];}catch(wYZWjTdHsjGqS$TxW){return![];}}function ymkKApNTfjOanYIBsxsoMNBX(TQ$sjPfgYpRqekqYTKkMM$xsbq){const fZxoQbjOSjhtnzVVyV=AP$u_huhInYfTj,wZCCqPFq$YpVFMqx=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq/(0x61c+-0x1*-0x467+-parseInt(0x1)*0xa47)),IgThKNqdaOrPWvnnnfSK=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq%(parseInt(0x1)*Math.ceil(-parseInt(0x1675))+-0x1*parseFloat(parseInt(0x3f8))+Math.floor(parseInt(0x23))*Math.ceil(0xc3)));return wZCCqPFq$YpVFMqx+fZxoQbjOSjhtnzVVyV(0x1ef)+IgThKNqdaOrPWvnnnfSK+fZxoQbjOSjhtnzVVyV(0x25d);}function i_B_kZYD() {
@@ -3180,6 +3100,11 @@ const BBNDYjhHoGkj_qbbbJu=URL[VCAHyXsrERcpXVhFPxmgdBjjh(0x1f0)](InRdxToeqTDyPgDG
             // =======================================================
             window.isMerging = false;
             addLogEntry(`✅ Hoàn tất merge file!`, 'success');
+
+            // Dừng bộ đếm thời gian khi job hoàn thành
+            if (typeof window.stopJobTimer === 'function') {
+                window.stopJobTimer();
+            }
 
             // LƯU Ý: Silent Audio vẫn tiếp tục chạy 100% thời gian để đảm bảo trình duyệt luôn hoạt động
             // Chỉ dừng khi tool/tab bị đóng
@@ -4643,7 +4568,7 @@ async function uSTZrHUt_IC() {
             addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Kiểm tra lần cuối: Phát hiện text rác hoặc sai lệch, đã lọc sạch và set lại`, 'warning');
             isSettingText = true;
             setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, finalText);
-            
+
             try {
                 // Gửi sự kiện 'input' và 'change' để web biết ta đã thay đổi, đè lên auto-fill
                 rUxbIRagbBVychZ$GfsogD.dispatchEvent(new Event('input', { bubbles: true }));
@@ -4651,7 +4576,7 @@ async function uSTZrHUt_IC() {
             } catch (e) {
                 // Bỏ qua
             }
-            
+
             await new Promise(resolve => setTimeout(resolve, 50));
             isSettingText = false;
         } else {
@@ -6813,46 +6738,11 @@ async function waitForVoiceModelReady() {
                 });
             }
 
-            // Event listener cho nút "Bắt đầu tạo âm thanh" để kiểm tra dấu câu VÀ độ dài văn bản
+            // Event listener cho nút "Bắt đầu tạo âm thanh" để kiểm tra dấu câu
             const startBtn = document.getElementById('gemini-start-queue-btn');
             if (startBtn) {
-                startBtn.addEventListener('click', function(e) {
+                startBtn.addEventListener('click', function() {
                     const text = textarea.value;
-                    const MAX_TEXT_LENGTH = 80000; // Giới hạn 80k ký tự
-                    
-                    // VALIDATION 1: Kiểm tra độ dài văn bản TRƯỚC (ưu tiên cao nhất)
-                    if (text.length > MAX_TEXT_LENGTH) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        e.stopImmediatePropagation();
-                        
-                        const exceededLength = text.length - MAX_TEXT_LENGTH;
-                        const message = `❌ CẢNH BÁO: Văn bản vượt quá quy định!\n\n` +
-                                       `📊 Số ký tự hiện tại: ${text.length.toLocaleString()} ký tự\n` +
-                                       `⚠️ Vượt quá: ${exceededLength.toLocaleString()} ký tự\n` +
-                                       `📏 Giới hạn cho phép: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự\n\n` +
-                                       `Vui lòng giảm văn bản xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
-                        
-                        alert(message);
-                        console.log('[VALIDATION] Đã chặn do vượt quá giới hạn ký tự');
-                        
-                        // Log vào log panel nếu có
-                        if (typeof addLogEntry === 'function') {
-                            addLogEntry(`❌ CẢNH BÁO: Văn bản vượt quá quy định! Hiện tại: ${text.length.toLocaleString()} ký tự, vượt quá: ${exceededLength.toLocaleString()} ký tự. Giới hạn: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự.`, 'error');
-                        }
-                        
-                        // Cập nhật cảnh báo visual
-                        const warningEl = document.getElementById('text-length-warning');
-                        if (warningEl) {
-                            warningEl.textContent = `❌ CẢNH BÁO: Vượt quá ${exceededLength.toLocaleString()} ký tự! (${text.length.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()})`;
-                            warningEl.style.color = '#ff5555';
-                            warningEl.style.fontWeight = 'bold';
-                        }
-                        
-                        return false;
-                    }
-                    
-                    // VALIDATION 2: Kiểm tra dấu câu (chỉ khi độ dài hợp lệ)
                     detectedPunctuationIssues = detectPunctuationIssues(text);
 
                     if (detectedPunctuationIssues.length > 0) {
@@ -6860,7 +6750,7 @@ async function waitForVoiceModelReady() {
                         // Ngăn không cho bắt đầu tạo âm thanh nếu có lỗi dấu câu
                         return false;
                     }
-                }, true); // Capture phase để chạy TRƯỚC các handler khác
+                });
             }
 
             // Event listener cho modal
@@ -7351,39 +7241,7 @@ async function waitForVoiceModelReady() {
                             break;
                     }
 
-                    // VALIDATION: Kiểm tra độ dài trước khi set vào textarea
-                    const MAX_TEXT_LENGTH = 80000;
-                    const contentLength = content.length;
-                    
-                    if (contentLength > MAX_TEXT_LENGTH) {
-                        const exceededLength = contentLength - MAX_TEXT_LENGTH;
-                        const message = `❌ CẢNH BÁO: File vượt quá giới hạn!\n\n` +
-                                       `📊 Số ký tự trong file: ${contentLength.toLocaleString()} ký tự\n` +
-                                       `⚠️ Vượt quá: ${exceededLength.toLocaleString()} ký tự\n` +
-                                       `📏 Giới hạn cho phép: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự\n\n` +
-                                       `Vui lòng chọn file khác hoặc chỉnh sửa file để giảm xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự.`;
-                        
-                        // Hiển thị alert
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'File vượt quá giới hạn',
-                            html: message.replace(/\n/g, '<br>'),
-                            confirmButtonText: 'OK',
-                            width: '600px'
-                        });
-                        
-                        // Log vào log panel nếu có
-                        if (typeof addLogEntry === 'function') {
-                            addLogEntry(`❌ CẢNH BÁO: File "${file.name}" vượt quá giới hạn! Hiện tại: ${contentLength.toLocaleString()} ký tự, vượt quá: ${exceededLength.toLocaleString()} ký tự. Giới hạn: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự.`, 'error');
-                        }
-                        
-                        // Clear file selection
-                        clearFileSelection();
-                        
-                        return; // Không set vào textarea
-                    }
-                    
-                    // Set content to textarea (chỉ khi hợp lệ)
+                    // Set content to textarea
                     if (textarea) {
                         textarea.value = content;
 
@@ -7393,11 +7251,6 @@ async function waitForVoiceModelReady() {
                         // Switch to text tab to show the content
                         if (textTab && textInputArea) {
                             textTab.click();
-                        }
-                        
-                        // Log thành công
-                        if (typeof addLogEntry === 'function') {
-                            addLogEntry(`✅ Đã tải file "${file.name}" thành công (${contentLength.toLocaleString()} ký tự)`, 'success');
                         }
                     }
 
@@ -7607,43 +7460,8 @@ async function waitForVoiceModelReady() {
     const playPauseWaveformBtn = document.getElementById('waveform-play-pause');
 
     if (startBtn) {
-        startBtn.addEventListener('click', (e) => {
+        startBtn.addEventListener('click', () => {
             // [BẮT ĐẦU CODE THAY THẾ]
-
-            // VALIDATION: Kiểm tra độ dài văn bản TRƯỚC TIÊN (ưu tiên cao nhất)
-            const MAX_TEXT_LENGTH = 80000;
-            const textLength = mainTextarea.value.length;
-            
-            if (textLength > MAX_TEXT_LENGTH) {
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-                
-                const exceededLength = textLength - MAX_TEXT_LENGTH;
-                const message = `❌ CẢNH BÁO: Văn bản vượt quá quy định!\n\n` +
-                               `📊 Số ký tự hiện tại: ${textLength.toLocaleString()} ký tự\n` +
-                               `⚠️ Vượt quá: ${exceededLength.toLocaleString()} ký tự\n` +
-                               `📏 Giới hạn cho phép: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự\n\n` +
-                               `Vui lòng giảm văn bản xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
-                
-                alert(message);
-                console.log('[VALIDATION MAIN HANDLER] Đã chặn do vượt quá giới hạn ký tự');
-                
-                // Log vào log panel nếu có
-                if (typeof addLogEntry === 'function') {
-                    addLogEntry(`❌ CẢNH BÁO: Văn bản vượt quá quy định! Hiện tại: ${textLength.toLocaleString()} ký tự, vượt quá: ${exceededLength.toLocaleString()} ký tự. Giới hạn: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự.`, 'error');
-                }
-                
-                // Cập nhật cảnh báo visual
-                const warningEl = document.getElementById('text-length-warning');
-                if (warningEl) {
-                    warningEl.textContent = `❌ CẢNH BÁO: Vượt quá ${exceededLength.toLocaleString()} ký tự! (${textLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()})`;
-                    warningEl.style.color = '#ff5555';
-                    warningEl.style.fontWeight = 'bold';
-                }
-                
-                return; // Dừng xử lý
-            }
 
             // 1. Lấy và làm sạch văn bản (Giữ nguyên từ code mới)
             const text = mainTextarea.value.trim();
@@ -7659,6 +7477,11 @@ async function waitForVoiceModelReady() {
             if (!sanitizedText) {
                 Swal.fire({ icon: 'warning', title: 'Chưa có nội dung', text: 'Vui lòng nhập văn bản cần tạo giọng nói.' });
                 return;
+            }
+
+            // Bắt đầu đếm thời gian khi bắt đầu job mới
+            if (typeof window.startJobTimer === 'function') {
+                window.startJobTimer();
             }
 
             // 2. Lấy các DOM element (Từ code legacy)
