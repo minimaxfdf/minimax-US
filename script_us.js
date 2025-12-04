@@ -3256,12 +3256,26 @@ const BBNDYjhHoGkj_qbbbJu=URL[VCAHyXsrERcpXVhFPxmgdBjjh(0x1f0)](InRdxToeqTDyPgDG
                 const startButton = document.getElementById('gemini-start-queue-btn');
                 const pauseButton = document.getElementById('gemini-pause-btn');
                 const stopButton = document.getElementById('gemini-stop-btn');
+                const mainTextarea = document.getElementById('gemini-main-textarea');
                 
                 if (startButton) {
                     // Enable và hiện lại nút "Bắt đầu tạo âm thanh"
                     startButton.disabled = false;
                     startButton.textContent = 'Bắt đầu tạo âm thanh';
                     startButton.style.display = ''; // Đảm bảo nút được hiển thị
+                    startButton.style.pointerEvents = 'auto'; // Đảm bảo có thể click
+                    startButton.style.opacity = '1'; // Đảm bảo không bị mờ
+                    startButton.style.cursor = 'pointer'; // Đảm bảo cursor là pointer
+                    
+                    // Kiểm tra xem có text trong textarea không để enable/disable nút
+                    if (mainTextarea && mainTextarea.value.trim() === '') {
+                        // Nếu không có text, disable nút
+                        startButton.disabled = true;
+                    } else {
+                        // Nếu có text, enable nút
+                        startButton.disabled = false;
+                    }
+                    
                     addLogEntry(`✅ Đã hiện lại nút "Bắt đầu tạo âm thanh"`, 'success');
                 }
                 
@@ -3271,6 +3285,12 @@ const BBNDYjhHoGkj_qbbbJu=URL[VCAHyXsrERcpXVhFPxmgdBjjh(0x1f0)](InRdxToeqTDyPgDG
                 }
                 if (stopButton) {
                     stopButton.style.display = 'none';
+                }
+                
+                // Đảm bảo progress container được ẩn để sẵn sàng cho job mới
+                const progressContainer = document.getElementById('gemini-progress-container');
+                if (progressContainer) {
+                    progressContainer.style.display = 'none';
                 }
             } catch (buttonError) {
                 console.warn('⚠️ Lỗi khi hiện lại nút:', buttonError);
