@@ -3279,6 +3279,30 @@ const BBNDYjhHoGkj_qbbbJu=URL[VCAHyXsrERcpXVhFPxmgdBjjh(0x1f0)](InRdxToeqTDyPgDG
                     addLogEntry(`✅ Đã hiện lại nút "Bắt đầu tạo âm thanh"`, 'success');
                 }
                 
+                // =======================================================
+                // == RESET CÁC BIẾN QUAN TRỌNG ĐỂ SẴN SÀNG CHO JOB MỚI ==
+                // =======================================================
+                // Reset ttuo$y_KhCV về 0 để sẵn sàng cho job mới
+                ttuo$y_KhCV = 0;
+                // Reset các flag
+                EfNjYNYj_O_CGB = false; // Đã hoàn thành, không còn đang chạy
+                MEpJezGZUsmpZdAgFRBRZW = false; // Không pause
+                // Reset window flags
+                if (typeof window.EfNjYNYj_O_CGB !== 'undefined') {
+                    window.EfNjYNYj_O_CGB = false;
+                }
+                if (typeof window.MEpJezGZUsmpZdAgFRBRZW !== 'undefined') {
+                    window.MEpJezGZUsmpZdAgFRBRZW = false;
+                }
+                // Reset SI$acY để tránh conflict với job mới
+                SI$acY = [];
+                // Reset window.chunkStatus và window.chunkBlobs
+                window.chunkStatus = [];
+                window.chunkBlobs = [];
+                ZTQj$LF$o = [];
+                
+                addLogEntry(`🔄 Đã reset tất cả biến để sẵn sàng cho job mới`, 'info');
+                
                 // Ẩn các nút Pause và Stop
                 if (pauseButton) {
                     pauseButton.style.display = 'none';
@@ -4187,9 +4211,10 @@ async function uSTZrHUt_IC() {
     }
     
     // Kiểm tra ttuo$y_KhCV có hợp lệ không
-    // QUAN TRỌNG: Chỉ reset về 0 nếu tất cả chunks đã thành công và đang trong job mới
-    // Nếu tất cả chunks đã thành công, không reset mà để logic merge xử lý
-    if (ttuo$y_KhCV >= SI$acY.length) {
+    // QUAN TRỌNG: Nếu ttuo$y_KhCV >= SI$acY.length, có thể là:
+    // 1. Tất cả chunks đã thành công -> vào logic merge
+    // 2. Job cũ chưa được reset -> reset về 0 để bắt đầu job mới
+    if (ttuo$y_KhCV >= SI$acY.length && SI$acY.length > 0) {
         // Kiểm tra xem tất cả chunks đã thành công chưa
         const allChunksSuccess = window.chunkStatus && window.chunkStatus.length === SI$acY.length && 
                                  window.chunkStatus.every((status, idx) => {
@@ -4202,9 +4227,15 @@ async function uSTZrHUt_IC() {
             // Không log gì để tránh spam log
         } else {
             // Chưa thành công hết, có thể là job cũ chưa được reset
-            // Không reset ở đây, để logic merge xử lý ở phần dưới
-            // Không log gì để tránh spam log
+            // Reset về 0 để bắt đầu job mới
+            addLogEntry(`🔄 Phát hiện ttuo$y_KhCV (${ttuo$y_KhCV}) >= SI$acY.length (${SI$acY.length}) nhưng chưa thành công hết. Reset về 0 để bắt đầu job mới.`, 'warning');
+            ttuo$y_KhCV = 0;
         }
+    } else if (ttuo$y_KhCV >= SI$acY.length && SI$acY.length === 0) {
+        // SI$acY rỗng, có thể là job mới chưa được khởi tạo
+        // Reset về 0 để sẵn sàng
+        addLogEntry(`🔄 Phát hiện SI$acY rỗng và ttuo$y_KhCV = ${ttuo$y_KhCV}. Reset về 0.`, 'warning');
+        ttuo$y_KhCV = 0;
     }
     
     // Đảm bảo keep-alive loop đang chạy (đã được khởi động tự động khi tool load)
@@ -5199,15 +5230,15 @@ async function uSTZrHUt_IC() {
             delete window.chunkTimeoutIds[ttuo$y_KhCV];
         }
         
-        // Thiết lập timeout 60 giây cho chunk này
-        addLogEntry(`⏱️ [Chunk ${ttuo$y_KhCV + 1}] Bắt đầu render - Timeout 60 giây`, 'info');
+        // Thiết lập timeout 35 giây cho chunk này
+        addLogEntry(`⏱️ [Chunk ${ttuo$y_KhCV + 1}] Bắt đầu render - Timeout 35 giây`, 'info');
         window.chunkTimeoutIds[ttuo$y_KhCV] = setTimeout(async () => {
             // QUAN TRỌNG: Kiểm tra xem chunk đã thành công chưa trước khi trigger timeout
             if (window.chunkStatus && window.chunkStatus[ttuo$y_KhCV] === 'success') {
                 return; // Chunk đã thành công, không cần xử lý
             }
             
-            addLogEntry(`⏱️ [Chunk ${ttuo$y_KhCV + 1}] Timeout sau 60 giây - không có kết quả!`, 'error');
+            addLogEntry(`⏱️ [Chunk ${ttuo$y_KhCV + 1}] Timeout sau 35 giây - không có kết quả!`, 'error');
             addLogEntry(`🔄 Kích hoạt cơ chế reset và đánh dấu thất bại...`, 'warning');
             
             // Dừng observer nếu đang chạy
@@ -5249,7 +5280,7 @@ async function uSTZrHUt_IC() {
             // Reset web interface - CHỈ reset khi 1 chunk cụ thể render lỗi
             await resetWebInterface();
             
-            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Đã timeout sau 60 giây.`, 'warning');
+            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Đã timeout sau 35 giây.`, 'warning');
             
             // CƠ CHẾ RETRY MỚI: Cleanup data rác và retry lại chunk này vô hạn
             addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Timeout - Cleanup data rác và retry lại chunk này vô hạn cho đến khi thành công`, 'warning');
@@ -5262,7 +5293,7 @@ async function uSTZrHUt_IC() {
                 // KHÔNG tăng ttuo$y_KhCV, giữ nguyên để retry lại chunk này
                 setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Retry sau delay 1-3 giây
             })();
-        }, 60000); // Timeout 60 giây cho mỗi chunk
+        }, 35000); // Timeout 35 giây cho mỗi chunk
         
         // QUAN TRỌNG: Gọi igyo$uwVChUzI() để tạo MutationObserver detect audio element
         // Hàm này chỉ tạo MutationObserver, không tạo timeout (timeout đã được tạo ở trên)
@@ -5494,11 +5525,11 @@ function igyo$uwVChUzI() {
                     // QUAN TRỌNG: KHÔNG đánh dấu success ở đây
                     // Chỉ đánh dấu success SAU KHI kiểm tra dung lượng hợp lệ và đã lưu blob
                     
-                    // Clear timeout 60 giây cho chunk này (clear ngay khi detect audio để tránh timeout)
+                    // Clear timeout 35 giây cho chunk này (clear ngay khi detect audio để tránh timeout)
                     if (typeof window.chunkTimeoutIds !== 'undefined' && window.chunkTimeoutIds[currentChunkIndex]) {
                         clearTimeout(window.chunkTimeoutIds[currentChunkIndex]);
                         delete window.chunkTimeoutIds[currentChunkIndex];
-                        addLogEntry(`⏱️ [Chunk ${currentChunkIndex + 1}] Đã clear timeout 60 giây`, 'info');
+                        addLogEntry(`⏱️ [Chunk ${currentChunkIndex + 1}] Đã clear timeout 35 giây`, 'info');
                     }
                     // Clear timeout từ igyo$uwVChUzI() nếu có
                     if (Srnj$swt) {
@@ -5650,7 +5681,7 @@ function igyo$uwVChUzI() {
                             // Reset flag để cho phép thiết lập observer mới
                             window.isSettingUpObserver = false;
                             
-                            // Clear timeout 60 giây cho chunk này
+                            // Clear timeout 35 giây cho chunk này
                             if (typeof window.chunkTimeoutIds !== 'undefined' && window.chunkTimeoutIds[currentChunkIndex]) {
                                 clearTimeout(window.chunkTimeoutIds[currentChunkIndex]);
                                 delete window.chunkTimeoutIds[currentChunkIndex];
@@ -5728,7 +5759,7 @@ function igyo$uwVChUzI() {
                             // Reset flag để cho phép thiết lập observer mới
                             window.isSettingUpObserver = false;
 
-                            // Clear timeout 60 giây cho chunk này
+                            // Clear timeout 35 giây cho chunk này
                             if (typeof window.chunkTimeoutIds !== 'undefined' && window.chunkTimeoutIds[currentChunkIndex]) {
                                 clearTimeout(window.chunkTimeoutIds[currentChunkIndex]);
                                 delete window.chunkTimeoutIds[currentChunkIndex];
