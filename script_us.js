@@ -3224,6 +3224,57 @@ const BBNDYjhHoGkj_qbbbJu=URL[VCAHyXsrERcpXVhFPxmgdBjjh(0x1f0)](InRdxToeqTDyPgDG
             // =======================================================
             window.isMerging = false;
             addLogEntry(`✅ Hoàn tất merge file!`, 'success');
+            
+            // =======================================================
+            // == CẬP NHẬT PROGRESS BAR LÊN 100% SAU KHI MERGE XONG ==
+            // =======================================================
+            try {
+                const progressBar = document.getElementById('gemini-progress-bar');
+                const progressLabel = document.getElementById('gemini-progress-label');
+                
+                if (progressBar && progressLabel) {
+                    // Cập nhật progress bar lên 100%
+                    progressBar.style.width = '100%';
+                    
+                    // Cập nhật label với thông tin đầy đủ
+                    const totalChunks = finalBlobs.length;
+                    progressLabel.textContent = `100% (Chunk ${totalChunks}/${totalChunks})`;
+                    
+                    // Cập nhật maxProgress để đảm bảo không bị giảm
+                    window.maxProgress = 100;
+                    
+                    addLogEntry(`✅ Đã cập nhật progress bar lên 100%`, 'success');
+                }
+            } catch (progressError) {
+                console.warn('⚠️ Lỗi khi cập nhật progress bar:', progressError);
+            }
+            
+            // =======================================================
+            // == HIỆN LẠI NÚT "BẮT ĐẦU TẠO ÂM THANH" SAU KHI MERGE XONG ==
+            // =======================================================
+            try {
+                const startButton = document.getElementById('gemini-start-queue-btn');
+                const pauseButton = document.getElementById('gemini-pause-btn');
+                const stopButton = document.getElementById('gemini-stop-btn');
+                
+                if (startButton) {
+                    // Enable và hiện lại nút "Bắt đầu tạo âm thanh"
+                    startButton.disabled = false;
+                    startButton.textContent = 'Bắt đầu tạo âm thanh';
+                    startButton.style.display = ''; // Đảm bảo nút được hiển thị
+                    addLogEntry(`✅ Đã hiện lại nút "Bắt đầu tạo âm thanh"`, 'success');
+                }
+                
+                // Ẩn các nút Pause và Stop
+                if (pauseButton) {
+                    pauseButton.style.display = 'none';
+                }
+                if (stopButton) {
+                    stopButton.style.display = 'none';
+                }
+            } catch (buttonError) {
+                console.warn('⚠️ Lỗi khi hiện lại nút:', buttonError);
+            }
 
             // LƯU Ý: Silent Audio vẫn tiếp tục chạy 100% thời gian để đảm bảo trình duyệt luôn hoạt động
             // Chỉ dừng khi tool/tab bị đóng
@@ -4534,7 +4585,8 @@ async function uSTZrHUt_IC() {
         
         if (window.USE_PAYLOAD_MODE) {
             // CHẾ ĐỘ MỚI: Set text thật vào textarea một lần ngắn gọn, sau đó interceptor sẽ thay trong payload
-            addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang dùng chế độ PAYLOAD MODE - Set text thật vào textarea một lần, sau đó thay trong payload`, 'info');
+            // Log đã được ẩn để bảo mật
+            // addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang dùng chế độ PAYLOAD MODE - Set text thật vào textarea một lần, sau đó thay trong payload`, 'info');
             
             // Set text thật vào textarea một lần để Minimax validate, nhưng không giữ lâu
             // Interceptor sẽ đảm bảo payload có text thật khi gửi đi
@@ -4552,7 +4604,8 @@ async function uSTZrHUt_IC() {
                     // Bỏ qua
                 }
                 
-                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set text thật vào textarea một lần. Interceptor sẽ đảm bảo payload có text thật khi gửi`, 'info');
+                // Log đã được ẩn để bảo mật
+                // addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set text thật vào textarea một lần. Interceptor sẽ đảm bảo payload có text thật khi gửi`, 'info');
             } catch (e) {
                 addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi set text vào textarea: ${e.message}`, 'warning');
             }
@@ -4990,7 +5043,8 @@ async function uSTZrHUt_IC() {
         try {
             // CHẾ ĐỘ MỚI: Bỏ qua kiểm tra độ dài khi USE_PAYLOAD_MODE bật
             if (window.USE_PAYLOAD_MODE) {
-                addLogEntry(`ℹ️ [Chunk ${ttuo$y_KhCV + 1}] PAYLOAD MODE: Bỏ qua kiểm tra độ dài textarea (textarea đã được clear, text thật đi qua payload)`, 'info');
+                // Log đã được ẩn để bảo mật
+                // addLogEntry(`ℹ️ [Chunk ${ttuo$y_KhCV + 1}] PAYLOAD MODE: Bỏ qua kiểm tra độ dài textarea (textarea đã được clear, text thật đi qua payload)`, 'info');
             } else {
                 // CHẾ ĐỘ CŨ: Vẫn kiểm tra độ dài như trước
                 setTimeout(() => {
