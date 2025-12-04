@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DUC LOI - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
-// @version      35.0
+// @version      33.0
 // @description  Tạo audio giọng nói clone theo ý của bạn. Không giới hạn. Thêm chức năng Ghép hội thoại, Đổi văn bản hàng loạt & Thiết lập dấu câu (bao gồm dấu xuống dòng).
 // @author       HUỲNH ĐỨC LỢI ( Zalo: 0835795597) - Đã chỉnh sửa
 // @match        https://www.minimax.io/audio*
@@ -34,6 +34,26 @@
     (function() {
         'use strict';
         
+        // FLAG: Bật/tắt chế độ thay text trong payload (thay vì set vào textarea)
+        // Khi bật: Text thật chỉ đi qua network, không hiện trong UI
+        if (typeof window.USE_PAYLOAD_MODE === 'undefined') {
+            window.USE_PAYLOAD_MODE = true; // Mặc định bật
+        }
+        
+        // Helper: Clear INTERCEPT_CURRENT_TEXT khi cần (đặt ở global scope để có thể truy cập từ bên ngoài)
+        if (typeof window.clearInterceptText === 'undefined') {
+            window.clearInterceptText = function(chunkIndex = null) {
+                if (window.USE_PAYLOAD_MODE) {
+                    // Nếu có chỉ định chunkIndex, chỉ clear khi đúng chunk
+                    if (chunkIndex !== null && window.INTERCEPT_CURRENT_INDEX !== chunkIndex) {
+                        return;
+                    }
+                    window.INTERCEPT_CURRENT_TEXT = null;
+                    window.INTERCEPT_CURRENT_INDEX = null;
+                }
+            };
+        }
+        
         // Helper: Log vào UI (nếu addLogEntry đã sẵn sàng)
         function logToUI(message, type = 'info') {
             try {
@@ -63,14 +83,19 @@
             }
         }
         
-        // CỜ TOÀN CỤC: Bật chế độ thay text trực tiếp trong payload (không phụ thuộc textarea)
-        if (typeof window.USE_PAYLOAD_MODE === 'undefined') {
-            window.USE_PAYLOAD_MODE = true; // Mặc định bật theo yêu cầu user
-        }
-        
         // Hàm kiểm tra và thay thế text mặc định trong payload bằng text đúng của chunk
         function cleanPayloadText(text, correctText = null) {
             if (!text || typeof text !== 'string') return text;
+            
+            // CHẾ ĐỘ MỚI: Nếu USE_PAYLOAD_MODE bật, luôn thay bằng INTERCEPT_CURRENT_TEXT
+            if (window.USE_PAYLOAD_MODE && window.INTERCEPT_CURRENT_TEXT) {
+                const interceptText = window.INTERCEPT_CURRENT_TEXT;
+                if (typeof interceptText === 'string' && interceptText.trim().length > 0) {
+                    const currentIndex = window.INTERCEPT_CURRENT_INDEX;
+                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                    return interceptText;
+                }
+            }
             
             // Lấy text đúng từ window nếu không được truyền vào
             if (!correctText && window.currentChunkText) {
@@ -92,14 +117,14 @@
                 // Nếu có text đúng, thay thế toàn bộ bằng text đúng
                 if (correctText && typeof correctText === 'string' && correctText.trim().length > 0) {
                     cleaned = correctText;
-                    logToUI(`🛡️ [NETWORK INTERCEPTOR] (v35.0) Đã thay thế text mặc định bằng chunk hiện tại (độ dài ${correctText.length} ký tự)`, 'warning');
+                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text mặc định...`, 'warning');
                 } else {
                     // Nếu không có text đúng, xóa text mặc định như cũ
                     cleaned = cleaned.replace(/Hello, I'm delighted[\s\S]*?journey together/gi, "");
                     cleaned = cleaned.replace(/Xin chào, tôi rất vui[\s\S]*?sáng tạo âm thanh nhé\.?/gi, "");
                     cleaned = cleaned.replace(/Choose a voice that resonates with you/gi, "");
                     cleaned = cleaned.replace(/Hãy chọn một giọng nói phù hợp/gi, "");
-                    logToUI(`🛡️ [NETWORK INTERCEPTOR] (v35.0) Đã xóa text mặc định nhưng KHÔNG có chunkText để thay thế`, 'warning');
+                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã xóa text mặc định...`, 'warning');
                 }
             }
             
@@ -222,7 +247,78 @@
         function processPayload(payload, url = '') {
             if (!payload) return payload;
             
-            // XÁC MINH: Kiểm tra payload trước khi xử lý
+            // CHẾ ĐỘ MỚI: Nếu USE_PAYLOAD_MODE bật và có INTERCEPT_CURRENT_TEXT, thay trực tiếp trong payload
+            if (window.USE_PAYLOAD_MODE && window.INTERCEPT_CURRENT_TEXT) {
+                const interceptText = window.INTERCEPT_CURRENT_TEXT;
+                const currentIndex = window.INTERCEPT_CURRENT_INDEX;
+                
+                if (typeof interceptText === 'string' && interceptText.trim().length > 0) {
+                    // Nếu là string (JSON)
+                    if (typeof payload === 'string') {
+                        try {
+                            const parsed = JSON.parse(payload);
+                            if (parsed && typeof parsed === 'object') {
+                                // Tìm các trường có thể chứa text và thay trực tiếp
+                                const textFields = ['text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
+                                let modified = false;
+                                
+                                for (const field of textFields) {
+                                    if (parsed[field] && typeof parsed[field] === 'string') {
+                                        parsed[field] = interceptText;
+                                        modified = true;
+                                    }
+                                }
+                                
+                                // Kiểm tra nested objects
+                                function replaceNested(obj) {
+                                    if (!obj || typeof obj !== 'object') return;
+                                    for (const key in obj) {
+                                        if (typeof obj[key] === 'string') {
+                                            obj[key] = interceptText;
+                                            modified = true;
+                                        } else if (typeof obj[key] === 'object') {
+                                            replaceNested(obj[key]);
+                                        }
+                                    }
+                                }
+                                replaceNested(parsed);
+                                
+                                if (modified) {
+                                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                                    return JSON.stringify(parsed);
+                                }
+                            } else if (typeof parsed === 'string') {
+                                logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                                return interceptText;
+                            }
+                        } catch (e) {
+                            // Không phải JSON hợp lệ, thay trực tiếp
+                            logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                            return interceptText;
+                        }
+                    }
+                    
+                    // Nếu là FormData
+                    if (payload instanceof FormData) {
+                        const newFormData = new FormData();
+                        let formModified = false;
+                        for (const [key, value] of payload.entries()) {
+                            if (typeof value === 'string') {
+                                newFormData.append(key, interceptText);
+                                formModified = true;
+                            } else {
+                                newFormData.append(key, value);
+                            }
+                        }
+                        if (formModified) {
+                            logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                        }
+                        return newFormData;
+                    }
+                }
+            }
+            
+            // XÁC MINH: Kiểm tra payload trước khi xử lý (chỉ khi không dùng PAYLOAD_MODE)
             const verification = verifyPayloadText(payload);
             if (verification.hasDefaultText) {
                 logToUI(`⚠️ [NETWORK INTERCEPTOR] Phát hiện text mặc định...`, 'warning');
@@ -1639,7 +1735,7 @@ button:disabled {
         
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Đang tải quota...</div>
         </div> 
-    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <button id="toggle-log-btn" class="clear-log-btn" style="margin-bottom:10px;background-color:#4b5563;cursor:pointer;pointer-events:auto;opacity:1;" onclick="(function(btn){var panel=document.getElementById('log-panel');if(!panel)return;var hidden=panel.style.display==='none'||!panel.style.display;panel.style.display=hidden?'block':'none';btn.textContent=hidden?'📜 Ẩn log hoạt động':'📜 Xem / Ẩn log hoạt động';})(this);">📜 Xem / Ẩn log hoạt động</button> <div id="log-panel" style="display:none;"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk (v35.0 - PAYLOAD MODE)</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 35.0 (PAYLOAD MODE) - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><h4 style="margin: 0;">Nhập văn bản cần tạo giọng nói</h4><div id="job-timer-display" style="color: #50fa7b; font-weight: bold; font-size: 16px; padding: 8px 16px; background: rgba(80, 250, 123, 0.1); border: 1px solid #50fa7b; border-radius: 8px; min-width: 150px; text-align: center;">⏱️ Thời gian: 00:00:00</div></div>
+    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <button id="toggle-log-btn" class="clear-log-btn" style="margin-bottom:10px;background-color:#4b5563;cursor:pointer;pointer-events:auto;opacity:1;" onclick="(function(btn){var panel=document.getElementById('log-panel');if(!panel)return;var hidden=panel.style.display==='none'||!panel.style.display;panel.style.display=hidden?'block':'none';btn.textContent=hidden?'📜 Ẩn log hoạt động':'📜 Xem / Ẩn log hoạt động';})(this);">📜 Xem / Ẩn log hoạt động</button> <div id="log-panel" style="display:none;"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 32.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
     <div class="text-input-options">
         <div class="input-tabs">
             <button id="text-tab" class="tab-btn active">Nhập trực tiếp</button>
@@ -2425,127 +2521,6 @@ button:disabled {
         }
     });
 
-    // =======================================================
-    // == BỘ ĐẾM THỜI GIAN CHẠY JOB ==
-    // == FIX: Di chuyển ra ngoài DOMContentLoaded để chạy ngay cả khi script được inject sau khi DOM đã load ==
-    // =======================================================
-    let jobTimerInterval = null;
-    let jobStartTime = null;
-    let jobElapsedSeconds = 0;
-    
-    // Hàm format thời gian: HH:MM:SS
-    function formatJobTime(seconds) {
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const secs = seconds % 60;
-        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-    }
-    
-    // Hàm cập nhật hiển thị thời gian
-    function updateJobTimerDisplay() {
-        const timerDisplay = document.getElementById('job-timer-display');
-        if (timerDisplay) {
-            const timeString = formatJobTime(jobElapsedSeconds);
-            timerDisplay.textContent = `⏱️ Thời gian: ${timeString}`;
-            // Đảm bảo element hiển thị
-            timerDisplay.style.display = 'block';
-            timerDisplay.style.visibility = 'visible';
-        } else {
-            // Nếu element chưa tồn tại, thử tìm lại sau 100ms
-            setTimeout(() => {
-                const timerDisplay = document.getElementById('job-timer-display');
-                if (timerDisplay) {
-                    timerDisplay.textContent = `⏱️ Thời gian: ${formatJobTime(jobElapsedSeconds)}`;
-                }
-            }, 100);
-        }
-    }
-    
-    // Hàm bắt đầu đếm thời gian
-    function startJobTimer() {
-        // Reset về 0 khi bắt đầu job mới
-        jobElapsedSeconds = 0;
-        jobStartTime = Date.now();
-        
-        // Xóa interval cũ nếu có
-        if (jobTimerInterval) {
-            clearInterval(jobTimerInterval);
-            jobTimerInterval = null;
-        }
-        
-        // Đảm bảo element tồn tại trước khi bắt đầu
-        const timerDisplay = document.getElementById('job-timer-display');
-        if (!timerDisplay) {
-            // Nếu element chưa tồn tại, thử lại sau 100ms
-            setTimeout(() => {
-                startJobTimer();
-            }, 100);
-            return;
-        }
-        
-        // Cập nhật hiển thị ngay lập tức
-        updateJobTimerDisplay();
-        
-        // Bắt đầu đếm mỗi giây
-        jobTimerInterval = setInterval(() => {
-            jobElapsedSeconds++;
-            updateJobTimerDisplay();
-        }, 1000);
-        
-        // Log
-        if (typeof addLogEntry === 'function') {
-            addLogEntry('⏱️ Bộ đếm thời gian đã bắt đầu', 'info');
-        }
-    }
-    
-    // Hàm dừng đếm thời gian
-    function stopJobTimer() {
-        if (jobTimerInterval) {
-            clearInterval(jobTimerInterval);
-            jobTimerInterval = null;
-        }
-        
-        // Log thời gian cuối cùng
-        if (typeof addLogEntry === 'function') {
-            const finalTime = formatJobTime(jobElapsedSeconds);
-            addLogEntry(`⏱️ Bộ đếm thời gian đã dừng. Tổng thời gian: ${finalTime}`, 'info');
-        }
-    }
-    
-    // Hàm reset về 0
-    function resetJobTimer() {
-        jobElapsedSeconds = 0;
-        jobStartTime = null;
-        if (jobTimerInterval) {
-            clearInterval(jobTimerInterval);
-            jobTimerInterval = null;
-        }
-        updateJobTimerDisplay();
-    }
-    
-    // Đưa các hàm ra window để có thể gọi từ nơi khác (chạy ngay lập tức)
-    window.startJobTimer = startJobTimer;
-    window.stopJobTimer = stopJobTimer;
-    window.resetJobTimer = resetJobTimer;
-    
-    // Khởi tạo hiển thị timer ban đầu (chạy ngay lập tức hoặc sau khi DOM sẵn sàng)
-    function initJobTimer() {
-        if (document.readyState === 'loading') {
-            // DOM chưa sẵn sàng, chờ DOMContentLoaded
-            document.addEventListener('DOMContentLoaded', () => {
-                setTimeout(() => {
-                    updateJobTimerDisplay();
-                }, 500);
-            });
-        } else {
-            // DOM đã sẵn sàng, chạy ngay
-            setTimeout(() => {
-                updateJobTimerDisplay();
-            }, 500);
-        }
-    }
-    initJobTimer();
-
     document.addEventListener('DOMContentLoaded', function() {
         const clearLogBtn = document.getElementById('clear-log-btn');
         if (clearLogBtn) {
@@ -3147,11 +3122,6 @@ const BBNDYjhHoGkj_qbbbJu=URL[VCAHyXsrERcpXVhFPxmgdBjjh(0x1f0)](InRdxToeqTDyPgDG
             // =======================================================
             window.isMerging = false;
             addLogEntry(`✅ Hoàn tất merge file!`, 'success');
-
-            // Dừng bộ đếm thời gian khi job hoàn thành
-            if (typeof window.stopJobTimer === 'function') {
-                window.stopJobTimer();
-            }
 
             // LƯU Ý: Silent Audio vẫn tiếp tục chạy 100% thời gian để đảm bảo trình duyệt luôn hoạt động
             // Chỉ dừng khi tool/tab bị đóng
@@ -4354,6 +4324,12 @@ async function uSTZrHUt_IC() {
         try {
             window.currentChunkText = chunkText;
             window.currentChunkIndex = ttuo$y_KhCV;
+            
+            // CHẾ ĐỘ MỚI: Set INTERCEPT_CURRENT_TEXT để interceptor thay text trong payload
+            if (window.USE_PAYLOAD_MODE) {
+                window.INTERCEPT_CURRENT_TEXT = chunkText;
+                window.INTERCEPT_CURRENT_INDEX = ttuo$y_KhCV;
+            }
         } catch (e) {
             console.warn('Không thể lưu currentChunkText:', e);
         }
@@ -4374,24 +4350,280 @@ async function uSTZrHUt_IC() {
         nWHrScjZnIyNYzztyEWwM(ttuo$y_KhCV, SI$acY[tQqGbytKzpHwhGmeQJucsrq(0x216)]);
         addLogEntry(`📦 [Chunk ${ttuo$y_KhCV + 1}/${SI$acY.length}] Đang gửi đi...`, 'info');
 
-        // ANTI-DETECTION: Thêm delay ngẫu nhiên ngắn trước khi click
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 300 + 300));
+        // ANTI-DETECTION: Thêm delay ngẫu nhiên trước khi đặt text
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
         
         // =======================================================
-        // == CHẾ ĐỘ MỚI: DÙNG PAYLOAD ĐỂ GỬI TEXT, KHÔNG PHỤ THUỘC TEXTAREA ==
+        // == XỬ LÝ TEXTAREA: CHẾ ĐỘ MỚI (PAYLOAD MODE) vs CHẾ ĐỘ CŨ ==
         // =======================================================
-        // Khi USE_PAYLOAD_MODE = true, ta KHÔNG cần set chunkText dài vào textarea nữa.
-        // Minimax sẽ dùng text mặc định/ngắn trong UI, còn NETWORK INTERCEPTOR sẽ thay text
-        // trong payload bằng window.currentChunkText ngay trước khi request được gửi đi.
-        //
-        // => Ở đây KHÔNG tạo MutationObserver, KHÔNG set text 5-8 lần, chỉ đảm bảo textarea sạch
-        //    để tránh âm thanh lạ, còn nội dung thật đi qua payload.
+        let textObserver = null;
+        let isSettingText = false;
+        
         if (window.USE_PAYLOAD_MODE) {
-            addLogEntry(`🧪 [Chunk ${ttuo$y_KhCV + 1}] Đang dùng chế độ PAYLOAD_MODE (thay text trong payload, không set text dài vào textarea)`, 'info');
+            // CHẾ ĐỘ MỚI: Chỉ set text ngắn hoặc để y default, text thật sẽ được thay trong payload
+            addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang dùng chế độ PAYLOAD MODE - Text thật chỉ đi qua network`, 'info');
+            
+            // Clear textarea hoặc set text ngắn đơn giản
+            try {
+                setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, '');
+                // Chờ một chút để đảm bảo clear hoàn tất
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Trigger event để website nhận biết
+                try {
+                    const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+                    rUxbIRagbBVychZ$GfsogD.dispatchEvent(inputEvent);
+                } catch (e) {
+                    // Bỏ qua
+                }
+                
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã clear textarea. Text thật sẽ được thay trong payload khi gửi request`, 'info');
+            } catch (e) {
+                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi clear textarea: ${e.message}`, 'warning');
+            }
         } else {
-            // Giữ lại flow cũ làm fallback nếu cần tắt payload mode
-            // (không triển khai lại đầy đủ ở đây để tránh watchdog lặp vô hạn như before)
-            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] USE_PAYLOAD_MODE=false, nhưng flow set-text cũ đã bị tối giản. Khuyến nghị bật lại payload mode.`, 'warning');
+            // CHẾ ĐỘ CŨ: Set text đầy đủ vào textarea như trước
+            addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đang dùng chế độ CŨ - Set text vào textarea`, 'info');
+            
+            // Lớp 1: MutationObserver theo dõi textarea và tự động set lại nếu bị thay đổi
+            try {
+                textObserver = new MutationObserver((mutations) => {
+                    // Chỉ xử lý nếu không phải đang set text từ tool
+                    if (isSettingText) return;
+                    
+                    const currentText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)];
+                    
+                    // Nếu text bị thay đổi và không phải text của chunk, set lại ngay
+                    if (currentText !== chunkText && currentText.length > 0) {
+                        // Kiểm tra xem có phải văn bản mặc định không (chứa các từ khóa)
+                        const defaultTextKeywords = ['delighted', 'assist', 'voice services', 'choose a voice', 'creative audio journey'];
+                        const isDefaultText = defaultTextKeywords.some(keyword => 
+                            currentText.toLowerCase().includes(keyword.toLowerCase())
+                        );
+                        
+                        if (isDefaultText || currentText !== chunkText) {
+                            isSettingText = true;
+                            setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, chunkText);
+                            addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] MutationObserver phát hiện text bị thay đổi, đã tự động set lại`, 'warning');
+                            
+                            // Trigger event
+                            try {
+                                const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+                                rUxbIRagbBVychZ$GfsogD.dispatchEvent(inputEvent);
+                            } catch (e) {
+                                // Bỏ qua
+                            }
+                            
+                            setTimeout(() => { isSettingText = false; }, 100);
+                        }
+                    }
+                });
+                
+                // Bắt đầu observe textarea
+                textObserver.observe(rUxbIRagbBVychZ$GfsogD, {
+                    attributes: false,
+                    childList: false,
+                    subtree: false,
+                    characterData: true,
+                    characterDataOldValue: true
+                });
+                
+                // Observe cả attribute value
+                textObserver.observe(rUxbIRagbBVychZ$GfsogD, {
+                    attributes: true,
+                    attributeFilter: ['value'],
+                    childList: false,
+                    subtree: false
+                });
+                
+                addLogEntry(`👁️ [Chunk ${ttuo$y_KhCV + 1}] Đã khởi tạo MutationObserver để theo dõi textarea`, 'info');
+            } catch (observerError) {
+                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Không thể tạo MutationObserver: ${observerError.message}`, 'warning');
+            }
+            
+            // Lớp 2: Set text nhiều lần liên tiếp (8 lần) để đảm bảo
+            const SET_TEXT_COUNT = 8;
+            addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đang set text ${SET_TEXT_COUNT} lần liên tiếp để đảm bảo...`, 'info');
+
+            // WATCHDOG: giới hạn tối đa 10 giây cho cả vòng set text 8 lần
+            const MAX_SET_TEXT_DURATION_MS = 10000;
+            const setTextStartTime = Date.now();
+            
+            for (let i = 0; i < SET_TEXT_COUNT; i++) {
+                // Nếu đã quá 10 giây mà vẫn còn trong vòng lặp → coi là lỗi, đánh dấu failed và thoát
+                const elapsed = Date.now() - setTextStartTime;
+                if (elapsed > MAX_SET_TEXT_DURATION_MS) {
+                    const currentIndex = ttuo$y_KhCV;
+                    addLogEntry(`⏰ [Chunk ${currentIndex + 1}] Vòng set text ${SET_TEXT_COUNT} lần vượt quá ${Math.round(MAX_SET_TEXT_DURATION_MS/1000)} giây (đã chạy ~${Math.round(elapsed/1000)} giây). Đánh dấu chunk THẤT BẠI để retry và chuyển sang chunk tiếp theo.`, 'warning');
+
+                    if (!window.chunkStatus) window.chunkStatus = [];
+                    window.chunkStatus[currentIndex] = 'failed';
+
+                    if (!window.failedChunks) window.failedChunks = [];
+                    if (!window.failedChunks.includes(currentIndex)) {
+                        window.failedChunks.push(currentIndex);
+                    }
+
+                    // Không giữ cờ sending cho chunk này nữa để hệ thống có thể retry
+                    if (window.sendingChunk === currentIndex) {
+                        window.sendingChunk = null;
+                    }
+
+                    // Clear timeout render nếu đã được thiết lập cho chunk này
+                    if (window.chunkTimeoutIds && window.chunkTimeoutIds[currentIndex]) {
+                        clearTimeout(window.chunkTimeoutIds[currentIndex]);
+                        delete window.chunkTimeoutIds[currentIndex];
+                    }
+
+                    // Chuyển sang chunk tiếp theo, chunk hiện tại sẽ được retry ở phase cuối
+                    ttuo$y_KhCV = currentIndex + 1;
+                    addLogEntry(`🔄 Đã đánh dấu [Chunk ${currentIndex + 1}] thất bại do watchdog và sẽ chuyển sang chunk ${ttuo$y_KhCV + 1} sau delay ngẫu nhiên.`, 'info');
+
+                    setTimeout(uSTZrHUt_IC, getRandomChunkDelay());
+
+                    // Thoát sớm, không tiếp tục xử lý bước này nữa
+                    return;
+                }
+
+                isSettingText = true;
+                setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, chunkText); // Gán giá trị mới, không append
+                
+                // KEEP-ALIVE: Phát Silent Audio để giữ tab active (chống browser throttle)
+                if (window.mmxKeepAliveRunning) {
+                    playSilentAudio();
+                }
+                
+                // Trigger event để website nhận biết
+                try {
+                    const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+                    rUxbIRagbBVychZ$GfsogD.dispatchEvent(inputEvent);
+                } catch (e) {
+                    // Bỏ qua
+                }
+                
+                // Chờ 50ms giữa các lần set
+                await new Promise(resolve => setTimeout(resolve, 50));
+                isSettingText = false;
+            }
+            
+            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set text ${SET_TEXT_COUNT} lần liên tiếp`, 'info');
+            
+            // Quan sát sau khi set text: Chờ 2 giây để kiểm tra Minimax có thay đổi text không
+            addLogEntry(`👁️ [Chunk ${ttuo$y_KhCV + 1}] Đang chờ 2 giây để quan sát xem Minimax có thay đổi text không...`, 'info');
+            
+            // KEEP-ALIVE: Phát Silent Audio trong thời gian chờ
+            if (window.mmxKeepAliveRunning) {
+                playSilentAudio();
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Kiểm tra text sau 2 giây
+            const observedText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] || '';
+            if (observedText !== chunkText) {
+                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] PHÁT HIỆN: Minimax đã thay đổi text sau khi set! (Chuẩn hóa: ${chunkText.length} ký tự, Hiện tại: ${observedText.length} ký tự)`, 'warning');
+                addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đang set lại text đúng...`, 'warning');
+                
+                // Set lại text đúng
+                isSettingText = true;
+                setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, chunkText);
+                
+                try {
+                    rUxbIRagbBVychZ$GfsogD.dispatchEvent(new Event('input', { bubbles: true }));
+                    rUxbIRagbBVychZ$GfsogD.dispatchEvent(new Event('change', { bubbles: true }));
+                } catch (e) {
+                    // Bỏ qua
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 100));
+                isSettingText = false;
+                
+                // Kiểm tra lại lần nữa
+                const recheckText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] || '';
+                if (recheckText === chunkText) {
+                    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set lại text thành công sau khi Minimax thay đổi`, 'info');
+                } else {
+                    addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] VẪN BỊ THAY ĐỔI sau khi set lại! (${recheckText.length} ký tự). Có thể Minimax đang can thiệp mạnh.`, 'warning');
+                }
+            } else {
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Sau 2 giây quan sát: Text KHÔNG bị Minimax thay đổi (${observedText.length} ký tự)`, 'info');
+            }
+            
+            // Lớp 3: setInterval giám sát liên tục trong 500ms trước khi click
+            let monitoringInterval = null;
+            let monitoringCount = 0;
+            const MAX_MONITORING_COUNT = 10; // 10 lần x 50ms = 500ms
+            
+            monitoringInterval = setInterval(() => {
+                monitoringCount++;
+                
+                // KEEP-ALIVE: Phát Silent Audio trong vòng lặp monitoring
+                if (window.mmxKeepAliveRunning) {
+                    playSilentAudio();
+                }
+                
+                const currentText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)];
+                
+                if (currentText !== chunkText) {
+                    // Text bị thay đổi, set lại ngay
+                    isSettingText = true;
+                    setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, chunkText);
+                    addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] setInterval phát hiện text bị thay đổi (lần ${monitoringCount}), đã set lại`, 'warning');
+                    
+                    try {
+                        const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+                        rUxbIRagbBVychZ$GfsogD.dispatchEvent(inputEvent);
+                    } catch (e) {
+                        // Bỏ qua
+                    }
+                    
+                    setTimeout(() => { isSettingText = false; }, 50);
+                }
+                
+                // Dừng sau 500ms
+                if (monitoringCount >= MAX_MONITORING_COUNT) {
+                    clearInterval(monitoringInterval);
+                    monitoringInterval = null;
+                }
+            }, 50); // Kiểm tra mỗi 50ms
+            
+            // Chờ 500ms để setInterval hoàn thành giám sát
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Dọn dẹp: Dừng setInterval nếu còn chạy
+            if (monitoringInterval) {
+                clearInterval(monitoringInterval);
+                monitoringInterval = null;
+            }
+            
+            // Lớp 4: Kiểm tra lần cuối và force set nếu cần
+            const finalCheckText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)];
+            let finalText = chunkText;
+
+            // Regex lọc rác (giống logic trong normalizeChunkText)
+            finalText = finalText.replace(/Hello, I'm delighted[\s\S]*?journey together/gi, "");
+            finalText = finalText.replace(/Xin chào, tôi rất vui[\s\S]*?sáng tạo âm thanh nhé\.?/gi, "");
+            finalText = finalText.replace(/Choose a voice that resonates with you/gi, "");
+            finalText = finalText.replace(/Hãy chọn một giọng nói phù hợp/gi, "");
+
+            if (finalText !== finalCheckText) {
+                addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Kiểm tra lần cuối: Phát hiện text rác hoặc sai lệch, đã lọc sạch và set lại`, 'warning');
+                isSettingText = true;
+                setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, finalText);
+
+                try {
+                    // Gửi sự kiện 'input' và 'change' để web biết ta đã thay đổi, đè lên auto-fill
+                    rUxbIRagbBVychZ$GfsogD.dispatchEvent(new Event('input', { bubbles: true }));
+                    rUxbIRagbBVychZ$GfsogD.dispatchEvent(new Event('change', { bubbles: true }));
+                } catch (e) {
+                    // Bỏ qua
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 50));
+                isSettingText = false;
+            } else {
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Kiểm tra lần cuối: Text đúng (${finalCheckText.length} ký tự)`, 'info');
+            }
         }
         
         // =======================================================
@@ -4592,9 +4824,9 @@ async function uSTZrHUt_IC() {
                         addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Xác minh độ dài sau khi gửi: KHỚP (${actualLen} ký tự)`, 'info');
                     }
                 } catch (lengthCheckError) {
-                    console.warn('Lỗi khi kiểm tra lại độ dài chunk sau 1 giây:', lengthCheckError);
+                    console.warn('Lỗi khi kiểm tra lại độ dài chunk sau 3 giây:', lengthCheckError);
                 }
-            }, 1000); // TỐI ƯU: Giảm từ 3 giây xuống 1 giây để tiết kiệm 2 giây
+            }, 3000);
         } catch (e) {
             console.warn('Không thể thiết lập vòng xác minh độ dài sau khi gửi chunk:', e);
         }
@@ -4605,6 +4837,18 @@ async function uSTZrHUt_IC() {
                 textObserver.disconnect();
                 textObserver = null;
                 addLogEntry(`🧹 [Chunk ${ttuo$y_KhCV + 1}] Đã dừng MutationObserver`, 'info');
+            }
+            
+            // CHẾ ĐỘ MỚI: Clear INTERCEPT_CURRENT_TEXT sau khi request đã được gửi
+            if (window.USE_PAYLOAD_MODE) {
+                // Chờ thêm một chút để đảm bảo request đã được intercept và xử lý
+                setTimeout(() => {
+                    if (window.INTERCEPT_CURRENT_TEXT && window.INTERCEPT_CURRENT_INDEX === ttuo$y_KhCV) {
+                        window.INTERCEPT_CURRENT_TEXT = null;
+                        window.INTERCEPT_CURRENT_INDEX = null;
+                        addLogEntry(`🧹 [Chunk ${ttuo$y_KhCV + 1}] Đã clear INTERCEPT_CURRENT_TEXT sau khi gửi request`, 'info');
+                    }
+                }, 2000); // Chờ 2 giây để đảm bảo request đã được gửi
             }
         }, 1000);
         
@@ -4671,16 +4915,15 @@ async function uSTZrHUt_IC() {
             // Reset web interface - CHỈ reset khi 1 chunk cụ thể render lỗi
             await resetWebInterface();
             
-            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Đã timeout sau 60 giây. Sẽ RETRY LẠI CHÍNH CHUNK NÀY (không nhảy sang chunk mới).`, 'warning');
-
-            // Cơ chế mới: retry lại CHÍNH CHUNK NÀY, nhưng GIỮ NGUYÊN delay cũ (getRandomChunkDelay)
-            if (typeof window.retryCount === 'undefined') window.retryCount = 0;
-            window.retryCount++;
-
-            addLogEntry(`🔁 [Chunk ${ttuo$y_KhCV + 1}] Sau timeout, sẽ retry lại CHÍNH CHUNK NÀY sau delay ngẫu nhiên (giữ nguyên delay cũ)`, 'warning');
-
-            // Giữ nguyên: dùng getRandomChunkDelay(), chỉ khác là không nhảy sang chunk mới
-            setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Retry lại chính chunk hiện tại
+            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Đã timeout sau 60 giây.`, 'warning');
+            
+            // Sau khi reset, tiếp tục với chunk tiếp theo (không retry chunk lỗi ngay)
+            window.retryCount = 0; // Reset bộ đếm retry
+            ttuo$y_KhCV++; // Chuyển sang chunk tiếp theo
+            addLogEntry(`🔄 Sau khi reset, tiếp tục với chunk ${ttuo$y_KhCV + 1}...`, 'info');
+            addLogEntry(`📊 Trạng thái: ${window.chunkStatus.filter(s => s === 'success' || s === 'failed').length}/${SI$acY.length} chunks đã xử lý`, 'info');
+            addLogEntry(`💡 Chunk bị timeout sẽ được retry vô hạn sau khi xong tất cả chunks`, 'info');
+            setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Chờ ngẫu nhiên 8–15 giây rồi tiếp tục với chunk tiếp theo
         }, 60000); // Timeout 60 giây cho mỗi chunk
         
         // QUAN TRỌNG: Gọi igyo$uwVChUzI() để tạo MutationObserver detect audio element
@@ -4720,12 +4963,11 @@ async function uSTZrHUt_IC() {
             return; // Dừng xử lý chunk này
         }
         
-        // CƠ CHẾ MỚI: Retry VÔ HẠN cho chính chunk hiện tại (không nhảy sang chunk mới)
-        // GIỮ NGUYÊN delay cũ: 2000 * retryCount (backoff tuyến tính)
-        if (typeof window.retryCount === 'undefined') window.retryCount = 0;
+        const MAX_RETRIES = 5;
         window.retryCount++;
 
-        addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Thử lại lần ${window.retryCount} (retry vô hạn, giữ nguyên delay 2000ms * retryCount)...`, 'warning');
+        if (window.retryCount <= MAX_RETRIES) {
+            addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Thử lại lần ${window.retryCount}/${MAX_RETRIES}...`, 'warning');
 
             // QUAN TRỌNG: Khi chunk render lỗi, LUÔN reset web trước khi retry
             // Không kiểm tra checkWebReady() vì chunk đã lỗi, cần reset để đảm bảo trạng thái sạch
@@ -4808,11 +5050,46 @@ async function uSTZrHUt_IC() {
                 }
             }
 
-            // Tính delay retry với backoff tuyến tính như cũ (GIỮ NGUYÊN 2000 * retryCount)
-            const retryDelay = 2000 * window.retryCount;
-            addLogEntry(`🔁 [Chunk ${ttuo$y_KhCV + 1}] Sau khi reset, sẽ retry lại CHÍNH CHUNK NÀY sau ~${Math.round(retryDelay/1000)} giây (giữ nguyên delay cũ)`, 'warning');
-
-            setTimeout(uSTZrHUt_IC, retryDelay); // Retry lại chính chunk hiện tại
+            setTimeout(uSTZrHUt_IC, 2000 * window.retryCount); // Chờ lâu hơn sau mỗi lần thử
+        } else {
+            addLogEntry(`🚫 [Chunk ${ttuo$y_KhCV + 1}] Thất bại sau ${MAX_RETRIES} lần thử. Bỏ qua chunk này.`, 'error');
+            // Đánh dấu chunk này là thất bại
+            window.chunkStatus[ttuo$y_KhCV] = 'failed';
+            if (!window.failedChunks.includes(ttuo$y_KhCV)) {
+                window.failedChunks.push(ttuo$y_KhCV);
+            }
+            
+            // QUAN TRỌNG: Đảm bảo vị trí này để trống (null) để sau này retry có thể lưu vào
+            if (typeof window.chunkBlobs === 'undefined') {
+                window.chunkBlobs = new Array(SI$acY.length).fill(null);
+            }
+            // Đảm bảo window.chunkBlobs có đủ độ dài
+            while (window.chunkBlobs.length <= ttuo$y_KhCV) {
+                window.chunkBlobs.push(null);
+            }
+            window.chunkBlobs[ttuo$y_KhCV] = null; // Đảm bảo vị trí này để trống
+            
+            // ĐỒNG BỘ HÓA ZTQj$LF$o: Đảm bảo ZTQj$LF$o cũng để trống
+            while (ZTQj$LF$o.length <= ttuo$y_KhCV) {
+                ZTQj$LF$o.push(null);
+            }
+            ZTQj$LF$o[ttuo$y_KhCV] = null; // Đảm bảo vị trí này để trống
+            
+            addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đã đánh dấu thất bại và để trống vị trí ${ttuo$y_KhCV} để retry sau`, 'info');
+            
+            // Reset flag sendingChunk khi chunk thất bại
+            if (window.sendingChunk === ttuo$y_KhCV) {
+                window.sendingChunk = null;
+            }
+            
+            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Đã bị lỗi.`, 'warning');
+            
+            window.retryCount = 0; // Reset bộ đếm retry
+            ttuo$y_KhCV++; // Chuyển sang chunk tiếp theo
+            
+            addLogEntry(`➡️ Chuyển sang chunk ${ttuo$y_KhCV + 1}...`, 'info');
+            addLogEntry(`📊 Trạng thái: ${window.chunkStatus.filter(s => s === 'success' || s === 'failed').length}/${SI$acY.length} chunks đã xử lý`, 'info');
+            setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Tiếp tục với chunk tiếp theo sau delay ngẫu nhiên 8–15 giây
         }
     }
 }
@@ -7255,18 +7532,6 @@ async function waitForVoiceModelReady() {
             if (!sanitizedText) {
                 Swal.fire({ icon: 'warning', title: 'Chưa có nội dung', text: 'Vui lòng nhập văn bản cần tạo giọng nói.' });
                 return;
-            }
-
-            // Bắt đầu đếm thời gian khi bắt đầu job mới
-            if (typeof window.startJobTimer === 'function') {
-                window.startJobTimer();
-            } else {
-                // Thử gọi lại sau 100ms nếu chưa sẵn sàng
-                setTimeout(() => {
-                    if (typeof window.startJobTimer === 'function') {
-                        window.startJobTimer();
-                    }
-                }, 100);
             }
 
             // 2. Lấy các DOM element (Từ code legacy)
