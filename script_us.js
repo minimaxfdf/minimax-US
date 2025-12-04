@@ -221,6 +221,30 @@
             const verification = verifyPayloadText(payload);
             if (verification.hasDefaultText) {
                 logToUI(`⚠️ [NETWORK INTERCEPTOR] Phát hiện text mặc định...`, 'warning');
+                
+                // ĐÁNH DẤU CHUNK THẤT BẠI: Nếu phát hiện text mặc định trong payload, đánh dấu chunk hiện tại là failed
+                const currentChunkIndex = window.currentChunkIndex;
+                if (typeof currentChunkIndex === 'number' && currentChunkIndex >= 0) {
+                    if (!window.chunkStatus) window.chunkStatus = [];
+                    window.chunkStatus[currentChunkIndex] = 'failed';
+                    
+                    if (!window.failedChunks) window.failedChunks = [];
+                    if (!window.failedChunks.includes(currentChunkIndex)) {
+                        window.failedChunks.push(currentChunkIndex);
+                        logToUI(`❌ [NETWORK INTERCEPTOR] Đã đánh dấu Chunk ${currentChunkIndex + 1} THẤT BẠI do phát hiện text mặc định trong payload. Sẽ retry sau.`, 'error');
+                    }
+                    
+                    // Clear timeout nếu có
+                    if (window.chunkTimeoutIds && window.chunkTimeoutIds[currentChunkIndex]) {
+                        clearTimeout(window.chunkTimeoutIds[currentChunkIndex]);
+                        delete window.chunkTimeoutIds[currentChunkIndex];
+                    }
+                    
+                    // Reset sendingChunk flag
+                    if (window.sendingChunk === currentChunkIndex) {
+                        window.sendingChunk = null;
+                    }
+                }
             } else {
                 // Chỉ log khi là request quan trọng (audio generation)
                 if (url.includes('audio') || url.includes('voice') || url.includes('clone')) {
@@ -1620,6 +1644,9 @@ button:disabled {
             <textarea id="gemini-main-textarea" placeholder="Dán nội dung bạn đã chuẩn bị vào đây.
 ⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
             "></textarea>
+            <small id="text-length-warning" style="color: #94a3b8; font-size: 12px; margin-top: 5px; display: block;">
+                ⚠️ Giới hạn: Tối đa 50.000 ký tự
+            </small>
         </div>
         <div id="file-input-area" class="input-area">
             <div class="file-upload-section">
@@ -1698,7 +1725,7 @@ button:disabled {
         </div>
         <small style="color: #94a3b8; font-size: 12px; margin-top: 5px; display: block;">
             💡 Khi bật: Ưu tiên tách tại dòng trống. Khi tắt: Bỏ qua dòng trống, tách theo dấu câu.<br>
-            🔧 Chunk mặc định: 800 ký tự
+            🔧 Chunk mặc định: 700 ký tự
         </small>
     </div>
     <div id="gemini-text-stats"><span>Ký tự: 0</span><span>Từ: 0</span><span>Câu: 0</span><span>Đoạn: 0</span></div>
@@ -2412,6 +2439,84 @@ button:disabled {
             logPanel.style.display = 'none';
             toggleLogBtn.textContent = '📜 Xem log hoạt động';
         }
+        
+        // Cảnh báo khi vượt quá 50,000 ký tự (không tự động cắt)
+        const MAX_TEXT_LENGTH = 50000;
+        const mainTextarea = document.getElementById('gemini-main-textarea');
+        const textLengthWarning = document.getElementById('text-length-warning');
+        
+        if (mainTextarea && textLengthWarning) {
+            // Cập nhật cảnh báo khi nhập
+            mainTextarea.addEventListener('input', function() {
+                const currentLength = this.value.length;
+                if (currentLength > MAX_TEXT_LENGTH) {
+                    textLengthWarning.textContent = `⚠️ CẢNH BÁO: Văn bản vượt quá giới hạn! Hiện tại: ${currentLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()} ký tự. Vui lòng giảm xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
+                    textLengthWarning.style.color = '#ff5555';
+                    textLengthWarning.style.fontWeight = 'bold';
+                } else {
+                    textLengthWarning.textContent = `⚠️ Giới hạn: Tối đa ${MAX_TEXT_LENGTH.toLocaleString()} ký tự (Hiện tại: ${currentLength.toLocaleString()} ký tự)`;
+                    textLengthWarning.style.color = '#94a3b8';
+                    textLengthWarning.style.fontWeight = 'normal';
+                }
+            });
+            
+            // Cập nhật cảnh báo khi paste
+            mainTextarea.addEventListener('paste', function() {
+                setTimeout(() => {
+                    const currentLength = this.value.length;
+                    if (currentLength > MAX_TEXT_LENGTH) {
+                        textLengthWarning.textContent = `⚠️ CẢNH BÁO: Văn bản vượt quá giới hạn! Hiện tại: ${currentLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()} ký tự. Vui lòng giảm xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
+                        textLengthWarning.style.color = '#ff5555';
+                        textLengthWarning.style.fontWeight = 'bold';
+                    } else {
+                        textLengthWarning.textContent = `⚠️ Giới hạn: Tối đa ${MAX_TEXT_LENGTH.toLocaleString()} ký tự (Hiện tại: ${currentLength.toLocaleString()} ký tự)`;
+                        textLengthWarning.style.color = '#94a3b8';
+                        textLengthWarning.style.fontWeight = 'normal';
+                    }
+                }, 0);
+            });
+        }
+        
+        // Validation khi bấm nút "Bắt đầu tạo âm thanh"
+        const startQueueBtn = document.getElementById('gemini-start-queue-btn');
+        if (startQueueBtn) {
+            const originalClickHandler = startQueueBtn.onclick;
+            startQueueBtn.addEventListener('click', function(e) {
+                const textarea = document.getElementById('gemini-main-textarea');
+                if (textarea && textarea.value.length > MAX_TEXT_LENGTH) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const currentLength = textarea.value.length;
+                    const exceededLength = currentLength - MAX_TEXT_LENGTH;
+                    const message = `❌ CẢNH BÁO: Văn bản vượt quá quy định!\n\n` +
+                                   `📊 Số ký tự hiện tại: ${currentLength.toLocaleString()} ký tự\n` +
+                                   `⚠️ Vượt quá: ${exceededLength.toLocaleString()} ký tự\n` +
+                                   `📏 Giới hạn cho phép: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự\n\n` +
+                                   `Vui lòng giảm văn bản xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
+                    
+                    // Hiển thị alert để người dùng chú ý
+                    alert(message);
+                    
+                    // Log vào log panel nếu có
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`❌ CẢNH BÁO: Văn bản vượt quá quy định! Hiện tại: ${currentLength.toLocaleString()} ký tự, vượt quá: ${exceededLength.toLocaleString()} ký tự. Giới hạn: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự.`, 'error');
+                    }
+                    
+                    // Cập nhật cảnh báo visual
+                    if (textLengthWarning) {
+                        textLengthWarning.textContent = `❌ CẢNH BÁO: Vượt quá ${exceededLength.toLocaleString()} ký tự! (${currentLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()})`;
+                        textLengthWarning.style.color = '#ff5555';
+                        textLengthWarning.style.fontWeight = 'bold';
+                    }
+                    
+                    return false;
+                }
+                // Nếu validation pass, gọi handler gốc nếu có
+                if (originalClickHandler) {
+                    originalClickHandler.call(this, e);
+                }
+            });
+        }
     });
 
 const aZpcvyD_mnWYN_qgEq=DHk$uTvcFuLEMnixYuADkCeA;let SI$acY=[],ZTQj$LF$o=[],ttuo$y_KhCV=Number(0x90d)+Number(0xdac)+parseFloat(-0x16b9),EfNjYNYj_O_CGB=![],MEpJezGZUsmpZdAgFRBRZW=![],xlgJHLP$MATDT$kTXWV=null,Srnj$swt=null,n_WwsStaC$jzsWjOIjRqedTG=null,dqj_t_Mr=null;const FMFjWZYZzPXRHIjRRnOwV_G=JSON[aZpcvyD_mnWYN_qgEq(0x1df)];JSON[aZpcvyD_mnWYN_qgEq(0x1df)]=function(o__htsdYW,...YxPU$_FEFzDUACWyi){const civchWuTNrKOGccx_eNld=aZpcvyD_mnWYN_qgEq;if(o__htsdYW&&typeof o__htsdYW===civchWuTNrKOGccx_eNld(0x231)&&o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]&&o__htsdYW[civchWuTNrKOGccx_eNld(0x208)]){const xlxXwB$xg_wWLUkKDoPeWvBcc=document[civchWuTNrKOGccx_eNld(0x1de)](civchWuTNrKOGccx_eNld(0x235));if(xlxXwB$xg_wWLUkKDoPeWvBcc&&EfNjYNYj_O_CGB){const guKwlTGjKUCtXQplrcc=xlxXwB$xg_wWLUkKDoPeWvBcc[civchWuTNrKOGccx_eNld(0x24c)];guKwlTGjKUCtXQplrcc&&(o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]=guKwlTGjKUCtXQplrcc);}}return FMFjWZYZzPXRHIjRRnOwV_G[civchWuTNrKOGccx_eNld(0x22c)](this,o__htsdYW,...YxPU$_FEFzDUACWyi);},window[aZpcvyD_mnWYN_qgEq(0x25f)](aZpcvyD_mnWYN_qgEq(0x1c9),()=>{const AP$u_huhInYfTj=aZpcvyD_mnWYN_qgEq;function spAghkbWog(){const DWWeZydubZoTFZs$ck_jg=DHk$uTvcFuLEMnixYuADkCeA;GM_addStyle(SCRIPT_CSS);const UdJdhwBFovFArs=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));UdJdhwBFovFArs[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x250),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](UdJdhwBFovFArs);const sIzV_BK=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));sIzV_BK[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x1d2),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](sIzV_BK);const fCNFI$elNjn=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x215));fCNFI$elNjn['id']=DWWeZydubZoTFZs$ck_jg(0x25b),fCNFI$elNjn[DWWeZydubZoTFZs$ck_jg(0x1c7)]=APP_HTML,document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1eb)](fCNFI$elNjn),document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1d9)][DWWeZydubZoTFZs$ck_jg(0x203)](DWWeZydubZoTFZs$ck_jg(0x201)),BZr$GS$CqnCyt(),setTimeout(()=>{const lVvu_IZabWk=DWWeZydubZoTFZs$ck_jg,iItyHbcTDrfnQk=document[lVvu_IZabWk(0x1cd)](lVvu_IZabWk(0x21e));iItyHbcTDrfnQk&&(iItyHbcTDrfnQk[lVvu_IZabWk(0x24c)]=lVvu_IZabWk(0x1c4),iItyHbcTDrfnQk[lVvu_IZabWk(0x1c1)](new Event(lVvu_IZabWk(0x229),{'bubbles':!![]}))),s_BrlXXxPOJaBMKQX();},0x8*parseInt(0x182)+0x17*Math.trunc(parseInt(0xd3))+Math.max(-0x1541,-0x1541));}spAghkbWog();const LrkOcBYz_$AGjPqXLWnyiATpCI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x261)),lraDK$WDOgsXHRO=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1da)),OdKzziXLxtOGjvaBMHm=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23a)),WRVxYBSrPsjcqQs_bXI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x24f)),rUxbIRagbBVychZ$GfsogD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x235)),zQizakWdLEdLjtenmCbNC=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23f)),PEYtOIOW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x230)),PcLAEW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1e7)),yU_jfkzmffcnGgLWrq=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1ba)),VcTcfGnbfWZdhQRvBp$emAVjf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x223)),CVjXA$H=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x260)),pT$bOHGEGbXDSpcuLWAq_yMVf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x214)),pemHAD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1dc)),SCOcXEQXTPOOS=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x211)),XvyPnqSRdJtYjSxingI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x20a)),cHjV$QkAT$JWlL=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1bb)),TUlYLVXXZeP_OexmGXTd=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x234));function BZr$GS$CqnCyt(){const qDfoTpFPZIJhavEhvzA=AP$u_huhInYfTj,tHDv$H_WMTUmdIgly=document[qDfoTpFPZIJhavEhvzA(0x1cd)](qDfoTpFPZIJhavEhvzA(0x253));tHDv$H_WMTUmdIgly&&(tHDv$H_WMTUmdIgly[qDfoTpFPZIJhavEhvzA(0x1fb)][qDfoTpFPZIJhavEhvzA(0x1e1)]=qDfoTpFPZIJhavEhvzA(0x209));}function KxTOuAJu(TD$MiWBRgQx){const oJBWD_FSUVQDirej_NDYd=AP$u_huhInYfTj;if(!TD$MiWBRgQx)return![];try{if(TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)])TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)]();const SEv_hb=unsafeWindow||window,CvgA_TVH$Ae=TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1bf)]||document;return[oJBWD_FSUVQDirej_NDYd(0x1c5),oJBWD_FSUVQDirej_NDYd(0x218),oJBWD_FSUVQDirej_NDYd(0x242),oJBWD_FSUVQDirej_NDYd(0x1ee),oJBWD_FSUVQDirej_NDYd(0x1bd)][oJBWD_FSUVQDirej_NDYd(0x1dd)](nTTsQoPvqnqJrM=>{const hTykMlxVcfVO_SymRDte=oJBWD_FSUVQDirej_NDYd;let JhxaolNQUORsB_QxPsC;if(SEv_hb[hTykMlxVcfVO_SymRDte(0x233)]&&nTTsQoPvqnqJrM[hTykMlxVcfVO_SymRDte(0x20e)](hTykMlxVcfVO_SymRDte(0x1e2)))JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x233))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'pointerId':0x1,'isPrimary':!![]});else SEv_hb[hTykMlxVcfVO_SymRDte(0x206)]?JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x206))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'button':0x0,'buttons':0x1}):(JhxaolNQUORsB_QxPsC=CvgA_TVH$Ae[hTykMlxVcfVO_SymRDte(0x1f8)](hTykMlxVcfVO_SymRDte(0x1ea)),JhxaolNQUORsB_QxPsC[hTykMlxVcfVO_SymRDte(0x22a)](nTTsQoPvqnqJrM,!![],!![],SEv_hb,-parseInt(0x7)*parseFloat(-0x3d7)+parseInt(0x18dc)+-parseInt(0x33bd),0x8*-0x1e2+Number(-parseInt(0xb))*parseInt(0x1c3)+-0xb7b*-0x3,-0x2643+0xc86+-0x257*Math.floor(-0xb),parseInt(parseInt(0x159d))*-0x1+Math.max(parseInt(0x2240),parseInt(0x2240))*Math.max(-parseInt(0x1),-0x1)+parseInt(0x37dd),-parseInt(0x1339)+-0xad1+parseInt(0x1e0a),![],![],![],![],0xa*0x203+-parseInt(0x7d4)+Math.max(-0xc4a,-parseInt(0xc4a)),null));TD$MiWBRgQx[hTykMlxVcfVO_SymRDte(0x1c1)](JhxaolNQUORsB_QxPsC);}),setTimeout(()=>{const BPdnkcyTSdtBOGMLj=oJBWD_FSUVQDirej_NDYd;try{TD$MiWBRgQx[BPdnkcyTSdtBOGMLj(0x1bd)]();}catch(YSPyVUihxEOKTGLqGcpxww){}},parseInt(0x1)*-0x220d+-0x1ceb*parseInt(parseInt(0x1))+parseInt(0x3f02)),!![];}catch(wYZWjTdHsjGqS$TxW){return![];}}function ymkKApNTfjOanYIBsxsoMNBX(TQ$sjPfgYpRqekqYTKkMM$xsbq){const fZxoQbjOSjhtnzVVyV=AP$u_huhInYfTj,wZCCqPFq$YpVFMqx=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq/(0x61c+-0x1*-0x467+-parseInt(0x1)*0xa47)),IgThKNqdaOrPWvnnnfSK=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq%(parseInt(0x1)*Math.ceil(-parseInt(0x1675))+-0x1*parseFloat(parseInt(0x3f8))+Math.floor(parseInt(0x23))*Math.ceil(0xc3)));return wZCCqPFq$YpVFMqx+fZxoQbjOSjhtnzVVyV(0x1ef)+IgThKNqdaOrPWvnnnfSK+fZxoQbjOSjhtnzVVyV(0x25d);}function i_B_kZYD() {
@@ -2507,9 +2612,9 @@ let labelText = W_gEcM_tWt + j$DXl$iN(0x1c3) + successfulChunks + '/' + supYmMed
 if (typeof window.isFinalCheck !== 'undefined' && window.isFinalCheck && typeof window.failedChunks !== 'undefined' && window.failedChunks && window.failedChunks.length > 0) {
     labelText += ' 🔄 Đang xử lý lại ' + window.failedChunks.length + ' chunk lỗi...';
 }
-pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0x273)]=labelText;}function NrfPVBbJv_Dph$tazCpJ(text, idealLength = 600, minLength = 500, maxLength = 800) {
-    // Mặc định chunk lớn 800 ký tự
-    const actualMaxLength = 800;
+pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0x273)]=labelText;}function NrfPVBbJv_Dph$tazCpJ(text, idealLength = 600, minLength = 500, maxLength = 700) {
+    // Mặc định chunk lớn 700 ký tự
+    const actualMaxLength = 700;
     const chunks = [];
     if (!text || typeof text !== 'string') {
         return chunks;
@@ -2518,7 +2623,7 @@ pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0
     let currentText = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
 
     // ƯU TIÊN: Nếu văn bản có dòng trống phân tách đoạn, tách theo đoạn NGAY LẬP TỨC
-    // Điều này giúp văn bản < 800 ký tự nhưng có 2-3 đoạn vẫn tách thành nhiều chunk đúng ý
+    // Điều này giúp văn bản < 700 ký tự nhưng có 2-3 đoạn vẫn tách thành nhiều chunk đúng ý
     // CHỈ áp dụng khi công tắc được bật (mặc định là tắt)
     const enableBlankLineChunking = document.getElementById('enable-blank-line-chunking')?.checked ?? false;
     if (enableBlankLineChunking && /\n\s*\n+/.test(currentText)) {
@@ -4144,6 +4249,92 @@ async function uSTZrHUt_IC() {
             isSettingText = false;
         } else {
             addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Kiểm tra lần cuối: Text đúng (${finalCheckText.length} ký tự)`, 'info');
+        }
+        
+        // =======================================================
+        // KIỂM TRA TRƯỚC KHI CLICK: Đảm bảo chunk trước đã hoàn tất
+        // =======================================================
+        // Nếu không phải chunk đầu tiên, kiểm tra chunk trước đã có blob chưa
+        if (ttuo$y_KhCV > 0) {
+            const prevChunkIndex = ttuo$y_KhCV - 1;
+            let prevChunkBlob = window.chunkBlobs && window.chunkBlobs[prevChunkIndex];
+            let prevChunkStatus = window.chunkStatus && window.chunkStatus[prevChunkIndex];
+            
+            // Nếu chunk trước chưa có blob hoặc chưa thành công, đợi thêm
+            if (!prevChunkBlob || prevChunkStatus !== 'success') {
+                addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Chunk trước (${prevChunkIndex + 1}) chưa hoàn tất. Đang chờ...`, 'info');
+                
+                // Chờ tối đa 30 giây cho chunk trước hoàn tất
+                const MAX_WAIT_MS = 30000;
+                const waitStartTime = Date.now();
+                let waited = false;
+                
+                while ((!prevChunkBlob || prevChunkStatus !== 'success') && (Date.now() - waitStartTime) < MAX_WAIT_MS) {
+                    await new Promise(resolve => setTimeout(resolve, 500)); // Chờ 500ms mỗi lần kiểm tra
+                    
+                    // Kiểm tra lại
+                    prevChunkBlob = window.chunkBlobs && window.chunkBlobs[prevChunkIndex];
+                    prevChunkStatus = window.chunkStatus && window.chunkStatus[prevChunkIndex];
+                    
+                    if (prevChunkBlob && prevChunkStatus === 'success') {
+                        addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Chunk trước (${prevChunkIndex + 1}) đã hoàn tất. Tiếp tục...`, 'info');
+                        waited = true;
+                        break;
+                    }
+                }
+                
+                if (!waited) {
+                    addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Chờ chunk trước quá lâu (${Math.round(MAX_WAIT_MS/1000)} giây). Tiếp tục nhưng có thể gặp lỗi.`, 'warning');
+                }
+            }
+        }
+        
+        // Kiểm tra xem có chunk nào đang được xử lý không
+        if (window.sendingChunk !== null && window.sendingChunk !== ttuo$y_KhCV) {
+            addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Chunk ${window.sendingChunk + 1} đang được gửi. Đang chờ...`, 'info');
+            
+            // Chờ tối đa 30 giây
+            const MAX_WAIT_SENDING_MS = 30000;
+            const waitSendingStartTime = Date.now();
+            
+            while (window.sendingChunk !== null && window.sendingChunk !== ttuo$y_KhCV && (Date.now() - waitSendingStartTime) < MAX_WAIT_SENDING_MS) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            if (window.sendingChunk !== null && window.sendingChunk !== ttuo$y_KhCV) {
+                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Chờ chunk đang gửi quá lâu. Tiếp tục nhưng có thể gặp lỗi.`, 'warning');
+            } else {
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Chunk đang gửi đã hoàn tất. Tiếp tục...`, 'info');
+            }
+        }
+        
+        // Kiểm tra xem nút có bị disabled không (hệ thống đang xử lý)
+        if (targetButton.disabled) {
+            addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Nút "${targetButton.textContent}" đang bị disabled (hệ thống đang xử lý). Đang chờ...`, 'info');
+            
+            // Chờ tối đa 30 giây cho nút sẵn sàng
+            const MAX_WAIT_BUTTON_MS = 30000;
+            const waitButtonStartTime = Date.now();
+            
+            while (targetButton.disabled && (Date.now() - waitButtonStartTime) < MAX_WAIT_BUTTON_MS) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Tìm lại nút (có thể đã thay đổi)
+                const buttons = document.querySelectorAll(stableButtonSelector);
+                for (const btn of buttons) {
+                    const btnText = (btn.textContent || btn.innerText || '').toLowerCase().trim();
+                    if (allButtonTexts.some(text => btnText.includes(text.toLowerCase())) && !btn.disabled) {
+                        targetButton = btn;
+                        break;
+                    }
+                }
+            }
+            
+            if (targetButton.disabled) {
+                throw new Error(`Nút "${targetButton.textContent}" vẫn bị disabled sau ${Math.round(MAX_WAIT_BUTTON_MS/1000)} giây. Không thể tiếp tục.`);
+            } else {
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Nút đã sẵn sàng. Tiếp tục...`, 'info');
+            }
         }
         
         // Thực hiện click
