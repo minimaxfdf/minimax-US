@@ -1645,7 +1645,7 @@ button:disabled {
 ⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
             "></textarea>
             <small id="text-length-warning" style="color: #94a3b8; font-size: 12px; margin-top: 5px; display: block;">
-                ⚠️ Giới hạn: Tối đa 50.000 ký tự
+                ⚠️ Giới hạn: Tối đa 80.000 ký tự
             </small>
         </div>
         <div id="file-input-area" class="input-area">
@@ -2440,8 +2440,8 @@ button:disabled {
             toggleLogBtn.textContent = '📜 Xem log hoạt động';
         }
         
-        // Cảnh báo khi vượt quá 50,000 ký tự (không tự động cắt)
-        const MAX_TEXT_LENGTH = 50000;
+        // Cảnh báo khi vượt quá 80,000 ký tự (không tự động cắt)
+        const MAX_TEXT_LENGTH = 80000;
         const mainTextarea = document.getElementById('gemini-main-textarea');
         const textLengthWarning = document.getElementById('text-length-warning');
         
@@ -4484,7 +4484,7 @@ async function uSTZrHUt_IC() {
             addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Kiểm tra lần cuối: Phát hiện text rác hoặc sai lệch, đã lọc sạch và set lại`, 'warning');
             isSettingText = true;
             setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, finalText);
-
+            
             try {
                 // Gửi sự kiện 'input' và 'change' để web biết ta đã thay đổi, đè lên auto-fill
                 rUxbIRagbBVychZ$GfsogD.dispatchEvent(new Event('input', { bubbles: true }));
@@ -4492,7 +4492,7 @@ async function uSTZrHUt_IC() {
             } catch (e) {
                 // Bỏ qua
             }
-
+            
             await new Promise(resolve => setTimeout(resolve, 50));
             isSettingText = false;
         } else {
@@ -7157,7 +7157,39 @@ async function waitForVoiceModelReady() {
                             break;
                     }
 
-                    // Set content to textarea
+                    // VALIDATION: Kiểm tra độ dài trước khi set vào textarea
+                    const MAX_TEXT_LENGTH = 80000;
+                    const contentLength = content.length;
+                    
+                    if (contentLength > MAX_TEXT_LENGTH) {
+                        const exceededLength = contentLength - MAX_TEXT_LENGTH;
+                        const message = `❌ CẢNH BÁO: File vượt quá giới hạn!\n\n` +
+                                       `📊 Số ký tự trong file: ${contentLength.toLocaleString()} ký tự\n` +
+                                       `⚠️ Vượt quá: ${exceededLength.toLocaleString()} ký tự\n` +
+                                       `📏 Giới hạn cho phép: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự\n\n` +
+                                       `Vui lòng chọn file khác hoặc chỉnh sửa file để giảm xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự.`;
+                        
+                        // Hiển thị alert
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'File vượt quá giới hạn',
+                            html: message.replace(/\n/g, '<br>'),
+                            confirmButtonText: 'OK',
+                            width: '600px'
+                        });
+                        
+                        // Log vào log panel nếu có
+                        if (typeof addLogEntry === 'function') {
+                            addLogEntry(`❌ CẢNH BÁO: File "${file.name}" vượt quá giới hạn! Hiện tại: ${contentLength.toLocaleString()} ký tự, vượt quá: ${exceededLength.toLocaleString()} ký tự. Giới hạn: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự.`, 'error');
+                        }
+                        
+                        // Clear file selection
+                        clearFileSelection();
+                        
+                        return; // Không set vào textarea
+                    }
+                    
+                    // Set content to textarea (chỉ khi hợp lệ)
                     if (textarea) {
                         textarea.value = content;
 
@@ -7167,6 +7199,11 @@ async function waitForVoiceModelReady() {
                         // Switch to text tab to show the content
                         if (textTab && textInputArea) {
                             textTab.click();
+                        }
+                        
+                        // Log thành công
+                        if (typeof addLogEntry === 'function') {
+                            addLogEntry(`✅ Đã tải file "${file.name}" thành công (${contentLength.toLocaleString()} ký tự)`, 'success');
                         }
                     }
 
