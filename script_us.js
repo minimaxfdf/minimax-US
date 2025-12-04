@@ -7812,8 +7812,23 @@ async function waitForVoiceModelReady() {
             // 5. QUAN TRỌNG: Sử dụng hàm smartSplitter MỚI để chia chunk
             SI$acY = smartSplitter(sanitizedText, 3000); // Mảng chứa text (legacy)
             
+            // Kiểm tra xem có chunk nào không
+            if (!SI$acY || SI$acY.length === 0) {
+                addLogEntry(`❌ Lỗi: Không thể chia văn bản thành chunks. Văn bản có thể quá ngắn hoặc có lỗi.`, 'error');
+                startBtn.disabled = false;
+                startBtn.style.display = 'block';
+                pauseBtn.style.display = 'none';
+                stopBtn.style.display = 'none';
+                return;
+            }
+            
             // 6. Khởi tạo lại hệ thống theo dõi chunk với số lượng chunk mới
             window.chunkStatus = new Array(SI$acY.length).fill('pending');
+            
+            // 7. Reset INTERCEPT_CURRENT_TEXT để sẵn sàng cho job mới
+            window.INTERCEPT_CURRENT_TEXT = null;
+            window.INTERCEPT_CURRENT_INDEX = null;
+            window._interceptLoggedForChunk = null;
             
             addLogEntry(`✅ Đã xóa sạch dữ liệu cũ. Bắt đầu với ${SI$acY.length} chunk mới.`, 'success');
             // =======================================================
@@ -7827,9 +7842,33 @@ async function waitForVoiceModelReady() {
             // Xóa log cũ
             clearLog();
             addLogEntry(`Bắt đầu xử lý ${SI$acY.length} chunk (Hệ thống Legacy VÔ HẠN)...`, 'info');
+            
+            // 8. Đảm bảo CURRENT_JOB_CHARS được set đúng
+            window.CURRENT_JOB_CHARS = sanitizedText.length;
+            addLogEntry(`📊 Tổng ký tự job mới: ${window.CURRENT_JOB_CHARS.toLocaleString()}`, 'info');
+            
+            // 9. Debug: Kiểm tra các biến quan trọng
+            addLogEntry(`🔍 Debug: SI$acY.length = ${SI$acY.length}, ttuo$y_KhCV = ${ttuo$y_KhCV}, EfNjYNYj_O_CGB = ${EfNjYNYj_O_CGB}`, 'info');
+            addLogEntry(`🔍 Debug: window.chunkStatus.length = ${window.chunkStatus.length}, MEpJezGZUsmpZdAgFRBRZW = ${MEpJezGZUsmpZdAgFRBRZW}`, 'info');
 
-            // 4. Gọi hàm xử lý VÔ HẠN (Hàm legacy)
-            uSTZrHUt_IC();
+            // 10. Gọi hàm xử lý VÔ HẠN (Hàm legacy)
+            // Đảm bảo EfNjYNYj_O_CGB = true trước khi gọi
+            EfNjYNYj_O_CGB = true;
+            MEpJezGZUsmpZdAgFRBRZW = false; // Đảm bảo không bị pause
+            addLogEntry(`🚀 Đang khởi động xử lý chunk đầu tiên (EfNjYNYj_O_CGB = ${EfNjYNYj_O_CGB})...`, 'info');
+            
+            // Gọi với try-catch để bắt lỗi nếu có
+            try {
+                uSTZrHUt_IC();
+            } catch (error) {
+                addLogEntry(`❌ Lỗi khi gọi uSTZrHUt_IC(): ${error.message}`, 'error');
+                console.error('Lỗi khi gọi uSTZrHUt_IC():', error);
+                // Reset UI nếu lỗi
+                startBtn.disabled = false;
+                startBtn.style.display = 'block';
+                pauseBtn.style.display = 'none';
+                stopBtn.style.display = 'none';
+            }
 
             // [KẾT THÚC CODE THAY THẾ]
         });
