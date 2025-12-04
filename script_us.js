@@ -3227,9 +3227,10 @@ const BBNDYjhHoGkj_qbbbJu=URL[VCAHyXsrERcpXVhFPxmgdBjjh(0x1f0)](InRdxToeqTDyPgDG
 
             // LƯU Ý: Silent Audio vẫn tiếp tục chạy 100% thời gian để đảm bảo trình duyệt luôn hoạt động
             // Chỉ dừng khi tool/tab bị đóng
-            if (typeof addLogEntry === 'function') {
-                addLogEntry(`🔊 [KEEP-ALIVE] Silent Audio vẫn đang chạy để giữ tab active (chạy 100% thời gian)`, 'info');
-            }
+            // Log đã được ẩn để bảo mật
+            // if (typeof addLogEntry === 'function') {
+            //     addLogEntry(`🔊 [KEEP-ALIVE] Silent Audio vẫn đang chạy để giữ tab active (chạy 100% thời gian)`, 'info');
+            // }
 
 if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[VCAHyXsrERcpXVhFPxmgdBjjh(0x26c)]();typeof WaveSurfer===VCAHyXsrERcpXVhFPxmgdBjjh(0x24d)&&await new Promise(dyvridmApUsyBfpYIHkxv=>setTimeout(dyvridmApUsyBfpYIHkxv,parseInt(0xf61)+Math.ceil(-parseInt(0x1e0))+-parseInt(0xb8d))),n_WwsStaC$jzsWjOIjRqedTG=WaveSurfer[VCAHyXsrERcpXVhFPxmgdBjjh(0x240)]({'container':VCAHyXsrERcpXVhFPxmgdBjjh(0x274),'waveColor':VCAHyXsrERcpXVhFPxmgdBjjh(0x26a),'progressColor':VCAHyXsrERcpXVhFPxmgdBjjh(0x228),'cursorColor':VCAHyXsrERcpXVhFPxmgdBjjh(0x20c),'barWidth':0x3,'barRadius':0x3,'cursorWidth':0x1,'height':0x64,'barGap':0x3}),n_WwsStaC$jzsWjOIjRqedTG[VCAHyXsrERcpXVhFPxmgdBjjh(0x1d5)](BBNDYjhHoGkj_qbbbJu),n_WwsStaC$jzsWjOIjRqedTG['on'](VCAHyXsrERcpXVhFPxmgdBjjh(0x1d6),()=>{const Ipo_CDaCvNEfh=VCAHyXsrERcpXVhFPxmgdBjjh;XvyPnqSRdJtYjSxingI[Ipo_CDaCvNEfh(0x1c7)]='⏸️';}),n_WwsStaC$jzsWjOIjRqedTG['on'](VCAHyXsrERcpXVhFPxmgdBjjh(0x22d),()=>{const NdVplyNSVhdzFR=VCAHyXsrERcpXVhFPxmgdBjjh;XvyPnqSRdJtYjSxingI[NdVplyNSVhdzFR(0x1c7)]='▶️';});
 
@@ -3706,9 +3707,10 @@ function startKeepAliveLoop() {
         };
 
         window.mmxKeepAliveId = requestAnimationFrame(loop);
-        if (typeof addLogEntry === 'function') {
-            addLogEntry('🩺 Keep-Alive: Đã kích hoạt vòng requestAnimationFrame để giữ tốc độ render ổn định.', 'info');
-        }
+        // Log đã được ẩn để bảo mật
+        // if (typeof addLogEntry === 'function') {
+        //     addLogEntry('🩺 Keep-Alive: Đã kích hoạt vòng requestAnimationFrame để giữ tốc độ render ổn định.', 'info');
+        // }
     } catch (e) {
         console.warn('Không thể khởi động keep-alive loop:', e);
     }
@@ -3773,9 +3775,10 @@ function createSilentAudio() {
         // Buffer đã được tạo với giá trị 0 (âm thanh câm)
         // Không cần fill vì mặc định đã là 0
         
-        if (typeof addLogEntry === 'function') {
-            addLogEntry('🔇 [KEEP-ALIVE] Đã tạo Silent Audio buffer', 'info');
-        }
+        // Log đã được ẩn để bảo mật
+        // if (typeof addLogEntry === 'function') {
+        //     addLogEntry('🔇 [KEEP-ALIVE] Đã tạo Silent Audio buffer', 'info');
+        // }
         return true;
     } catch (e) {
         console.warn('[KEEP-ALIVE] Lỗi tạo Silent Audio:', e);
@@ -3866,23 +3869,25 @@ function startKeepAliveLoop() {
             }
         }, 5000); // Phát lại mỗi 5 giây
         
-        // 4. Theo dõi visibility để cảnh báo
+        // 4. Theo dõi visibility để cảnh báo (đã ẩn log để bảo mật)
         const handleVisibilityChange = () => {
-            if (document.hidden) {
-                if (typeof addLogEntry === 'function') {
-                    addLogEntry('⚠️ [KEEP-ALIVE] Tab bị ẩn! Silent Audio đang hoạt động để giữ tab active...', 'warning');
-                }
-            } else {
-                if (typeof addLogEntry === 'function') {
-                    addLogEntry('✅ [KEEP-ALIVE] Tab đã hiện lại', 'info');
-                }
-            }
+            // Log đã được ẩn để bảo mật
+            // if (document.hidden) {
+            //     if (typeof addLogEntry === 'function') {
+            //         addLogEntry('⚠️ [KEEP-ALIVE] Tab bị ẩn! Silent Audio đang hoạt động để giữ tab active...', 'warning');
+            //     }
+            // } else {
+            //     if (typeof addLogEntry === 'function') {
+            //         addLogEntry('✅ [KEEP-ALIVE] Tab đã hiện lại', 'info');
+            //     }
+            // }
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
         
-        if (typeof addLogEntry === 'function') {
-            addLogEntry('🩺 [KEEP-ALIVE] Đã kích hoạt: Silent Audio + requestAnimationFrame để giữ tab active', 'info');
-        }
+        // Log đã được ẩn để bảo mật
+        // if (typeof addLogEntry === 'function') {
+        //     addLogEntry('🩺 [KEEP-ALIVE] Đã kích hoạt: Silent Audio + requestAnimationFrame để giữ tab active', 'info');
+        // }
     } catch (e) {
         console.warn('[KEEP-ALIVE] Không thể khởi động:', e);
     }
@@ -3908,9 +3913,10 @@ function stopKeepAliveLoop() {
         // Dừng Silent Audio
         stopSilentAudio();
         
-        if (typeof addLogEntry === 'function') {
-            addLogEntry('🛑 [KEEP-ALIVE] Đã dừng hoàn toàn: Silent Audio + requestAnimationFrame (tool bị tắt)', 'info');
-        }
+        // Log đã được ẩn để bảo mật
+        // if (typeof addLogEntry === 'function') {
+        //     addLogEntry('🛑 [KEEP-ALIVE] Đã dừng hoàn toàn: Silent Audio + requestAnimationFrame (tool bị tắt)', 'info');
+        // }
     } catch (e) {
         console.warn('[KEEP-ALIVE] Không thể dừng:', e);
     }
@@ -3962,10 +3968,10 @@ function stopKeepAliveLoop() {
         setInterval(() => {
             if (document.hidden && hiddenStartTime && (Date.now() - hiddenStartTime > 300000)) {
                 // Tab bị ẩn quá 5 phút, nhưng vẫn giữ Silent Audio chạy
-                // Chỉ log để theo dõi
-                if (typeof addLogEntry === 'function') {
-                    addLogEntry('⏰ [KEEP-ALIVE] Tab đã bị ẩn hơn 5 phút, nhưng Silent Audio vẫn hoạt động để giữ tab active', 'info');
-                }
+                // Log đã được ẩn để bảo mật
+                // if (typeof addLogEntry === 'function') {
+                //     addLogEntry('⏰ [KEEP-ALIVE] Tab đã bị ẩn hơn 5 phút, nhưng Silent Audio vẫn hoạt động để giữ tab active', 'info');
+                // }
             }
         }, 60000); // Kiểm tra mỗi phút
         
@@ -5203,21 +5209,23 @@ function igyo$uwVChUzI() {
                         addLogEntry(`⚠️ [Chunk ${currentChunkIndex + 1}] Đã được xử lý thành công trước đó, bỏ qua`, 'warning');
                         return;
                     }
-                    // QUAN TRỌNG: Kiểm tra xem chunk này có đang được xử lý không (pending hoặc failed khi retry)
-                    // Nếu đang trong chế độ retry (isFinalCheck), cho phép xử lý chunk failed
-                    // Nếu không phải retry mode, chỉ xử lý chunk pending
+                    // QUAN TRỌNG: Kiểm tra xem chunk này có đang được xử lý không (pending hoặc failed)
+                    // CƠ CHẾ RETRY MỚI: Cho phép retry chunk failed trong mọi trường hợp (không cần isFinalCheck)
                     if (window.chunkStatus && window.chunkStatus[currentChunkIndex]) {
                         const status = window.chunkStatus[currentChunkIndex];
-                        // Cho phép xử lý nếu: pending (bình thường) hoặc failed (khi retry)
+                        // Cho phép xử lý nếu: pending (bình thường) hoặc failed (retry vô hạn)
                         if (status === 'pending') {
                             // OK, chunk đang pending
-                        } else if (status === 'failed' && window.isFinalCheck) {
-                            // OK, chunk failed và đang trong chế độ retry
-                            addLogEntry(`🔄 [Chunk ${currentChunkIndex + 1}] Đang retry chunk failed...`, 'info');
-                        } else {
-                            // Không phải pending và không phải failed trong retry mode
-                            addLogEntry(`⚠️ [Chunk ${currentChunkIndex + 1}] Không phải trạng thái 'pending' hoặc 'failed' trong retry mode (${status}), bỏ qua`, 'warning');
+                        } else if (status === 'failed') {
+                            // OK, chunk failed - cho phép retry vô hạn (cơ chế retry mới)
+                            addLogEntry(`🔄 [Chunk ${currentChunkIndex + 1}] Đang retry chunk failed (retry vô hạn)...`, 'info');
+                        } else if (status === 'success') {
+                            // Chunk đã thành công, không cần xử lý lại
+                            addLogEntry(`✅ [Chunk ${currentChunkIndex + 1}] Đã thành công, bỏ qua`, 'info');
                             return;
+                        } else {
+                            // Trạng thái khác (không rõ), vẫn cho phép xử lý để tránh bỏ sót
+                            addLogEntry(`⚠️ [Chunk ${currentChunkIndex + 1}] Trạng thái không rõ (${status}), vẫn tiếp tục xử lý...`, 'warning');
                         }
                     }
                     
