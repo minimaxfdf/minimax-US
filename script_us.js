@@ -2420,6 +2420,127 @@ button:disabled {
         }
     });
 
+    // =======================================================
+    // == BỘ ĐẾM THỜI GIAN CHẠY JOB ==
+    // == FIX: Di chuyển ra ngoài DOMContentLoaded để chạy ngay cả khi script được inject sau khi DOM đã load ==
+    // =======================================================
+    let jobTimerInterval = null;
+    let jobStartTime = null;
+    let jobElapsedSeconds = 0;
+    
+    // Hàm format thời gian: HH:MM:SS
+    function formatJobTime(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    
+    // Hàm cập nhật hiển thị thời gian
+    function updateJobTimerDisplay() {
+        const timerDisplay = document.getElementById('job-timer-display');
+        if (timerDisplay) {
+            const timeString = formatJobTime(jobElapsedSeconds);
+            timerDisplay.textContent = `⏱️ Thời gian: ${timeString}`;
+            // Đảm bảo element hiển thị
+            timerDisplay.style.display = 'block';
+            timerDisplay.style.visibility = 'visible';
+        } else {
+            // Nếu element chưa tồn tại, thử tìm lại sau 100ms
+            setTimeout(() => {
+                const timerDisplay = document.getElementById('job-timer-display');
+                if (timerDisplay) {
+                    timerDisplay.textContent = `⏱️ Thời gian: ${formatJobTime(jobElapsedSeconds)}`;
+                }
+            }, 100);
+        }
+    }
+    
+    // Hàm bắt đầu đếm thời gian
+    function startJobTimer() {
+        // Reset về 0 khi bắt đầu job mới
+        jobElapsedSeconds = 0;
+        jobStartTime = Date.now();
+        
+        // Xóa interval cũ nếu có
+        if (jobTimerInterval) {
+            clearInterval(jobTimerInterval);
+            jobTimerInterval = null;
+        }
+        
+        // Đảm bảo element tồn tại trước khi bắt đầu
+        const timerDisplay = document.getElementById('job-timer-display');
+        if (!timerDisplay) {
+            // Nếu element chưa tồn tại, thử lại sau 100ms
+            setTimeout(() => {
+                startJobTimer();
+            }, 100);
+            return;
+        }
+        
+        // Cập nhật hiển thị ngay lập tức
+        updateJobTimerDisplay();
+        
+        // Bắt đầu đếm mỗi giây
+        jobTimerInterval = setInterval(() => {
+            jobElapsedSeconds++;
+            updateJobTimerDisplay();
+        }, 1000);
+        
+        // Log
+        if (typeof addLogEntry === 'function') {
+            addLogEntry('⏱️ Bộ đếm thời gian đã bắt đầu', 'info');
+        }
+    }
+    
+    // Hàm dừng đếm thời gian
+    function stopJobTimer() {
+        if (jobTimerInterval) {
+            clearInterval(jobTimerInterval);
+            jobTimerInterval = null;
+        }
+        
+        // Log thời gian cuối cùng
+        if (typeof addLogEntry === 'function') {
+            const finalTime = formatJobTime(jobElapsedSeconds);
+            addLogEntry(`⏱️ Bộ đếm thời gian đã dừng. Tổng thời gian: ${finalTime}`, 'info');
+        }
+    }
+    
+    // Hàm reset về 0
+    function resetJobTimer() {
+        jobElapsedSeconds = 0;
+        jobStartTime = null;
+        if (jobTimerInterval) {
+            clearInterval(jobTimerInterval);
+            jobTimerInterval = null;
+        }
+        updateJobTimerDisplay();
+    }
+    
+    // Đưa các hàm ra window để có thể gọi từ nơi khác (chạy ngay lập tức)
+    window.startJobTimer = startJobTimer;
+    window.stopJobTimer = stopJobTimer;
+    window.resetJobTimer = resetJobTimer;
+    
+    // Khởi tạo hiển thị timer ban đầu (chạy ngay lập tức hoặc sau khi DOM sẵn sàng)
+    function initJobTimer() {
+        if (document.readyState === 'loading') {
+            // DOM chưa sẵn sàng, chờ DOMContentLoaded
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => {
+                    updateJobTimerDisplay();
+                }, 500);
+            });
+        } else {
+            // DOM đã sẵn sàng, chạy ngay
+            setTimeout(() => {
+                updateJobTimerDisplay();
+            }, 500);
+        }
+    }
+    initJobTimer();
+
     document.addEventListener('DOMContentLoaded', function() {
         const clearLogBtn = document.getElementById('clear-log-btn');
         if (clearLogBtn) {
@@ -2439,113 +2560,6 @@ button:disabled {
             logPanel.style.display = 'none';
             toggleLogBtn.textContent = '📜 Xem log hoạt động';
         }
-        
-        // =======================================================
-        // == BỘ ĐẾM THỜI GIAN CHẠY JOB ==
-        // =======================================================
-        let jobTimerInterval = null;
-        let jobStartTime = null;
-        let jobElapsedSeconds = 0;
-        
-        // Hàm format thời gian: HH:MM:SS
-        function formatJobTime(seconds) {
-            const hours = Math.floor(seconds / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-            const secs = seconds % 60;
-            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-        }
-        
-        // Hàm cập nhật hiển thị thời gian
-        function updateJobTimerDisplay() {
-            const timerDisplay = document.getElementById('job-timer-display');
-            if (timerDisplay) {
-                const timeString = formatJobTime(jobElapsedSeconds);
-                timerDisplay.textContent = `⏱️ Thời gian: ${timeString}`;
-                // Đảm bảo element hiển thị
-                timerDisplay.style.display = 'block';
-                timerDisplay.style.visibility = 'visible';
-            } else {
-                // Nếu element chưa tồn tại, thử tìm lại sau 100ms
-                setTimeout(() => {
-                    const timerDisplay = document.getElementById('job-timer-display');
-                    if (timerDisplay) {
-                        timerDisplay.textContent = `⏱️ Thời gian: ${formatJobTime(jobElapsedSeconds)}`;
-                    }
-                }, 100);
-            }
-        }
-        
-        // Hàm bắt đầu đếm thời gian
-        function startJobTimer() {
-            // Reset về 0 khi bắt đầu job mới
-            jobElapsedSeconds = 0;
-            jobStartTime = Date.now();
-            
-            // Xóa interval cũ nếu có
-            if (jobTimerInterval) {
-                clearInterval(jobTimerInterval);
-                jobTimerInterval = null;
-            }
-            
-            // Đảm bảo element tồn tại trước khi bắt đầu
-            const timerDisplay = document.getElementById('job-timer-display');
-            if (!timerDisplay) {
-                // Nếu element chưa tồn tại, thử lại sau 100ms
-                setTimeout(() => {
-                    startJobTimer();
-                }, 100);
-                return;
-            }
-            
-            // Cập nhật hiển thị ngay lập tức
-            updateJobTimerDisplay();
-            
-            // Bắt đầu đếm mỗi giây
-            jobTimerInterval = setInterval(() => {
-                jobElapsedSeconds++;
-                updateJobTimerDisplay();
-            }, 1000);
-            
-            // Log
-            if (typeof addLogEntry === 'function') {
-                addLogEntry('⏱️ Bộ đếm thời gian đã bắt đầu', 'info');
-            }
-        }
-        
-        // Hàm dừng đếm thời gian
-        function stopJobTimer() {
-            if (jobTimerInterval) {
-                clearInterval(jobTimerInterval);
-                jobTimerInterval = null;
-            }
-            
-            // Log thời gian cuối cùng
-            if (typeof addLogEntry === 'function') {
-                const finalTime = formatJobTime(jobElapsedSeconds);
-                addLogEntry(`⏱️ Bộ đếm thời gian đã dừng. Tổng thời gian: ${finalTime}`, 'info');
-            }
-        }
-        
-        // Hàm reset về 0
-        function resetJobTimer() {
-            jobElapsedSeconds = 0;
-            jobStartTime = null;
-            if (jobTimerInterval) {
-                clearInterval(jobTimerInterval);
-                jobTimerInterval = null;
-            }
-            updateJobTimerDisplay();
-        }
-        
-        // Đưa các hàm ra window để có thể gọi từ nơi khác
-        window.startJobTimer = startJobTimer;
-        window.stopJobTimer = stopJobTimer;
-        window.resetJobTimer = resetJobTimer;
-        
-        // Khởi tạo hiển thị timer ban đầu
-        setTimeout(() => {
-            updateJobTimerDisplay();
-        }, 500);
         
         // Cảnh báo khi vượt quá 50,000 ký tự (không tự động cắt)
         const MAX_TEXT_LENGTH = 50000;
@@ -4356,7 +4370,8 @@ async function uSTZrHUt_IC() {
         addLogEntry(`📦 [Chunk ${ttuo$y_KhCV + 1}/${SI$acY.length}] Đang gửi đi...`, 'info');
 
         // ANTI-DETECTION: Thêm delay ngẫu nhiên trước khi đặt text
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
+        // TỐI ƯU: Giảm từ 1-3 giây xuống 0.5-1 giây để tiết kiệm ~1.5 giây trung bình
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 500));
         
         // =======================================================
         // == ĐẢM BẢO TEXT KHÔNG BỊ THAY ĐỔI BỞI VĂN BẢN MẶC ĐỊNH ==
@@ -4422,13 +4437,14 @@ async function uSTZrHUt_IC() {
             addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Không thể tạo MutationObserver: ${observerError.message}`, 'warning');
         }
         
-        // Lớp 2: Set text nhiều lần liên tiếp (8 lần) để đảm bảo
+        // Lớp 2: Set text nhiều lần liên tiếp (5 lần) để đảm bảo
+        // TỐI ƯU: Giảm từ 8 lần xuống 5 lần để tiết kiệm ~0.15 giây (3 lần x 50ms)
         // LƯU Ý: Mỗi lần set là GÁN GIÁ TRỊ MỚI (value = chunkText), KHÔNG PHẢI APPEND
         // => KHÔNG BỊ LẶP LẠI TEXT
-        const SET_TEXT_COUNT = 8;
+        const SET_TEXT_COUNT = 5;
         addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đang set text ${SET_TEXT_COUNT} lần liên tiếp để đảm bảo...`, 'info');
 
-        // WATCHDOG: giới hạn tối đa 10 giây cho cả vòng set text 8 lần
+        // WATCHDOG: giới hạn tối đa 10 giây cho cả vòng set text 5 lần
         const MAX_SET_TEXT_DURATION_MS = 10000;
         const setTextStartTime = Date.now();
         
@@ -4492,18 +4508,19 @@ async function uSTZrHUt_IC() {
         addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set text ${SET_TEXT_COUNT} lần liên tiếp`, 'info');
         
         // =======================================================
-        // == QUAN SÁT SAU KHI SET TEXT: Chờ 2 giây để kiểm tra Minimax có thay đổi text không ==
+        // == QUAN SÁT SAU KHI SET TEXT: Chờ 0.5 giây để kiểm tra Minimax có thay đổi text không ==
+        // == TỐI ƯU: Giảm từ 2 giây xuống 0.5 giây để tiết kiệm 1.5 giây ==
         // =======================================================
-        addLogEntry(`👁️ [Chunk ${ttuo$y_KhCV + 1}] Đang chờ 2 giây để quan sát xem Minimax có thay đổi text không...`, 'info');
+        addLogEntry(`👁️ [Chunk ${ttuo$y_KhCV + 1}] Đang chờ 0.5 giây để quan sát xem Minimax có thay đổi text không...`, 'info');
         
         // KEEP-ALIVE: Phát Silent Audio trong thời gian chờ
         if (window.mmxKeepAliveRunning) {
             playSilentAudio();
         }
         
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Kiểm tra text sau 2 giây
+        // Kiểm tra text sau 0.5 giây
         const observedText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] || '';
         if (observedText !== chunkText) {
             addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] PHÁT HIỆN: Minimax đã thay đổi text sau khi set! (Chuẩn hóa: ${chunkText.length} ký tự, Hiện tại: ${observedText.length} ký tự)`, 'warning');
@@ -4531,7 +4548,7 @@ async function uSTZrHUt_IC() {
                 addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] VẪN BỊ THAY ĐỔI sau khi set lại! (${recheckText.length} ký tự). Có thể Minimax đang can thiệp mạnh.`, 'warning');
             }
         } else {
-            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Sau 2 giây quan sát: Text KHÔNG bị Minimax thay đổi (${observedText.length} ký tự)`, 'info');
+            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Sau 0.5 giây quan sát: Text KHÔNG bị Minimax thay đổi (${observedText.length} ký tự)`, 'info');
         }
         
         // Lớp 3: setInterval giám sát liên tục trong 500ms trước khi click
@@ -4809,9 +4826,9 @@ async function uSTZrHUt_IC() {
                         addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Xác minh độ dài sau khi gửi: KHỚP (${actualLen} ký tự)`, 'info');
                     }
                 } catch (lengthCheckError) {
-                    console.warn('Lỗi khi kiểm tra lại độ dài chunk sau 3 giây:', lengthCheckError);
+                    console.warn('Lỗi khi kiểm tra lại độ dài chunk sau 1 giây:', lengthCheckError);
                 }
-            }, 3000);
+            }, 1000); // TỐI ƯU: Giảm từ 3 giây xuống 1 giây để tiết kiệm 2 giây
         } catch (e) {
             console.warn('Không thể thiết lập vòng xác minh độ dài sau khi gửi chunk:', e);
         }
