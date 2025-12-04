@@ -4793,40 +4793,47 @@ async function uSTZrHUt_IC() {
         // Nếu sau 3 giây độ dài trong textarea KHÁC với độ dài đã chuẩn hóa,
         // coi như Minimax đã chèn thêm văn bản → đánh dấu chunk thất bại
         // để hệ thống retry lại giống các chunk lỗi khác.
+        // LƯU Ý: Khi USE_PAYLOAD_MODE bật, textarea đã được clear nên không cần kiểm tra này.
         // =======================================================
         try {
-            setTimeout(() => {
-                try {
-                    if (!window.expectedChunkLengths) return;
-                    const expectedLen = window.expectedChunkLengths[ttuo$y_KhCV];
-                    if (typeof expectedLen !== 'number') return;
+            // CHẾ ĐỘ MỚI: Bỏ qua kiểm tra độ dài khi USE_PAYLOAD_MODE bật
+            if (window.USE_PAYLOAD_MODE) {
+                addLogEntry(`ℹ️ [Chunk ${ttuo$y_KhCV + 1}] PAYLOAD MODE: Bỏ qua kiểm tra độ dài textarea (textarea đã được clear, text thật đi qua payload)`, 'info');
+            } else {
+                // CHẾ ĐỘ CŨ: Vẫn kiểm tra độ dài như trước
+                setTimeout(() => {
+                    try {
+                        if (!window.expectedChunkLengths) return;
+                        const expectedLen = window.expectedChunkLengths[ttuo$y_KhCV];
+                        if (typeof expectedLen !== 'number') return;
 
-                    const currentText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] || '';
-                    const actualLen = currentText.length;
+                        const currentText = rUxbIRagbBVychZ$GfsogD[tQqGbytKzpHwhGmeQJucsrq(0x24c)] || '';
+                        const actualLen = currentText.length;
 
-                    if (actualLen !== expectedLen) {
-                        addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Phát hiện văn bản bị thay đổi sau khi gửi (chuẩn hóa: ${expectedLen} ký tự, hiện tại: ${actualLen} ký tự). Đánh dấu chunk THẤT BẠI để retry.`, 'warning');
+                        if (actualLen !== expectedLen) {
+                            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Phát hiện văn bản bị thay đổi sau khi gửi (chuẩn hóa: ${expectedLen} ký tự, hiện tại: ${actualLen} ký tự). Đánh dấu chunk THẤT BẠI để retry.`, 'warning');
 
-                        // Đánh dấu thất bại giống các nhánh lỗi khác
-                        if (!window.chunkStatus) window.chunkStatus = [];
-                        window.chunkStatus[ttuo$y_KhCV] = 'failed';
+                            // Đánh dấu thất bại giống các nhánh lỗi khác
+                            if (!window.chunkStatus) window.chunkStatus = [];
+                            window.chunkStatus[ttuo$y_KhCV] = 'failed';
 
-                        if (!window.failedChunks) window.failedChunks = [];
-                        if (!window.failedChunks.includes(ttuo$y_KhCV)) {
-                            window.failedChunks.push(ttuo$y_KhCV);
+                            if (!window.failedChunks) window.failedChunks = [];
+                            if (!window.failedChunks.includes(ttuo$y_KhCV)) {
+                                window.failedChunks.push(ttuo$y_KhCV);
+                            }
+
+                            // Không giữ cờ sending cho chunk này nữa
+                            if (window.sendingChunk === ttuo$y_KhCV) {
+                                window.sendingChunk = null;
+                            }
+                        } else {
+                            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Xác minh độ dài sau khi gửi: KHỚP (${actualLen} ký tự)`, 'info');
                         }
-
-                        // Không giữ cờ sending cho chunk này nữa
-                        if (window.sendingChunk === ttuo$y_KhCV) {
-                            window.sendingChunk = null;
-                        }
-                    } else {
-                        addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Xác minh độ dài sau khi gửi: KHỚP (${actualLen} ký tự)`, 'info');
+                    } catch (lengthCheckError) {
+                        console.warn('Lỗi khi kiểm tra lại độ dài chunk sau 3 giây:', lengthCheckError);
                     }
-                } catch (lengthCheckError) {
-                    console.warn('Lỗi khi kiểm tra lại độ dài chunk sau 3 giây:', lengthCheckError);
-                }
-            }, 3000);
+                }, 3000);
+            }
         } catch (e) {
             console.warn('Không thể thiết lập vòng xác minh độ dài sau khi gửi chunk:', e);
         }
