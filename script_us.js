@@ -4205,7 +4205,15 @@ async function uSTZrHUt_IC() {
     }
     
     // Kiểm tra SI$acY có dữ liệu không
+    // QUAN TRỌNG: Nếu SI$acY rỗng, có thể là job mới chưa được khởi tạo hoặc đã merge xong
+    // Chỉ return nếu thực sự không có dữ liệu và không phải là trạng thái sau merge
     if (!SI$acY || SI$acY.length === 0) {
+        // Kiểm tra xem có phải là trạng thái sau merge không (EfNjYNYj_O_CGB = false)
+        if (EfNjYNYj_O_CGB === false && ttuo$y_KhCV === 0) {
+            // Đây là trạng thái sau merge, không phải lỗi
+            // Không log warning, chỉ return im lặng
+            return;
+        }
         addLogEntry(`⚠️ Không có chunks để xử lý. SI$acY.length = ${SI$acY ? SI$acY.length : 'undefined'}`, 'warning');
         return;
     }
@@ -7953,7 +7961,32 @@ async function waitForVoiceModelReady() {
             // Đảm bảo EfNjYNYj_O_CGB = true trước khi gọi
             EfNjYNYj_O_CGB = true;
             MEpJezGZUsmpZdAgFRBRZW = false; // Đảm bảo không bị pause
-            addLogEntry(`🚀 Đang khởi động xử lý chunk đầu tiên (EfNjYNYj_O_CGB = ${EfNjYNYj_O_CGB})...`, 'info');
+            
+            // Đảm bảo window flags cũng được set đúng
+            if (typeof window.EfNjYNYj_O_CGB !== 'undefined') {
+                window.EfNjYNYj_O_CGB = true;
+            }
+            if (typeof window.MEpJezGZUsmpZdAgFRBRZW !== 'undefined') {
+                window.MEpJezGZUsmpZdAgFRBRZW = false;
+            }
+            
+            // Đảm bảo ttuo$y_KhCV = 0 (đã được set ở trên, nhưng double-check)
+            if (ttuo$y_KhCV !== 0) {
+                addLogEntry(`⚠️ Phát hiện ttuo$y_KhCV = ${ttuo$y_KhCV} (không phải 0). Reset về 0.`, 'warning');
+                ttuo$y_KhCV = 0;
+            }
+            
+            // Đảm bảo SI$acY không rỗng
+            if (!SI$acY || SI$acY.length === 0) {
+                addLogEntry(`❌ Lỗi: SI$acY rỗng sau khi chia chunk. Không thể bắt đầu job.`, 'error');
+                startBtn.disabled = false;
+                startBtn.style.display = 'block';
+                pauseBtn.style.display = 'none';
+                stopBtn.style.display = 'none';
+                return;
+            }
+            
+            addLogEntry(`🚀 Đang khởi động xử lý chunk đầu tiên (EfNjYNYj_O_CGB = ${EfNjYNYj_O_CGB}, ttuo$y_KhCV = ${ttuo$y_KhCV}, SI$acY.length = ${SI$acY.length})...`, 'info');
             
             // Gọi với try-catch để bắt lỗi nếu có
             try {
@@ -7961,6 +7994,7 @@ async function waitForVoiceModelReady() {
             } catch (error) {
                 addLogEntry(`❌ Lỗi khi gọi uSTZrHUt_IC(): ${error.message}`, 'error');
                 console.error('Lỗi khi gọi uSTZrHUt_IC():', error);
+                console.error('Stack trace:', error.stack);
                 // Reset UI nếu lỗi
                 startBtn.disabled = false;
                 startBtn.style.display = 'block';
