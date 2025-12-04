@@ -3022,8 +3022,11 @@ const BBNDYjhHoGkj_qbbbJu=URL[VCAHyXsrERcpXVhFPxmgdBjjh(0x1f0)](InRdxToeqTDyPgDG
             window.isMerging = false;
             addLogEntry(`✅ Hoàn tất merge file!`, 'success');
 
-            // Dừng keep-alive loop khi job đã hoàn toàn kết thúc
-            stopKeepAliveLoop();
+            // LƯU Ý: Silent Audio vẫn tiếp tục chạy 100% thời gian để đảm bảo trình duyệt luôn hoạt động
+            // Chỉ dừng khi tool/tab bị đóng
+            if (typeof addLogEntry === 'function') {
+                addLogEntry(`🔊 [KEEP-ALIVE] Silent Audio vẫn đang chạy để giữ tab active (chạy 100% thời gian)`, 'info');
+            }
 
 if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[VCAHyXsrERcpXVhFPxmgdBjjh(0x26c)]();typeof WaveSurfer===VCAHyXsrERcpXVhFPxmgdBjjh(0x24d)&&await new Promise(dyvridmApUsyBfpYIHkxv=>setTimeout(dyvridmApUsyBfpYIHkxv,parseInt(0xf61)+Math.ceil(-parseInt(0x1e0))+-parseInt(0xb8d))),n_WwsStaC$jzsWjOIjRqedTG=WaveSurfer[VCAHyXsrERcpXVhFPxmgdBjjh(0x240)]({'container':VCAHyXsrERcpXVhFPxmgdBjjh(0x274),'waveColor':VCAHyXsrERcpXVhFPxmgdBjjh(0x26a),'progressColor':VCAHyXsrERcpXVhFPxmgdBjjh(0x228),'cursorColor':VCAHyXsrERcpXVhFPxmgdBjjh(0x20c),'barWidth':0x3,'barRadius':0x3,'cursorWidth':0x1,'height':0x64,'barGap':0x3}),n_WwsStaC$jzsWjOIjRqedTG[VCAHyXsrERcpXVhFPxmgdBjjh(0x1d5)](BBNDYjhHoGkj_qbbbJu),n_WwsStaC$jzsWjOIjRqedTG['on'](VCAHyXsrERcpXVhFPxmgdBjjh(0x1d6),()=>{const Ipo_CDaCvNEfh=VCAHyXsrERcpXVhFPxmgdBjjh;XvyPnqSRdJtYjSxingI[Ipo_CDaCvNEfh(0x1c7)]='⏸️';}),n_WwsStaC$jzsWjOIjRqedTG['on'](VCAHyXsrERcpXVhFPxmgdBjjh(0x22d),()=>{const NdVplyNSVhdzFR=VCAHyXsrERcpXVhFPxmgdBjjh;XvyPnqSRdJtYjSxingI[NdVplyNSVhdzFR(0x1c7)]='▶️';});
 
@@ -3508,21 +3511,6 @@ function startKeepAliveLoop() {
     }
 }
 
-function stopKeepAliveLoop() {
-    try {
-        window.mmxKeepAliveRunning = false;
-        if (window.mmxKeepAliveId && typeof cancelAnimationFrame === 'function') {
-            cancelAnimationFrame(window.mmxKeepAliveId);
-        }
-        window.mmxKeepAliveId = null;
-        if (typeof addLogEntry === 'function') {
-            addLogEntry('🩺 Keep-Alive: Đã dừng vòng requestAnimationFrame (job kết thúc).', 'info');
-        }
-    } catch (e) {
-        console.warn('Không thể dừng keep-alive loop:', e);
-    }
-}
-
 // Helper: set value cho textarea theo kiểu "React-friendly"
 // Dùng native setter để cập nhật cả DOM lẫn React state bên trong
 function setReactTextareaValue(el, value) {
@@ -3697,7 +3685,7 @@ function startKeepAliveLoop() {
     }
 }
 
-// Hàm stop keep-alive
+// Hàm stop keep-alive (CHỈ DỪNG KHI TOOL BỊ TẮT)
 function stopKeepAliveLoop() {
     try {
         window.mmxKeepAliveRunning = false;
@@ -3718,19 +3706,80 @@ function stopKeepAliveLoop() {
         stopSilentAudio();
         
         if (typeof addLogEntry === 'function') {
-            addLogEntry('🩺 [KEEP-ALIVE] Đã dừng: Silent Audio + requestAnimationFrame (job kết thúc)', 'info');
+            addLogEntry('🛑 [KEEP-ALIVE] Đã dừng hoàn toàn: Silent Audio + requestAnimationFrame (tool bị tắt)', 'info');
         }
     } catch (e) {
         console.warn('[KEEP-ALIVE] Không thể dừng:', e);
     }
 }
 
+// =======================================================
+// == KHỞI ĐỘNG SILENT AUDIO NGAY KHI SCRIPT ĐƯỢC LOAD ==
+// == Chạy 100% thời gian, chỉ dừng khi tool bị tắt ==
+// =======================================================
+(function initKeepAliveOnLoad() {
+    try {
+        // Đợi DOM sẵn sàng (nếu chưa sẵn)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => {
+                    startKeepAliveLoop();
+                    console.log('[KEEP-ALIVE] Đã khởi động Silent Audio ngay khi tool load (chạy 100% thời gian)');
+                }, 1000); // Đợi 1 giây để đảm bảo mọi thứ đã sẵn sàng
+            });
+        } else {
+            // DOM đã sẵn sàng, khởi động ngay
+            setTimeout(() => {
+                startKeepAliveLoop();
+                console.log('[KEEP-ALIVE] Đã khởi động Silent Audio ngay khi tool load (chạy 100% thời gian)');
+            }, 1000);
+        }
+        
+        // Dừng khi trang bị đóng (beforeunload)
+        window.addEventListener('beforeunload', () => {
+            stopKeepAliveLoop();
+        });
+        
+        // Dừng khi trang bị unload (backup)
+        window.addEventListener('unload', () => {
+            stopKeepAliveLoop();
+        });
+        
+        // Dừng khi visibility change thành hidden và không quay lại sau 5 phút (backup)
+        let hiddenStartTime = null;
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                hiddenStartTime = Date.now();
+            } else {
+                hiddenStartTime = null;
+            }
+        });
+        
+        // Kiểm tra định kỳ nếu tab bị ẩn quá lâu (backup safety)
+        setInterval(() => {
+            if (document.hidden && hiddenStartTime && (Date.now() - hiddenStartTime > 300000)) {
+                // Tab bị ẩn quá 5 phút, nhưng vẫn giữ Silent Audio chạy
+                // Chỉ log để theo dõi
+                if (typeof addLogEntry === 'function') {
+                    addLogEntry('⏰ [KEEP-ALIVE] Tab đã bị ẩn hơn 5 phút, nhưng Silent Audio vẫn hoạt động để giữ tab active', 'info');
+                }
+            }
+        }, 60000); // Kiểm tra mỗi phút
+        
+    } catch (e) {
+        console.warn('[KEEP-ALIVE] Lỗi khởi động tự động:', e);
+    }
+})();
+
 async function uSTZrHUt_IC() {
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
     if (MEpJezGZUsmpZdAgFRBRZW) return;
     
-    // Bật keep-alive loop trong suốt thời gian render các chunk
-    startKeepAliveLoop();
+    // Đảm bảo keep-alive loop đang chạy (đã được khởi động tự động khi tool load)
+    // Nếu chưa chạy (do lỗi hoặc chưa kịp khởi động), sẽ khởi động ngay
+    if (!window.mmxKeepAliveRunning) {
+        startKeepAliveLoop();
+    }
     // GUARD: Kiểm tra độ sâu recursive calls ở đầu hàm
     if (typeof window.recursiveCallDepth === 'undefined') {
         window.recursiveCallDepth = 0;
@@ -4461,29 +4510,72 @@ async function uSTZrHUt_IC() {
             
             // Nếu chunk trước chưa có blob hoặc chưa thành công, đợi thêm
             if (!prevChunkBlob || prevChunkStatus !== 'success') {
-                addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Chunk trước (${prevChunkIndex + 1}) chưa hoàn tất. Đang chờ...`, 'info');
+                // Log trạng thái chi tiết của chunk trước
+                const statusText = prevChunkStatus || 'pending';
+                const hasBlob = !!prevChunkBlob;
+                addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Chunk trước (${prevChunkIndex + 1}) chưa hoàn tất. Trạng thái: ${statusText}, Có blob: ${hasBlob ? 'Có' : 'Không'}. Đang chờ...`, 'info');
                 
                 // Chờ tối đa 30 giây cho chunk trước hoàn tất
                 const MAX_WAIT_MS = 30000;
                 const waitStartTime = Date.now();
                 let waited = false;
+                let checkCount = 0;
                 
                 while ((!prevChunkBlob || prevChunkStatus !== 'success') && (Date.now() - waitStartTime) < MAX_WAIT_MS) {
+                    // KEEP-ALIVE: Phát Silent Audio trong vòng lặp chờ để tránh browser throttle
+                    if (window.mmxKeepAliveRunning) {
+                        playSilentAudio(false); // Không log mỗi lần để tránh spam
+                    }
+                    
                     await new Promise(resolve => setTimeout(resolve, 500)); // Chờ 500ms mỗi lần kiểm tra
+                    
+                    checkCount++;
+                    const elapsed = Date.now() - waitStartTime;
                     
                     // Kiểm tra lại
                     prevChunkBlob = window.chunkBlobs && window.chunkBlobs[prevChunkIndex];
                     prevChunkStatus = window.chunkStatus && window.chunkStatus[prevChunkIndex];
                     
+                    // Log tiến trình mỗi 5 giây
+                    if (checkCount % 10 === 0) { // Mỗi 5 giây (10 lần x 500ms)
+                        const newStatusText = prevChunkStatus || 'pending';
+                        const newHasBlob = !!prevChunkBlob;
+                        addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Vẫn đang chờ chunk trước (${prevChunkIndex + 1})... Đã chờ ${Math.round(elapsed/1000)}s. Trạng thái: ${newStatusText}, Có blob: ${newHasBlob ? 'Có' : 'Không'}`, 'info');
+                    }
+                    
                     if (prevChunkBlob && prevChunkStatus === 'success') {
-                        addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Chunk trước (${prevChunkIndex + 1}) đã hoàn tất. Tiếp tục...`, 'info');
+                        addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Chunk trước (${prevChunkIndex + 1}) đã hoàn tất sau ${Math.round(elapsed/1000)}s. Tiếp tục...`, 'info');
                         waited = true;
+                        break;
+                    }
+                    
+                    // Nếu chunk trước bị failed, không cần chờ nữa (sẽ retry sau)
+                    if (prevChunkStatus === 'failed') {
+                        addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Chunk trước (${prevChunkIndex + 1}) đã bị đánh dấu FAILED. Sẽ retry sau. Tiếp tục với chunk hiện tại...`, 'warning');
+                        waited = true; // Coi như đã xử lý (chunk failed sẽ được retry sau)
                         break;
                     }
                 }
                 
                 if (!waited) {
-                    addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Chờ chunk trước quá lâu (${Math.round(MAX_WAIT_MS/1000)} giây). Tiếp tục nhưng có thể gặp lỗi.`, 'warning');
+                    const elapsed = Date.now() - waitStartTime;
+                    const finalStatus = prevChunkStatus || 'pending';
+                    const finalHasBlob = !!prevChunkBlob;
+                    
+                    addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Chờ chunk trước (${prevChunkIndex + 1}) quá lâu (${Math.round(MAX_WAIT_MS/1000)} giây). Trạng thái cuối: ${finalStatus}, Có blob: ${finalHasBlob ? 'Có' : 'Không'}. Tiếp tục nhưng có thể gặp lỗi.`, 'warning');
+                    
+                    // Nếu chunk trước vẫn pending sau 30 giây, đánh dấu failed để retry sau
+                    if (prevChunkStatus !== 'failed' && prevChunkStatus !== 'success') {
+                        if (!window.chunkStatus) window.chunkStatus = [];
+                        window.chunkStatus[prevChunkIndex] = 'failed';
+                        
+                        if (!window.failedChunks) window.failedChunks = [];
+                        if (!window.failedChunks.includes(prevChunkIndex)) {
+                            window.failedChunks.push(prevChunkIndex);
+                        }
+                        
+                        addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Đã đánh dấu chunk trước (${prevChunkIndex + 1}) là FAILED do timeout. Sẽ retry sau.`, 'warning');
+                    }
                 }
             }
         }
@@ -4495,15 +4587,31 @@ async function uSTZrHUt_IC() {
             // Chờ tối đa 30 giây
             const MAX_WAIT_SENDING_MS = 30000;
             const waitSendingStartTime = Date.now();
+            let sendingCheckCount = 0;
             
             while (window.sendingChunk !== null && window.sendingChunk !== ttuo$y_KhCV && (Date.now() - waitSendingStartTime) < MAX_WAIT_SENDING_MS) {
+                // KEEP-ALIVE: Phát Silent Audio trong vòng lặp chờ
+                if (window.mmxKeepAliveRunning) {
+                    playSilentAudio(false);
+                }
+                
                 await new Promise(resolve => setTimeout(resolve, 500));
+                
+                sendingCheckCount++;
+                const elapsed = Date.now() - waitSendingStartTime;
+                
+                // Log tiến trình mỗi 5 giây
+                if (sendingCheckCount % 10 === 0) {
+                    addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Vẫn đang chờ chunk ${window.sendingChunk + 1} hoàn tất... Đã chờ ${Math.round(elapsed/1000)}s`, 'info');
+                }
             }
             
             if (window.sendingChunk !== null && window.sendingChunk !== ttuo$y_KhCV) {
-                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Chờ chunk đang gửi quá lâu. Tiếp tục nhưng có thể gặp lỗi.`, 'warning');
+                const elapsed = Date.now() - waitSendingStartTime;
+                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Chờ chunk ${window.sendingChunk + 1} đang gửi quá lâu (${Math.round(elapsed/1000)}s). Tiếp tục nhưng có thể gặp lỗi.`, 'warning');
             } else {
-                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Chunk đang gửi đã hoàn tất. Tiếp tục...`, 'info');
+                const elapsed = Date.now() - waitSendingStartTime;
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Chunk đang gửi đã hoàn tất sau ${Math.round(elapsed/1000)}s. Tiếp tục...`, 'info');
             }
         }
         
@@ -4514,9 +4622,23 @@ async function uSTZrHUt_IC() {
             // Chờ tối đa 30 giây cho nút sẵn sàng
             const MAX_WAIT_BUTTON_MS = 30000;
             const waitButtonStartTime = Date.now();
+            let buttonCheckCount = 0;
             
             while (targetButton.disabled && (Date.now() - waitButtonStartTime) < MAX_WAIT_BUTTON_MS) {
+                // KEEP-ALIVE: Phát Silent Audio trong vòng lặp chờ
+                if (window.mmxKeepAliveRunning) {
+                    playSilentAudio(false);
+                }
+                
                 await new Promise(resolve => setTimeout(resolve, 500));
+                
+                buttonCheckCount++;
+                const elapsed = Date.now() - waitButtonStartTime;
+                
+                // Log tiến trình mỗi 5 giây
+                if (buttonCheckCount % 10 === 0) {
+                    addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Vẫn đang chờ nút sẵn sàng... Đã chờ ${Math.round(elapsed/1000)}s`, 'info');
+                }
                 
                 // Tìm lại nút (có thể đã thay đổi)
                 const buttons = document.querySelectorAll(stableButtonSelector);
