@@ -2459,38 +2459,52 @@ button:disabled {
         function updateJobTimerDisplay() {
             const timerDisplay = document.getElementById('job-timer-display');
             if (timerDisplay) {
-                timerDisplay.textContent = `⏱️ Thời gian: ${formatJobTime(jobElapsedSeconds)}`;
+                const timeString = formatJobTime(jobElapsedSeconds);
+                timerDisplay.textContent = `⏱️ Thời gian: ${timeString}`;
+                // Đảm bảo element hiển thị
+                timerDisplay.style.display = 'block';
+                timerDisplay.style.visibility = 'visible';
+            } else {
+                // Nếu element chưa tồn tại, thử tìm lại sau 100ms
+                setTimeout(() => {
+                    const timerDisplay = document.getElementById('job-timer-display');
+                    if (timerDisplay) {
+                        timerDisplay.textContent = `⏱️ Thời gian: ${formatJobTime(jobElapsedSeconds)}`;
+                    }
+                }, 100);
             }
         }
         
         // Hàm bắt đầu đếm thời gian
         function startJobTimer() {
-            console.log('⏱️ [TIMER] startJobTimer() được gọi');
-            
             // Reset về 0 khi bắt đầu job mới
             jobElapsedSeconds = 0;
             jobStartTime = Date.now();
             
-            // Cập nhật hiển thị ngay lập tức
-            updateJobTimerDisplay();
-            console.log('⏱️ [TIMER] Đã cập nhật hiển thị lần đầu');
-            
             // Xóa interval cũ nếu có
             if (jobTimerInterval) {
                 clearInterval(jobTimerInterval);
-                console.log('⏱️ [TIMER] Đã xóa interval cũ');
+                jobTimerInterval = null;
             }
+            
+            // Đảm bảo element tồn tại trước khi bắt đầu
+            const timerDisplay = document.getElementById('job-timer-display');
+            if (!timerDisplay) {
+                // Nếu element chưa tồn tại, thử lại sau 100ms
+                setTimeout(() => {
+                    startJobTimer();
+                }, 100);
+                return;
+            }
+            
+            // Cập nhật hiển thị ngay lập tức
+            updateJobTimerDisplay();
             
             // Bắt đầu đếm mỗi giây
             jobTimerInterval = setInterval(() => {
                 jobElapsedSeconds++;
                 updateJobTimerDisplay();
-                if (jobElapsedSeconds % 10 === 0) {
-                    console.log(`⏱️ [TIMER] Đang đếm: ${jobElapsedSeconds} giây`);
-                }
             }, 1000);
-            
-            console.log('⏱️ [TIMER] Đã tạo interval mới, timer đang chạy');
             
             // Log
             if (typeof addLogEntry === 'function') {
@@ -2527,6 +2541,11 @@ button:disabled {
         window.startJobTimer = startJobTimer;
         window.stopJobTimer = stopJobTimer;
         window.resetJobTimer = resetJobTimer;
+        
+        // Khởi tạo hiển thị timer ban đầu
+        setTimeout(() => {
+            updateJobTimerDisplay();
+        }, 500);
         
         // Cảnh báo khi vượt quá 50,000 ký tự (không tự động cắt)
         const MAX_TEXT_LENGTH = 50000;
@@ -7489,20 +7508,13 @@ async function waitForVoiceModelReady() {
             }
 
             // Bắt đầu đếm thời gian khi bắt đầu job mới
-            console.log('🔍 [TIMER DEBUG] Đang kiểm tra startJobTimer...');
             if (typeof window.startJobTimer === 'function') {
-                console.log('✅ [TIMER DEBUG] startJobTimer tồn tại, đang gọi...');
                 window.startJobTimer();
-                console.log('✅ [TIMER DEBUG] Đã gọi startJobTimer');
             } else {
-                console.error('❌ [TIMER DEBUG] startJobTimer KHÔNG tồn tại!');
                 // Thử gọi lại sau 100ms nếu chưa sẵn sàng
                 setTimeout(() => {
                     if (typeof window.startJobTimer === 'function') {
-                        console.log('✅ [TIMER DEBUG] startJobTimer đã sẵn sàng sau delay, đang gọi...');
                         window.startJobTimer();
-                    } else {
-                        console.error('❌ [TIMER DEBUG] startJobTimer vẫn KHÔNG tồn tại sau delay!');
                     }
                 }, 100);
             }
