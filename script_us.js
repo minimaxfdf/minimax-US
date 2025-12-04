@@ -3483,6 +3483,122 @@ function checkWebReady() {
 // =======================================================
 // HÀM HELPER: Reset giao diện và clear textarea
 // =======================================================
+// Hàm cleanup data rác cho chunk cụ thể trước khi retry
+async function cleanupChunkData(chunkIndex) {
+    try {
+        addLogEntry(`🧹 [Chunk ${chunkIndex + 1}] Đang cleanup data rác trước khi retry...`, 'info');
+        
+        // 1. Clear blob của chunk này
+        if (window.chunkBlobs && window.chunkBlobs[chunkIndex] !== null) {
+            window.chunkBlobs[chunkIndex] = null;
+            addLogEntry(`🧹 [Chunk ${chunkIndex + 1}] Đã clear blob cũ`, 'info');
+        }
+        
+        // 2. Clear trong ZTQj$LF$o
+        if (ZTQj$LF$o && ZTQj$LF$o[chunkIndex] !== null) {
+            ZTQj$LF$o[chunkIndex] = null;
+        }
+        
+        // 3. Clear timeout của chunk này
+        if (window.chunkTimeoutIds && window.chunkTimeoutIds[chunkIndex]) {
+            clearTimeout(window.chunkTimeoutIds[chunkIndex]);
+            delete window.chunkTimeoutIds[chunkIndex];
+            addLogEntry(`🧹 [Chunk ${chunkIndex + 1}] Đã clear timeout cũ`, 'info');
+        }
+        
+        // 4. Xóa khỏi processingChunks
+        if (window.processingChunks && window.processingChunks.has(chunkIndex)) {
+            window.processingChunks.delete(chunkIndex);
+            addLogEntry(`🧹 [Chunk ${chunkIndex + 1}] Đã xóa khỏi processingChunks`, 'info');
+        }
+        
+        // 5. Reset flags
+        if (window.sendingChunk === chunkIndex) {
+            window.sendingChunk = null;
+        }
+        
+        // 6. Disconnect observer nếu đang chạy
+        if (xlgJHLP$MATDT$kTXWV) {
+            try {
+                xlgJHLP$MATDT$kTXWV.disconnect();
+                xlgJHLP$MATDT$kTXWV = null;
+                addLogEntry(`🧹 [Chunk ${chunkIndex + 1}] Đã disconnect observer cũ`, 'info');
+            } catch (e) {
+                // Bỏ qua
+            }
+        }
+        window.isSettingUpObserver = false;
+        
+        // 7. Clear tất cả audio elements (để tránh conflict với audio mới)
+        try {
+            const audioElements = document.querySelectorAll('audio');
+            let clearedCount = 0;
+            audioElements.forEach(audio => {
+                try {
+                    if (!audio.paused) {
+                        audio.pause();
+                        audio.currentTime = 0;
+                    }
+                    if (audio.src) {
+                        audio.src = '';
+                    }
+                    clearedCount++;
+                } catch (e) {
+                    // Bỏ qua
+                }
+            });
+            
+            const sourceElements = document.querySelectorAll('source');
+            sourceElements.forEach(source => {
+                try {
+                    if (source.src) {
+                        source.src = '';
+                    }
+                } catch (e) {
+                    // Bỏ qua
+                }
+            });
+            
+            if (clearedCount > 0) {
+                addLogEntry(`🧹 [Chunk ${chunkIndex + 1}] Đã clear ${clearedCount} audio element(s)`, 'info');
+            }
+        } catch (e) {
+            addLogEntry(`⚠️ [Chunk ${chunkIndex + 1}] Lỗi khi clear audio: ${e.message}`, 'warning');
+        }
+        
+        // 8. Clear audio context
+        try {
+            if (window.audioContext) {
+                if (window.audioContext.state !== 'closed') {
+                    window.audioContext.close();
+                }
+                window.audioContext = null;
+            }
+        } catch (e) {
+            // Bỏ qua
+        }
+        
+        // 9. Reset textarea
+        try {
+            const textarea = document.getElementById('gemini-hidden-text-for-request');
+            if (textarea) {
+                setReactTextareaValue(textarea, '');
+            }
+        } catch (e) {
+            // Bỏ qua
+        }
+        
+        // 10. Reset retry count cho chunk này (nếu có)
+        if (window.timeoutRetryCount && window.timeoutRetryCount[chunkIndex] !== undefined) {
+            window.timeoutRetryCount[chunkIndex] = 0;
+        }
+        
+        addLogEntry(`✅ [Chunk ${chunkIndex + 1}] Đã cleanup xong data rác, sẵn sàng retry`, 'success');
+    } catch (error) {
+        addLogEntry(`❌ [Chunk ${chunkIndex + 1}] Lỗi khi cleanup: ${error.message}`, 'error');
+    }
+}
+
 async function resetWebInterface() {
     try {
         addLogEntry(`🔄 Áp dụng cơ chế Reset an toàn: Khôi phục Giao diện...`, 'info');
@@ -4548,10 +4664,11 @@ async function uSTZrHUt_IC() {
                         delete window.chunkTimeoutIds[currentIndex];
                     }
                     
-                    // Reset web interface và retry lại chunk này
+                    // Cleanup data rác và reset web interface trước khi retry
                     (async () => {
-                        await resetWebInterface();
-                        addLogEntry(`🔄 [Chunk ${currentIndex + 1}] Đã reset web, retry lại chunk này...`, 'info');
+                        await cleanupChunkData(currentIndex); // Cleanup data rác trước
+                        await resetWebInterface(); // Reset web interface
+                        addLogEntry(`🔄 [Chunk ${currentIndex + 1}] Đã cleanup và reset web, retry lại chunk này...`, 'info');
                         ttuo$y_KhCV = currentIndex; // Giữ nguyên chunk index để retry
                         setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Retry sau delay
                     })();
@@ -5001,11 +5118,17 @@ async function uSTZrHUt_IC() {
             
             addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Đã timeout sau 60 giây.`, 'warning');
             
-            // CƠ CHẾ RETRY MỚI: Reset và retry lại chunk này vô hạn, không chuyển sang chunk tiếp theo
-            addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Timeout - Reset và retry lại chunk này vô hạn cho đến khi thành công`, 'warning');
+            // CƠ CHẾ RETRY MỚI: Cleanup data rác và retry lại chunk này vô hạn
+            addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Timeout - Cleanup data rác và retry lại chunk này vô hạn cho đến khi thành công`, 'warning');
             window.retryCount = 0; // Reset bộ đếm retry
-            // KHÔNG tăng ttuo$y_KhCV, giữ nguyên để retry lại chunk này
-            setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Retry sau delay 1-3 giây
+            
+            // Cleanup data rác và reset trước khi retry
+            (async () => {
+                await cleanupChunkData(ttuo$y_KhCV); // Cleanup data rác trước
+                await resetWebInterface(); // Reset web interface
+                // KHÔNG tăng ttuo$y_KhCV, giữ nguyên để retry lại chunk này
+                setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Retry sau delay 1-3 giây
+            })();
         }, 60000); // Timeout 60 giây cho mỗi chunk
         
         // QUAN TRỌNG: Gọi igyo$uwVChUzI() để tạo MutationObserver detect audio element
@@ -5045,17 +5168,17 @@ async function uSTZrHUt_IC() {
             return; // Dừng xử lý chunk này
         }
         
-        // CƠ CHẾ RETRY MỚI: Reset và retry lại chunk này vô hạn, không giới hạn số lần
-        addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Render lỗi - Reset web và retry lại chunk này vô hạn cho đến khi thành công`, 'warning');
-        addLogEntry(`🔄 Đang reset web về trạng thái ban đầu...`, 'info');
+        // CƠ CHẾ RETRY MỚI: Cleanup data rác và retry lại chunk này vô hạn, không giới hạn số lần
+        addLogEntry(`🔄 [Chunk ${ttuo$y_KhCV + 1}] Render lỗi - Cleanup data rác và retry lại chunk này vô hạn cho đến khi thành công`, 'warning');
         
         // Reset flag sendingChunk để cho phép retry
         window.sendingChunk = null;
 
-        // QUAN TRỌNG: Sử dụng resetWebInterface() để đảm bảo cleanup audio được thực hiện
+        // QUAN TRỌNG: Cleanup data rác trước, sau đó reset web interface
         try {
-            await resetWebInterface();
-            addLogEntry(`✅ Web đã được reset thành công (bao gồm cleanup audio)!`, 'success');
+            await cleanupChunkData(ttuo$y_KhCV); // Cleanup data rác của chunk này trước
+            await resetWebInterface(); // Reset web interface
+            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã cleanup data rác và reset web thành công!`, 'success');
         } catch (resetError) {
             addLogEntry(`❌ Lỗi khi reset web: ${resetError.message}`, 'error');
             // Vẫn tiếp tục retry ngay cả khi reset lỗi, nhưng cần cleanup audio thủ công
@@ -5400,11 +5523,12 @@ function igyo$uwVChUzI() {
                                 delete window.chunkTimeoutIds[currentChunkIndex];
                             }
                             
-                            // Reset web interface - CHỈ reset khi 1 chunk cụ thể render lỗi
-                            await resetWebInterface();
+                            // Cleanup data rác và reset web interface trước khi retry
+                            await cleanupChunkData(currentChunkIndex); // Cleanup data rác trước
+                            await resetWebInterface(); // Reset web interface
                             
-                            // CƠ CHẾ RETRY MỚI: Reset và retry lại chunk này vô hạn, không chuyển sang chunk tiếp theo
-                            addLogEntry(`🔄 [Chunk ${currentChunkIndex + 1}] Blob null - Reset và retry lại chunk này vô hạn cho đến khi thành công`, 'warning');
+                            // CƠ CHẾ RETRY MỚI: Retry lại chunk này vô hạn, không chuyển sang chunk tiếp theo
+                            addLogEntry(`🔄 [Chunk ${currentChunkIndex + 1}] Blob null - Đã cleanup và reset, retry lại chunk này vô hạn cho đến khi thành công`, 'warning');
                             // Giữ nguyên ttuo$y_KhCV = currentChunkIndex để retry lại
                             ttuo$y_KhCV = currentChunkIndex;
                             setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Retry sau delay 1-3 giây
@@ -5483,7 +5607,11 @@ function igyo$uwVChUzI() {
                             addLogEntry(`⚠️ [Chunk ${currentChunkIndex + 1}] Dung lượng blob = ${chunkSizeKB.toFixed(2)} KB và không có sóng âm.`, 'warning');
 
                             // CƠ CHẾ RETRY MỚI: Reset và retry lại chunk này vô hạn, không chuyển sang chunk tiếp theo
-                            addLogEntry(`🔄 [Chunk ${currentChunkIndex + 1}] Không có sóng âm - Reset và retry lại chunk này vô hạn cho đến khi thành công`, 'warning');
+                            // Cleanup data rác và reset web interface trước khi retry
+                            await cleanupChunkData(currentChunkIndex); // Cleanup data rác trước
+                            await resetWebInterface(); // Reset web interface
+                            
+                            addLogEntry(`🔄 [Chunk ${currentChunkIndex + 1}] Không có sóng âm - Đã cleanup và reset, retry lại chunk này vô hạn cho đến khi thành công`, 'warning');
                             // Giữ nguyên ttuo$y_KhCV = currentChunkIndex để retry lại
                             ttuo$y_KhCV = currentChunkIndex;
                             setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Retry sau delay 1-3 giây
