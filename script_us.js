@@ -802,8 +802,12 @@
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
     background: rgba(0, 0, 0, 0.6) !important;
     display: none !important; /* Mặc định ẩn */
     align-items: center !important;
@@ -811,6 +815,9 @@
     overflow: visible !important;
     margin: 0 !important;
     padding: 0 !important;
+    /* Đảm bảo tính từ viewport, không phải từ container cha */
+    transform: none !important;
+    box-sizing: border-box !important;
 }
 
 /* Khi modal được hiển thị (có style="display:flex" hoặc display:flex) */
@@ -855,17 +862,22 @@
     text-align: center !important;
 }
 
-/* Đảm bảo modal không bị giới hạn bởi container cha */
+/* Đảm bảo modal không bị giới hạn bởi container cha - Tính từ viewport */
 #gemini-col-3 #audio-manager-modal,
 #gemini-col-2 #audio-manager-modal,
 #gemini-col-1 #audio-manager-modal,
 #gemini-main-container #audio-manager-modal,
-body #audio-manager-modal {
+body #audio-manager-modal,
+html #audio-manager-modal {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
     z-index: 10001 !important;
     overflow: visible !important;
     display: flex !important;
@@ -873,6 +885,11 @@ body #audio-manager-modal {
     justify-content: center !important;
     margin: 0 !important;
     padding: 0 !important;
+    /* Đảm bảo tính từ viewport, không phải từ container cha */
+    transform: none !important;
+    box-sizing: border-box !important;
+    /* Loại bỏ mọi positioning từ container cha */
+    inset: 0 !important;
 }
 
 /* Đảm bảo container cha không giới hạn modal */
@@ -6785,10 +6802,31 @@ async function waitForVoiceModelReady() {
             // Mở modal
             if (openBtn && modal && iframe) {
                 openBtn.addEventListener('click', function() {
-                    // Đảm bảo modal được hiển thị đúng cách
+                    // QUAN TRỌNG: Di chuyển modal ra body level để đảm bảo tính từ viewport
+                    // Không phải từ container của cột 3 hoặc gemini-main-container
+                    if (modal.parentElement && modal.parentElement.tagName !== 'BODY') {
+                        // Lưu lại vị trí ban đầu để có thể restore sau (nếu cần)
+                        const originalParent = modal.parentElement;
+                        document.body.appendChild(modal);
+                        addLogEntry('🔄 Đã di chuyển modal ra body level để căn giữa từ viewport', 'info');
+                    }
+                    
+                    // Đảm bảo modal được hiển thị đúng cách và căn giữa từ viewport
+                    modal.style.position = 'fixed';
+                    modal.style.top = '0';
+                    modal.style.left = '0';
+                    modal.style.right = '0';
+                    modal.style.bottom = '0';
+                    modal.style.width = '100vw';
+                    modal.style.height = '100vh';
+                    modal.style.margin = '0';
+                    modal.style.padding = '0';
                     modal.style.display = 'flex';
                     modal.style.visibility = 'visible';
                     modal.style.opacity = '1';
+                    modal.style.zIndex = '10001';
+                    modal.style.alignItems = 'center';
+                    modal.style.justifyContent = 'center';
                     
                     // Đặt src cho iframe chỉ khi mở modal (tiết kiệm tài nguyên)
                     if (!iframe.src || iframe.src === 'about:blank') {
