@@ -4315,22 +4315,9 @@ function stopKeepAliveLoop() {
 async function uSTZrHUt_IC() {
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
     
-    // Debug: Log để kiểm tra hàm có được gọi không
-    console.log('🟢 [DEBUG] uSTZrHUt_IC() được gọi', {
-        'EfNjYNYj_O_CGB': EfNjYNYj_O_CGB,
-        'MEpJezGZUsmpZdAgFRBRZW': MEpJezGZUsmpZdAgFRBRZW,
-        'ttuo$y_KhCV': ttuo$y_KhCV,
-        'SI$acY.length': SI$acY ? SI$acY.length : 'undefined'
-    });
-    
     // Kiểm tra và reset MEpJezGZUsmpZdAgFRBRZW nếu cần
     if (typeof window.MEpJezGZUsmpZdAgFRBRZW !== 'undefined') {
         MEpJezGZUsmpZdAgFRBRZW = window.MEpJezGZUsmpZdAgFRBRZW;
-    }
-    
-    // Kiểm tra và reset EfNjYNYj_O_CGB nếu cần
-    if (typeof window.EfNjYNYj_O_CGB !== 'undefined') {
-        EfNjYNYj_O_CGB = window.EfNjYNYj_O_CGB;
     }
     
     if (MEpJezGZUsmpZdAgFRBRZW) {
@@ -4342,19 +4329,6 @@ async function uSTZrHUt_IC() {
     // QUAN TRỌNG: Nếu SI$acY rỗng, có thể là job mới chưa được khởi tạo hoặc đã merge xong
     // Chỉ return nếu thực sự không có dữ liệu và không phải là trạng thái sau merge
     if (!SI$acY || SI$acY.length === 0) {
-        // QUAN TRỌNG: Nếu EfNjYNYj_O_CGB = true, có nghĩa là đang có job mới được khởi động
-        // Không return, để job mới có thể được khởi động
-        if (EfNjYNYj_O_CGB === true) {
-            // Đang có job mới được khởi động nhưng SI$acY chưa được set
-            // Có thể là đang trong quá trình reset, đợi một chút
-            addLogEntry(`⏳ Đang chờ SI$acY được khởi tạo cho job mới...`, 'info');
-            setTimeout(() => {
-                if (SI$acY && SI$acY.length > 0) {
-                    uSTZrHUt_IC();
-                }
-            }, 100);
-            return;
-        }
         // Kiểm tra xem có phải là trạng thái sau merge không (EfNjYNYj_O_CGB = false)
         if (EfNjYNYj_O_CGB === false && ttuo$y_KhCV === 0) {
             // Đây là trạng thái sau merge, không phải lỗi
