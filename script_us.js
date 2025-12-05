@@ -4568,16 +4568,33 @@ function handleWorkerMessage(data) {
 function checkAllChunksDone() {
     if (!SI$acY || SI$acY.length === 0) return;
     
-    const allDone = window.chunkStatus.every((status, idx) => {
-        return status === 'success' && window.chunkBlobs[idx] !== null;
-    });
+    // Đảm bảo window.chunkStatus có đủ phần tử
+    if (!window.chunkStatus || window.chunkStatus.length !== SI$acY.length) {
+        return; // Chưa khởi tạo đầy đủ
+    }
     
-    if (allDone && !window.isMerging) {
+    // Kiểm tra số lượng chunks thành công
+    const successCount = window.chunkStatus.filter((status, idx) => {
+        return status === 'success' && window.chunkBlobs && window.chunkBlobs[idx] !== null;
+    }).length;
+    
+    // Debug log để kiểm tra
+    addLogEntry(`🔍 [DEBUG] checkAllChunksDone: successCount=${successCount}, totalChunks=${SI$acY.length}, isMerging=${window.isMerging}, EfNjYNYj_O_CGB=${EfNjYNYj_O_CGB}`, 'info');
+    
+    // Chỉ merge khi TẤT CẢ chunks đã thành công (successCount === SI$acY.length)
+    if (successCount === SI$acY.length && successCount > 0 && !window.isMerging && EfNjYNYj_O_CGB) {
         // Tất cả chunks đã xong → Merge
-        addLogEntry('✅ Tất cả chunks đã hoàn thành, bắt đầu merge...', 'success');
-        // Gọi hàm merge (cần tìm hàm merge)
+        addLogEntry(`✅ Tất cả ${SI$acY.length} chunks đã hoàn thành, bắt đầu merge...`, 'success');
+        // Đánh dấu đang merge để tránh gọi lại
+        window.isMerging = true;
+        // Gọi hàm merge
         if (typeof tt__SfNwBHDebpWJOqrSTR === 'function') {
             tt__SfNwBHDebpWJOqrSTR();
+        }
+    } else {
+        // Debug: Tại sao không merge?
+        if (successCount !== SI$acY.length) {
+            addLogEntry(`⏳ [DEBUG] Chưa merge: successCount (${successCount}) !== totalChunks (${SI$acY.length})`, 'info');
         }
     }
 }
@@ -4855,17 +4872,28 @@ async function uSTZrHUt_IC() {
 
         // CƠ CHẾ RETRY MỚI: Mỗi chunk tự retry vô hạn khi lỗi, không cần phase retry riêng
         // Kiểm tra xem tất cả chunks đã thành công chưa
-        const allChunksSuccess = window.chunkStatus && window.chunkStatus.every((status, idx) => {
-            // Chunk đã được xử lý và có blob hợp lệ
-            return status === 'success' && window.chunkBlobs && window.chunkBlobs[idx] !== null;
-        });
-
-        if (allChunksSuccess && window.chunkStatus.length === SI$acY.length) {
-            addLogEntry(`🎉 Tất cả ${SI$acY.length} chunks đã được xử lý xong!`, 'success');
-            addLogEntry(`✅ TẤT CẢ ${SI$acY.length} chunks đã thành công! Bắt đầu ghép file...`, 'success');
-            // CHỈ ghép file khi TẤT CẢ chunk đã thành công
-            tt__SfNwBHDebpWJOqrSTR();
-            return;
+        // QUAN TRỌNG: Đảm bảo window.chunkStatus có đủ phần tử và kiểm tra đúng
+        if (!window.chunkStatus || window.chunkStatus.length !== SI$acY.length) {
+            // Chưa khởi tạo đầy đủ, không merge
+            addLogEntry(`⏳ [DEBUG] Chưa merge: chunkStatus.length (${window.chunkStatus ? window.chunkStatus.length : 0}) !== SI$acY.length (${SI$acY.length})`, 'info');
+        } else {
+            // Đếm số chunks thành công
+            const successCount = window.chunkStatus.filter((status, idx) => {
+                return status === 'success' && window.chunkBlobs && window.chunkBlobs[idx] !== null;
+            }).length;
+            
+            addLogEntry(`🔍 [DEBUG] Kiểm tra merge: successCount=${successCount}, totalChunks=${SI$acY.length}`, 'info');
+            
+            // CHỈ merge khi TẤT CẢ chunks đã thành công (successCount === SI$acY.length)
+            if (successCount === SI$acY.length && successCount > 0 && !window.isMerging && EfNjYNYj_O_CGB) {
+                addLogEntry(`🎉 Tất cả ${SI$acY.length} chunks đã được xử lý xong!`, 'success');
+                addLogEntry(`✅ TẤT CẢ ${SI$acY.length} chunks đã thành công! Bắt đầu ghép file...`, 'success');
+                // Đánh dấu đang merge để tránh gọi lại
+                window.isMerging = true;
+                // CHỈ ghép file khi TẤT CẢ chunk đã thành công
+                tt__SfNwBHDebpWJOqrSTR();
+                return;
+            }
         }
 
         // Nếu chưa xong tất cả chunks, tiếp tục xử lý chunk tiếp theo
@@ -6371,6 +6399,12 @@ function igyo$uwVChUzI() {
                         
                         // Kiểm tra xem tất cả chunks đã xong chưa
                         checkAllChunksDone();
+                        
+                        // QUAN TRỌNG: Nếu đã merge xong hoặc đang merge, không phân công chunk tiếp theo
+                        if (window.isMerging || !EfNjYNYj_O_CGB) {
+                            addLogEntry(`⏸️ Đã merge xong hoặc đang merge, không phân công chunk tiếp theo`, 'info');
+                            return; // Dừng xử lý, không phân công chunk tiếp theo
+                        }
                         
                         // Tìm chunk tiếp theo chưa được xử lý
                         const nextChunk = assignNextChunk();
