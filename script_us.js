@@ -809,12 +809,28 @@
     align-items: center !important;
     justify-content: center !important;
     overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 /* Khi modal được hiển thị (có style="display:flex" hoặc display:flex) */
 #audio-manager-modal[style*="display: flex"],
 #audio-manager-modal[style*="display:flex"] {
     display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-direction: row !important;
+}
+
+/* Đảm bảo modal card được căn giữa */
+#audio-manager-modal .punctuation-modal-card {
+    margin: auto !important;
+    position: relative !important;
+    transform: none !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
 }
 
 /* Đảm bảo modal không bị giới hạn bởi container cha */
@@ -830,6 +846,11 @@ body #audio-manager-modal {
     height: 100vh !important;
     z-index: 10001 !important;
     overflow: visible !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 /* Đảm bảo container cha không giới hạn modal */
