@@ -2068,7 +2068,7 @@ button:disabled {
         </div>
         <small style="color: #94a3b8; font-size: 12px; margin-top: 5px; display: block;">
             💡 Khi bật: Ưu tiên tách tại dòng trống. Khi tắt: Bỏ qua dòng trống, tách theo dấu câu.<br>
-            🔧 Chunk mặc định: 700 ký tự
+            🔧 Chunk mặc định: 900 ký tự
         </small>
     </div>
     <div id="gemini-text-stats"><span>Ký tự: 0</span><span>Từ: 0</span><span>Câu: 0</span><span>Đoạn: 0</span></div>
@@ -2955,9 +2955,9 @@ let labelText = W_gEcM_tWt + j$DXl$iN(0x1c3) + successfulChunks + '/' + supYmMed
 if (typeof window.isFinalCheck !== 'undefined' && window.isFinalCheck && typeof window.failedChunks !== 'undefined' && window.failedChunks && window.failedChunks.length > 0) {
     labelText += ' 🔄 Đang xử lý lại ' + window.failedChunks.length + ' chunk lỗi...';
 }
-pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0x273)]=labelText;}function NrfPVBbJv_Dph$tazCpJ(text, idealLength = 600, minLength = 500, maxLength = 700) {
-    // Mặc định chunk lớn 700 ký tự
-    const actualMaxLength = 700;
+pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0x273)]=labelText;}function NrfPVBbJv_Dph$tazCpJ(text, idealLength = 900, minLength = 600, maxLength = 900) {
+    // Mặc định chunk lớn 900 ký tự
+    const actualMaxLength = 900;
     const chunks = [];
     if (!text || typeof text !== 'string') {
         return chunks;
@@ -2966,7 +2966,7 @@ pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0
     let currentText = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
 
     // ƯU TIÊN: Nếu văn bản có dòng trống phân tách đoạn, tách theo đoạn NGAY LẬP TỨC
-    // Điều này giúp văn bản < 700 ký tự nhưng có 2-3 đoạn vẫn tách thành nhiều chunk đúng ý
+    // Điều này giúp văn bản < 900 ký tự nhưng có 2-3 đoạn vẫn tách thành nhiều chunk đúng ý
     // CHỈ áp dụng khi công tắc được bật (mặc định là tắt)
     const enableBlankLineChunking = document.getElementById('enable-blank-line-chunking')?.checked ?? false;
     if (enableBlankLineChunking && /\n\s*\n+/.test(currentText)) {
@@ -3227,22 +3227,11 @@ function dExAbhXwTJeTJBIjWr(EARfsfSN_QdgxH){const tENdSoNDV_gGwQKLZv$sYaZKhl=AP$
 
         const zEwMPLN$IZxzIwfdDbCfnIYcA=new Date();cHjV$QkAT$JWlL[VCAHyXsrERcpXVhFPxmgdBjjh(0x273)]=VCAHyXsrERcpXVhFPxmgdBjjh(0x1ce)+ymkKApNTfjOanYIBsxsoMNBX((zEwMPLN$IZxzIwfdDbCfnIYcA-dqj_t_Mr)/(Number(-0x27)*Math.floor(-0x26)+0x1f37+0x25*Math.floor(-parseInt(0xe5))));if(ZTQj$LF$o[VCAHyXsrERcpXVhFPxmgdBjjh(0x216)]===parseFloat(-0x1ca4)+Number(-parseInt(0x2445))+parseInt(0x40e9))return;try{
 // Sử dụng window.chunkBlobs nếu có và có dữ liệu, nếu không thì dùng ZTQj$LF$o
-// QUAN TRỌNG: Đảm bảo merge đúng thứ tự theo index (0, 1, 2, 3...)
-let finalBlobs = [];
+let finalBlobs = ZTQj$LF$o; // Mặc định dùng ZTQj$LF$o như code gốc
 if (window.chunkBlobs && window.chunkBlobs.length > 0) {
-    // Sử dụng window.chunkBlobs và sắp xếp theo index
-    for (let i = 0; i < window.chunkBlobs.length; i++) {
-        if (window.chunkBlobs[i] !== null && window.chunkBlobs[i] !== undefined) {
-            finalBlobs.push(window.chunkBlobs[i]);
-        }
-    }
-}
-// Fallback: Nếu window.chunkBlobs rỗng, dùng ZTQj$LF$o
-if (finalBlobs.length === 0 && ZTQj$LF$o && ZTQj$LF$o.length > 0) {
-    for (let i = 0; i < ZTQj$LF$o.length; i++) {
-        if (ZTQj$LF$o[i] !== null && ZTQj$LF$o[i] !== undefined) {
-            finalBlobs.push(ZTQj$LF$o[i]);
-        }
+    const validBlobs = window.chunkBlobs.filter(blob => blob !== null);
+    if (validBlobs.length > 0) {
+        finalBlobs = validBlobs; // Chỉ dùng window.chunkBlobs nếu có dữ liệu
     }
 }
 
@@ -4351,351 +4340,6 @@ function stopKeepAliveLoop() {
     }
 })();
 
-// =======================================================
-// == WORKER TAB MANAGER - XỬ LÝ SONG SONG 2 TAB ==
-// =======================================================
-let workerTab = null;
-let broadcastChannel = null;
-let currentJobId = null;
-let workerReady = false;
-let pendingChunks = []; // Danh sách chunks đang chờ xử lý
-let processingChunks = new Set(); // Set các chunk đang được xử lý (bởi tab chính hoặc tab phụ)
-let chunkAssignments = new Map(); // Map chunkIndex -> 'main' hoặc 'worker'
-
-function initWorkerTabManager() {
-    try {
-        // Khởi tạo BroadcastChannel
-        if (typeof BroadcastChannel !== 'undefined') {
-            broadcastChannel = new BroadcastChannel('minimax-worker-channel');
-            
-            // Lắng nghe message từ tab phụ
-            broadcastChannel.onmessage = (event) => {
-                handleWorkerMessage(event.data);
-            };
-            
-            addLogEntry('✅ Đã khởi tạo Worker Tab Manager', 'success');
-        } else {
-            console.warn('BroadcastChannel không được hỗ trợ, chỉ dùng tab chính');
-        }
-    } catch (e) {
-        console.warn('[WORKER TAB] Lỗi khởi tạo:', e);
-    }
-}
-
-function startWorkerTab() {
-    try {
-        addLogEntry('🔍 [DEBUG] startWorkerTab() được gọi', 'info');
-        
-        if (workerTab && !workerTab.closed) {
-            addLogEntry('ℹ️ Tab phụ đã tồn tại, sử dụng tab hiện có', 'info');
-            return;
-        }
-        
-        addLogEntry('🔄 Đang mở tab phụ...', 'info');
-        
-        // Mở tab phụ
-        // Lưu ý: Một số trình duyệt có thể chặn popup nếu không có user interaction
-        const workerUrl = window.location.href;
-        
-        addLogEntry(`🔍 [DEBUG] Đang mở tab với URL: ${workerUrl}`, 'info');
-        
-        // Thử mở tab với nhiều cách khác nhau
-        let opened = false;
-        
-        // Cách 1: window.open() thông thường
-        try {
-            workerTab = window.open(
-                workerUrl,
-                'minimax-worker-tab',
-                'width=800,height=600,left=100,top=100'
-            );
-            
-            if (workerTab) {
-                addLogEntry('✅ window.open() trả về object (có thể thành công)', 'success');
-                opened = true;
-            } else {
-                addLogEntry('⚠️ window.open() trả về null (có thể bị chặn popup)', 'warning');
-            }
-        } catch (e) {
-            addLogEntry('❌ Lỗi khi gọi window.open: ' + e.message, 'error');
-            console.error('[WORKER TAB] Lỗi window.open:', e);
-        }
-        
-        // Nếu không mở được, thử cách 2: mở với _blank
-        if (!opened || !workerTab) {
-            addLogEntry('🔄 Thử cách 2: mở tab với _blank...', 'info');
-            try {
-                const link = document.createElement('a');
-                link.href = workerUrl;
-                link.target = 'minimax-worker-tab';
-                link.rel = 'noopener noreferrer';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                // Tìm tab đã mở
-                setTimeout(() => {
-                    // Không thể truy cập tab mới qua cách này, nhưng đã mở được
-                    addLogEntry('✅ Đã thử mở tab bằng cách 2 (link.click())', 'info');
-                }, 100);
-            } catch (e) {
-                addLogEntry('❌ Lỗi khi thử cách 2: ' + e.message, 'error');
-            }
-        }
-        
-        if (!workerTab) {
-            addLogEntry('⚠️ Không thể mở tab phụ (có thể bị chặn popup). Vui lòng cho phép popup cho trang này.', 'warning');
-            addLogEntry('💡 Hướng dẫn: Click vào biểu tượng popup bị chặn trên thanh địa chỉ và chọn "Luôn cho phép popup và chuyển hướng từ trang này"', 'info');
-            addLogEntry('💡 Hoặc: Mở tab mới thủ công và paste URL: ' + workerUrl, 'info');
-            return;
-        }
-        
-        // Kiểm tra xem tab có bị đóng ngay không (có thể bị chặn)
-        setTimeout(() => {
-            if (workerTab && workerTab.closed) {
-                addLogEntry('⚠️ Tab phụ bị đóng ngay sau khi mở (có thể bị chặn popup)', 'warning');
-                workerTab = null;
-                return;
-            } else if (workerTab) {
-                addLogEntry('✅ Tab phụ vẫn mở sau 500ms', 'success');
-            }
-        }, 500);
-        
-        workerReady = false;
-        addLogEntry('✅ Tab phụ đã được mở thành công!', 'success');
-        
-        // Đợi tab load xong (khoảng 3 giây)
-        setTimeout(() => {
-            if (workerTab && !workerTab.closed) {
-                addLogEntry('📤 Đang gửi job info cho tab phụ...', 'info');
-                // Gửi job info cho tab phụ
-                if (broadcastChannel && currentJobId) {
-                    broadcastChannel.postMessage({
-                        type: 'INIT_JOB',
-                        jobId: currentJobId,
-                        chunks: SI$acY,
-                        isWorkerTab: true
-                    });
-                    addLogEntry('📤 Đã gửi job info cho tab phụ', 'success');
-                } else {
-                    addLogEntry('⚠️ Không thể gửi job info: broadcastChannel=' + (broadcastChannel ? 'có' : 'không') + ', currentJobId=' + currentJobId, 'warning');
-                }
-            } else {
-                addLogEntry('⚠️ Tab phụ đã bị đóng trước khi gửi job info', 'warning');
-            }
-        }, 3000);
-        
-    } catch (e) {
-        console.error('[WORKER TAB] Lỗi mở tab phụ:', e);
-        addLogEntry('❌ Lỗi mở tab phụ: ' + e.message, 'error');
-        addLogEntry('🔍 [DEBUG] Stack trace: ' + e.stack, 'error');
-    }
-}
-
-function assignNextChunk() {
-    // Tìm chunk tiếp theo chưa được xử lý
-    for (let i = 0; i < SI$acY.length; i++) {
-        if (!processingChunks.has(i) && 
-            window.chunkStatus[i] !== 'success' && 
-            window.chunkStatus[i] !== 'processing') {
-            return i;
-        }
-    }
-    return null;
-}
-
-function assignChunkToWorker(chunkIndex) {
-    if (!broadcastChannel || !workerReady || !currentJobId) {
-        return false;
-    }
-    
-    if (processingChunks.has(chunkIndex)) {
-        return false; // Chunk đã được gán
-    }
-    
-    try {
-        processingChunks.add(chunkIndex);
-        chunkAssignments.set(chunkIndex, 'worker');
-        window.chunkStatus[chunkIndex] = 'processing';
-        
-        broadcastChannel.postMessage({
-            type: 'ASSIGN_CHUNK',
-            chunkIndex: chunkIndex,
-            chunkText: SI$acY[chunkIndex],
-            jobId: currentJobId
-        });
-        
-        addLogEntry(`📤 [Worker] Đã gán chunk ${chunkIndex + 1} cho tab phụ`, 'info');
-        return true;
-    } catch (e) {
-        console.error('[WORKER TAB] Lỗi gán chunk:', e);
-        processingChunks.delete(chunkIndex);
-        chunkAssignments.delete(chunkIndex);
-        return false;
-    }
-}
-
-function handleWorkerMessage(data) {
-    try {
-        switch (data.type) {
-            case 'WORKER_READY':
-                workerReady = true;
-                addLogEntry('✅ Tab phụ đã sẵn sàng', 'success');
-                // Gửi job info ngay
-                if (currentJobId && SI$acY && SI$acY.length > 0) {
-                    broadcastChannel.postMessage({
-                        type: 'INIT_JOB',
-                        jobId: currentJobId,
-                        chunks: SI$acY,
-                        isWorkerTab: true
-                    });
-                }
-                // Gán chunk đầu tiên cho tab phụ
-                const firstChunk = assignNextChunk();
-                if (firstChunk !== null) {
-                    assignChunkToWorker(firstChunk);
-                }
-                break;
-                
-            case 'CHUNK_SUCCESS':
-                // Nhận blob từ tab phụ
-                const chunkIndex = data.chunkIndex;
-                processingChunks.delete(chunkIndex);
-                chunkAssignments.delete(chunkIndex);
-                
-                // Lưu blob vào window.chunkBlobs
-                if (data.blobData) {
-                    // Convert base64 back to blob
-                    const byteCharacters = atob(data.blobData.split(',')[1]);
-                    const byteNumbers = new Array(byteCharacters.length);
-                    for (let i = 0; i < byteCharacters.length; i++) {
-                        byteNumbers[i] = byteCharacters.charCodeAt(i);
-                    }
-                    const byteArray = new Uint8Array(byteNumbers);
-                    const blob = new Blob([byteArray], { type: 'audio/mpeg' });
-                    
-                    window.chunkBlobs[chunkIndex] = blob;
-                    ZTQj$LF$o[chunkIndex] = blob;
-                    window.chunkStatus[chunkIndex] = 'success';
-                    
-                    addLogEntry(`✅ [Worker] Chunk ${chunkIndex + 1} đã hoàn thành`, 'success');
-                    
-                    // Cập nhật progress
-                    updateProgress();
-                    
-                    // Kiểm tra xem tất cả chunks đã xong chưa
-                    checkAllChunksDone();
-                    
-                    // Gán chunk tiếp theo cho tab phụ
-                    const nextChunk = assignNextChunk();
-                    if (nextChunk !== null) {
-                        assignChunkToWorker(nextChunk);
-                    }
-                }
-                break;
-                
-            case 'CHUNK_ERROR':
-                // Tab phụ báo lỗi
-                const errorChunkIndex = data.chunkIndex;
-                processingChunks.delete(errorChunkIndex);
-                chunkAssignments.delete(errorChunkIndex);
-                window.chunkStatus[errorChunkIndex] = 'failed';
-                
-                addLogEntry(`❌ [Worker] Chunk ${errorChunkIndex + 1} lỗi: ${data.error}`, 'error');
-                
-                // Tab phụ sẽ tự retry, nhưng cũng có thể tab chính xử lý
-                // Gán chunk tiếp theo
-                const nextChunkAfterError = assignNextChunk();
-                if (nextChunkAfterError !== null) {
-                    assignChunkToWorker(nextChunkAfterError);
-                }
-                break;
-                
-            case 'REQUEST_NEXT_CHUNK':
-                // Tab phụ yêu cầu chunk tiếp theo
-                const nextChunk = assignNextChunk();
-                if (nextChunk !== null) {
-                    assignChunkToWorker(nextChunk);
-                } else {
-                    // Không còn chunk nào
-                    broadcastChannel.postMessage({
-                        type: 'NO_MORE_CHUNKS',
-                        jobId: currentJobId
-                    });
-                }
-                break;
-        }
-    } catch (e) {
-        console.error('[WORKER TAB] Lỗi xử lý message:', e);
-    }
-}
-
-function checkAllChunksDone() {
-    if (!SI$acY || SI$acY.length === 0) return;
-    
-    // Đảm bảo window.chunkStatus có đủ phần tử
-    if (!window.chunkStatus || window.chunkStatus.length !== SI$acY.length) {
-        return; // Chưa khởi tạo đầy đủ
-    }
-    
-    // Kiểm tra số lượng chunks thành công
-    const successCount = window.chunkStatus.filter((status, idx) => {
-        return status === 'success' && window.chunkBlobs && window.chunkBlobs[idx] !== null;
-    }).length;
-    
-    // Debug log để kiểm tra
-    addLogEntry(`🔍 [DEBUG] checkAllChunksDone: successCount=${successCount}, totalChunks=${SI$acY.length}, isMerging=${window.isMerging}, EfNjYNYj_O_CGB=${EfNjYNYj_O_CGB}`, 'info');
-    
-    // Chỉ merge khi TẤT CẢ chunks đã thành công (successCount === SI$acY.length)
-    if (successCount === SI$acY.length && successCount > 0 && !window.isMerging && EfNjYNYj_O_CGB) {
-        // Tất cả chunks đã xong → Merge
-        addLogEntry(`✅ Tất cả ${SI$acY.length} chunks đã hoàn thành, bắt đầu merge...`, 'success');
-        // Đánh dấu đang merge để tránh gọi lại
-        window.isMerging = true;
-        // Gọi hàm merge
-        if (typeof tt__SfNwBHDebpWJOqrSTR === 'function') {
-            tt__SfNwBHDebpWJOqrSTR();
-        }
-    } else {
-        // Debug: Tại sao không merge?
-        if (successCount !== SI$acY.length) {
-            addLogEntry(`⏳ [DEBUG] Chưa merge: successCount (${successCount}) !== totalChunks (${SI$acY.length})`, 'info');
-        }
-    }
-}
-
-function updateProgress() {
-    if (!SI$acY || SI$acY.length === 0) return;
-    
-    const successCount = window.chunkStatus.filter((status, idx) => {
-        return status === 'success' && window.chunkBlobs[idx] !== null;
-    }).length;
-    
-    const progress = Math.round((successCount / SI$acY.length) * 100);
-    window.maxProgress = Math.max(window.maxProgress, progress);
-    
-    const progressBar = document.getElementById('gemini-progress-bar');
-    const progressLabel = document.getElementById('gemini-progress-label');
-    
-    if (progressBar) {
-        progressBar.style.width = `${progress}%`;
-    }
-    if (progressLabel) {
-        progressLabel.textContent = `${progress}% (Chunk ${successCount}/${SI$acY.length})`;
-    }
-}
-
-// Khởi tạo Worker Tab Manager khi script load
-initWorkerTabManager();
-
-// Kiểm tra định kỳ xem tab phụ có bị đóng không
-setInterval(() => {
-    if (workerTab && workerTab.closed && EfNjYNYj_O_CGB) {
-        addLogEntry('⚠️ Tab phụ bị đóng, mở lại...', 'warning');
-        startWorkerTab();
-    }
-}, 5000);
-
 async function uSTZrHUt_IC() {
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
     
@@ -4749,87 +4393,6 @@ async function uSTZrHUt_IC() {
         // Reset về 0 để sẵn sàng
         addLogEntry(`🔄 Phát hiện SI$acY rỗng và ttuo$y_KhCV = ${ttuo$y_KhCV}. Reset về 0.`, 'warning');
         ttuo$y_KhCV = 0;
-    }
-    
-    // =======================================================
-    // == PHÂN CÔNG CHUNK THÔNG MINH (TAB CHÍNH HOẶC TAB PHỤ) ==
-    // =======================================================
-    // QUAN TRỌNG: Chỉ phân công chunk nếu chunk hiện tại (ttuo$y_KhCV) chưa được gán hoặc đã hoàn thành
-    // Tránh phân công nhiều chunks cùng lúc
-    
-    // Kiểm tra xem chunk hiện tại có đang được xử lý không
-    const currentChunkStatus = window.chunkStatus && window.chunkStatus[ttuo$y_KhCV];
-    const currentChunkBlob = window.chunkBlobs && window.chunkBlobs[ttuo$y_KhCV];
-    const isCurrentChunkDone = currentChunkStatus === 'success' && currentChunkBlob !== null;
-    const isCurrentChunkProcessing = currentChunkStatus === 'processing' || processingChunks.has(ttuo$y_KhCV);
-    
-    // Nếu chunk hiện tại đang được xử lý và chưa xong, không phân công chunk mới
-    if (isCurrentChunkProcessing && !isCurrentChunkDone && ttuo$y_KhCV < SI$acY.length) {
-        // Chunk hiện tại đang được xử lý, không phân công chunk mới
-        // addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Đang được xử lý, không phân công chunk mới`, 'info');
-        // Tiếp tục xử lý chunk hiện tại (không return)
-    } else {
-        // Chunk hiện tại đã xong hoặc chưa được gán, tìm chunk tiếp theo
-        const nextAvailableChunk = assignNextChunk();
-        
-        if (nextAvailableChunk !== null) {
-            // Có chunk chưa được xử lý
-            // Thử gán cho tab phụ nếu có và ready
-            if (workerTab && !workerTab.closed && workerReady && SI$acY.length > 1) {
-                const assigned = assignChunkToWorker(nextAvailableChunk);
-                if (assigned) {
-                    // Đã gán cho tab phụ, tab chính tìm chunk tiếp theo
-                    const nextChunkForMain = assignNextChunk();
-                    if (nextChunkForMain !== null) {
-                        ttuo$y_KhCV = nextChunkForMain;
-                        processingChunks.add(nextChunkForMain);
-                        chunkAssignments.set(nextChunkForMain, 'main');
-                        window.chunkStatus[nextChunkForMain] = 'processing';
-                        addLogEntry(`📤 [Main] Đã gán chunk ${nextChunkForMain + 1} cho tab chính`, 'info');
-                    } else {
-                        // Không còn chunk nào cho tab chính, chờ tab phụ hoàn thành
-                        addLogEntry(`⏳ [Main] Không còn chunk nào, chờ tab phụ hoàn thành...`, 'info');
-                        setTimeout(uSTZrHUt_IC, 2000);
-                        return;
-                    }
-                } else {
-                    // Không thể gán cho tab phụ, tab chính xử lý
-                    ttuo$y_KhCV = nextAvailableChunk;
-                    processingChunks.add(nextAvailableChunk);
-                    chunkAssignments.set(nextAvailableChunk, 'main');
-                    window.chunkStatus[nextAvailableChunk] = 'processing';
-                    addLogEntry(`📤 [Main] Gán chunk ${nextAvailableChunk + 1} cho tab chính (worker không sẵn sàng)`, 'info');
-                }
-            } else {
-                // Không có worker tab hoặc không ready, tab chính xử lý
-                ttuo$y_KhCV = nextAvailableChunk;
-                processingChunks.add(nextAvailableChunk);
-                chunkAssignments.set(nextAvailableChunk, 'main');
-                window.chunkStatus[nextAvailableChunk] = 'processing';
-                addLogEntry(`📤 [Main] Gán chunk ${nextAvailableChunk + 1} cho tab chính (không có worker tab)`, 'info');
-            }
-        } else {
-            // Không còn chunk nào chưa được xử lý
-            // Kiểm tra xem tất cả chunks đã xong chưa
-            const allDone = window.chunkStatus && window.chunkStatus.length === SI$acY.length && 
-                           window.chunkStatus.every((status, idx) => {
-                               return status === 'success' && window.chunkBlobs && window.chunkBlobs[idx] !== null;
-                           });
-            
-            if (allDone) {
-                // Tất cả chunks đã xong → Merge
-                addLogEntry('✅ Tất cả chunks đã hoàn thành, bắt đầu merge...', 'success');
-                if (typeof tt__SfNwBHDebpWJOqrSTR === 'function') {
-                    tt__SfNwBHDebpWJOqrSTR();
-                }
-                return;
-            } else {
-                // Còn chunks đang xử lý, chờ thêm
-                addLogEntry(`⏳ Còn chunks đang xử lý, chờ thêm...`, 'info');
-                setTimeout(uSTZrHUt_IC, 2000);
-                return;
-            }
-        }
     }
     
     // Đảm bảo keep-alive loop đang chạy (đã được khởi động tự động khi tool load)
@@ -4953,28 +4516,17 @@ async function uSTZrHUt_IC() {
 
         // CƠ CHẾ RETRY MỚI: Mỗi chunk tự retry vô hạn khi lỗi, không cần phase retry riêng
         // Kiểm tra xem tất cả chunks đã thành công chưa
-        // QUAN TRỌNG: Đảm bảo window.chunkStatus có đủ phần tử và kiểm tra đúng
-        if (!window.chunkStatus || window.chunkStatus.length !== SI$acY.length) {
-            // Chưa khởi tạo đầy đủ, không merge
-            addLogEntry(`⏳ [DEBUG] Chưa merge: chunkStatus.length (${window.chunkStatus ? window.chunkStatus.length : 0}) !== SI$acY.length (${SI$acY.length})`, 'info');
-        } else {
-            // Đếm số chunks thành công
-            const successCount = window.chunkStatus.filter((status, idx) => {
-                return status === 'success' && window.chunkBlobs && window.chunkBlobs[idx] !== null;
-            }).length;
-            
-            addLogEntry(`🔍 [DEBUG] Kiểm tra merge: successCount=${successCount}, totalChunks=${SI$acY.length}`, 'info');
-            
-            // CHỈ merge khi TẤT CẢ chunks đã thành công (successCount === SI$acY.length)
-            if (successCount === SI$acY.length && successCount > 0 && !window.isMerging && EfNjYNYj_O_CGB) {
-                addLogEntry(`🎉 Tất cả ${SI$acY.length} chunks đã được xử lý xong!`, 'success');
-                addLogEntry(`✅ TẤT CẢ ${SI$acY.length} chunks đã thành công! Bắt đầu ghép file...`, 'success');
-                // Đánh dấu đang merge để tránh gọi lại
-                window.isMerging = true;
-                // CHỈ ghép file khi TẤT CẢ chunk đã thành công
-                tt__SfNwBHDebpWJOqrSTR();
-                return;
-            }
+        const allChunksSuccess = window.chunkStatus && window.chunkStatus.every((status, idx) => {
+            // Chunk đã được xử lý và có blob hợp lệ
+            return status === 'success' && window.chunkBlobs && window.chunkBlobs[idx] !== null;
+        });
+
+        if (allChunksSuccess && window.chunkStatus.length === SI$acY.length) {
+            addLogEntry(`🎉 Tất cả ${SI$acY.length} chunks đã được xử lý xong!`, 'success');
+            addLogEntry(`✅ TẤT CẢ ${SI$acY.length} chunks đã thành công! Bắt đầu ghép file...`, 'success');
+            // CHỈ ghép file khi TẤT CẢ chunk đã thành công
+            tt__SfNwBHDebpWJOqrSTR();
+            return;
         }
 
         // Nếu chưa xong tất cả chunks, tiếp tục xử lý chunk tiếp theo
@@ -6447,11 +5999,6 @@ function igyo$uwVChUzI() {
                             window.processingChunks.delete(currentChunkIndex);
                         }
                         
-                        // Xóa khỏi chunkAssignments (Worker Tab Manager)
-                        if (typeof chunkAssignments !== 'undefined') {
-                            chunkAssignments.delete(currentChunkIndex);
-                        }
-                        
                         // =======================================================
                         // == ĐÁNH DẤU THÀNH CÔNG: SAU KHI TẤT CẢ KIỂM TRA ĐỀU HỢP LỆ ==
                         // =======================================================
@@ -6470,66 +6017,6 @@ function igyo$uwVChUzI() {
                         if (currentChunkIndex === 0) {
                             window.chunk1Failed = false;
                             addLogEntry(`✅ [Chunk 1] Đã thành công - Reset flag kiểm tra cấu hình`, 'success');
-                        }
-                        
-                        // =======================================================
-                        // == PHÂN CÔNG CHUNK TIẾP THEO (TAB CHÍNH HOẶC TAB PHỤ) ==
-                        // =======================================================
-                        // Cập nhật progress
-                        updateProgress();
-                        
-                        // Kiểm tra xem tất cả chunks đã xong chưa
-                        checkAllChunksDone();
-                        
-                        // QUAN TRỌNG: Nếu đã merge xong hoặc đang merge, không phân công chunk tiếp theo
-                        if (window.isMerging || !EfNjYNYj_O_CGB) {
-                            addLogEntry(`⏸️ Đã merge xong hoặc đang merge, không phân công chunk tiếp theo`, 'info');
-                            return; // Dừng xử lý, không phân công chunk tiếp theo
-                        }
-                        
-                        // Tìm chunk tiếp theo chưa được xử lý
-                        const nextChunk = assignNextChunk();
-                        if (nextChunk !== null) {
-                            // Có chunk tiếp theo
-                            // Thử gán cho tab phụ nếu có và ready
-                            if (workerTab && !workerTab.closed && workerReady && SI$acY.length > 1) {
-                                const assigned = assignChunkToWorker(nextChunk);
-                                if (!assigned) {
-                                    // Không thể gán cho tab phụ, tab chính xử lý
-                                    ttuo$y_KhCV = nextChunk;
-                                    processingChunks.add(nextChunk);
-                                    chunkAssignments.set(nextChunk, 'main');
-                                    window.chunkStatus[nextChunk] = 'processing';
-                                    addLogEntry(`📤 [Main] Đã gán chunk ${nextChunk + 1} cho tab chính (worker không sẵn sàng)`, 'info');
-                                    setTimeout(uSTZrHUt_IC, getRandomChunkDelay());
-                                } else {
-                                    // Đã gán cho tab phụ, tab chính tìm chunk tiếp theo
-                                    const nextChunkForMain = assignNextChunk();
-                                    if (nextChunkForMain !== null) {
-                                        ttuo$y_KhCV = nextChunkForMain;
-                                        processingChunks.add(nextChunkForMain);
-                                        chunkAssignments.set(nextChunkForMain, 'main');
-                                        window.chunkStatus[nextChunkForMain] = 'processing';
-                                        addLogEntry(`📤 [Main] Đã gán chunk ${nextChunkForMain + 1} cho tab chính`, 'info');
-                                        setTimeout(uSTZrHUt_IC, getRandomChunkDelay());
-                                    } else {
-                                        // Không còn chunk nào cho tab chính, chờ tab phụ hoàn thành
-                                        addLogEntry(`⏳ [Main] Không còn chunk nào, chờ tab phụ hoàn thành...`, 'info');
-                                    }
-                                }
-                            } else {
-                                // Không có worker tab, tab chính xử lý
-                                ttuo$y_KhCV = nextChunk;
-                                processingChunks.add(nextChunk);
-                                chunkAssignments.set(nextChunk, 'main');
-                                window.chunkStatus[nextChunk] = 'processing';
-                                addLogEntry(`📤 [Main] Đã gán chunk ${nextChunk + 1} cho tab chính (không có worker tab)`, 'info');
-                                setTimeout(uSTZrHUt_IC, getRandomChunkDelay());
-                            }
-                        } else {
-                            // Không còn chunk nào chưa được xử lý
-                            // Kiểm tra lại xem tất cả chunks đã xong chưa
-                            checkAllChunksDone();
                         }
 
                         // Xóa khỏi failedChunks nếu có
@@ -6553,13 +6040,50 @@ function igyo$uwVChUzI() {
                         if (typeof window.processingChunks !== 'undefined' && typeof currentChunkIndex !== 'undefined') {
                             window.processingChunks.delete(currentChunkIndex);
                         }
-                        // Xóa khỏi chunkAssignments khi có lỗi
-                        if (typeof chunkAssignments !== 'undefined' && typeof currentChunkIndex !== 'undefined') {
-                            chunkAssignments.delete(currentChunkIndex);
-                        }
                         // Reset flag khi có lỗi
                         window.isSettingUpObserver = false;
                     }
+                    
+                    // CƠ CHẾ RETRY MỚI: Sau khi chunk thành công, chuyển sang chunk tiếp theo
+                    // Xóa khỏi failedChunks nếu có
+                    if (window.failedChunks && window.failedChunks.includes(currentChunkIndex)) {
+                            window.failedChunks = window.failedChunks.filter(idx => idx !== currentChunkIndex);
+                        }
+                        
+                    // Chuyển sang chunk tiếp theo
+                    ttuo$y_KhCV++;
+                    if (ttuo$y_KhCV >= SI$acY.length) {
+                        // Đã xử lý xong tất cả chunks
+                        addLogEntry(`✅ Đã xử lý xong tất cả chunks!`, 'success');
+                            ttuo$y_KhCV = SI$acY.length; // Đánh dấu hoàn thành
+                    }
+                    
+                    // GUARD: Kiểm tra độ sâu recursive calls
+                    if (typeof window.recursiveCallDepth === 'undefined') {
+                        window.recursiveCallDepth = 0;
+                    }
+                    if (typeof window.maxRecursiveDepth === 'undefined') {
+                        window.maxRecursiveDepth = 50;
+                    }
+                    
+                    window.recursiveCallDepth++;
+                    if (window.recursiveCallDepth > window.maxRecursiveDepth) {
+                        addLogEntry(`⚠️ Đã đạt độ sâu recursive tối đa (${window.maxRecursiveDepth}), reset và tiếp tục...`, 'warning');
+                        window.recursiveCallDepth = 0;
+                        // Chờ một chút trước khi tiếp tục
+                        setTimeout(() => {
+                            window.recursiveCallDepth = 0;
+                            uSTZrHUt_IC();
+                        }, getRandomChunkDelay());
+                        return;
+                    }
+                    
+                    // Sau khi xử lý xong chunk hiện tại, luôn đợi ngẫu nhiên 1–3 giây rồi mới xử lý chunk tiếp theo
+                    setTimeout(() => {
+                        window.recursiveCallDepth = Math.max(0, window.recursiveCallDepth - 1); // Giảm độ sâu sau mỗi lần gọi
+                        uSTZrHUt_IC();
+                    }, getRandomChunkDelay());
+                    return;
                 }
             }
         }
@@ -8474,55 +7998,6 @@ async function waitForVoiceModelReady() {
     if (startBtn) {
         startBtn.addEventListener('click', () => {
             // [BẮT ĐẦU CODE THAY THẾ]
-            
-            // =======================================================
-            // == MỞ TAB PHỤ NGAY ĐẦU (TRƯỚC KHI XỬ LÝ KHÁC) ==
-            // == Để đảm bảo window.open() hoạt động (cần user interaction) ==
-            // =======================================================
-            // Mở tab phụ ngay nếu chưa có (trước khi chia chunk để biết số lượng)
-            // Tạm thời mở tab với URL hiện tại, sau sẽ gửi job info
-            if (!workerTab || workerTab.closed) {
-                try {
-                    const workerUrl = window.location.href;
-                    addLogEntry('🔄 Đang mở tab phụ ngay (trong user interaction)...', 'info');
-                    console.log('[WORKER TAB] Đang mở tab với URL:', workerUrl);
-                    
-                    // Thử nhiều cách mở tab
-                    // Cách 1: window.open() thông thường
-                    workerTab = window.open(
-                        workerUrl,
-                        'minimax-worker-tab',
-                        'width=800,height=600,left=100,top=100'
-                    );
-                    
-                    console.log('[WORKER TAB] window.open() trả về:', workerTab);
-                    
-                    if (workerTab) {
-                        // Kiểm tra xem tab có bị đóng ngay không
-                        setTimeout(() => {
-                            if (workerTab && workerTab.closed) {
-                                addLogEntry('⚠️ Tab phụ bị đóng ngay sau khi mở (có thể bị chặn popup)', 'warning');
-                                workerTab = null;
-                            } else if (workerTab) {
-                                addLogEntry('✅ Tab phụ đã được mở thành công và vẫn mở!', 'success');
-                            }
-                        }, 500);
-                        
-                        workerReady = false;
-                    } else {
-                        addLogEntry('⚠️ Không thể mở tab phụ (có thể bị chặn popup)', 'warning');
-                        addLogEntry('💡 Hướng dẫn: Click vào biểu tượng popup bị chặn trên thanh địa chỉ và chọn "Luôn cho phép popup"', 'info');
-                        addLogEntry('💡 Hoặc: Mở tab mới thủ công (Ctrl+T) và paste URL: ' + workerUrl, 'info');
-                    }
-                } catch (e) {
-                    addLogEntry('❌ Lỗi khi mở tab phụ: ' + e.message, 'error');
-                    console.error('[WORKER TAB] Lỗi:', e);
-                    console.error('[WORKER TAB] Stack:', e.stack);
-                }
-            } else {
-                addLogEntry('ℹ️ Tab phụ đã tồn tại, sử dụng tab hiện có', 'info');
-            }
-            // =======================================================
 
             // 1. Lấy và làm sạch văn bản (Giữ nguyên từ code mới)
             const text = mainTextarea.value.trim();
@@ -8648,45 +8123,6 @@ async function waitForVoiceModelReady() {
             window.INTERCEPT_CURRENT_TEXT = null;
             window.INTERCEPT_CURRENT_INDEX = null;
             window._interceptLoggedForChunk = null;
-            
-            // 8. Khởi tạo Worker Tab Manager cho job mới
-            currentJobId = 'job_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            processingChunks.clear();
-            chunkAssignments.clear();
-            workerReady = false;
-            
-            addLogEntry(`🔍 [DEBUG] SI$acY.length = ${SI$acY.length}`, 'info');
-            
-            // Gửi job info cho tab phụ nếu đã mở và có nhiều hơn 1 chunk
-            if (SI$acY.length > 1) {
-                if (workerTab && !workerTab.closed) {
-                    addLogEntry(`🚀 Đã khởi động hệ thống xử lý song song 2 tab (${SI$acY.length} chunks)`, 'info');
-                    // Gửi job info cho tab phụ sau 2 giây (để tab load xong)
-                    setTimeout(() => {
-                        if (workerTab && !workerTab.closed && broadcastChannel && currentJobId) {
-                            broadcastChannel.postMessage({
-                                type: 'INIT_JOB',
-                                jobId: currentJobId,
-                                chunks: SI$acY,
-                                isWorkerTab: true
-                            });
-                            addLogEntry('📤 Đã gửi job info cho tab phụ', 'success');
-                        } else {
-                            addLogEntry('⚠️ Không thể gửi job info: workerTab=' + (workerTab && !workerTab.closed ? 'có' : 'không') + ', broadcastChannel=' + (broadcastChannel ? 'có' : 'không') + ', currentJobId=' + currentJobId, 'warning');
-                        }
-                    }, 2000);
-                } else {
-                    addLogEntry(`⚠️ Tab phụ chưa được mở, chỉ xử lý trên tab chính (${SI$acY.length} chunks)`, 'warning');
-                }
-            } else {
-                addLogEntry(`ℹ️ Chỉ có 1 chunk, xử lý trên tab chính`, 'info');
-                // Đóng tab phụ nếu đã mở nhưng không cần
-                if (workerTab && !workerTab.closed) {
-                    workerTab.close();
-                    workerTab = null;
-                    addLogEntry('🔒 Đã đóng tab phụ (không cần thiết cho 1 chunk)', 'info');
-                }
-            }
             
             addLogEntry(`✅ Đã xóa sạch dữ liệu cũ. Bắt đầu với ${SI$acY.length} chunk mới.`, 'success');
             // =======================================================
