@@ -799,11 +799,54 @@
 
 #audio-manager-modal {
     z-index: 10001 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: visible !important;
+}
+
+/* Đảm bảo modal không bị giới hạn bởi container cha */
+#gemini-col-3 #audio-manager-modal,
+#gemini-col-2 #audio-manager-modal,
+#gemini-col-1 #audio-manager-modal,
+#gemini-main-container #audio-manager-modal,
+body #audio-manager-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 10001 !important;
+    overflow: visible !important;
+}
+
+/* Đảm bảo container cha không giới hạn modal */
+#gemini-main-container,
+#gemini-col-1,
+#gemini-col-2,
+#gemini-col-3 {
+    overflow: visible !important;
+}
+
+/* Đảm bảo body và html không giới hạn modal */
+html, body {
+    overflow: visible !important;
 }
 
 #audio-manager-modal .punctuation-modal-card {
     display: flex;
     flex-direction: column;
+    position: relative !important;
+    max-width: 1400px !important;
+    max-height: 90vh !important;
+    width: 80vw !important;
+    height: 90vh !important;
 }
 
 #audio-manager-iframe {
@@ -3280,28 +3323,9 @@ const BBNDYjhHoGkj_qbbbJu=URL[VCAHyXsrERcpXVhFPxmgdBjjh(0x1f0)](InRdxToeqTDyPgDG
                 }
                 
                 // =======================================================
-                // == RESET CÁC BIẾN QUAN TRỌNG ĐỂ SẴN SÀNG CHO JOB MỚI ==
+                // == LƯU Ý: KHÔNG RESET CÁC BIẾN Ở ĐÂY ==
+                // == Các biến sẽ được reset khi bấm "Bắt đầu tạo âm thanh" ==
                 // =======================================================
-                // Reset ttuo$y_KhCV về 0 để sẵn sàng cho job mới
-                ttuo$y_KhCV = 0;
-                // Reset các flag
-                EfNjYNYj_O_CGB = false; // Đã hoàn thành, không còn đang chạy
-                MEpJezGZUsmpZdAgFRBRZW = false; // Không pause
-                // Reset window flags
-                if (typeof window.EfNjYNYj_O_CGB !== 'undefined') {
-                    window.EfNjYNYj_O_CGB = false;
-                }
-                if (typeof window.MEpJezGZUsmpZdAgFRBRZW !== 'undefined') {
-                    window.MEpJezGZUsmpZdAgFRBRZW = false;
-                }
-                // Reset SI$acY để tránh conflict với job mới
-                SI$acY = [];
-                // Reset window.chunkStatus và window.chunkBlobs
-                window.chunkStatus = [];
-                window.chunkBlobs = [];
-                ZTQj$LF$o = [];
-                
-                addLogEntry(`🔄 Đã reset tất cả biến để sẵn sàng cho job mới`, 'info');
                 
                 // Ẩn các nút Pause và Stop
                 if (pauseButton) {
