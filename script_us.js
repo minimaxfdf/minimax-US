@@ -3420,9 +3420,33 @@ const BBNDYjhHoGkj_qbbbJu=URL[VCAHyXsrERcpXVhFPxmgdBjjh(0x1f0)](InRdxToeqTDyPgDG
                 }
                 
                 // =======================================================
-                // == LƯU Ý: KHÔNG RESET CÁC BIẾN Ở ĐÂY ==
-                // == Các biến sẽ được reset khi bấm "Bắt đầu tạo âm thanh" ==
+                // == RESET CÁC BIẾN ĐỂ SẴN SÀNG CHO JOB MỚI ==
                 // =======================================================
+                // Reset các biến hệ thống legacy
+                ttuo$y_KhCV = 0; // Reset về 0 để sẵn sàng cho job mới
+                EfNjYNYj_O_CGB = false; // Đã hoàn thành, không còn đang chạy
+                MEpJezGZUsmpZdAgFRBRZW = false; // Không pause
+                
+                // Reset window flags
+                if (typeof window.EfNjYNYj_O_CGB !== 'undefined') {
+                    window.EfNjYNYj_O_CGB = false;
+                }
+                if (typeof window.MEpJezGZUsmpZdAgFRBRZW !== 'undefined') {
+                    window.MEpJezGZUsmpZdAgFRBRZW = false;
+                }
+                
+                // Reset SI$acY để tránh conflict với job mới
+                SI$acY = [];
+                
+                // Reset window.chunkStatus và window.chunkBlobs
+                window.chunkStatus = [];
+                window.chunkBlobs = [];
+                ZTQj$LF$o = [];
+                
+                // Reset flag merge để cho phép merge job mới
+                window.isMerging = false;
+                
+                addLogEntry(`🔄 Đã reset tất cả biến để sẵn sàng cho job mới`, 'info');
                 
                 // Ẩn các nút Pause và Stop
                 if (pauseButton) {
