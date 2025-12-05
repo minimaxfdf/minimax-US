@@ -8485,21 +8485,39 @@ async function waitForVoiceModelReady() {
                 try {
                     const workerUrl = window.location.href;
                     addLogEntry('🔄 Đang mở tab phụ ngay (trong user interaction)...', 'info');
+                    console.log('[WORKER TAB] Đang mở tab với URL:', workerUrl);
+                    
+                    // Thử nhiều cách mở tab
+                    // Cách 1: window.open() thông thường
                     workerTab = window.open(
                         workerUrl,
                         'minimax-worker-tab',
                         'width=800,height=600,left=100,top=100'
                     );
                     
+                    console.log('[WORKER TAB] window.open() trả về:', workerTab);
+                    
                     if (workerTab) {
-                        addLogEntry('✅ Tab phụ đã được mở thành công!', 'success');
+                        // Kiểm tra xem tab có bị đóng ngay không
+                        setTimeout(() => {
+                            if (workerTab && workerTab.closed) {
+                                addLogEntry('⚠️ Tab phụ bị đóng ngay sau khi mở (có thể bị chặn popup)', 'warning');
+                                workerTab = null;
+                            } else if (workerTab) {
+                                addLogEntry('✅ Tab phụ đã được mở thành công và vẫn mở!', 'success');
+                            }
+                        }, 500);
+                        
                         workerReady = false;
                     } else {
                         addLogEntry('⚠️ Không thể mở tab phụ (có thể bị chặn popup)', 'warning');
+                        addLogEntry('💡 Hướng dẫn: Click vào biểu tượng popup bị chặn trên thanh địa chỉ và chọn "Luôn cho phép popup"', 'info');
+                        addLogEntry('💡 Hoặc: Mở tab mới thủ công (Ctrl+T) và paste URL: ' + workerUrl, 'info');
                     }
                 } catch (e) {
                     addLogEntry('❌ Lỗi khi mở tab phụ: ' + e.message, 'error');
                     console.error('[WORKER TAB] Lỗi:', e);
+                    console.error('[WORKER TAB] Stack:', e.stack);
                 }
             } else {
                 addLogEntry('ℹ️ Tab phụ đã tồn tại, sử dụng tab hiện có', 'info');
