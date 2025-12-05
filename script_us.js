@@ -834,6 +834,33 @@ body #audio-manager-modal {
     overflow: visible !important;
 }
 
+/* Đảm bảo cột 3 luôn có thể tương tác được khi modal đóng */
+#gemini-col-3 {
+    position: relative !important;
+    z-index: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* Đảm bảo modal chỉ che phủ khi đang hiển thị */
+#audio-manager-modal[style*="display: none"],
+#audio-manager-modal:not([style*="display: flex"]) {
+    pointer-events: none !important;
+    z-index: -1 !important;
+}
+
+/* Đảm bảo các modal khác cũng không che phủ cột 3 khi đóng */
+.punctuation-modal[style*="display: none"],
+.punctuation-modal:not([style*="display: flex"]) {
+    pointer-events: none !important;
+    z-index: -1 !important;
+}
+
+#punctuation-detection-modal[style*="display: none"],
+#punctuation-detection-modal:not([style*="display: flex"]) {
+    pointer-events: none !important;
+    z-index: -1 !important;
+}
+
 /* Đảm bảo body và html không giới hạn modal */
 html, body {
     overflow: visible !important;
