@@ -4315,9 +4315,22 @@ function stopKeepAliveLoop() {
 async function uSTZrHUt_IC() {
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
     
+    // Debug: Log để kiểm tra hàm có được gọi không
+    console.log('🟢 [DEBUG] uSTZrHUt_IC() được gọi', {
+        'EfNjYNYj_O_CGB': EfNjYNYj_O_CGB,
+        'MEpJezGZUsmpZdAgFRBRZW': MEpJezGZUsmpZdAgFRBRZW,
+        'ttuo$y_KhCV': ttuo$y_KhCV,
+        'SI$acY.length': SI$acY ? SI$acY.length : 'undefined'
+    });
+    
     // Kiểm tra và reset MEpJezGZUsmpZdAgFRBRZW nếu cần
     if (typeof window.MEpJezGZUsmpZdAgFRBRZW !== 'undefined') {
         MEpJezGZUsmpZdAgFRBRZW = window.MEpJezGZUsmpZdAgFRBRZW;
+    }
+    
+    // Kiểm tra và reset EfNjYNYj_O_CGB nếu cần
+    if (typeof window.EfNjYNYj_O_CGB !== 'undefined') {
+        EfNjYNYj_O_CGB = window.EfNjYNYj_O_CGB;
     }
     
     if (MEpJezGZUsmpZdAgFRBRZW) {
@@ -7255,18 +7268,24 @@ async function waitForVoiceModelReady() {
             }
 
             // Event listener cho nút "Bắt đầu tạo âm thanh" để kiểm tra dấu câu
-            const startBtn = document.getElementById('gemini-start-queue-btn');
-            if (startBtn) {
-                startBtn.addEventListener('click', function() {
-                    const text = textarea.value;
+            // LƯU Ý: Event listener này chỉ kiểm tra dấu câu
+            // Nếu có lỗi dấu câu, sẽ preventDefault và stopPropagation để ngăn job chạy
+            // Nếu không có lỗi, event sẽ tiếp tục đến event listener chính
+            const startBtnPunctuation = document.getElementById('gemini-start-queue-btn');
+            if (startBtnPunctuation) {
+                startBtnPunctuation.addEventListener('click', function(e) {
+                    const text = textarea ? textarea.value : '';
                     detectedPunctuationIssues = detectPunctuationIssues(text);
 
                     if (detectedPunctuationIssues.length > 0) {
                         displayPunctuationIssues(detectedPunctuationIssues);
                         // Ngăn không cho bắt đầu tạo âm thanh nếu có lỗi dấu câu
+                        e.preventDefault();
+                        e.stopPropagation();
                         return false;
                     }
-                });
+                    // Nếu không có lỗi dấu câu, KHÔNG làm gì cả - để event tiếp tục đến event listener chính
+                }, true); // Sử dụng capture phase để chạy trước event listener chính
             }
 
             // Event listener cho modal
@@ -7976,8 +7995,12 @@ async function waitForVoiceModelReady() {
     const playPauseWaveformBtn = document.getElementById('waveform-play-pause');
 
     if (startBtn) {
-        startBtn.addEventListener('click', () => {
+        startBtn.addEventListener('click', (e) => {
             // [BẮT ĐẦU CODE THAY THẾ]
+            
+            // Debug: Log để kiểm tra event listener có được gọi không
+            console.log('🔵 [DEBUG] Event listener "Bắt đầu tạo âm thanh" được gọi');
+            addLogEntry('🔵 [DEBUG] Event listener "Bắt đầu tạo âm thanh" được gọi', 'info');
 
             // 1. Lấy và làm sạch văn bản (Giữ nguyên từ code mới)
             const text = mainTextarea.value.trim();
