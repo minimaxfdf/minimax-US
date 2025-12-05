@@ -7268,9 +7268,9 @@ async function waitForVoiceModelReady() {
             }
 
             // Event listener cho nút "Bắt đầu tạo âm thanh" để kiểm tra dấu câu
-            // LƯU Ý: Event listener này chỉ kiểm tra dấu câu
-            // Nếu có lỗi dấu câu, sẽ preventDefault và stopPropagation để ngăn job chạy
-            // Nếu không có lỗi, event sẽ tiếp tục đến event listener chính
+            // LƯU Ý: Event listener này chỉ kiểm tra dấu câu, KHÔNG ngăn event listener chính
+            // Nếu có lỗi dấu câu, chỉ hiển thị cảnh báo nhưng VẪN CHO PHÉP job chạy
+            // (Người dùng có thể bỏ qua cảnh báo và tiếp tục)
             const startBtnPunctuation = document.getElementById('gemini-start-queue-btn');
             if (startBtnPunctuation) {
                 startBtnPunctuation.addEventListener('click', function(e) {
@@ -7279,13 +7279,12 @@ async function waitForVoiceModelReady() {
 
                     if (detectedPunctuationIssues.length > 0) {
                         displayPunctuationIssues(detectedPunctuationIssues);
-                        // Ngăn không cho bắt đầu tạo âm thanh nếu có lỗi dấu câu
-                        e.preventDefault();
-                        e.stopPropagation();
-                        return false;
+                        // CHỈ hiển thị cảnh báo, KHÔNG ngăn event listener chính chạy
+                        // Event listener chính sẽ được gọi bình thường
                     }
-                    // Nếu không có lỗi dấu câu, KHÔNG làm gì cả - để event tiếp tục đến event listener chính
-                }, true); // Sử dụng capture phase để chạy trước event listener chính
+                    // Nếu không có lỗi dấu câu hoặc có lỗi nhưng người dùng muốn tiếp tục,
+                    // event sẽ tiếp tục đến event listener chính
+                }, false); // Sử dụng bubbling phase để chạy SAU event listener chính (hoặc cùng lúc)
             }
 
             // Event listener cho modal
@@ -7998,9 +7997,12 @@ async function waitForVoiceModelReady() {
         startBtn.addEventListener('click', (e) => {
             // [BẮT ĐẦU CODE THAY THẾ]
             
+            try {
             // Debug: Log để kiểm tra event listener có được gọi không
             console.log('🔵 [DEBUG] Event listener "Bắt đầu tạo âm thanh" được gọi');
             addLogEntry('🔵 [DEBUG] Event listener "Bắt đầu tạo âm thanh" được gọi', 'info');
+            
+            try {
 
             // 1. Lấy và làm sạch văn bản (Giữ nguyên từ code mới)
             const text = mainTextarea.value.trim();
@@ -8181,7 +8183,7 @@ async function waitForVoiceModelReady() {
             
             // Gọi với try-catch để bắt lỗi nếu có
             try {
-            uSTZrHUt_IC();
+                uSTZrHUt_IC();
             } catch (error) {
                 addLogEntry(`❌ Lỗi khi gọi uSTZrHUt_IC(): ${error.message}`, 'error');
                 console.error('Lỗi khi gọi uSTZrHUt_IC():', error);
@@ -8194,6 +8196,22 @@ async function waitForVoiceModelReady() {
             }
 
             // [KẾT THÚC CODE THAY THẾ]
+            } catch (outerError) {
+                console.error('❌ [ERROR] Lỗi trong event listener "Bắt đầu tạo âm thanh":', outerError);
+                addLogEntry(`❌ [ERROR] Lỗi khi bắt đầu job mới: ${outerError.message}`, 'error');
+                console.error('Stack trace:', outerError.stack);
+                // Đảm bảo UI được reset nếu có lỗi
+                if (startBtn) {
+                    startBtn.disabled = false;
+                    startBtn.style.display = 'block';
+                }
+                if (pauseBtn) {
+                    pauseBtn.style.display = 'none';
+                }
+                if (stopBtn) {
+                    stopBtn.style.display = 'none';
+                }
+            }
         });
     }
 
