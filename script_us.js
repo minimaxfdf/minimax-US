@@ -822,15 +822,37 @@
     flex-direction: row !important;
 }
 
-/* Đảm bảo modal card được căn giữa */
-#audio-manager-modal .punctuation-modal-card {
-    margin: auto !important;
+/* Đảm bảo modal card được căn giữa - Override tất cả CSS có thể làm lệch */
+#audio-manager-modal .punctuation-modal-card,
+#audio-manager-modal.punctuation-modal .punctuation-modal-card,
+.punctuation-modal#audio-manager-modal .punctuation-modal-card {
+    margin: 0 auto !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-top: auto !important;
+    margin-bottom: auto !important;
     position: relative !important;
     transform: none !important;
     top: auto !important;
     left: auto !important;
     right: auto !important;
     bottom: auto !important;
+    float: none !important;
+    clear: both !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-self: center !important;
+    justify-self: center !important;
+}
+
+/* Đảm bảo modal container căn giữa card */
+#audio-manager-modal.punctuation-modal,
+#audio-manager-modal[class*="punctuation-modal"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-direction: row !important;
+    text-align: center !important;
 }
 
 /* Đảm bảo modal không bị giới hạn bởi container cha */
