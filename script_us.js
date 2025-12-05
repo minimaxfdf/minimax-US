@@ -4329,6 +4329,19 @@ async function uSTZrHUt_IC() {
     // QUAN TRỌNG: Nếu SI$acY rỗng, có thể là job mới chưa được khởi tạo hoặc đã merge xong
     // Chỉ return nếu thực sự không có dữ liệu và không phải là trạng thái sau merge
     if (!SI$acY || SI$acY.length === 0) {
+        // QUAN TRỌNG: Nếu EfNjYNYj_O_CGB = true, có nghĩa là đang có job mới được khởi động
+        // Không return, để job mới có thể được khởi động
+        if (EfNjYNYj_O_CGB === true) {
+            // Đang có job mới được khởi động nhưng SI$acY chưa được set
+            // Có thể là đang trong quá trình reset, đợi một chút
+            addLogEntry(`⏳ Đang chờ SI$acY được khởi tạo cho job mới...`, 'info');
+            setTimeout(() => {
+                if (SI$acY && SI$acY.length > 0) {
+                    uSTZrHUt_IC();
+                }
+            }, 100);
+            return;
+        }
         // Kiểm tra xem có phải là trạng thái sau merge không (EfNjYNYj_O_CGB = false)
         if (EfNjYNYj_O_CGB === false && ttuo$y_KhCV === 0) {
             // Đây là trạng thái sau merge, không phải lỗi
@@ -8056,7 +8069,7 @@ async function waitForVoiceModelReady() {
             EfNjYNYj_O_CGB = true; // Cờ đang chạy (legacy) - SET THÀNH TRUE
             MEpJezGZUsmpZdAgFRBRZW = false; // Cờ tạm dừng (legacy) - SET THÀNH FALSE
             
-            // Đảm bảo các biến global được reset đúng
+            // Đảm bảo các biến global được reset đúng TRƯỚC KHI chia chunk
             if (typeof window.EfNjYNYj_O_CGB !== 'undefined') {
                 window.EfNjYNYj_O_CGB = true;
             }
@@ -8065,11 +8078,17 @@ async function waitForVoiceModelReady() {
             }
             
             // 5. QUAN TRỌNG: Sử dụng hàm smartSplitter MỚI để chia chunk
+            // Đảm bảo EfNjYNYj_O_CGB = true TRƯỚC KHI chia chunk để uSTZrHUt_IC() biết đây là job mới
             SI$acY = smartSplitter(sanitizedText, 3000); // Mảng chứa text (legacy)
             
             // Kiểm tra xem có chunk nào không
             if (!SI$acY || SI$acY.length === 0) {
                 addLogEntry(`❌ Lỗi: Không thể chia văn bản thành chunks. Văn bản có thể quá ngắn hoặc có lỗi.`, 'error');
+                // Reset lại flag nếu không có chunks
+                EfNjYNYj_O_CGB = false;
+                if (typeof window.EfNjYNYj_O_CGB !== 'undefined') {
+                    window.EfNjYNYj_O_CGB = false;
+                }
                 startBtn.disabled = false;
                 startBtn.style.display = 'block';
                 pauseBtn.style.display = 'none';
