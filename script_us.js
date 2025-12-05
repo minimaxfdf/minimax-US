@@ -8566,10 +8566,18 @@ async function waitForVoiceModelReady() {
             chunkAssignments.clear();
             workerReady = false;
             
+            addLogEntry(`🔍 [DEBUG] SI$acY.length = ${SI$acY.length}, sẽ kiểm tra mở worker tab...`, 'info');
+            
             // Chỉ mở worker tab nếu có nhiều hơn 1 chunk
             if (SI$acY.length > 1) {
-                startWorkerTab();
-                addLogEntry(`🚀 Đã khởi động hệ thống xử lý song song 2 tab (${SI$acY.length} chunks)`, 'info');
+                addLogEntry(`🔍 [DEBUG] Có ${SI$acY.length} chunks, đang gọi startWorkerTab()...`, 'info');
+                try {
+                    startWorkerTab();
+                    addLogEntry(`🚀 Đã khởi động hệ thống xử lý song song 2 tab (${SI$acY.length} chunks)`, 'info');
+                } catch (e) {
+                    addLogEntry(`❌ Lỗi khi gọi startWorkerTab(): ${e.message}`, 'error');
+                    console.error('[WORKER TAB] Lỗi:', e);
+                }
             } else {
                 addLogEntry(`ℹ️ Chỉ có 1 chunk, xử lý trên tab chính`, 'info');
             }
