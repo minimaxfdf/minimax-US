@@ -3227,11 +3227,22 @@ function dExAbhXwTJeTJBIjWr(EARfsfSN_QdgxH){const tENdSoNDV_gGwQKLZv$sYaZKhl=AP$
 
         const zEwMPLN$IZxzIwfdDbCfnIYcA=new Date();cHjV$QkAT$JWlL[VCAHyXsrERcpXVhFPxmgdBjjh(0x273)]=VCAHyXsrERcpXVhFPxmgdBjjh(0x1ce)+ymkKApNTfjOanYIBsxsoMNBX((zEwMPLN$IZxzIwfdDbCfnIYcA-dqj_t_Mr)/(Number(-0x27)*Math.floor(-0x26)+0x1f37+0x25*Math.floor(-parseInt(0xe5))));if(ZTQj$LF$o[VCAHyXsrERcpXVhFPxmgdBjjh(0x216)]===parseFloat(-0x1ca4)+Number(-parseInt(0x2445))+parseInt(0x40e9))return;try{
 // Sử dụng window.chunkBlobs nếu có và có dữ liệu, nếu không thì dùng ZTQj$LF$o
-let finalBlobs = ZTQj$LF$o; // Mặc định dùng ZTQj$LF$o như code gốc
+// QUAN TRỌNG: Đảm bảo merge đúng thứ tự theo index (0, 1, 2, 3...)
+let finalBlobs = [];
 if (window.chunkBlobs && window.chunkBlobs.length > 0) {
-    const validBlobs = window.chunkBlobs.filter(blob => blob !== null);
-    if (validBlobs.length > 0) {
-        finalBlobs = validBlobs; // Chỉ dùng window.chunkBlobs nếu có dữ liệu
+    // Sử dụng window.chunkBlobs và sắp xếp theo index
+    for (let i = 0; i < window.chunkBlobs.length; i++) {
+        if (window.chunkBlobs[i] !== null && window.chunkBlobs[i] !== undefined) {
+            finalBlobs.push(window.chunkBlobs[i]);
+        }
+    }
+}
+// Fallback: Nếu window.chunkBlobs rỗng, dùng ZTQj$LF$o
+if (finalBlobs.length === 0 && ZTQj$LF$o && ZTQj$LF$o.length > 0) {
+    for (let i = 0; i < ZTQj$LF$o.length; i++) {
+        if (ZTQj$LF$o[i] !== null && ZTQj$LF$o[i] !== undefined) {
+            finalBlobs.push(ZTQj$LF$o[i]);
+        }
     }
 }
 
@@ -4340,6 +4351,269 @@ function stopKeepAliveLoop() {
     }
 })();
 
+// =======================================================
+// == WORKER TAB MANAGER - XỬ LÝ SONG SONG 2 TAB ==
+// =======================================================
+let workerTab = null;
+let broadcastChannel = null;
+let currentJobId = null;
+let workerReady = false;
+let pendingChunks = []; // Danh sách chunks đang chờ xử lý
+let processingChunks = new Set(); // Set các chunk đang được xử lý (bởi tab chính hoặc tab phụ)
+let chunkAssignments = new Map(); // Map chunkIndex -> 'main' hoặc 'worker'
+
+function initWorkerTabManager() {
+    try {
+        // Khởi tạo BroadcastChannel
+        if (typeof BroadcastChannel !== 'undefined') {
+            broadcastChannel = new BroadcastChannel('minimax-worker-channel');
+            
+            // Lắng nghe message từ tab phụ
+            broadcastChannel.onmessage = (event) => {
+                handleWorkerMessage(event.data);
+            };
+            
+            addLogEntry('✅ Đã khởi tạo Worker Tab Manager', 'success');
+        } else {
+            console.warn('BroadcastChannel không được hỗ trợ, chỉ dùng tab chính');
+        }
+    } catch (e) {
+        console.warn('[WORKER TAB] Lỗi khởi tạo:', e);
+    }
+}
+
+function startWorkerTab() {
+    try {
+        if (workerTab && !workerTab.closed) {
+            addLogEntry('ℹ️ Tab phụ đã tồn tại, sử dụng tab hiện có', 'info');
+            return;
+        }
+        
+        // Mở tab phụ (ẩn hoặc không focus)
+        const workerUrl = window.location.href;
+        workerTab = window.open(
+            workerUrl,
+            'minimax-worker-tab',
+            'width=1,height=1,left=-1000,top=-1000'
+        );
+        
+        if (!workerTab) {
+            addLogEntry('⚠️ Không thể mở tab phụ (có thể bị chặn popup)', 'warning');
+            return;
+        }
+        
+        workerReady = false;
+        addLogEntry('🔄 Đang mở tab phụ...', 'info');
+        
+        // Đợi tab load xong (khoảng 3 giây)
+        setTimeout(() => {
+            if (workerTab && !workerTab.closed) {
+                // Gửi job info cho tab phụ
+                if (broadcastChannel && currentJobId) {
+                    broadcastChannel.postMessage({
+                        type: 'INIT_JOB',
+                        jobId: currentJobId,
+                        chunks: SI$acY,
+                        isWorkerTab: true
+                    });
+                    addLogEntry('📤 Đã gửi job info cho tab phụ', 'info');
+                }
+            }
+        }, 3000);
+        
+    } catch (e) {
+        console.error('[WORKER TAB] Lỗi mở tab phụ:', e);
+        addLogEntry('❌ Lỗi mở tab phụ: ' + e.message, 'error');
+    }
+}
+
+function assignNextChunk() {
+    // Tìm chunk tiếp theo chưa được xử lý
+    for (let i = 0; i < SI$acY.length; i++) {
+        if (!processingChunks.has(i) && 
+            window.chunkStatus[i] !== 'success' && 
+            window.chunkStatus[i] !== 'processing') {
+            return i;
+        }
+    }
+    return null;
+}
+
+function assignChunkToWorker(chunkIndex) {
+    if (!broadcastChannel || !workerReady || !currentJobId) {
+        return false;
+    }
+    
+    if (processingChunks.has(chunkIndex)) {
+        return false; // Chunk đã được gán
+    }
+    
+    try {
+        processingChunks.add(chunkIndex);
+        chunkAssignments.set(chunkIndex, 'worker');
+        window.chunkStatus[chunkIndex] = 'processing';
+        
+        broadcastChannel.postMessage({
+            type: 'ASSIGN_CHUNK',
+            chunkIndex: chunkIndex,
+            chunkText: SI$acY[chunkIndex],
+            jobId: currentJobId
+        });
+        
+        addLogEntry(`📤 [Worker] Đã gán chunk ${chunkIndex + 1} cho tab phụ`, 'info');
+        return true;
+    } catch (e) {
+        console.error('[WORKER TAB] Lỗi gán chunk:', e);
+        processingChunks.delete(chunkIndex);
+        chunkAssignments.delete(chunkIndex);
+        return false;
+    }
+}
+
+function handleWorkerMessage(data) {
+    try {
+        switch (data.type) {
+            case 'WORKER_READY':
+                workerReady = true;
+                addLogEntry('✅ Tab phụ đã sẵn sàng', 'success');
+                // Gửi job info ngay
+                if (currentJobId && SI$acY && SI$acY.length > 0) {
+                    broadcastChannel.postMessage({
+                        type: 'INIT_JOB',
+                        jobId: currentJobId,
+                        chunks: SI$acY,
+                        isWorkerTab: true
+                    });
+                }
+                // Gán chunk đầu tiên cho tab phụ
+                const firstChunk = assignNextChunk();
+                if (firstChunk !== null) {
+                    assignChunkToWorker(firstChunk);
+                }
+                break;
+                
+            case 'CHUNK_SUCCESS':
+                // Nhận blob từ tab phụ
+                const chunkIndex = data.chunkIndex;
+                processingChunks.delete(chunkIndex);
+                chunkAssignments.delete(chunkIndex);
+                
+                // Lưu blob vào window.chunkBlobs
+                if (data.blobData) {
+                    // Convert base64 back to blob
+                    const byteCharacters = atob(data.blobData.split(',')[1]);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: 'audio/mpeg' });
+                    
+                    window.chunkBlobs[chunkIndex] = blob;
+                    ZTQj$LF$o[chunkIndex] = blob;
+                    window.chunkStatus[chunkIndex] = 'success';
+                    
+                    addLogEntry(`✅ [Worker] Chunk ${chunkIndex + 1} đã hoàn thành`, 'success');
+                    
+                    // Cập nhật progress
+                    updateProgress();
+                    
+                    // Kiểm tra xem tất cả chunks đã xong chưa
+                    checkAllChunksDone();
+                    
+                    // Gán chunk tiếp theo cho tab phụ
+                    const nextChunk = assignNextChunk();
+                    if (nextChunk !== null) {
+                        assignChunkToWorker(nextChunk);
+                    }
+                }
+                break;
+                
+            case 'CHUNK_ERROR':
+                // Tab phụ báo lỗi
+                const errorChunkIndex = data.chunkIndex;
+                processingChunks.delete(errorChunkIndex);
+                chunkAssignments.delete(errorChunkIndex);
+                window.chunkStatus[errorChunkIndex] = 'failed';
+                
+                addLogEntry(`❌ [Worker] Chunk ${errorChunkIndex + 1} lỗi: ${data.error}`, 'error');
+                
+                // Tab phụ sẽ tự retry, nhưng cũng có thể tab chính xử lý
+                // Gán chunk tiếp theo
+                const nextChunkAfterError = assignNextChunk();
+                if (nextChunkAfterError !== null) {
+                    assignChunkToWorker(nextChunkAfterError);
+                }
+                break;
+                
+            case 'REQUEST_NEXT_CHUNK':
+                // Tab phụ yêu cầu chunk tiếp theo
+                const nextChunk = assignNextChunk();
+                if (nextChunk !== null) {
+                    assignChunkToWorker(nextChunk);
+                } else {
+                    // Không còn chunk nào
+                    broadcastChannel.postMessage({
+                        type: 'NO_MORE_CHUNKS',
+                        jobId: currentJobId
+                    });
+                }
+                break;
+        }
+    } catch (e) {
+        console.error('[WORKER TAB] Lỗi xử lý message:', e);
+    }
+}
+
+function checkAllChunksDone() {
+    if (!SI$acY || SI$acY.length === 0) return;
+    
+    const allDone = window.chunkStatus.every((status, idx) => {
+        return status === 'success' && window.chunkBlobs[idx] !== null;
+    });
+    
+    if (allDone && !window.isMerging) {
+        // Tất cả chunks đã xong → Merge
+        addLogEntry('✅ Tất cả chunks đã hoàn thành, bắt đầu merge...', 'success');
+        // Gọi hàm merge (cần tìm hàm merge)
+        if (typeof tt__SfNwBHDebpWJOqrSTR === 'function') {
+            tt__SfNwBHDebpWJOqrSTR();
+        }
+    }
+}
+
+function updateProgress() {
+    if (!SI$acY || SI$acY.length === 0) return;
+    
+    const successCount = window.chunkStatus.filter((status, idx) => {
+        return status === 'success' && window.chunkBlobs[idx] !== null;
+    }).length;
+    
+    const progress = Math.round((successCount / SI$acY.length) * 100);
+    window.maxProgress = Math.max(window.maxProgress, progress);
+    
+    const progressBar = document.getElementById('gemini-progress-bar');
+    const progressLabel = document.getElementById('gemini-progress-label');
+    
+    if (progressBar) {
+        progressBar.style.width = `${progress}%`;
+    }
+    if (progressLabel) {
+        progressLabel.textContent = `${progress}% (Chunk ${successCount}/${SI$acY.length})`;
+    }
+}
+
+// Khởi tạo Worker Tab Manager khi script load
+initWorkerTabManager();
+
+// Kiểm tra định kỳ xem tab phụ có bị đóng không
+setInterval(() => {
+    if (workerTab && workerTab.closed && EfNjYNYj_O_CGB) {
+        addLogEntry('⚠️ Tab phụ bị đóng, mở lại...', 'warning');
+        startWorkerTab();
+    }
+}, 5000);
+
 async function uSTZrHUt_IC() {
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
     
@@ -4393,6 +4667,71 @@ async function uSTZrHUt_IC() {
         // Reset về 0 để sẵn sàng
         addLogEntry(`🔄 Phát hiện SI$acY rỗng và ttuo$y_KhCV = ${ttuo$y_KhCV}. Reset về 0.`, 'warning');
         ttuo$y_KhCV = 0;
+    }
+    
+    // =======================================================
+    // == PHÂN CÔNG CHUNK THÔNG MINH (TAB CHÍNH HOẶC TAB PHỤ) ==
+    // =======================================================
+    // Tìm chunk tiếp theo chưa được xử lý (không phân biệt tab nào)
+    const nextAvailableChunk = assignNextChunk();
+    
+    if (nextAvailableChunk !== null) {
+        // Có chunk chưa được xử lý
+        // Thử gán cho tab phụ nếu có và ready
+        if (workerTab && !workerTab.closed && workerReady && SI$acY.length > 1) {
+            const assigned = assignChunkToWorker(nextAvailableChunk);
+            if (assigned) {
+                // Đã gán cho tab phụ, tab chính tìm chunk tiếp theo
+                const nextChunkForMain = assignNextChunk();
+                if (nextChunkForMain !== null) {
+                    ttuo$y_KhCV = nextChunkForMain;
+                    processingChunks.add(nextChunkForMain);
+                    chunkAssignments.set(nextChunkForMain, 'main');
+                    window.chunkStatus[nextChunkForMain] = 'processing';
+                    addLogEntry(`📤 [Main] Đã gán chunk ${nextChunkForMain + 1} cho tab chính`, 'info');
+                } else {
+                    // Không còn chunk nào cho tab chính, chờ tab phụ hoàn thành
+                    addLogEntry(`⏳ [Main] Không còn chunk nào, chờ tab phụ hoàn thành...`, 'info');
+                    setTimeout(uSTZrHUt_IC, 2000);
+                    return;
+                }
+            } else {
+                // Không thể gán cho tab phụ, tab chính xử lý
+                ttuo$y_KhCV = nextAvailableChunk;
+                processingChunks.add(nextAvailableChunk);
+                chunkAssignments.set(nextAvailableChunk, 'main');
+                window.chunkStatus[nextAvailableChunk] = 'processing';
+                addLogEntry(`📤 [Main] Gán chunk ${nextAvailableChunk + 1} cho tab chính (worker không sẵn sàng)`, 'info');
+            }
+        } else {
+            // Không có worker tab hoặc không ready, tab chính xử lý
+            ttuo$y_KhCV = nextAvailableChunk;
+            processingChunks.add(nextAvailableChunk);
+            chunkAssignments.set(nextAvailableChunk, 'main');
+            window.chunkStatus[nextAvailableChunk] = 'processing';
+            addLogEntry(`📤 [Main] Gán chunk ${nextAvailableChunk + 1} cho tab chính (không có worker tab)`, 'info');
+        }
+    } else {
+        // Không còn chunk nào chưa được xử lý
+        // Kiểm tra xem tất cả chunks đã xong chưa
+        const allDone = window.chunkStatus && window.chunkStatus.length === SI$acY.length && 
+                       window.chunkStatus.every((status, idx) => {
+                           return status === 'success' && window.chunkBlobs && window.chunkBlobs[idx] !== null;
+                       });
+        
+        if (allDone) {
+            // Tất cả chunks đã xong → Merge
+            addLogEntry('✅ Tất cả chunks đã hoàn thành, bắt đầu merge...', 'success');
+            if (typeof tt__SfNwBHDebpWJOqrSTR === 'function') {
+                tt__SfNwBHDebpWJOqrSTR();
+            }
+            return;
+        } else {
+            // Còn chunks đang xử lý, chờ thêm
+            addLogEntry(`⏳ Còn chunks đang xử lý, chờ thêm...`, 'info');
+            setTimeout(uSTZrHUt_IC, 2000);
+            return;
+        }
     }
     
     // Đảm bảo keep-alive loop đang chạy (đã được khởi động tự động khi tool load)
@@ -5999,6 +6338,11 @@ function igyo$uwVChUzI() {
                             window.processingChunks.delete(currentChunkIndex);
                         }
                         
+                        // Xóa khỏi chunkAssignments (Worker Tab Manager)
+                        if (typeof chunkAssignments !== 'undefined') {
+                            chunkAssignments.delete(currentChunkIndex);
+                        }
+                        
                         // =======================================================
                         // == ĐÁNH DẤU THÀNH CÔNG: SAU KHI TẤT CẢ KIỂM TRA ĐỀU HỢP LỆ ==
                         // =======================================================
@@ -6017,6 +6361,60 @@ function igyo$uwVChUzI() {
                         if (currentChunkIndex === 0) {
                             window.chunk1Failed = false;
                             addLogEntry(`✅ [Chunk 1] Đã thành công - Reset flag kiểm tra cấu hình`, 'success');
+                        }
+                        
+                        // =======================================================
+                        // == PHÂN CÔNG CHUNK TIẾP THEO (TAB CHÍNH HOẶC TAB PHỤ) ==
+                        // =======================================================
+                        // Cập nhật progress
+                        updateProgress();
+                        
+                        // Kiểm tra xem tất cả chunks đã xong chưa
+                        checkAllChunksDone();
+                        
+                        // Tìm chunk tiếp theo chưa được xử lý
+                        const nextChunk = assignNextChunk();
+                        if (nextChunk !== null) {
+                            // Có chunk tiếp theo
+                            // Thử gán cho tab phụ nếu có và ready
+                            if (workerTab && !workerTab.closed && workerReady && SI$acY.length > 1) {
+                                const assigned = assignChunkToWorker(nextChunk);
+                                if (!assigned) {
+                                    // Không thể gán cho tab phụ, tab chính xử lý
+                                    ttuo$y_KhCV = nextChunk;
+                                    processingChunks.add(nextChunk);
+                                    chunkAssignments.set(nextChunk, 'main');
+                                    window.chunkStatus[nextChunk] = 'processing';
+                                    addLogEntry(`📤 [Main] Đã gán chunk ${nextChunk + 1} cho tab chính (worker không sẵn sàng)`, 'info');
+                                    setTimeout(uSTZrHUt_IC, getRandomChunkDelay());
+                                } else {
+                                    // Đã gán cho tab phụ, tab chính tìm chunk tiếp theo
+                                    const nextChunkForMain = assignNextChunk();
+                                    if (nextChunkForMain !== null) {
+                                        ttuo$y_KhCV = nextChunkForMain;
+                                        processingChunks.add(nextChunkForMain);
+                                        chunkAssignments.set(nextChunkForMain, 'main');
+                                        window.chunkStatus[nextChunkForMain] = 'processing';
+                                        addLogEntry(`📤 [Main] Đã gán chunk ${nextChunkForMain + 1} cho tab chính`, 'info');
+                                        setTimeout(uSTZrHUt_IC, getRandomChunkDelay());
+                                    } else {
+                                        // Không còn chunk nào cho tab chính, chờ tab phụ hoàn thành
+                                        addLogEntry(`⏳ [Main] Không còn chunk nào, chờ tab phụ hoàn thành...`, 'info');
+                                    }
+                                }
+                            } else {
+                                // Không có worker tab, tab chính xử lý
+                                ttuo$y_KhCV = nextChunk;
+                                processingChunks.add(nextChunk);
+                                chunkAssignments.set(nextChunk, 'main');
+                                window.chunkStatus[nextChunk] = 'processing';
+                                addLogEntry(`📤 [Main] Đã gán chunk ${nextChunk + 1} cho tab chính (không có worker tab)`, 'info');
+                                setTimeout(uSTZrHUt_IC, getRandomChunkDelay());
+                            }
+                        } else {
+                            // Không còn chunk nào chưa được xử lý
+                            // Kiểm tra lại xem tất cả chunks đã xong chưa
+                            checkAllChunksDone();
                         }
 
                         // Xóa khỏi failedChunks nếu có
@@ -6040,50 +6438,13 @@ function igyo$uwVChUzI() {
                         if (typeof window.processingChunks !== 'undefined' && typeof currentChunkIndex !== 'undefined') {
                             window.processingChunks.delete(currentChunkIndex);
                         }
+                        // Xóa khỏi chunkAssignments khi có lỗi
+                        if (typeof chunkAssignments !== 'undefined' && typeof currentChunkIndex !== 'undefined') {
+                            chunkAssignments.delete(currentChunkIndex);
+                        }
                         // Reset flag khi có lỗi
                         window.isSettingUpObserver = false;
                     }
-                    
-                    // CƠ CHẾ RETRY MỚI: Sau khi chunk thành công, chuyển sang chunk tiếp theo
-                    // Xóa khỏi failedChunks nếu có
-                    if (window.failedChunks && window.failedChunks.includes(currentChunkIndex)) {
-                            window.failedChunks = window.failedChunks.filter(idx => idx !== currentChunkIndex);
-                        }
-                        
-                    // Chuyển sang chunk tiếp theo
-                    ttuo$y_KhCV++;
-                    if (ttuo$y_KhCV >= SI$acY.length) {
-                        // Đã xử lý xong tất cả chunks
-                        addLogEntry(`✅ Đã xử lý xong tất cả chunks!`, 'success');
-                            ttuo$y_KhCV = SI$acY.length; // Đánh dấu hoàn thành
-                    }
-                    
-                    // GUARD: Kiểm tra độ sâu recursive calls
-                    if (typeof window.recursiveCallDepth === 'undefined') {
-                        window.recursiveCallDepth = 0;
-                    }
-                    if (typeof window.maxRecursiveDepth === 'undefined') {
-                        window.maxRecursiveDepth = 50;
-                    }
-                    
-                    window.recursiveCallDepth++;
-                    if (window.recursiveCallDepth > window.maxRecursiveDepth) {
-                        addLogEntry(`⚠️ Đã đạt độ sâu recursive tối đa (${window.maxRecursiveDepth}), reset và tiếp tục...`, 'warning');
-                        window.recursiveCallDepth = 0;
-                        // Chờ một chút trước khi tiếp tục
-                        setTimeout(() => {
-                            window.recursiveCallDepth = 0;
-                            uSTZrHUt_IC();
-                        }, getRandomChunkDelay());
-                        return;
-                    }
-                    
-                    // Sau khi xử lý xong chunk hiện tại, luôn đợi ngẫu nhiên 1–3 giây rồi mới xử lý chunk tiếp theo
-                    setTimeout(() => {
-                        window.recursiveCallDepth = Math.max(0, window.recursiveCallDepth - 1); // Giảm độ sâu sau mỗi lần gọi
-                        uSTZrHUt_IC();
-                    }, getRandomChunkDelay());
-                    return;
                 }
             }
         }
@@ -8123,6 +8484,20 @@ async function waitForVoiceModelReady() {
             window.INTERCEPT_CURRENT_TEXT = null;
             window.INTERCEPT_CURRENT_INDEX = null;
             window._interceptLoggedForChunk = null;
+            
+            // 8. Khởi tạo Worker Tab Manager cho job mới
+            currentJobId = 'job_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            processingChunks.clear();
+            chunkAssignments.clear();
+            workerReady = false;
+            
+            // Chỉ mở worker tab nếu có nhiều hơn 1 chunk
+            if (SI$acY.length > 1) {
+                startWorkerTab();
+                addLogEntry(`🚀 Đã khởi động hệ thống xử lý song song 2 tab (${SI$acY.length} chunks)`, 'info');
+            } else {
+                addLogEntry(`ℹ️ Chỉ có 1 chunk, xử lý trên tab chính`, 'info');
+            }
             
             addLogEntry(`✅ Đã xóa sạch dữ liệu cũ. Bắt đầu với ${SI$acY.length} chunk mới.`, 'success');
             // =======================================================
