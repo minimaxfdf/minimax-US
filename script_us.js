@@ -3438,10 +3438,14 @@ const BBNDYjhHoGkj_qbbbJu=URL[VCAHyXsrERcpXVhFPxmgdBjjh(0x1f0)](InRdxToeqTDyPgDG
                 // Reset SI$acY để tránh conflict với job mới
                 SI$acY = [];
                 
-                // Reset window.chunkStatus và window.chunkBlobs
+                // Reset window.chunkStatus
                 window.chunkStatus = [];
-                window.chunkBlobs = [];
-                ZTQj$LF$o = [];
+                
+                // QUAN TRỌNG: KHÔNG reset window.chunkBlobs và ZTQj$LF$o ở đây
+                // Vì người dùng có thể muốn tải các chunk sau khi merge xong
+                // Các biến này sẽ được reset khi bấm "Bắt đầu tạo âm thanh" mới
+                // window.chunkBlobs = []; // KHÔNG reset ở đây
+                // ZTQj$LF$o = []; // KHÔNG reset ở đây
                 
                 // Reset flag merge để cho phép merge job mới
                 window.isMerging = false;
