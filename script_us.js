@@ -7968,15 +7968,8 @@ async function waitForVoiceModelReady() {
     const playPauseWaveformBtn = document.getElementById('waveform-play-pause');
 
     if (startBtn) {
-        startBtn.addEventListener('click', (e) => {
+        startBtn.addEventListener('click', () => {
             // [BẮT ĐẦU CODE THAY THẾ]
-            
-            try {
-            // Debug: Log để kiểm tra event listener có được gọi không
-            console.log('🔵 [DEBUG] Event listener "Bắt đầu tạo âm thanh" được gọi');
-            addLogEntry('🔵 [DEBUG] Event listener "Bắt đầu tạo âm thanh" được gọi', 'info');
-            
-            try {
 
             // 1. Lấy và làm sạch văn bản (Giữ nguyên từ code mới)
             const text = mainTextarea.value.trim();
@@ -8170,22 +8163,6 @@ async function waitForVoiceModelReady() {
             }
 
             // [KẾT THÚC CODE THAY THẾ]
-            } catch (outerError) {
-                console.error('❌ [ERROR] Lỗi trong event listener "Bắt đầu tạo âm thanh":', outerError);
-                addLogEntry(`❌ [ERROR] Lỗi khi bắt đầu job mới: ${outerError.message}`, 'error');
-                console.error('Stack trace:', outerError.stack);
-                // Đảm bảo UI được reset nếu có lỗi
-                if (startBtn) {
-                    startBtn.disabled = false;
-                    startBtn.style.display = 'block';
-                }
-                if (pauseBtn) {
-                    pauseBtn.style.display = 'none';
-                }
-                if (stopBtn) {
-                    stopBtn.style.display = 'none';
-                }
-            }
         });
     }
 
