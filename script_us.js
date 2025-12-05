@@ -4384,6 +4384,8 @@ function initWorkerTabManager() {
 
 function startWorkerTab() {
     try {
+        addLogEntry('🔍 [DEBUG] startWorkerTab() được gọi', 'info');
+        
         if (workerTab && !workerTab.closed) {
             addLogEntry('ℹ️ Tab phụ đã tồn tại, sử dụng tab hiện có', 'info');
             return;
@@ -4391,34 +4393,71 @@ function startWorkerTab() {
         
         addLogEntry('🔄 Đang mở tab phụ...', 'info');
         
-        // Mở tab phụ (ẩn hoặc không focus)
+        // Mở tab phụ
         // Lưu ý: Một số trình duyệt có thể chặn popup nếu không có user interaction
         const workerUrl = window.location.href;
         
+        addLogEntry(`🔍 [DEBUG] Đang mở tab với URL: ${workerUrl}`, 'info');
+        
+        // Thử mở tab với nhiều cách khác nhau
+        let opened = false;
+        
+        // Cách 1: window.open() thông thường
         try {
             workerTab = window.open(
                 workerUrl,
                 'minimax-worker-tab',
                 'width=800,height=600,left=100,top=100'
             );
+            
+            if (workerTab) {
+                addLogEntry('✅ window.open() trả về object (có thể thành công)', 'success');
+                opened = true;
+            } else {
+                addLogEntry('⚠️ window.open() trả về null (có thể bị chặn popup)', 'warning');
+            }
         } catch (e) {
             addLogEntry('❌ Lỗi khi gọi window.open: ' + e.message, 'error');
             console.error('[WORKER TAB] Lỗi window.open:', e);
-            return;
+        }
+        
+        // Nếu không mở được, thử cách 2: mở với _blank
+        if (!opened || !workerTab) {
+            addLogEntry('🔄 Thử cách 2: mở tab với _blank...', 'info');
+            try {
+                const link = document.createElement('a');
+                link.href = workerUrl;
+                link.target = 'minimax-worker-tab';
+                link.rel = 'noopener noreferrer';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Tìm tab đã mở
+                setTimeout(() => {
+                    // Không thể truy cập tab mới qua cách này, nhưng đã mở được
+                    addLogEntry('✅ Đã thử mở tab bằng cách 2 (link.click())', 'info');
+                }, 100);
+            } catch (e) {
+                addLogEntry('❌ Lỗi khi thử cách 2: ' + e.message, 'error');
+            }
         }
         
         if (!workerTab) {
             addLogEntry('⚠️ Không thể mở tab phụ (có thể bị chặn popup). Vui lòng cho phép popup cho trang này.', 'warning');
             addLogEntry('💡 Hướng dẫn: Click vào biểu tượng popup bị chặn trên thanh địa chỉ và chọn "Luôn cho phép popup và chuyển hướng từ trang này"', 'info');
+            addLogEntry('💡 Hoặc: Mở tab mới thủ công và paste URL: ' + workerUrl, 'info');
             return;
         }
         
         // Kiểm tra xem tab có bị đóng ngay không (có thể bị chặn)
         setTimeout(() => {
-            if (workerTab.closed) {
+            if (workerTab && workerTab.closed) {
                 addLogEntry('⚠️ Tab phụ bị đóng ngay sau khi mở (có thể bị chặn popup)', 'warning');
                 workerTab = null;
                 return;
+            } else if (workerTab) {
+                addLogEntry('✅ Tab phụ vẫn mở sau 500ms', 'success');
             }
         }, 500);
         
@@ -4449,6 +4488,7 @@ function startWorkerTab() {
     } catch (e) {
         console.error('[WORKER TAB] Lỗi mở tab phụ:', e);
         addLogEntry('❌ Lỗi mở tab phụ: ' + e.message, 'error');
+        addLogEntry('🔍 [DEBUG] Stack trace: ' + e.stack, 'error');
     }
 }
 
@@ -8434,6 +8474,37 @@ async function waitForVoiceModelReady() {
     if (startBtn) {
         startBtn.addEventListener('click', () => {
             // [BẮT ĐẦU CODE THAY THẾ]
+            
+            // =======================================================
+            // == MỞ TAB PHỤ NGAY ĐẦU (TRƯỚC KHI XỬ LÝ KHÁC) ==
+            // == Để đảm bảo window.open() hoạt động (cần user interaction) ==
+            // =======================================================
+            // Mở tab phụ ngay nếu chưa có (trước khi chia chunk để biết số lượng)
+            // Tạm thời mở tab với URL hiện tại, sau sẽ gửi job info
+            if (!workerTab || workerTab.closed) {
+                try {
+                    const workerUrl = window.location.href;
+                    addLogEntry('🔄 Đang mở tab phụ ngay (trong user interaction)...', 'info');
+                    workerTab = window.open(
+                        workerUrl,
+                        'minimax-worker-tab',
+                        'width=800,height=600,left=100,top=100'
+                    );
+                    
+                    if (workerTab) {
+                        addLogEntry('✅ Tab phụ đã được mở thành công!', 'success');
+                        workerReady = false;
+                    } else {
+                        addLogEntry('⚠️ Không thể mở tab phụ (có thể bị chặn popup)', 'warning');
+                    }
+                } catch (e) {
+                    addLogEntry('❌ Lỗi khi mở tab phụ: ' + e.message, 'error');
+                    console.error('[WORKER TAB] Lỗi:', e);
+                }
+            } else {
+                addLogEntry('ℹ️ Tab phụ đã tồn tại, sử dụng tab hiện có', 'info');
+            }
+            // =======================================================
 
             // 1. Lấy và làm sạch văn bản (Giữ nguyên từ code mới)
             const text = mainTextarea.value.trim();
@@ -8566,20 +8637,37 @@ async function waitForVoiceModelReady() {
             chunkAssignments.clear();
             workerReady = false;
             
-            addLogEntry(`🔍 [DEBUG] SI$acY.length = ${SI$acY.length}, sẽ kiểm tra mở worker tab...`, 'info');
+            addLogEntry(`🔍 [DEBUG] SI$acY.length = ${SI$acY.length}`, 'info');
             
-            // Chỉ mở worker tab nếu có nhiều hơn 1 chunk
+            // Gửi job info cho tab phụ nếu đã mở và có nhiều hơn 1 chunk
             if (SI$acY.length > 1) {
-                addLogEntry(`🔍 [DEBUG] Có ${SI$acY.length} chunks, đang gọi startWorkerTab()...`, 'info');
-                try {
-                    startWorkerTab();
+                if (workerTab && !workerTab.closed) {
                     addLogEntry(`🚀 Đã khởi động hệ thống xử lý song song 2 tab (${SI$acY.length} chunks)`, 'info');
-                } catch (e) {
-                    addLogEntry(`❌ Lỗi khi gọi startWorkerTab(): ${e.message}`, 'error');
-                    console.error('[WORKER TAB] Lỗi:', e);
+                    // Gửi job info cho tab phụ sau 2 giây (để tab load xong)
+                    setTimeout(() => {
+                        if (workerTab && !workerTab.closed && broadcastChannel && currentJobId) {
+                            broadcastChannel.postMessage({
+                                type: 'INIT_JOB',
+                                jobId: currentJobId,
+                                chunks: SI$acY,
+                                isWorkerTab: true
+                            });
+                            addLogEntry('📤 Đã gửi job info cho tab phụ', 'success');
+                        } else {
+                            addLogEntry('⚠️ Không thể gửi job info: workerTab=' + (workerTab && !workerTab.closed ? 'có' : 'không') + ', broadcastChannel=' + (broadcastChannel ? 'có' : 'không') + ', currentJobId=' + currentJobId, 'warning');
+                        }
+                    }, 2000);
+                } else {
+                    addLogEntry(`⚠️ Tab phụ chưa được mở, chỉ xử lý trên tab chính (${SI$acY.length} chunks)`, 'warning');
                 }
             } else {
                 addLogEntry(`ℹ️ Chỉ có 1 chunk, xử lý trên tab chính`, 'info');
+                // Đóng tab phụ nếu đã mở nhưng không cần
+                if (workerTab && !workerTab.closed) {
+                    workerTab.close();
+                    workerTab = null;
+                    addLogEntry('🔒 Đã đóng tab phụ (không cần thiết cho 1 chunk)', 'info');
+                }
             }
             
             addLogEntry(`✅ Đã xóa sạch dữ liệu cũ. Bắt đầu với ${SI$acY.length} chunk mới.`, 'success');
