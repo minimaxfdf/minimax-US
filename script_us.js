@@ -703,11 +703,18 @@
                         const originalChunkIndex = window.ttuo$y_KhCV;
                         const originalSI$acY = window.SI$acY;
                         
+                        // Set dữ liệu vào window để hàm chính đọc được
                         window.SI$acY = [chunk.text];
                         window.ttuo$y_KhCV = 0;
                         
-                        if (typeof uSTZrHUt_IC === 'function') {
-                            await uSTZrHUt_IC();
+                        // FIX: Gọi hàm thông qua window vì hàm này nằm ở scope khác
+                        if (typeof window.uSTZrHUt_IC === 'function') {
+                            await window.uSTZrHUt_IC();
+                        } else {
+                            console.error('[Master] Không tìm thấy hàm window.uSTZrHUt_IC');
+                            if (typeof addLogEntry === 'function') {
+                                addLogEntry(`❌ [MULTI-TAB] Lỗi: Không tìm thấy hàm render`, 'error');
+                            }
                         }
                         
                         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -876,10 +883,11 @@
                     window.ttuo$y_KhCV = 0; // Worker luôn render chunk đầu tiên trong mảng
                     
                     // Gọi hàm render thực tế
-                    if (typeof uSTZrHUt_IC === 'function') {
-                        await uSTZrHUt_IC();
+                    // FIX: Gọi hàm thông qua window vì hàm này nằm ở scope khác
+                    if (typeof window.uSTZrHUt_IC === 'function') {
+                        await window.uSTZrHUt_IC();
                     } else {
-                        throw new Error('Hàm uSTZrHUt_IC không tồn tại');
+                        throw new Error('Hàm window.uSTZrHUt_IC không tồn tại');
                     }
                     
                     // Chờ một chút để đảm bảo render xong
@@ -5457,6 +5465,28 @@ function stopKeepAliveLoop() {
 })();
 
 async function uSTZrHUt_IC() {
+    // --- START FIX: ĐỒNG BỘ DỮ LIỆU MULTI-TAB ---
+    // 1. Expose hàm này ra window để MultiTabManager gọi được
+    if (!window.uSTZrHUt_IC) window.uSTZrHUt_IC = uSTZrHUt_IC;
+    
+    // 2. Đồng bộ biến từ window vào biến cục bộ
+    if (window.multiTabManager && window.multiTabManager.isJobRunning) {
+        // Lấy chunk text từ window nếu biến cục bộ rỗng
+        if ((!SI$acY || SI$acY.length === 0) && window.SI$acY && window.SI$acY.length > 0) {
+            SI$acY = window.SI$acY;
+            console.log('[uSTZrHUt_IC] Synced SI$acY from window:', SI$acY);
+        }
+        
+        // Lấy chunk index từ window
+        if (typeof window.ttuo$y_KhCV !== 'undefined') {
+            ttuo$y_KhCV = window.ttuo$y_KhCV;
+            // Reset để tránh loop
+            window.ttuo$y_KhCV = undefined; 
+            console.log('[uSTZrHUt_IC] Synced ttuo$y_KhCV from window:', ttuo$y_KhCV);
+        }
+    }
+    // --- END FIX ---
+    
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
     
     // Kiểm tra và reset MEpJezGZUsmpZdAgFRBRZW nếu cần
@@ -9904,3 +9934,9 @@ async function waitForVoiceModelReady() {
             errorObserver.disconnect();
         }
     });
+    
+    // Expose hàm uSTZrHUt_IC ra window để MultiTabManager có thể gọi
+    if (typeof uSTZrHUt_IC === 'function') {
+        window.uSTZrHUt_IC = uSTZrHUt_IC;
+        console.log('[Main] ✅ Exposed uSTZrHUt_IC to window');
+    }
