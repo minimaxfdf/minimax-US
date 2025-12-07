@@ -70,6 +70,8 @@
                 this.totalWorkers = totalWorkers;
                 this.isMaster = role === 'MASTER';
                 this.isWorker = role === 'WORKER';
+                this.isJobRunning = false; // Flag để tránh chạy nhiều job cùng lúc
+                this.workerTabsOpened = false; // Flag để tránh mở tab nhiều lần
                 
                 // Khởi tạo
                 this.init();
@@ -181,6 +183,18 @@
                     return;
                 }
                 
+                // Kiểm tra xem đã có job đang chạy chưa
+                if (this.isJobRunning) {
+                    console.warn('[MultiTabManager] Đã có job đang chạy, bỏ qua');
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`⚠️ [MULTI-TAB] Đã có job đang chạy, vui lòng đợi job hiện tại hoàn thành`, 'warning');
+                    }
+                    return;
+                }
+                
+                // Đánh dấu job đang chạy
+                this.isJobRunning = true;
+                
                 try {
                     // THÔNG BÁO CHO MAIN.PY: Job đã bắt đầu
                     // Cách 1: Thay đổi title để main.py phát hiện
@@ -264,6 +278,9 @@
                     if (typeof addLogEntry === 'function') {
                         addLogEntry(`❌ [MULTI-TAB] Lỗi: ${error.message}`, 'error');
                     }
+                    // Reset flag khi lỗi
+                    this.isJobRunning = false;
+                    this.workerTabsOpened = false;
                 }
             }
             
@@ -271,11 +288,23 @@
             async openWorkerTabs(numWorkers) {
                 if (!this.isMaster) return;
                 
+                // Kiểm tra xem đã mở Worker tabs chưa
+                if (this.workerTabsOpened) {
+                    console.log('[MultiTabManager] Worker tabs đã được mở rồi, bỏ qua');
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`ℹ️ [MULTI-TAB] Worker tabs đã được mở rồi, sử dụng tabs hiện có`, 'info');
+                    }
+                    return;
+                }
+                
                 const targetUrl = 'https://www.minimax.io/audio/voices-cloning';
                 
                 if (typeof addLogEntry === 'function') {
                     addLogEntry(`🔧 [MULTI-TAB] Đang mở ${numWorkers} Worker tab(s) để xử lý song song...`, 'info');
                 }
+                
+                // Đánh dấu đã mở tabs
+                this.workerTabsOpened = true;
                 
                 for (let i = 0; i < numWorkers; i++) {
                     try {
@@ -311,6 +340,9 @@
                         type: 'CLOSE_WORKER',
                         timestamp: Date.now()
                     });
+                    
+                    // Reset flag để có thể mở tab mới cho job tiếp theo
+                    this.workerTabsOpened = false;
                     
                     if (typeof addLogEntry === 'function') {
                         addLogEntry(`🔒 [MULTI-TAB] Đã yêu cầu đóng Worker tabs`, 'info');
@@ -472,6 +504,10 @@
                             await this.mergeAndDownload();
                             // Đóng Worker tabs sau khi merge xong
                             await this.closeWorkerTabs();
+                            
+                            // Reset flag để có thể chạy job mới
+                            this.isJobRunning = false;
+                            this.workerTabsOpened = false;
                         }
                     } catch (error) {
                         console.error('[MultiTabManager] Lỗi watchdog:', error);
