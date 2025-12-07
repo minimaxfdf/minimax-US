@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DUC LOI - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
-// @version      36.0
+// @version      35.0
 // @description  Tạo audio giọng nói clone theo ý của bạn. Không giới hạn. Thêm chức năng Ghép hội thoại, Đổi văn bản hàng loạt & Thiết lập dấu câu (bao gồm dấu xuống dòng).
 // @author       HUỲNH ĐỨC LỢI ( Zalo: 0835795597) - Đã chỉnh sửa
 // @match        https://www.minimax.io/audio*
@@ -26,1087 +26,6 @@
 
 (function () {
     'use strict';
-
-    // =================================================================
-    // == MULTI-TAB MANAGER (REVISED) ==
-    // == Quản lý IndexedDB và BroadcastChannel cho multi-tab mode ==
-    // =================================================================
-    (function() {
-        'use strict';
-        
-        // Kiểm tra xem có bật multi-tab không
-        const config = window.MMX_MULTI_TAB_CONFIG || {};
-        
-        // Debug log
-        console.log('[MultiTabManager] Config:', config);
-        console.log('[MultiTabManager] config.enabled:', config.enabled, typeof config.enabled);
-        
-        // Kiểm tra enabled (chấp nhận cả boolean true và string 'true')
-        const isEnabled = config.enabled === true || config.enabled === 'true' || config.enabled === 1;
-        
-        if (!isEnabled) {
-            console.log('[MultiTabManager] Multi-tab mode không được bật, bỏ qua');
-            console.log('[MultiTabManager] Config chi tiết:', JSON.stringify(config, null, 2));
-            return; // Không phải multi-tab mode, bỏ qua
-        }
-        
-        const role = config.role || 'MASTER';
-        const workerId = config.workerId || 0;
-        const totalWorkers = config.totalWorkers || 1;
-        
-        console.log(`[MultiTabManager] Khởi tạo với role=${role}, workerId=${workerId}, totalWorkers=${totalWorkers}`);
-        
-        // =============================================================
-        // == CLASS: MultiTabManager ==
-        // =============================================================
-        class MultiTabManager {
-            constructor() {
-                this.dbName = 'MMX_DB';
-                this.dbVersion = 1;
-                this.db = null;
-                this.channel = new BroadcastChannel('mmx_cluster');
-                this.role = role;
-                this.workerId = workerId;
-                this.totalWorkers = totalWorkers;
-                this.isMaster = role === 'MASTER';
-                this.isWorker = role === 'WORKER';
-                this.isJobRunning = false; // Flag để tránh chạy nhiều job cùng lúc
-                this.workerTabsOpened = false; // Flag để tránh mở tab nhiều lần
-                
-                // Khởi tạo
-                this.init();
-            }
-            
-            async init() {
-                try {
-                    // Khởi tạo IndexedDB
-                    await this.initDB();
-                    
-                    // Khởi tạo BroadcastChannel listeners
-                    this.initChannel();
-                    
-                    // Nếu là Worker, ẩn UI và khởi động polling
-                    if (this.isWorker) {
-                        this.hideWorkerUI();
-                        this.initWorker();
-                    }
-                    
-                    console.log(`[MultiTabManager] ${this.role} (ID: ${this.workerId}) đã khởi tạo`);
-                    
-                    // Gán vào window để có thể truy cập từ bên ngoài
-                    window.multiTabManager = this;
-                    console.log('[MultiTabManager] Đã gán vào window.multiTabManager');
-                } catch (error) {
-                    console.error('[MultiTabManager] Lỗi khởi tạo:', error);
-                }
-            }
-            
-            async initDB() {
-                return new Promise((resolve, reject) => {
-                    const request = indexedDB.open(this.dbName, this.dbVersion);
-                    
-                    request.onerror = () => reject(request.error);
-                    request.onsuccess = () => {
-                        this.db = request.result;
-                        resolve(this.db);
-                    };
-                    
-                    request.onupgradeneeded = (event) => {
-                        const db = event.target.result;
-                        
-                        // ObjectStore 1: chunks
-                        if (!db.objectStoreNames.contains('chunks')) {
-                            const chunksStore = db.createObjectStore('chunks', { keyPath: 'id' });
-                            chunksStore.createIndex('status', 'status', { unique: false });
-                            chunksStore.createIndex('workerId', 'workerId', { unique: false });
-                        }
-                        
-                        // ObjectStore 2: system
-                        if (!db.objectStoreNames.contains('system')) {
-                            db.createObjectStore('system', { keyPath: 'key' });
-                        }
-                    };
-                });
-            }
-            
-            initChannel() {
-                this.channel.addEventListener('message', (event) => {
-                    const message = event.data;
-                    
-                    switch (message.type) {
-                        case 'START_JOB':
-                            if (this.isWorker) {
-                                this.startWorkerPolling();
-                            }
-                            break;
-                        case 'PING':
-                            if (this.isWorker) {
-                                this.channel.postMessage({ type: 'PONG', workerId: this.workerId });
-                            }
-                            break;
-                        case 'WORKER_STATUS':
-                            // Master nhận status từ Worker
-                            if (this.isMaster && typeof addLogEntry === 'function') {
-                                addLogEntry(`[Worker ${message.workerId}] ${message.status}`, 'info');
-                            }
-                            break;
-                        case 'CLOSE_WORKER':
-                            // Worker tự đóng tab khi nhận lệnh
-                            if (this.isWorker) {
-                                console.log(`[Worker ${this.workerId}] Nhận lệnh đóng tab`);
-                                setTimeout(() => {
-                                    window.close();
-                                }, 1000); // Đợi 1 giây rồi đóng
-                            }
-                            break;
-                    }
-                });
-            }
-            
-            hideWorkerUI() {
-                try {
-                    // Ẩn toàn bộ UI, chỉ hiện thông báo đơn giản
-                    document.body.innerHTML = '<div style="background: black; color: white; padding: 20px; font-family: monospace; position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 999999;">Worker Tab (ID: ' + this.workerId + ') - Đang chờ lệnh...</div>';
-                    document.body.style.overflow = 'hidden';
-                } catch (e) {
-                    console.error('[MultiTabManager] Lỗi ẩn Worker UI:', e);
-                }
-            }
-            
-            // =============================================================
-            // == MASTER METHODS ==
-            // =============================================================
-            
-            async startJob(text) {
-                if (!this.isMaster) {
-                    console.warn('[MultiTabManager] Chỉ Master mới được khởi động job');
-                    return;
-                }
-                
-                // Kiểm tra xem đã có job đang chạy chưa
-                if (this.isJobRunning) {
-                    console.warn('[MultiTabManager] Đã có job đang chạy, bỏ qua');
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`⚠️ [MULTI-TAB] Đã có job đang chạy, vui lòng đợi job hiện tại hoàn thành`, 'warning');
-                    }
-                    return;
-                }
-                
-                // Đánh dấu job đang chạy
-                this.isJobRunning = true;
-                
-                try {
-                    // THÔNG BÁO CHO MAIN.PY: Job đã bắt đầu
-                    // Cách 1: Thay đổi title để main.py phát hiện
-                    const originalTitle = document.title;
-                    document.title = `MMX_JOB_START:${Date.now()}`;
-                    setTimeout(() => {
-                        document.title = originalTitle;
-                    }, 1000);
-                    
-                    // Cách 2: Gửi qua BroadcastChannel (nếu có listener từ main.py)
-                    this.channel.postMessage({
-                        type: 'JOB_STARTED',
-                        timestamp: Date.now(),
-                        textLength: text.length
-                    });
-                    
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`🚀 [MULTI-TAB] Bắt đầu job với intercept script`, 'info');
-                    }
-                    
-                    // 1. Chia text thành chunks
-                    let chunks = [];
-                    if (typeof smartSplitter === 'function') {
-                        chunks = smartSplitter(text, 800);
-                    } else if (typeof NrfPVBbJv_Dph$tazCpJ === 'function') {
-                        chunks = NrfPVBbJv_Dph$tazCpJ(text, 700, 600, 700);
-                    } else {
-                        // Fallback: chia đơn giản
-                        const chunkSize = 700;
-                        for (let i = 0; i < text.length; i += chunkSize) {
-                            chunks.push(text.substring(i, i + chunkSize));
-                        }
-                    }
-                    
-                    const totalChunks = chunks.length;
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`🚀 [MULTI-TAB] Bắt đầu job với ${totalChunks} chunks`, 'info');
-                    }
-                    
-                    // 2. Xóa dữ liệu cũ
-                    await this.clearOldData();
-                    
-                    // 3. Lưu chunks vào IndexedDB
-                    await this.saveChunks(chunks);
-                    
-                    // 4. Lưu metadata job
-                    await this.saveJobMetadata(totalChunks);
-                    
-                    // 4.5. Lưu voice/language config từ Master tab để Worker tabs sử dụng
-                    await this.saveVoiceConfig();
-                    
-                    // 5. KHÔNG MỞ WORKER TABS NGAY - Để Master render chunks trước
-                    // Tính số Worker tabs cần mở: tối đa 2 tabs, hoặc dựa vào số chunks
-                    const maxWorkers = this.multi_tab_config?.num_workers || 2;
-                    this.numWorkersNeeded = Math.min(
-                        maxWorkers, // Tối đa số Worker theo config
-                        Math.max(1, Math.ceil(totalChunks / 5)) // Ít nhất 1 tab, hoặc dựa vào số chunks (mỗi tab xử lý ~5 chunks)
-                    );
-                    
-                    // 6. Gửi tín hiệu START_JOB qua BroadcastChannel (chưa có Worker tabs)
-                    this.channel.postMessage({
-                        type: 'START_JOB',
-                        totalChunks: totalChunks,
-                        timestamp: Date.now()
-                    });
-                    
-                    // 7. Master bắt đầu render chunks của mình TRƯỚC
-                    // Sau khi render xong 1-2 chunks đầu tiên, mới mở Worker tabs
-                    this.processMasterChunks();
-                    
-                    // 8. Bắt đầu giám sát (watchdog)
-                    this.startWatchdog();
-                    
-                    // Log để debug
-                    console.log('[MultiTabManager] ✅ Job đã được khởi động thành công với', totalChunks, 'chunks');
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`✅ [MULTI-TAB] Đã khởi động job với ${totalChunks} chunks`, 'success');
-                    }
-                    
-                } catch (error) {
-                    console.error('[MultiTabManager] Lỗi khởi động job:', error);
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`❌ [MULTI-TAB] Lỗi: ${error.message}`, 'error');
-                    }
-                    // Reset flag khi lỗi
-                    this.isJobRunning = false;
-                    this.workerTabsOpened = false;
-                }
-            }
-            
-            // Mở Worker tabs động (dựa vào số chunks)
-            async openWorkerTabs(numWorkers) {
-                if (!this.isMaster) return;
-                
-                // Kiểm tra xem đã mở Worker tabs chưa
-                if (this.workerTabsOpened) {
-                    console.log('[MultiTabManager] Worker tabs đã được mở rồi, bỏ qua');
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`ℹ️ [MULTI-TAB] Worker tabs đã được mở rồi, sử dụng tabs hiện có`, 'info');
-                    }
-                    return;
-                }
-                
-                const targetUrl = 'https://www.minimax.io/audio/voices-cloning';
-                
-                if (typeof addLogEntry === 'function') {
-                    addLogEntry(`🔧 [MULTI-TAB] Đang mở ${numWorkers} Worker tab(s) để xử lý song song...`, 'info');
-                }
-                
-                // Đánh dấu đã mở tabs
-                this.workerTabsOpened = true;
-                
-                for (let i = 0; i < numWorkers; i++) {
-                    try {
-                        // Mở tab mới
-                        const newWindow = window.open(targetUrl, '_blank');
-                        
-                        if (newWindow) {
-                            // Chờ tab load xong (cần thời gian để tab mới load script)
-                            await new Promise(resolve => setTimeout(resolve, 3000));
-                            
-                            if (typeof addLogEntry === 'function') {
-                                addLogEntry(`✅ [MULTI-TAB] Đã mở Worker tab ${i + 1}`, 'info');
-                            }
-                        } else {
-                            console.warn(`[MultiTabManager] Không thể mở Worker tab ${i + 1} (bị chặn popup?)`);
-                            if (typeof addLogEntry === 'function') {
-                                addLogEntry(`⚠️ [MULTI-TAB] Không thể mở Worker tab ${i + 1} (có thể bị chặn popup)`, 'warning');
-                            }
-                        }
-                    } catch (error) {
-                        console.error(`[MultiTabManager] Lỗi mở Worker tab ${i + 1}:`, error);
-                    }
-                }
-            }
-            
-            // Đóng Worker tabs sau khi job hoàn thành
-            async closeWorkerTabs() {
-                if (!this.isMaster) return;
-                
-                try {
-                    // Gửi lệnh đóng qua BroadcastChannel để Worker tabs tự đóng
-                    this.channel.postMessage({
-                        type: 'CLOSE_WORKER',
-                        timestamp: Date.now()
-                    });
-                    
-                    // Reset flag để có thể mở tab mới cho job tiếp theo
-                    this.workerTabsOpened = false;
-                    
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`🔒 [MULTI-TAB] Đã yêu cầu đóng Worker tabs`, 'info');
-                    }
-                } catch (error) {
-                    console.error('[MultiTabManager] Lỗi đóng Worker tabs:', error);
-                }
-            }
-            
-            async clearOldData() {
-                const transaction = this.db.transaction(['chunks', 'system'], 'readwrite');
-                await Promise.all([
-                    new Promise((resolve, reject) => {
-                        const request = transaction.objectStore('chunks').clear();
-                        request.onsuccess = () => resolve();
-                        request.onerror = () => reject(request.error);
-                    }),
-                    new Promise((resolve, reject) => {
-                        const request = transaction.objectStore('system').clear();
-                        request.onsuccess = () => resolve();
-                        request.onerror = () => reject(request.error);
-                    })
-                ]);
-            }
-            
-            async saveChunks(chunks) {
-                const transaction = this.db.transaction(['chunks'], 'readwrite');
-                const store = transaction.objectStore('chunks');
-                
-                for (let i = 0; i < chunks.length; i++) {
-                    await new Promise((resolve, reject) => {
-                        const request = store.put({
-                            id: i,
-                            text: chunks[i],
-                            status: 'pending',
-                            blob: null,
-                            workerId: null,
-                            timestamp: Date.now()
-                        });
-                        request.onsuccess = () => resolve();
-                        request.onerror = () => reject(request.error);
-                    });
-                }
-            }
-            
-            async saveJobMetadata(totalChunks) {
-                const transaction = this.db.transaction(['system'], 'readwrite');
-                const store = transaction.objectStore('system');
-                
-                await new Promise((resolve, reject) => {
-                    const request = store.put({
-                        key: 'job',
-                        totalChunks: totalChunks,
-                        startTime: Date.now(),
-                        status: 'running'
-                    });
-                    request.onsuccess = () => resolve();
-                    request.onerror = () => reject(request.error);
-                });
-            }
-            
-            // Lưu voice/language config từ Master tab
-            async saveVoiceConfig() {
-                if (!this.isMaster) return;
-                
-                try {
-                    // Lấy language từ select box
-                    const languageSelect = document.getElementById('gemini-language-select');
-                    const language = languageSelect ? languageSelect.value : null;
-                    
-                    // Lấy voice ID từ payload đầu tiên hoặc từ DOM
-                    // Tìm voice ID từ các nguồn có thể:
-                    // 1. Từ payload đã intercept (nếu có)
-                    // 2. Từ DOM elements
-                    let voiceId = null;
-                    
-                    // Thử lấy từ window nếu đã có (từ request trước đó)
-                    if (window.lastVoiceId) {
-                        voiceId = window.lastVoiceId;
-                    } else {
-                        // Thử tìm trong DOM
-                        const voiceElements = document.querySelectorAll('[data-voice-id], [voice-id], .voice-item[data-id]');
-                        if (voiceElements.length > 0) {
-                            const selectedVoice = Array.from(voiceElements).find(el => 
-                                el.classList.contains('selected') || 
-                                el.classList.contains('active') ||
-                                el.getAttribute('aria-selected') === 'true'
-                            );
-                            if (selectedVoice) {
-                                voiceId = selectedVoice.getAttribute('data-voice-id') || 
-                                          selectedVoice.getAttribute('voice-id') ||
-                                          selectedVoice.getAttribute('data-id');
-                            }
-                        }
-                    }
-                    
-                    // Lưu vào IndexedDB
-                    const transaction = this.db.transaction(['system'], 'readwrite');
-                    const store = transaction.objectStore('system');
-                    
-                    await new Promise((resolve, reject) => {
-                        const request = store.put({
-                            key: 'voiceConfig',
-                            language: language,
-                            voiceId: voiceId,
-                            timestamp: Date.now()
-                        });
-                        request.onsuccess = () => {
-                            if (typeof addLogEntry === 'function') {
-                                addLogEntry(`💾 [MULTI-TAB] Đã lưu config: Language=${language}, VoiceId=${voiceId || 'auto-detect'}`, 'info');
-                            }
-                            resolve();
-                        };
-                        request.onerror = () => reject(request.error);
-                    });
-                } catch (error) {
-                    console.error('[MultiTabManager] Lỗi lưu voice config:', error);
-                }
-            }
-            
-            // Đọc voice/language config từ IndexedDB (cho Worker tabs)
-            async getVoiceConfig() {
-                return new Promise((resolve, reject) => {
-                    const transaction = this.db.transaction(['system'], 'readonly');
-                    const store = transaction.objectStore('system');
-                    const request = store.get('voiceConfig');
-                    
-                    request.onsuccess = () => {
-                        const config = request.result;
-                        if (config) {
-                            resolve({
-                                language: config.language,
-                                voiceId: config.voiceId
-                            });
-                        } else {
-                            resolve(null);
-                        }
-                    };
-                    request.onerror = () => reject(request.error);
-                });
-            }
-            
-            startWatchdog() {
-                // Giám sát tiến độ mỗi 5 giây
-                setInterval(async () => {
-                    try {
-                        const progress = await this.getProgress();
-                        
-                        // Cập nhật progress bar
-                        if (typeof nWHrScjZnIyNYzztyEWwM === 'function') {
-                            nWHrScjZnIyNYzztyEWwM(progress.completed, progress.total);
-                        }
-                        
-                        // Kiểm tra chunks bị stuck (> 60s)
-                        await this.resetStuckChunks();
-                        
-                        // Nếu tất cả chunks đã xong, merge và download
-                        if (progress.completed === progress.total && progress.total > 0) {
-                            await this.mergeAndDownload();
-                            // Đóng Worker tabs sau khi merge xong
-                            await this.closeWorkerTabs();
-                            
-                            // Reset flag để có thể chạy job mới
-                            this.isJobRunning = false;
-                            this.workerTabsOpened = false;
-                        }
-                    } catch (error) {
-                        console.error('[MultiTabManager] Lỗi watchdog:', error);
-                    }
-                }, 5000);
-            }
-            
-            async getProgress() {
-                const transaction = this.db.transaction(['chunks'], 'readonly');
-                const store = transaction.objectStore('chunks');
-                const request = store.getAll();
-                
-                return new Promise((resolve, reject) => {
-                    request.onsuccess = () => {
-                        const chunks = request.result;
-                        const total = chunks.length;
-                        const completed = chunks.filter(c => c.status === 'done').length;
-                        resolve({ total, completed });
-                    };
-                    request.onerror = () => reject(request.error);
-                });
-            }
-            
-            async resetStuckChunks() {
-                const transaction = this.db.transaction(['chunks'], 'readwrite');
-                const store = transaction.objectStore('chunks');
-                const index = store.index('status');
-                const request = index.openCursor(IDBKeyRange.only('processing'));
-                
-                request.onsuccess = (event) => {
-                    const cursor = event.target.result;
-                    if (cursor) {
-                        const chunk = cursor.value;
-                        const now = Date.now();
-                        const processingTime = now - (chunk.timestamp || 0);
-                        
-                        // Nếu đang processing quá 60 giây, reset về pending
-                        if (processingTime > 60000) {
-                            chunk.status = 'pending';
-                            chunk.workerId = null;
-                            cursor.update(chunk);
-                            
-                            if (typeof addLogEntry === 'function') {
-                                addLogEntry(`⚠️ [MULTI-TAB] Reset chunk ${chunk.id + 1} (bị stuck ${Math.floor(processingTime/1000)}s)`, 'warning');
-                            }
-                        }
-                        
-                        cursor.continue();
-                    }
-                };
-            }
-            
-            async mergeAndDownload() {
-                try {
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`🔗 [MULTI-TAB] Đang ghép chunks...`, 'info');
-                    }
-                    
-                    // Lấy tất cả blobs từ IndexedDB
-                    const transaction = this.db.transaction(['chunks'], 'readonly');
-                    const store = transaction.objectStore('chunks');
-                    const request = store.getAll();
-                    
-                    request.onsuccess = async () => {
-                        const chunks = request.result.sort((a, b) => a.id - b.id);
-                        const blobs = chunks.map(c => c.blob).filter(b => b !== null);
-                        
-                        if (blobs.length === 0) {
-                            throw new Error('Không có blob nào để ghép');
-                        }
-                        
-                        // Convert ArrayBuffer back to Blob
-                        const audioBlobs = blobs.map(blobData => {
-                            if (blobData instanceof Blob) {
-                                return blobData;
-                            } else if (blobData instanceof ArrayBuffer) {
-                                return new Blob([blobData], { type: 'audio/mpeg' });
-                            } else {
-                                // Nếu là object có blobData property
-                                return new Blob([blobData.blobData || blobData], { type: 'audio/mpeg' });
-                            }
-                        });
-                        
-                        // Dùng hàm merge hiện có nếu có (tt__SfNwBHDebpWJOqrSTR)
-                        if (typeof tt__SfNwBHDebpWJOqrSTR === 'function') {
-                            // Set window.chunkBlobs để hàm merge có thể dùng
-                            window.chunkBlobs = audioBlobs;
-                            await tt__SfNwBHDebpWJOqrSTR();
-                        } else {
-                            // Fallback: ghép đơn giản
-                            const mergedBlob = new Blob(audioBlobs, { type: 'audio/mpeg' });
-                            const url = URL.createObjectURL(mergedBlob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = typeof i_B_kZYD === 'function' ? i_B_kZYD() : `minimax-audio-${Date.now()}.mp3`;
-                            a.click();
-                            URL.revokeObjectURL(url);
-                        }
-                        
-                        if (typeof addLogEntry === 'function') {
-                            addLogEntry(`✅ [MULTI-TAB] Đã tải xuống file thành công!`, 'success');
-                        }
-                        
-                        // Dọn dẹp
-                        await this.clearOldData();
-                        
-                        // Đóng Worker tabs sau khi merge xong
-                        await this.closeWorkerTabs();
-                        
-                        // --- FIX: HIỆN LẠI NÚT BẮT ĐẦU SAU KHI XONG ---
-                        const startBtn = document.getElementById('gemini-start-queue-btn');
-                        if (startBtn) {
-                            startBtn.disabled = false;
-                            startBtn.style.display = 'block';
-                            if (startBtn.textContent !== 'Bắt đầu tạo âm thanh') {
-                                startBtn.textContent = 'Bắt đầu tạo âm thanh';
-                            }
-                        }
-                        // ----------------------------------------------
-                    };
-                } catch (error) {
-                    console.error('[MultiTabManager] Lỗi merge:', error);
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`❌ [MULTI-TAB] Lỗi merge: ${error.message}`, 'error');
-                    }
-                }
-            }
-            
-            // Master cũng render chunks của mình (chunks: 0, 3, 6, ...)
-            async processMasterChunks() {
-                if (!this.isMaster) return;
-                
-                const tabIndex = this.workerId; // Master có workerId = 0
-                
-                // FIX: Ban đầu chỉ có Master (chưa có Worker tabs)
-                // Sau khi render xong 1-2 chunks, mới mở Worker tabs
-                let totalTabs = this.totalWorkers || 1; // Mặc định 1 (chỉ Master)
-                let chunksRendered = 0; // Đếm số chunks đã render
-                const chunksBeforeOpenWorkers = 2; // Render 2 chunks trước khi mở Worker tabs
-                
-                // Master xử lý chunks: tabIndex, tabIndex + totalTabs, tabIndex + 2*totalTabs...
-                let currentChunkIndex = tabIndex;
-                
-                while (true) {
-                    try {
-                        // Lấy chunk từ IndexedDB
-                        const transaction = this.db.transaction(['chunks'], 'readwrite');
-                        const store = transaction.objectStore('chunks');
-                        const request = store.get(currentChunkIndex);
-                        
-                        const chunk = await new Promise((resolve, reject) => {
-                            request.onsuccess = () => resolve(request.result);
-                            request.onerror = () => reject(request.error);
-                        });
-                        
-                        // Nếu không còn chunk nào cho Master, dừng
-                        if (!chunk || (chunk.status !== 'pending' && chunk.status !== 'failed')) {
-                            // Kiểm tra xem còn chunk nào khác không
-                            const allChunks = await new Promise((resolve, reject) => {
-                                const getAllRequest = store.getAll();
-                                getAllRequest.onsuccess = () => resolve(getAllRequest.result);
-                                getAllRequest.onerror = () => reject(getAllRequest.error);
-                            });
-                            
-                            const hasMoreChunks = allChunks.some((c, idx) => 
-                                idx % totalTabs === tabIndex && (c.status === 'pending' || c.status === 'failed')
-                            );
-                            
-                            if (!hasMoreChunks) {
-                                break; // Không còn chunk nào
-                            }
-                            
-                            // Chuyển sang chunk tiếp theo
-                            currentChunkIndex += totalTabs;
-                            continue;
-                        }
-                        
-                        // Claim chunk
-                        if (chunk.status === 'pending' || chunk.status === 'failed') {
-                            chunk.status = 'processing';
-                            chunk.workerId = tabIndex;
-                            chunk.timestamp = Date.now();
-                            
-                            await new Promise((resolve, reject) => {
-                                const updateRequest = store.put(chunk);
-                                updateRequest.onsuccess = () => resolve();
-                                updateRequest.onerror = () => reject(updateRequest.error);
-                            });
-                        }
-                        
-                        // Render chunk (tương tự Worker)
-                        const originalChunkIndex = window.ttuo$y_KhCV;
-                        const originalSI$acY = window.SI$acY;
-                        
-                        // Set dữ liệu vào window để hàm chính đọc được
-                        window.SI$acY = [chunk.text];
-                        window.ttuo$y_KhCV = 0;
-                        
-                        // FIX: Gọi hàm thông qua window vì hàm này nằm ở scope khác
-                        console.log('[Master] Đang gọi window.uSTZrHUt_IC() với chunk:', chunk.id + 1);
-                        console.log('[Master] window.SI$acY =', window.SI$acY);
-                        console.log('[Master] window.ttuo$y_KhCV =', window.ttuo$y_KhCV);
-                        
-                        if (typeof window.uSTZrHUt_IC === 'function') {
-                            await window.uSTZrHUt_IC();
-                            // Reset window.ttuo$y_KhCV sau khi render xong
-                            window.ttuo$y_KhCV = undefined;
-                        } else {
-                            console.error('[Master] Không tìm thấy hàm window.uSTZrHUt_IC');
-                            if (typeof addLogEntry === 'function') {
-                                addLogEntry(`❌ [MULTI-TAB] Lỗi: Không tìm thấy hàm render`, 'error');
-                            }
-                        }
-                        
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                        
-                        // Lấy blob
-                        let blob = null;
-                        if (window.chunkBlobs && window.chunkBlobs.length > 0) {
-                            blob = window.chunkBlobs[0];
-                        }
-                        
-                        if (blob) {
-                            await this.saveChunkBlob(chunk.id, blob);
-                            await this.updateChunkStatus(chunk.id, 'done');
-                            
-                            chunksRendered++;
-                            
-                            if (typeof addLogEntry === 'function') {
-                                addLogEntry(`✅ [Master] Hoàn thành chunk ${chunk.id + 1}`, 'success');
-                            }
-                            
-                            // FIX: Sau khi render xong chunksBeforeOpenWorkers chunks, mới mở Worker tabs
-                            if (chunksRendered === chunksBeforeOpenWorkers && !this.workerTabsOpened && this.numWorkersNeeded > 0) {
-                                if (typeof addLogEntry === 'function') {
-                                    addLogEntry(`🔧 [MULTI-TAB] Đã render ${chunksRendered} chunks, đang mở Worker tabs...`, 'info');
-                                }
-                                
-                                // Mở Worker tabs
-                                await this.openWorkerTabs(this.numWorkersNeeded);
-                                // Cập nhật totalWorkers sau khi mở tabs
-                                this.totalWorkers = 1 + this.numWorkersNeeded; // 1 Master + N Workers
-                                totalTabs = this.totalWorkers; // Cập nhật totalTabs để logic phân chia chunks đúng
-                                
-                                if (typeof addLogEntry === 'function') {
-                                    addLogEntry(`✅ [MULTI-TAB] Đã mở ${this.numWorkersNeeded} Worker tabs, tiếp tục xử lý song song...`, 'success');
-                                }
-                            }
-                        } else {
-                            throw new Error('Không có blob sau khi render');
-                        }
-                        
-                        // Khôi phục
-                        window.ttuo$y_KhCV = originalChunkIndex;
-                        window.SI$acY = originalSI$acY;
-                        
-                        // Chuyển sang chunk tiếp theo của Master
-                        currentChunkIndex += totalTabs;
-                        
-                    } catch (error) {
-                        console.error(`[Master] Lỗi xử lý chunk ${currentChunkIndex + 1}:`, error);
-                        await this.updateChunkStatus(currentChunkIndex, 'failed');
-                        await this.updateChunkStatus(currentChunkIndex, 'pending');
-                        currentChunkIndex += totalTabs;
-                    }
-                }
-            }
-            
-            // =============================================================
-            // == WORKER METHODS ==
-            // =============================================================
-            
-            async startWorkerPolling() {
-                if (!this.isWorker) return;
-                
-                console.log(`[Worker ${this.workerId}] Bắt đầu polling...`);
-                
-                // Random delay để tránh tất cả workers cùng request (1-3 giây)
-                const randomDelay = 1000 + Math.random() * 2000;
-                await new Promise(resolve => setTimeout(resolve, randomDelay));
-                
-                // Vòng lặp polling
-                while (true) {
-                    try {
-                        const chunk = await this.claimChunk();
-                        
-                        if (chunk) {
-                            // Có chunk, xử lý
-                            await this.processChunk(chunk);
-                        } else {
-                            // Không còn chunk, chờ một chút rồi thử lại
-                            await new Promise(resolve => setTimeout(resolve, 2000));
-                        }
-                    } catch (error) {
-                        console.error(`[Worker ${this.workerId}] Lỗi polling:`, error);
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                    }
-                }
-            }
-            
-            // Khởi động Worker polling khi nhận START_JOB message
-            initWorker() {
-                if (!this.isWorker) return;
-                
-                // Lắng nghe START_JOB message
-                this.channel.addEventListener('message', (event) => {
-                    if (event.data.type === 'START_JOB') {
-                        this.startWorkerPolling();
-                    }
-                });
-                
-                // Nếu đã có job trong DB, bắt đầu polling ngay
-                setTimeout(async () => {
-                    try {
-                        const transaction = this.db.transaction(['system'], 'readonly');
-                        const store = transaction.objectStore('system');
-                        const request = store.get('job');
-                        
-                        request.onsuccess = () => {
-                            if (request.result && request.result.status === 'running') {
-                                // Đã có job đang chạy, bắt đầu polling
-                                this.startWorkerPolling();
-                            }
-                        };
-                    } catch (e) {
-                        console.error('[Worker] Lỗi kiểm tra job:', e);
-                    }
-                }, 2000);
-            }
-            
-            async claimChunk() {
-                // LOCKING: Mở transaction readwrite để lock
-                const transaction = this.db.transaction(['chunks'], 'readwrite');
-                const store = transaction.objectStore('chunks');
-                const index = store.index('status');
-                const request = index.openCursor(IDBKeyRange.only('pending'));
-                
-                return new Promise((resolve, reject) => {
-                    request.onsuccess = (event) => {
-                        const cursor = event.target.result;
-                        if (cursor) {
-                            const chunk = cursor.value;
-                            
-                            // Claim chunk: update status và workerId ngay lập tức
-                            chunk.status = 'processing';
-                            chunk.workerId = this.workerId;
-                            chunk.timestamp = Date.now();
-                            
-                            cursor.update(chunk);
-                            resolve(chunk);
-                        } else {
-                            resolve(null); // Không còn chunk nào
-                        }
-                    };
-                    
-                    request.onerror = () => reject(request.error);
-                });
-            }
-            
-            async processChunk(chunk) {
-                try {
-                    console.log(`[Worker ${this.workerId}] Đang xử lý chunk ${chunk.id + 1}...`);
-                    
-                    // QUAN TRỌNG: Lấy voice/language config từ Master tab
-                    const voiceConfig = await this.getVoiceConfig();
-                    if (voiceConfig) {
-                        // Áp dụng language config nếu có
-                        if (voiceConfig.language) {
-                            const languageSelect = document.getElementById('gemini-language-select');
-                            if (languageSelect && languageSelect.value !== voiceConfig.language) {
-                                languageSelect.value = voiceConfig.language;
-                                // Trigger change event để website cập nhật
-                                languageSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                                await new Promise(resolve => setTimeout(resolve, 500)); // Chờ website cập nhật
-                            }
-                        }
-                        
-                        // Lưu voiceId để intercept script sử dụng
-                        if (voiceConfig.voiceId) {
-                            window.lastVoiceId = voiceConfig.voiceId;
-                        }
-                        
-                        if (typeof addLogEntry === 'function') {
-                            addLogEntry(`🔧 [Worker ${this.workerId}] Đã áp dụng config: Language=${voiceConfig.language}, VoiceId=${voiceConfig.voiceId || 'auto'}`, 'info');
-                        }
-                    } else {
-                        console.warn(`[Worker ${this.workerId}] Không tìm thấy voice config, sẽ dùng config mặc định`);
-                    }
-                    
-                    // Gọi hàm render hiện tại (uSTZrHUt_IC) với chunk này
-                    // Set SI$acY và ttuo$y_KhCV để render chunk này
-                    const originalChunkIndex = window.ttuo$y_KhCV;
-                    const originalSI$acY = window.SI$acY;
-                    
-                    // Set chunk hiện tại
-                    window.SI$acY = [chunk.text]; // Chỉ có 1 chunk cho worker
-                    window.ttuo$y_KhCV = 0; // Worker luôn render chunk đầu tiên trong mảng
-                    
-                    // Gọi hàm render thực tế
-                    // FIX: Gọi hàm thông qua window vì hàm này nằm ở scope khác
-                    console.log(`[Worker ${this.workerId}] Đang gọi window.uSTZrHUt_IC() với chunk:`, chunk.id + 1);
-                    console.log(`[Worker ${this.workerId}] window.SI$acY =`, window.SI$acY);
-                    console.log(`[Worker ${this.workerId}] window.ttuo$y_KhCV =`, window.ttuo$y_KhCV);
-                    
-                    if (typeof window.uSTZrHUt_IC === 'function') {
-                        await window.uSTZrHUt_IC();
-                        // Reset window.ttuo$y_KhCV sau khi render xong
-                        window.ttuo$y_KhCV = undefined;
-                    } else {
-                        throw new Error('Hàm window.uSTZrHUt_IC không tồn tại');
-                    }
-                    
-                    // Chờ một chút để đảm bảo render xong
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                    
-                    // Lấy blob từ window.chunkBlobs[]
-                    let blob = null;
-                    if (window.chunkBlobs && window.chunkBlobs.length > 0) {
-                        // Worker luôn lấy blob đầu tiên (vì chỉ có 1 chunk)
-                        blob = window.chunkBlobs[0];
-                    }
-                    
-                    if (blob) {
-                        // Lưu blob vào IndexedDB
-                        await this.saveChunkBlob(chunk.id, blob);
-                        
-                        // Update status thành done
-                        await this.updateChunkStatus(chunk.id, 'done');
-                        
-                        console.log(`[Worker ${this.workerId}] Hoàn thành chunk ${chunk.id + 1}`);
-                    } else {
-                        throw new Error('Không có blob sau khi render');
-                    }
-                    
-                    // Khôi phục
-                    window.ttuo$y_KhCV = originalChunkIndex;
-                    window.SI$acY = originalSI$acY;
-                    
-                } catch (error) {
-                    console.error(`[Worker ${this.workerId}] Lỗi xử lý chunk ${chunk.id + 1}:`, error);
-                    
-                    // Update status thành failed
-                    await this.updateChunkStatus(chunk.id, 'failed');
-                    
-                    // Retry: reset về pending để worker khác thử lại
-                    await this.updateChunkStatus(chunk.id, 'pending');
-                }
-            }
-            
-            async saveChunkBlob(chunkId, blob) {
-                // Convert blob to ArrayBuffer để lưu vào IndexedDB
-                const arrayBuffer = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = () => reject(reader.error);
-                    reader.readAsArrayBuffer(blob);
-                });
-                
-                const transaction = this.db.transaction(['chunks'], 'readwrite');
-                const store = transaction.objectStore('chunks');
-                const request = store.get(chunkId);
-                
-                return new Promise((resolve, reject) => {
-                    request.onsuccess = () => {
-                        const chunk = request.result;
-                        if (chunk) {
-                            chunk.blob = arrayBuffer; // Lưu ArrayBuffer
-                            const updateRequest = store.put(chunk);
-                            updateRequest.onsuccess = () => resolve();
-                            updateRequest.onerror = () => reject(updateRequest.error);
-                        } else {
-                            reject(new Error('Chunk không tồn tại'));
-                        }
-                    };
-                    request.onerror = () => reject(request.error);
-                });
-            }
-            
-            async updateChunkStatus(chunkId, status) {
-                const transaction = this.db.transaction(['chunks'], 'readwrite');
-                const store = transaction.objectStore('chunks');
-                const request = store.get(chunkId);
-                
-                return new Promise((resolve, reject) => {
-                    request.onsuccess = () => {
-                        const chunk = request.result;
-                        if (chunk) {
-                            chunk.status = status;
-                            if (status === 'pending') {
-                                chunk.workerId = null; // Reset workerId khi reset về pending
-                            }
-                            const updateRequest = store.put(chunk);
-                            updateRequest.onsuccess = () => resolve();
-                            updateRequest.onerror = () => reject(updateRequest.error);
-                        } else {
-                            resolve(); // Chunk không tồn tại, bỏ qua
-                        }
-                    };
-                    request.onerror = () => reject(request.error);
-                });
-            }
-        }
-        
-        // Khởi tạo MultiTabManager
-        try {
-            window.multiTabManager = new MultiTabManager();
-            console.log('[MultiTabManager] ✅ Đã khởi tạo và gán vào window.multiTabManager');
-            console.log('[MultiTabManager] ✅ window.multiTabManager.isMaster =', window.multiTabManager ? window.multiTabManager.isMaster : 'null');
-        } catch (error) {
-            console.error('[MultiTabManager] ❌ Lỗi khi khởi tạo:', error);
-            window.multiTabManager = null;
-        }
-    })();
-    
-    // Đảm bảo click handler được gắn SAU khi MultiTabManager được tạo
-    // Sử dụng setTimeout để đảm bảo DOM đã sẵn sàng
-    setTimeout(function() {
-        const startQueueBtn = document.getElementById('gemini-start-queue-btn');
-        if (!startQueueBtn) {
-            console.log('[MultiTabManager] ⏳ Nút chưa có, chờ thêm 1 giây...');
-            setTimeout(arguments.callee, 1000);
-            return;
-        }
-        
-        // Kiểm tra xem đã có listener chưa (tránh gắn nhiều lần)
-        if (startQueueBtn.hasAttribute('data-multitab-handler-attached')) {
-            console.log('[MultiTabManager] ✅ Handler đã được gắn rồi');
-            return;
-        }
-        
-        console.log('[MultiTabManager] 🔧 Đang gắn click handler với priority cao...');
-        
-        // Gắn listener mới với priority cao (capture phase)
-        startQueueBtn.addEventListener('click', async function(e) {
-            console.log('[MultiTabManager] 🔔 Click handler được gọi!');
-            console.log('[MultiTabManager] window.multiTabManager:', window.multiTabManager);
-            console.log('[MultiTabManager] window.MMX_MULTI_TAB_CONFIG:', window.MMX_MULTI_TAB_CONFIG);
-            
-            // Kiểm tra Multi-Tab mode
-            // QUAN TRỌNG: Kiểm tra cả window.MMX_MULTI_TAB_CONFIG và window.multiTabManager
-            const isMultiTabEnabled = window.MMX_MULTI_TAB_CONFIG && window.MMX_MULTI_TAB_CONFIG.enabled;
-            const isMaster = window.multiTabManager && window.multiTabManager.isMaster;
-            
-            console.log('[MultiTabManager] isMultiTabEnabled:', isMultiTabEnabled);
-            console.log('[MultiTabManager] isMaster:', isMaster);
-            
-            if (isMultiTabEnabled && isMaster) {
-                console.log('[MultiTabManager] ✅ Phát hiện Multi-Tab mode - Chặn event và gọi startJob()');
-                
-                // Kiểm tra xem đã có job đang chạy chưa
-                if (window.multiTabManager.isJobRunning) {
-                    console.warn('[MultiTabManager] ⚠️ Đã có job đang chạy, bỏ qua click này');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`⚠️ [MULTI-TAB] Đã có job đang chạy, vui lòng đợi job hiện tại hoàn thành`, 'warning');
-                    }
-                    return false;
-                }
-                
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation(); // Quan trọng: Chặn các listener khác
-                
-                const textarea = document.getElementById('gemini-main-textarea');
-                const text = textarea ? textarea.value.trim() : '';
-                
-                if (!text) {
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry('⚠️ Vui lòng nhập văn bản!', 'warning');
-                    }
-                    return false;
-                }
-                
-                console.log('[MultiTabManager] 🚀 Gọi startJob() với text length:', text.length);
-                try {
-                    await window.multiTabManager.startJob(text);
-                    console.log('[MultiTabManager] ✅ startJob() đã được gọi thành công');
-                } catch (error) {
-                    console.error('[MultiTabManager] ❌ Lỗi khi gọi startJob():', error);
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`❌ Lỗi Multi-Tab: ${error.message}`, 'error');
-                    }
-                }
-                return false;
-            } else {
-                console.log('[MultiTabManager] ⚠️ Không phải Multi-Tab mode, để listener khác xử lý');
-                console.log('[MultiTabManager] multiTabManager =', window.multiTabManager ? 'có' : 'không có');
-                if (window.multiTabManager) {
-                    console.log('[MultiTabManager] isMaster =', window.multiTabManager.isMaster);
-                }
-            }
-        }, true); // true = capture phase (chạy TRƯỚC các listener khác)
-        
-        startQueueBtn.setAttribute('data-multitab-handler-attached', 'true');
-        console.log('[MultiTabManager] ✅ Đã gắn click handler với priority cao');
-    }, 2000); // Đợi 2 giây để đảm bảo DOM đã sẵn sàng
 
     // =================================================================
     // == LỚP BẢO VỆ THỨ 6: NETWORK INTERCEPTION (CHẶN MẠNG) ==
@@ -1336,28 +255,6 @@
         // Hàm xử lý payload (có thể là string JSON hoặc FormData)
         function processPayload(payload, url = '') {
             if (!payload) return payload;
-            
-            // QUAN TRỌNG: Nếu là Worker tab và có voice config, áp dụng voiceId vào payload
-            if (window.MMX_MULTI_TAB_CONFIG && window.MMX_MULTI_TAB_CONFIG.role === 'WORKER' && window.lastVoiceId) {
-                try {
-                    if (typeof payload === 'string') {
-                        const parsed = JSON.parse(payload);
-                        if (parsed && typeof parsed === 'object') {
-                            // Tìm và cập nhật voice_id trong payload
-                            if (!parsed.voice_id && !parsed.voiceId) {
-                                parsed.voice_id = window.lastVoiceId;
-                            } else if (parsed.voice_id) {
-                                parsed.voice_id = window.lastVoiceId;
-                            } else if (parsed.voiceId) {
-                                parsed.voiceId = window.lastVoiceId;
-                            }
-                            return JSON.stringify(parsed);
-                        }
-                    }
-                } catch (e) {
-                    // Không phải JSON, bỏ qua
-                }
-            }
             
             // CHẾ ĐỘ MỚI: Nếu USE_PAYLOAD_MODE bật và có INTERCEPT_CURRENT_TEXT, thay trực tiếp trong payload
             if (window.USE_PAYLOAD_MODE && window.INTERCEPT_CURRENT_TEXT) {
@@ -3080,7 +1977,7 @@ button:disabled {
         
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Đang tải quota...</div>
         </div> 
-    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <button id="toggle-log-btn" class="clear-log-btn" style="margin-bottom:10px;background-color:#4b5563;cursor:pointer;pointer-events:auto;opacity:1;" onclick="(function(btn){var panel=document.getElementById('log-panel');if(!panel)return;var hidden=panel.style.display==='none'||!panel.style.display;panel.style.display=hidden?'block':'none';btn.textContent=hidden?'📜 Ẩn log hoạt động':'📜 Xem / Ẩn log hoạt động';})(this);">📜 Xem / Ẩn log hoạt động</button> <div id="log-panel" style="display:none;"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 36.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
+    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <button id="toggle-log-btn" class="clear-log-btn" style="margin-bottom:10px;background-color:#4b5563;cursor:pointer;pointer-events:auto;opacity:1;" onclick="(function(btn){var panel=document.getElementById('log-panel');if(!panel)return;var hidden=panel.style.display==='none'||!panel.style.display;panel.style.display=hidden?'block':'none';btn.textContent=hidden?'📜 Ẩn log hoạt động':'📜 Xem / Ẩn log hoạt động';})(this);">📜 Xem / Ẩn log hoạt động</button> <div id="log-panel" style="display:none;"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 35.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
     <div class="text-input-options">
         <div class="input-tabs">
             <button id="text-tab" class="tab-btn active">Nhập trực tiếp</button>
@@ -3927,15 +2824,8 @@ button:disabled {
         const startQueueBtn = document.getElementById('gemini-start-queue-btn');
         if (startQueueBtn) {
             const originalClickHandler = startQueueBtn.onclick;
-            
-            // REVISED: Intercept click với CAPTURE PHASE để chạy TRƯỚC các listener khác
-            startQueueBtn.addEventListener('click', async function(e) {
-                console.log('[MultiTabManager] 🔔 Click handler được gọi (capture phase)');
-                console.log('[MultiTabManager] window.multiTabManager:', window.multiTabManager);
-                console.log('[MultiTabManager] window.MMX_MULTI_TAB_CONFIG:', window.MMX_MULTI_TAB_CONFIG);
+            startQueueBtn.addEventListener('click', function(e) {
                 const textarea = document.getElementById('gemini-main-textarea');
-                
-                // Validation: Kiểm tra độ dài văn bản
                 if (textarea && textarea.value.length > MAX_TEXT_LENGTH) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -3947,12 +2837,15 @@ button:disabled {
                                    `📏 Giới hạn cho phép: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự\n\n` +
                                    `Vui lòng giảm văn bản xuống dưới ${MAX_TEXT_LENGTH.toLocaleString()} ký tự để có thể bắt đầu tạo âm thanh.`;
                     
+                    // Hiển thị alert để người dùng chú ý
                     alert(message);
                     
+                    // Log vào log panel nếu có
                     if (typeof addLogEntry === 'function') {
                         addLogEntry(`❌ CẢNH BÁO: Văn bản vượt quá quy định! Hiện tại: ${currentLength.toLocaleString()} ký tự, vượt quá: ${exceededLength.toLocaleString()} ký tự. Giới hạn: ${MAX_TEXT_LENGTH.toLocaleString()} ký tự.`, 'error');
                     }
                     
+                    // Cập nhật cảnh báo visual
                     if (textLengthWarning) {
                         textLengthWarning.textContent = `❌ CẢNH BÁO: Vượt quá ${exceededLength.toLocaleString()} ký tự! (${currentLength.toLocaleString()} / ${MAX_TEXT_LENGTH.toLocaleString()})`;
                         textLengthWarning.style.color = '#ff5555';
@@ -3961,73 +2854,11 @@ button:disabled {
                     
                     return false;
                 }
-                
-                // REVISED: Kiểm tra multi-tab mode
-                console.log('[DEBUG CLICK] ========== KIỂM TRA MULTI-TAB ==========');
-                console.log('[DEBUG CLICK] window.multiTabManager:', window.multiTabManager);
-                console.log('[DEBUG CLICK] window.MMX_MULTI_TAB_CONFIG:', window.MMX_MULTI_TAB_CONFIG);
-                
-                if (window.multiTabManager) {
-                    console.log('[DEBUG CLICK] window.multiTabManager.isMaster:', window.multiTabManager.isMaster);
-                    console.log('[DEBUG CLICK] window.multiTabManager.role:', window.multiTabManager.role);
+                // Nếu validation pass, gọi handler gốc nếu có
+                if (originalClickHandler) {
+                    originalClickHandler.call(this, e);
                 }
-                
-                // QUAN TRỌNG: Kiểm tra cả window.MMX_MULTI_TAB_CONFIG và window.multiTabManager
-                const isMultiTabEnabled = window.MMX_MULTI_TAB_CONFIG && window.MMX_MULTI_TAB_CONFIG.enabled;
-                const isMaster = window.multiTabManager && window.multiTabManager.isMaster;
-                
-                console.log('[DEBUG CLICK] isMultiTabEnabled:', isMultiTabEnabled);
-                console.log('[DEBUG CLICK] isMaster:', isMaster);
-                
-                if (isMultiTabEnabled && isMaster) {
-                    // Kiểm tra xem đã có job đang chạy chưa
-                    if (window.multiTabManager.isJobRunning) {
-                        console.warn('[DEBUG CLICK] ⚠️ Đã có job đang chạy, bỏ qua click này');
-                        e.preventDefault();
-                        e.stopPropagation();
-                        e.stopImmediatePropagation();
-                        if (typeof addLogEntry === 'function') {
-                            addLogEntry(`⚠️ [MULTI-TAB] Đã có job đang chạy, vui lòng đợi job hiện tại hoàn thành`, 'warning');
-                        }
-                        return false;
-                    }
-                    
-                    // Multi-tab mode: Gọi multiTabManager.startJob()
-                    console.log('[DEBUG CLICK] ✅ Sử dụng Multi-Tab mode - Gọi startJob()');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation(); // QUAN TRỌNG: Chặn TẤT CẢ listener khác
-                    
-                    const text = textarea ? textarea.value.trim() : '';
-                    if (!text) {
-                        if (typeof addLogEntry === 'function') {
-                            addLogEntry('⚠️ Vui lòng nhập văn bản!', 'warning');
-                        }
-                        return false;
-                    }
-                    
-                    // Gọi multiTabManager.startJob()
-                    console.log('[DEBUG CLICK] Gọi window.multiTabManager.startJob() với text length:', text.length);
-                    try {
-                        await window.multiTabManager.startJob(text);
-                        console.log('[DEBUG CLICK] ✅ startJob() đã được gọi thành công');
-                    } catch (error) {
-                        console.error('[DEBUG CLICK] ❌ Lỗi khi gọi startJob():', error);
-                        if (typeof addLogEntry === 'function') {
-                            addLogEntry(`❌ Lỗi Multi-Tab: ${error.message}`, 'error');
-                        }
-                    }
-                    return false;
-                } else {
-                    // Single-tab mode: Gọi handler gốc
-                    console.log('[DEBUG CLICK] ⚠️ Sử dụng Single-Tab mode');
-                    console.log('[DEBUG CLICK] Lý do: multiTabManager =', window.multiTabManager ? 'có' : 'không có');
-                    if (window.multiTabManager) {
-                        console.log('[DEBUG CLICK] isMaster =', window.multiTabManager.isMaster);
-                    }
-                    // Không chặn event, để listener khác xử lý
-                }
-            }, true); // true = capture phase (chạy TRƯỚC các listener khác)
+            });
         }
     });
 
@@ -4218,8 +3049,33 @@ pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0
                     if (lastSpace >= minLength) {
                         splitIndex = lastSpace;
                     } else {
-                        // Giải pháp cuối cùng: Cắt cứng tại độ dài lý tưởng
-                        splitIndex = idealLength;
+                        // CẢI THIỆN: Thay vì cắt cứng, tìm điểm cắt gần nhất trong phạm vi cho phép
+                        // Tìm bất kỳ ký tự nào không phải chữ cái/số gần cuối (dấu câu, ký tự đặc biệt)
+                        let bestSplit = -1;
+                        // Tìm từ cuối lên, trong phạm vi minLength đến actualMaxLength
+                        for (let i = Math.min(actualMaxLength - 1, tempSlice.length - 1); i >= minLength; i--) {
+                            const char = tempSlice[i];
+                            // Nếu là ký tự không phải chữ cái/số (dấu câu, ký tự đặc biệt)
+                            if (!/[a-zA-Z0-9\u00C0-\u024F\u1E00-\u1EFF]/.test(char)) {
+                                bestSplit = i + 1; // Cắt sau ký tự này
+                                break;
+                            }
+                        }
+                        
+                        if (bestSplit >= minLength) {
+                            splitIndex = bestSplit;
+                            // Log cảnh báo nếu phải cắt tại điểm không lý tưởng
+                            if (typeof addLogEntry === 'function') {
+                                addLogEntry(`⚠️ Chunk được cắt tại vị trí ${bestSplit} (không tìm được điểm cắt lý tưởng)`, 'warning');
+                            }
+                        } else {
+                            // Giải pháp cuối cùng: Cắt cứng tại độ dài lý tưởng
+                            splitIndex = idealLength;
+                            // Log cảnh báo khi phải cắt cứng
+                            if (typeof addLogEntry === 'function') {
+                                addLogEntry(`⚠️ CẢNH BÁO: Phải cắt cứng chunk tại vị trí ${idealLength} - có thể cắt giữa từ/câu!`, 'warning');
+                            }
+                        }
                     }
                 }
             }
@@ -4345,10 +3201,33 @@ function smartSplitter(text, maxLength = 800) {
         .trim();
 
     // Luôn gọi hàm tách chunk cũ với toàn bộ văn bản đã chuẩn hóa
-    addLogEntry(`🧠 Áp dụng tách chunk thông minh (smartSplitter)`, 'info');
-    const chunks = NrfPVBbJv_Dph$tazCpJ(normalized, 600, 500, actualMaxLength);
-
-    return chunks.filter(c => c.length > 0);
+    // BẢO VỆ: Tránh gọi nhiều lần do nhiều event listener - Dùng timestamp để tránh race condition
+    const now = Date.now();
+    if (typeof window._smartSplitterRunning === 'undefined') {
+        window._smartSplitterRunning = false;
+        window._smartSplitterLastCall = 0;
+    }
+    
+    // Kiểm tra xem có đang chạy không HOẶC vừa mới gọi gần đây (< 100ms)
+    if (window._smartSplitterRunning || (now - window._smartSplitterLastCall < 100)) {
+        // Đang chạy rồi hoặc vừa mới gọi, bỏ qua lần gọi này
+        console.warn(`[smartSplitter] Đang chạy rồi hoặc vừa mới gọi (${now - window._smartSplitterLastCall}ms trước), bỏ qua lần gọi trùng lặp`);
+        return []; // Trả về mảng rỗng để tránh lỗi
+    }
+    
+    // Set flag và timestamp TRƯỚC KHI log để tránh race condition
+    window._smartSplitterRunning = true;
+    window._smartSplitterLastCall = now;
+    
+    try {
+        addLogEntry(`🧠 Áp dụng tách chunk thông minh (smartSplitter)`, 'info');
+        const chunks = NrfPVBbJv_Dph$tazCpJ(normalized, 600, 500, actualMaxLength);
+        return chunks.filter(c => c.length > 0);
+    } finally {
+        // QUAN TRỌNG: Reset flag trong finally để đảm bảo luôn được reset dù có lỗi hay không
+        // Nhưng KHÔNG reset timestamp để vẫn có thể phát hiện lần gọi gần đây
+        window._smartSplitterRunning = false;
+    }
 }
 
 function dExAbhXwTJeTJBIjWr(EARfsfSN_QdgxH){const tENdSoNDV_gGwQKLZv$sYaZKhl=AP$u_huhInYfTj,T$dCpaznIPQ_UPNPAquzJhwHya=document[tENdSoNDV_gGwQKLZv$sYaZKhl(0x207)](tENdSoNDV_gGwQKLZv$sYaZKhl(0x263));for(const uUautBCIQlQydFiAF of T$dCpaznIPQ_UPNPAquzJhwHya){if(uUautBCIQlQydFiAF[tENdSoNDV_gGwQKLZv$sYaZKhl(0x273)][tENdSoNDV_gGwQKLZv$sYaZKhl(0x1d4)]()[tENdSoNDV_gGwQKLZv$sYaZKhl(0x1d1)]()===EARfsfSN_QdgxH[tENdSoNDV_gGwQKLZv$sYaZKhl(0x1d1)]())return KxTOuAJu(uUautBCIQlQydFiAF);}return![];}function s_BrlXXxPOJaBMKQX(){const Qhhztv_Emh_V=AP$u_huhInYfTj,qEJFmmYaq_ZY$ADPfvGUAMIlmIC=document[Qhhztv_Emh_V(0x1de)](Qhhztv_Emh_V(0x1c2)),IhdbQcdDHJpPksT$$OGFBBMT=document[Qhhztv_Emh_V(0x1cd)](Qhhztv_Emh_V(0x1e0)),rxGCINQSAqsWepsnWTGJOpnkL=document[Qhhztv_Emh_V(0x1cd)](Qhhztv_Emh_V(0x251));if(qEJFmmYaq_ZY$ADPfvGUAMIlmIC){qEJFmmYaq_ZY$ADPfvGUAMIlmIC[Qhhztv_Emh_V(0x1c7)]='';if(IhdbQcdDHJpPksT$$OGFBBMT){const wdZDFYMevO_$Lwy=document[Qhhztv_Emh_V(0x25a)](Qhhztv_Emh_V(0x23c));wdZDFYMevO_$Lwy[Qhhztv_Emh_V(0x1f1)]=IhdbQcdDHJpPksT$$OGFBBMT[Qhhztv_Emh_V(0x1f1)],wdZDFYMevO_$Lwy[Qhhztv_Emh_V(0x23e)]=Qhhztv_Emh_V(0x245),qEJFmmYaq_ZY$ADPfvGUAMIlmIC[Qhhztv_Emh_V(0x1eb)](wdZDFYMevO_$Lwy);}if(rxGCINQSAqsWepsnWTGJOpnkL){const MTKrudpbV$ZIhmZO=document[Qhhztv_Emh_V(0x25a)](Qhhztv_Emh_V(0x1be));MTKrudpbV$ZIhmZO['id']=Qhhztv_Emh_V(0x257),MTKrudpbV$ZIhmZO[Qhhztv_Emh_V(0x273)]=Qhhztv_Emh_V(0x1e9)+rxGCINQSAqsWepsnWTGJOpnkL[Qhhztv_Emh_V(0x273)][Qhhztv_Emh_V(0x1d4)](),qEJFmmYaq_ZY$ADPfvGUAMIlmIC[Qhhztv_Emh_V(0x1eb)](MTKrudpbV$ZIhmZO);}}}async function tt__SfNwBHDebpWJOqrSTR(){const VCAHyXsrERcpXVhFPxmgdBjjh=AP$u_huhInYfTj;
@@ -4396,11 +3275,37 @@ function dExAbhXwTJeTJBIjWr(EARfsfSN_QdgxH){const tENdSoNDV_gGwQKLZv$sYaZKhl=AP$
 
         const zEwMPLN$IZxzIwfdDbCfnIYcA=new Date();cHjV$QkAT$JWlL[VCAHyXsrERcpXVhFPxmgdBjjh(0x273)]=VCAHyXsrERcpXVhFPxmgdBjjh(0x1ce)+ymkKApNTfjOanYIBsxsoMNBX((zEwMPLN$IZxzIwfdDbCfnIYcA-dqj_t_Mr)/(Number(-0x27)*Math.floor(-0x26)+0x1f37+0x25*Math.floor(-parseInt(0xe5))));if(ZTQj$LF$o[VCAHyXsrERcpXVhFPxmgdBjjh(0x216)]===parseFloat(-0x1ca4)+Number(-parseInt(0x2445))+parseInt(0x40e9))return;try{
 // Sử dụng window.chunkBlobs nếu có và có dữ liệu, nếu không thì dùng ZTQj$LF$o
+// QUAN TRỌNG: Đảm bảo thứ tự và số lượng chunk đầy đủ để tránh thiếu câu
 let finalBlobs = ZTQj$LF$o; // Mặc định dùng ZTQj$LF$o như code gốc
 if (window.chunkBlobs && window.chunkBlobs.length > 0) {
-    const validBlobs = window.chunkBlobs.filter(blob => blob !== null);
+    // SỬA LỖI: Thay vì filter (mất thứ tự), dùng vòng lặp để giữ nguyên thứ tự và index
+    const validBlobs = [];
+    const missingChunkIndices = [];
+    
+    // Đảm bảo có đủ số lượng chunk như SI$acY.length
+    const expectedChunkCount = SI$acY ? SI$acY.length : window.chunkBlobs.length;
+    
+    for (let i = 0; i < expectedChunkCount; i++) {
+        if (window.chunkBlobs[i] !== null && window.chunkBlobs[i] !== undefined) {
+            validBlobs.push(window.chunkBlobs[i]);
+        } else {
+            // Đánh dấu chunk bị thiếu
+            missingChunkIndices.push(i);
+        }
+    }
+    
     if (validBlobs.length > 0) {
-        finalBlobs = validBlobs; // Chỉ dùng window.chunkBlobs nếu có dữ liệu
+        // Kiểm tra xem có đủ số lượng chunk không
+        if (validBlobs.length < expectedChunkCount) {
+            addLogEntry(`⚠️ CẢNH BÁO: Chỉ có ${validBlobs.length}/${expectedChunkCount} chunks hợp lệ. Thiếu ${missingChunkIndices.length} chunk tại index: ${missingChunkIndices.map(i => i + 1).join(', ')}`, 'warning');
+            addLogEntry(`🔄 Không merge để tránh thiếu câu. Sẽ retry các chunk thiếu...`, 'warning');
+            // KHÔNG merge nếu thiếu chunk - để logic retry xử lý
+            window.isMerging = false;
+            return;
+        }
+        
+        finalBlobs = validBlobs; // Chỉ dùng window.chunkBlobs nếu có đủ dữ liệu
+        addLogEntry(`✅ Đã kiểm tra: ${finalBlobs.length}/${expectedChunkCount} chunks hợp lệ và đầy đủ`, 'success');
     }
 }
 
@@ -4410,6 +3315,7 @@ if (window.chunkBlobs && window.chunkBlobs.length > 0) {
 // Kiểm tra số lượng chunks
 if (finalBlobs.length === 0) {
     addLogEntry('❌ Không có chunks để gộp file', 'error');
+    window.isMerging = false;
     return;
 }
 
@@ -4421,7 +3327,38 @@ if (validFinalBlobs.length !== finalBlobs.length) {
     finalBlobs = validFinalBlobs;
 }
 
-addLogEntry(`✅ Validation hoàn tất: ${finalBlobs.length} chunks hợp lệ`, 'success');
+// QUAN TRỌNG: Kiểm tra số lượng chunk có đủ như SI$acY.length không
+const expectedChunkCount = SI$acY ? SI$acY.length : 0;
+if (expectedChunkCount > 0 && finalBlobs.length < expectedChunkCount) {
+    const missingCount = expectedChunkCount - finalBlobs.length;
+    addLogEntry(`❌ THIẾU CHUNK: Chỉ có ${finalBlobs.length}/${expectedChunkCount} chunks. Thiếu ${missingCount} chunk!`, 'error');
+    addLogEntry(`🔄 Không merge để tránh thiếu câu. Sẽ retry các chunk thiếu...`, 'warning');
+    window.isMerging = false;
+    
+    // Tìm các chunk bị thiếu và đánh dấu để retry
+    if (window.chunkBlobs && window.chunkBlobs.length > 0) {
+        const missingIndices = [];
+        for (let i = 0; i < expectedChunkCount; i++) {
+            if (!window.chunkBlobs[i] || window.chunkBlobs[i] === null) {
+                missingIndices.push(i);
+                // Đánh dấu chunk này là failed để retry
+                if (window.chunkStatus) {
+                    window.chunkStatus[i] = 'failed';
+                }
+                if (!window.failedChunks) window.failedChunks = [];
+                if (!window.failedChunks.includes(i)) {
+                    window.failedChunks.push(i);
+                }
+            }
+        }
+        if (missingIndices.length > 0) {
+            addLogEntry(`📋 Các chunk bị thiếu: ${missingIndices.map(i => i + 1).join(', ')}. Sẽ retry...`, 'info');
+        }
+    }
+    return;
+}
+
+addLogEntry(`✅ Validation hoàn tất: ${finalBlobs.length}/${expectedChunkCount} chunks hợp lệ và đầy đủ`, 'success');
 
 // =======================================================
 // BATCH MERGE: Merge từng batch để tránh hết RAM
@@ -5510,28 +4447,6 @@ function stopKeepAliveLoop() {
 })();
 
 async function uSTZrHUt_IC() {
-    // --- START FIX: ĐỒNG BỘ DỮ LIỆU MULTI-TAB ---
-    // 1. Expose hàm này ra window để MultiTabManager gọi được
-    if (!window.uSTZrHUt_IC) window.uSTZrHUt_IC = uSTZrHUt_IC;
-    
-    // 2. Đồng bộ biến từ window vào biến cục bộ (QUAN TRỌNG: Luôn ưu tiên dữ liệu từ window khi Multi-Tab mode)
-    if (window.multiTabManager && window.multiTabManager.isJobRunning) {
-        // QUAN TRỌNG: Luôn đồng bộ SI$acY từ window khi Multi-Tab mode (không chỉ khi rỗng)
-        if (window.SI$acY && Array.isArray(window.SI$acY) && window.SI$acY.length > 0) {
-            SI$acY = window.SI$acY;
-            console.log('[uSTZrHUt_IC] ✅ Synced SI$acY from window (Multi-Tab mode):', SI$acY.length, 'chunks');
-        }
-        
-        // Lấy chunk index từ window (luôn đồng bộ nếu có)
-        if (typeof window.ttuo$y_KhCV !== 'undefined' && window.ttuo$y_KhCV !== null) {
-            ttuo$y_KhCV = window.ttuo$y_KhCV;
-            console.log('[uSTZrHUt_IC] ✅ Synced ttuo$y_KhCV from window:', ttuo$y_KhCV);
-            // KHÔNG reset window.ttuo$y_KhCV ngay, để đảm bảo logic render đọc được
-            // Sẽ reset sau khi render xong
-        }
-    }
-    // --- END FIX ---
-    
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
     
     // Kiểm tra và reset MEpJezGZUsmpZdAgFRBRZW nếu cần
@@ -5707,17 +4622,41 @@ async function uSTZrHUt_IC() {
 
         // CƠ CHẾ RETRY MỚI: Mỗi chunk tự retry vô hạn khi lỗi, không cần phase retry riêng
         // Kiểm tra xem tất cả chunks đã thành công chưa
-        const allChunksSuccess = window.chunkStatus && window.chunkStatus.every((status, idx) => {
+        const expectedChunkCount = SI$acY ? SI$acY.length : 0;
+        
+        // QUAN TRỌNG: Kiểm tra số lượng chunk có đủ không
+        if (expectedChunkCount === 0) {
+            addLogEntry(`⚠️ Không có chunks để kiểm tra. SI$acY.length = 0`, 'warning');
+            return;
+        }
+        
+        // Đảm bảo chunkStatus có đủ phần tử
+        if (!window.chunkStatus || window.chunkStatus.length < expectedChunkCount) {
+            addLogEntry(`⚠️ chunkStatus chưa đủ phần tử (${window.chunkStatus ? window.chunkStatus.length : 0}/${expectedChunkCount}). Tiếp tục xử lý...`, 'warning');
+            return;
+        }
+        
+        // Kiểm tra từng chunk: phải có status 'success' VÀ có blob hợp lệ
+        const allChunksSuccess = window.chunkStatus.every((status, idx) => {
             // Chunk đã được xử lý và có blob hợp lệ
-            return status === 'success' && window.chunkBlobs && window.chunkBlobs[idx] !== null;
+            const hasBlob = window.chunkBlobs && window.chunkBlobs[idx] !== null && window.chunkBlobs[idx] !== undefined;
+            return status === 'success' && hasBlob;
         });
-
-        if (allChunksSuccess && window.chunkStatus.length === SI$acY.length) {
-            addLogEntry(`🎉 Tất cả ${SI$acY.length} chunks đã được xử lý xong!`, 'success');
-            addLogEntry(`✅ TẤT CẢ ${SI$acY.length} chunks đã thành công! Bắt đầu ghép file...`, 'success');
-            // CHỈ ghép file khi TẤT CẢ chunk đã thành công
+        
+        // Kiểm tra số lượng chunk có đủ không
+        const validChunkCount = window.chunkBlobs ? window.chunkBlobs.filter(blob => blob !== null && blob !== undefined).length : 0;
+        
+        if (allChunksSuccess && window.chunkStatus.length === expectedChunkCount && validChunkCount === expectedChunkCount) {
+            addLogEntry(`🎉 Tất cả ${expectedChunkCount} chunks đã được xử lý xong!`, 'success');
+            addLogEntry(`✅ TẤT CẢ ${expectedChunkCount} chunks đã thành công và có đủ blob! Bắt đầu ghép file...`, 'success');
+            // CHỈ ghép file khi TẤT CẢ chunk đã thành công VÀ có đủ số lượng
             tt__SfNwBHDebpWJOqrSTR();
             return;
+        } else {
+            // Log chi tiết nếu chưa đủ
+            if (validChunkCount < expectedChunkCount) {
+                addLogEntry(`⏳ Chưa đủ chunk: ${validChunkCount}/${expectedChunkCount} chunks có blob. Tiếp tục xử lý...`, 'info');
+            }
         }
 
         // Nếu chưa xong tất cả chunks, tiếp tục xử lý chunk tiếp theo
@@ -7049,6 +5988,82 @@ function igyo$uwVChUzI() {
 
                         // Luôn kiểm tra dung lượng và sóng âm cho mọi blob
                         const chunkSizeKB = qILAV.size / 1024;
+                        
+                        // =======================================================
+                        // == KIỂM TRA: Khoảng dung lượng không hợp lệ (39.01 - 40.0 KB) ==
+                        // =======================================================
+                        const MIN_SIZE_KB = 39.01;
+                        const MAX_SIZE_KB = 40.0;
+                        const isInSuspiciousRange = chunkSizeKB >= MIN_SIZE_KB && chunkSizeKB <= MAX_SIZE_KB;
+                        
+                        if (isInSuspiciousRange) {
+                            addLogEntry(`❌ [Chunk ${currentChunkIndex + 1}] Dung lượng blob = ${chunkSizeKB.toFixed(2)} KB nằm trong khoảng không hợp lệ (${MIN_SIZE_KB} - ${MAX_SIZE_KB} KB) - Không hợp lệ!`, 'error');
+                            addLogEntry(`🔄 Kích hoạt cơ chế reset và đánh dấu thất bại...`, 'warning');
+                            
+                            // Hủy bỏ đánh dấu success (nếu có)
+                            if (window.chunkStatus) {
+                                window.chunkStatus[currentChunkIndex] = 'failed';
+                            }
+                            
+                            // Thêm vào danh sách failedChunks
+                            if (!window.failedChunks) window.failedChunks = [];
+                            if (!window.failedChunks.includes(currentChunkIndex)) {
+                                window.failedChunks.push(currentChunkIndex);
+                            }
+                            
+                            // QUAN TRỌNG: Đảm bảo vị trí này để trống (null) để sau này retry có thể lưu vào
+                            if (typeof window.chunkBlobs === 'undefined') {
+                                window.chunkBlobs = new Array(SI$acY.length).fill(null);
+                            }
+                            // Đảm bảo window.chunkBlobs có đủ độ dài
+                            while (window.chunkBlobs.length <= currentChunkIndex) {
+                                window.chunkBlobs.push(null);
+                            }
+                            window.chunkBlobs[currentChunkIndex] = null; // Đảm bảo vị trí này để trống
+                            
+                            // ĐỒNG BỘ HÓA ZTQj$LF$o: Đảm bảo ZTQj$LF$o cũng để trống
+                            while (ZTQj$LF$o.length <= currentChunkIndex) {
+                                ZTQj$LF$o.push(null);
+                            }
+                            ZTQj$LF$o[currentChunkIndex] = null; // Đảm bảo vị trí này để trống
+                            
+                            addLogEntry(`🔄 [Chunk ${currentChunkIndex + 1}] Đã đánh dấu thất bại và để trống vị trí ${currentChunkIndex} để retry sau`, 'info');
+                            
+                            // Xóa khỏi processingChunks
+                            if (typeof window.processingChunks !== 'undefined') {
+                                window.processingChunks.delete(currentChunkIndex);
+                            }
+                            
+                            // Reset flag sendingChunk khi chunk thất bại
+                            if (window.sendingChunk === currentChunkIndex) {
+                                window.sendingChunk = null;
+                            }
+                            
+                            // Dừng observer nếu đang chạy
+                            if (xlgJHLP$MATDT$kTXWV) {
+                                xlgJHLP$MATDT$kTXWV.disconnect();
+                                xlgJHLP$MATDT$kTXWV = null;
+                            }
+                            // Reset flag để cho phép thiết lập observer mới
+                            window.isSettingUpObserver = false;
+                            
+                            // Clear timeout 35 giây cho chunk này
+                            if (typeof window.chunkTimeoutIds !== 'undefined' && window.chunkTimeoutIds[currentChunkIndex]) {
+                                clearTimeout(window.chunkTimeoutIds[currentChunkIndex]);
+                                delete window.chunkTimeoutIds[currentChunkIndex];
+                            }
+                            
+                            // Cleanup data rác và reset web interface trước khi retry
+                            await cleanupChunkData(currentChunkIndex); // Cleanup data rác trước
+                            await resetWebInterface(); // Reset web interface
+                            
+                            // CƠ CHẾ RETRY MỚI: Reset và retry lại chunk này vô hạn, không chuyển sang chunk tiếp theo
+                            addLogEntry(`🔄 [Chunk ${currentChunkIndex + 1}] Dung lượng trong khoảng không hợp lệ (${MIN_SIZE_KB} - ${MAX_SIZE_KB} KB) - Đã cleanup và reset, retry lại chunk này vô hạn cho đến khi thành công`, 'warning');
+                            // Giữ nguyên ttuo$y_KhCV = currentChunkIndex để retry lại
+                            ttuo$y_KhCV = currentChunkIndex;
+                            setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Retry sau delay 1-3 giây
+                            return; // Dừng xử lý, không lưu blob
+                        }
 
                         addLogEntry(`🔍 [Chunk ${currentChunkIndex + 1}] Dung lượng blob = ${chunkSizeKB.toFixed(2)} KB. Đang kiểm tra sóng âm...`, 'info');
 
@@ -9187,17 +8202,25 @@ async function waitForVoiceModelReady() {
     const playPauseWaveformBtn = document.getElementById('waveform-play-pause');
 
     if (startBtn) {
-        startBtn.addEventListener('click', (e) => {
-            // --- FIX: CHẶN CODE CŨ KHI DÙNG MULTI-TAB ---
-            if (window.multiTabManager && window.multiTabManager.isMaster) {
-                console.log('🛑 [Legacy Listener] Phát hiện Multi-Tab Mode -> Dừng listener cũ để ưu tiên startJob()');
-                return; 
+        // BẢO VỆ: Tránh đăng ký nhiều event listener
+        if (startBtn._hasStartListener) {
+            console.warn('[Start Button] Event listener đã được đăng ký, bỏ qua');
+        } else {
+            startBtn._hasStartListener = true;
+        }
+        
+        startBtn.addEventListener('click', () => {
+            // BẢO VỆ: Tránh xử lý nhiều lần khi click nhanh
+            if (window._isProcessingStart) {
+                console.warn('[Start Button] Đang xử lý, bỏ qua lần click trùng lặp');
+                return;
             }
-            // ---------------------------------------------
+            window._isProcessingStart = true;
             
-            // [BẮT ĐẦU CODE THAY THẾ]
+            try {
+                // [BẮT ĐẦU CODE THAY THẾ]
 
-            // 1. Lấy và làm sạch văn bản (Giữ nguyên từ code mới)
+                // 1. Lấy và làm sạch văn bản (Giữ nguyên từ code mới)
             const text = mainTextarea.value.trim();
             let sanitizedText = text;
             // Fix lỗi "beep"
@@ -9297,6 +8320,11 @@ async function waitForVoiceModelReady() {
             
             // 5. QUAN TRỌNG: Sử dụng hàm smartSplitter MỚI để chia chunk
             // Đảm bảo EfNjYNYj_O_CGB = true TRƯỚC KHI chia chunk để uSTZrHUt_IC() biết đây là job mới
+            // BẢO VỆ: Tránh gọi nhiều lần do nhiều event listener
+            if (window._smartSplitterRunning) {
+                addLogEntry(`⚠️ smartSplitter đang chạy, bỏ qua lần gọi trùng lặp`, 'warning');
+                return; // Dừng xử lý để tránh gọi lại
+            }
             SI$acY = smartSplitter(sanitizedText, 3000); // Mảng chứa text (legacy)
             
             // Kiểm tra xem có chunk nào không
@@ -9381,6 +8409,9 @@ async function waitForVoiceModelReady() {
                 addLogEntry(`❌ Lỗi khi gọi uSTZrHUt_IC(): ${error.message}`, 'error');
                 console.error('Lỗi khi gọi uSTZrHUt_IC():', error);
                 console.error('Stack trace:', error.stack);
+            } finally {
+                // QUAN TRỌNG: Reset flag trong finally để đảm bảo luôn được reset
+                window._isProcessingStart = false;
                 // Reset UI nếu lỗi
                 startBtn.disabled = false;
                 startBtn.style.display = 'block';
@@ -9389,6 +8420,16 @@ async function waitForVoiceModelReady() {
             }
 
             // [KẾT THÚC CODE THAY THẾ]
+            } catch (error) {
+                // Xử lý lỗi nếu có
+                addLogEntry(`❌ Lỗi trong quá trình xử lý: ${error.message}`, 'error');
+                console.error('Lỗi trong quá trình xử lý:', error);
+                window._isProcessingStart = false;
+                startBtn.disabled = false;
+                startBtn.style.display = 'block';
+                pauseBtn.style.display = 'none';
+                stopBtn.style.display = 'none';
+            }
         });
     }
 
@@ -9979,9 +9020,3 @@ async function waitForVoiceModelReady() {
             errorObserver.disconnect();
         }
     });
-    
-    // Expose hàm uSTZrHUt_IC ra window để MultiTabManager có thể gọi
-    if (typeof uSTZrHUt_IC === 'function') {
-        window.uSTZrHUt_IC = uSTZrHUt_IC;
-        console.log('[Main] ✅ Exposed uSTZrHUt_IC to window');
-    }
