@@ -2296,11 +2296,7 @@ button:disabled {
             if (quotaDisplay) quotaDisplay.textContent = `Ký tự còn: Không giới hạn`;
             
             // Luôn bật nút (nếu có text)
-            const mainTextarea = document.getElementById('gemini-main-textarea');
-            if (startButton && startButton.disabled && mainTextarea && mainTextarea.value.trim() !== '') {
-                 startButton.disabled = false;
-                 startButton.textContent = 'Bắt đầu tạo âm thanh';
-            }
+            updateStartButtonState();
         } else if (remaining <= 0) {
             // Hết ký tự
             if (quotaDisplay) quotaDisplay.textContent = "Ký tự còn: 0";
@@ -2313,11 +2309,7 @@ button:disabled {
             const formattedRemaining = new Intl.NumberFormat().format(remaining);
             if (quotaDisplay) quotaDisplay.textContent = `Ký tự còn: ${formattedRemaining}`;
             
-            const mainTextarea = document.getElementById('gemini-main-textarea');
-            if (startButton && startButton.disabled && mainTextarea && mainTextarea.value.trim() !== '') {
-                 startButton.disabled = false;
-                 startButton.textContent = 'Bắt đầu tạo âm thanh';
-            }
+            updateStartButtonState();
         }
     }
 
@@ -2336,6 +2328,93 @@ button:disabled {
 
     // Tạo một hàm global để main.py có thể gọi để refresh UI
     window.refreshQuotaDisplay = displayQuota;
+    
+    // =======================================================
+    // == HÀM ENABLE/DISABLE NÚT DỰA TRÊN TEXTAREA ==
+    // =======================================================
+    function updateStartButtonState() {
+        const startButton = document.getElementById('gemini-start-queue-btn');
+        const mainTextarea = document.getElementById('gemini-main-textarea');
+        
+        if (!startButton || !mainTextarea) return;
+        
+        const hasText = mainTextarea.value.trim() !== '';
+        const quotaAvailable = typeof window.REMAINING_CHARS !== 'undefined' && 
+                               (window.REMAINING_CHARS === -1 || window.REMAINING_CHARS > 0);
+        
+        // Enable nút nếu có text VÀ (quota không giới hạn HOẶC còn quota)
+        if (hasText && quotaAvailable) {
+            if (startButton.disabled) {
+                startButton.disabled = false;
+                startButton.textContent = 'Bắt đầu tạo âm thanh';
+            }
+        } else if (!hasText) {
+            // Disable nếu không có text
+            if (!startButton.disabled) {
+                startButton.disabled = true;
+                startButton.textContent = 'Bắt đầu tạo âm thanh';
+            }
+        } else if (!quotaAvailable && typeof window.REMAINING_CHARS !== 'undefined' && window.REMAINING_CHARS <= 0) {
+            // Disable nếu hết quota
+            startButton.disabled = true;
+            startButton.textContent = 'HẾT KÝ TỰ';
+        }
+    }
+    
+    // Thêm event listener cho textarea để tự động enable/disable nút
+    function setupTextareaListener() {
+        const mainTextarea = document.getElementById('gemini-main-textarea');
+        if (mainTextarea) {
+            // Xóa listener cũ nếu có
+            const newTextarea = mainTextarea.cloneNode(true);
+            mainTextarea.parentNode.replaceChild(newTextarea, mainTextarea);
+            
+            // Thêm listener mới
+            newTextarea.addEventListener('input', function() {
+                updateStartButtonState();
+            });
+            
+            newTextarea.addEventListener('paste', function() {
+                setTimeout(updateStartButtonState, 100); // Chờ paste xong
+            });
+            
+            // Kiểm tra ngay lập tức
+            setTimeout(updateStartButtonState, 500);
+        } else {
+            // Retry nếu textarea chưa có
+            setTimeout(setupTextareaListener, 1000);
+        }
+    }
+    
+    // Khởi tạo listener sau khi DOM ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupTextareaListener);
+    } else {
+        setTimeout(setupTextareaListener, 1000);
+    }
+    
+    // Đảm bảo tất cả nút có pointer-events
+    function ensureButtonsClickable() {
+        const allButtons = document.querySelectorAll('button, a[href], input[type="button"], input[type="submit"]');
+        allButtons.forEach(btn => {
+            if (btn.style.pointerEvents === 'none') {
+                btn.style.pointerEvents = 'auto';
+            }
+            if (btn.style.opacity === '0') {
+                btn.style.opacity = '1';
+            }
+        });
+        
+        // Đảm bảo container không block pointer-events
+        const container = document.getElementById('gemini-main-container');
+        if (container && container.style.pointerEvents === 'none') {
+            container.style.pointerEvents = 'auto';
+        }
+    }
+    
+    // Chạy ngay và định kỳ
+    ensureButtonsClickable();
+    setInterval(ensureButtonsClickable, 2000);
     
     // =======================================================
     // == KẾT THÚC: KHỐI LOGIC QUOTA ==
