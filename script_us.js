@@ -3208,10 +3208,11 @@ function smartSplitter(text, maxLength = 800) {
         window._smartSplitterLastCall = 0;
     }
     
-    // Kiểm tra xem có đang chạy không HOẶC vừa mới gọi gần đây (< 100ms)
-    if (window._smartSplitterRunning || (now - window._smartSplitterLastCall < 100)) {
+    // Kiểm tra xem có đang chạy không HOẶC vừa mới gọi gần đây (< 500ms) - Tăng thời gian để chắc chắn
+    const timeSinceLastCall = now - window._smartSplitterLastCall;
+    if (window._smartSplitterRunning || (timeSinceLastCall < 500)) {
         // Đang chạy rồi hoặc vừa mới gọi, bỏ qua lần gọi này
-        console.warn(`[smartSplitter] Đang chạy rồi hoặc vừa mới gọi (${now - window._smartSplitterLastCall}ms trước), bỏ qua lần gọi trùng lặp`);
+        console.warn(`[smartSplitter] Bỏ qua lần gọi trùng lặp - Đang chạy: ${window._smartSplitterRunning}, Thời gian từ lần gọi trước: ${timeSinceLastCall}ms`);
         return []; // Trả về mảng rỗng để tránh lỗi
     }
     
@@ -8321,10 +8322,14 @@ async function waitForVoiceModelReady() {
             // 5. QUAN TRỌNG: Sử dụng hàm smartSplitter MỚI để chia chunk
             // Đảm bảo EfNjYNYj_O_CGB = true TRƯỚC KHI chia chunk để uSTZrHUt_IC() biết đây là job mới
             // BẢO VỆ: Tránh gọi nhiều lần do nhiều event listener
-            if (window._smartSplitterRunning) {
-                addLogEntry(`⚠️ smartSplitter đang chạy, bỏ qua lần gọi trùng lặp`, 'warning');
+            const nowBeforeCall = Date.now();
+            const timeSinceLastCall = nowBeforeCall - (window._smartSplitterLastCall || 0);
+            if (window._smartSplitterRunning || timeSinceLastCall < 500) {
+                addLogEntry(`⚠️ smartSplitter đang chạy hoặc vừa mới gọi (${timeSinceLastCall}ms trước), bỏ qua lần gọi trùng lặp`, 'warning');
+                console.warn(`[Start Button] Bỏ qua gọi smartSplitter - Running: ${window._smartSplitterRunning}, Time since last: ${timeSinceLastCall}ms`);
                 return; // Dừng xử lý để tránh gọi lại
             }
+            console.log(`[Start Button] Gọi smartSplitter - Running: ${window._smartSplitterRunning}, Time since last: ${timeSinceLastCall}ms`);
             SI$acY = smartSplitter(sanitizedText, 3000); // Mảng chứa text (legacy)
             
             // Kiểm tra xem có chunk nào không
