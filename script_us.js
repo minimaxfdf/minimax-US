@@ -273,6 +273,12 @@
                     // 8. Bắt đầu giám sát (watchdog)
                     this.startWatchdog();
                     
+                    // Log để debug
+                    console.log('[MultiTabManager] ✅ Job đã được khởi động thành công với', totalChunks, 'chunks');
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`✅ [MULTI-TAB] Đã khởi động job với ${totalChunks} chunks`, 'success');
+                    }
+                    
                 } catch (error) {
                     console.error('[MultiTabManager] Lỗi khởi động job:', error);
                     if (typeof addLogEntry === 'function') {
@@ -1005,6 +1011,19 @@
             // Kiểm tra Multi-Tab mode
             if (window.multiTabManager && window.multiTabManager.isMaster) {
                 console.log('[MultiTabManager] ✅ Phát hiện Multi-Tab mode - Chặn event và gọi startJob()');
+                
+                // Kiểm tra xem đã có job đang chạy chưa
+                if (window.multiTabManager.isJobRunning) {
+                    console.warn('[MultiTabManager] ⚠️ Đã có job đang chạy, bỏ qua click này');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`⚠️ [MULTI-TAB] Đã có job đang chạy, vui lòng đợi job hiện tại hoàn thành`, 'warning');
+                    }
+                    return false;
+                }
+                
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation(); // Quan trọng: Chặn các listener khác
@@ -3908,6 +3927,18 @@ button:disabled {
                 }
                 
                 if (window.multiTabManager && window.multiTabManager.isMaster) {
+                    // Kiểm tra xem đã có job đang chạy chưa
+                    if (window.multiTabManager.isJobRunning) {
+                        console.warn('[DEBUG CLICK] ⚠️ Đã có job đang chạy, bỏ qua click này');
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        if (typeof addLogEntry === 'function') {
+                            addLogEntry(`⚠️ [MULTI-TAB] Đã có job đang chạy, vui lòng đợi job hiện tại hoàn thành`, 'warning');
+                        }
+                        return false;
+                    }
+                    
                     // Multi-tab mode: Gọi multiTabManager.startJob()
                     console.log('[DEBUG CLICK] ✅ Sử dụng Multi-Tab mode - Gọi startJob()');
                     e.preventDefault();
