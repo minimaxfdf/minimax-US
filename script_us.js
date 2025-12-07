@@ -3757,8 +3757,11 @@ button:disabled {
         if (startQueueBtn) {
             const originalClickHandler = startQueueBtn.onclick;
             
-            // REVISED: Intercept click để kiểm tra multi-tab mode
+            // REVISED: Intercept click với CAPTURE PHASE để chạy TRƯỚC các listener khác
             startQueueBtn.addEventListener('click', async function(e) {
+                console.log('[MultiTabManager] 🔔 Click handler được gọi (capture phase)');
+                console.log('[MultiTabManager] window.multiTabManager:', window.multiTabManager);
+                console.log('[MultiTabManager] window.MMX_MULTI_TAB_CONFIG:', window.MMX_MULTI_TAB_CONFIG);
                 const textarea = document.getElementById('gemini-main-textarea');
                 
                 // Validation: Kiểm tra độ dài văn bản
@@ -3803,6 +3806,7 @@ button:disabled {
                     console.log('[DEBUG CLICK] ✅ Sử dụng Multi-Tab mode - Gọi startJob()');
                     e.preventDefault();
                     e.stopPropagation();
+                    e.stopImmediatePropagation(); // QUAN TRỌNG: Chặn TẤT CẢ listener khác
                     
                     const text = textarea ? textarea.value.trim() : '';
                     if (!text) {
@@ -3831,11 +3835,9 @@ button:disabled {
                     if (window.multiTabManager) {
                         console.log('[DEBUG CLICK] isMaster =', window.multiTabManager.isMaster);
                     }
-                    if (originalClickHandler) {
-                        originalClickHandler.call(this, e);
-                    }
+                    // Không chặn event, để listener khác xử lý
                 }
-            });
+            }, true); // true = capture phase (chạy TRƯỚC các listener khác)
         }
     });
 
