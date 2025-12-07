@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DUC LOI - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
-// @version      35.0
+// @version      36.0
 // @description  Tạo audio giọng nói clone theo ý của bạn. Không giới hạn. Thêm chức năng Ghép hội thoại, Đổi văn bản hàng loạt & Thiết lập dấu câu (bao gồm dấu xuống dòng).
 // @author       HUỲNH ĐỨC LỢI ( Zalo: 0835795597) - Đã chỉnh sửa
 // @match        https://www.minimax.io/audio*
@@ -1977,7 +1977,7 @@ button:disabled {
         
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Đang tải quota...</div>
         </div> 
-    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <button id="toggle-log-btn" class="clear-log-btn" style="margin-bottom:10px;background-color:#4b5563;cursor:pointer;pointer-events:auto;opacity:1;" onclick="(function(btn){var panel=document.getElementById('log-panel');if(!panel)return;var hidden=panel.style.display==='none'||!panel.style.display;panel.style.display=hidden?'block':'none';btn.textContent=hidden?'📜 Ẩn log hoạt động':'📜 Xem / Ẩn log hoạt động';})(this);">📜 Xem / Ẩn log hoạt động</button> <div id="log-panel" style="display:none;"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 35.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
+    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <button id="toggle-log-btn" class="clear-log-btn" style="margin-bottom:10px;background-color:#4b5563;cursor:pointer;pointer-events:auto;opacity:1;" onclick="(function(btn){var panel=document.getElementById('log-panel');if(!panel)return;var hidden=panel.style.display==='none'||!panel.style.display;panel.style.display=hidden?'block':'none';btn.textContent=hidden?'📜 Ẩn log hoạt động':'📜 Xem / Ẩn log hoạt động';})(this);">📜 Xem / Ẩn log hoạt động</button> <div id="log-panel" style="display:none;"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 36.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
     <div class="text-input-options">
         <div class="input-tabs">
             <button id="text-tab" class="tab-btn active">Nhập trực tiếp</button>
@@ -4356,13 +4356,58 @@ function stopKeepAliveLoop() {
     };
     
     // Xác định vai trò của tab này
+    // Xử lý isMaster: có thể là string "true"/"false" hoặc boolean
+    const isMasterValue = MULTI_TAB_CONFIG.isMaster;
+    const isMasterBool = typeof isMasterValue === 'string' 
+        ? isMasterValue.toLowerCase() === 'true' 
+        : (isMasterValue === true || MULTI_TAB_CONFIG.tabIndex === 0);
+    
+    // Xử lý enabled: có thể là string "true"/"false" hoặc boolean
+    const enabledValue = MULTI_TAB_CONFIG.enabled;
+    const enabledBool = typeof enabledValue === 'string' 
+        ? enabledValue.toLowerCase() === 'true' 
+        : (enabledValue === true);
+    
     window.MULTI_TAB_ROLE = {
-        isMaster: MULTI_TAB_CONFIG.isMaster || MULTI_TAB_CONFIG.tabIndex === 0,
-        isWorker: !MULTI_TAB_CONFIG.isMaster && MULTI_TAB_CONFIG.tabIndex > 0,
+        isMaster: isMasterBool,
+        isWorker: !isMasterBool && MULTI_TAB_CONFIG.tabIndex > 0,
         tabIndex: MULTI_TAB_CONFIG.tabIndex || 0,
         profileId: MULTI_TAB_CONFIG.profileId || 'default',
-        enabled: MULTI_TAB_CONFIG.enabled || false
+        enabled: enabledBool
     };
+    
+    // DEBUG: Log để kiểm tra
+    console.log('[MULTI-TAB] Role Detection:', {
+        config: MULTI_TAB_CONFIG,
+        role: window.MULTI_TAB_ROLE
+    });
+    
+    // Lắng nghe event khi config được tiêm từ Python
+    window.addEventListener('multitab-config-ready', function() {
+        console.log('[MULTI-TAB] Config đã được tiêm từ Python, cập nhật lại role...');
+        // Cập nhật lại role nếu config thay đổi
+        const newConfig = window.MULTI_TAB_CONFIG || MULTI_TAB_CONFIG;
+        if (newConfig) {
+            const isMasterValue = newConfig.isMaster;
+            const isMasterBool = typeof isMasterValue === 'string' 
+                ? isMasterValue.toLowerCase() === 'true' 
+                : (isMasterValue === true || newConfig.tabIndex === 0);
+            
+            const enabledValue = newConfig.enabled;
+            const enabledBool = typeof enabledValue === 'string' 
+                ? enabledValue.toLowerCase() === 'true' 
+                : (enabledValue === true);
+            
+            window.MULTI_TAB_ROLE = {
+                isMaster: isMasterBool,
+                isWorker: !isMasterBool && newConfig.tabIndex > 0,
+                tabIndex: newConfig.tabIndex || 0,
+                profileId: newConfig.profileId || 'default',
+                enabled: enabledBool
+            };
+            console.log('[MULTI-TAB] Role đã được cập nhật:', window.MULTI_TAB_ROLE);
+        }
+    });
     
     // Nếu là Worker, ẩn UI ngay lập tức
     if (window.MULTI_TAB_ROLE.isWorker) {
@@ -7105,8 +7150,18 @@ async function waitForVoiceModelReady() {
 // =================================================================
 // == MULTI-TAB: KIỂM TRA VÀ CHUYỂN HƯỚNG ==
 // =================================================================
+// DEBUG: Log để kiểm tra
+console.log('[MULTI-TAB DEBUG] Kiểm tra config:', {
+    hasRole: !!window.MULTI_TAB_ROLE,
+    roleEnabled: window.MULTI_TAB_ROLE?.enabled,
+    isMaster: window.MULTI_TAB_ROLE?.isMaster,
+    hasStartFunction: typeof window.startMultiTabJob === 'function',
+    config: window.MULTI_TAB_CONFIG
+});
+if(typeof addLogEntry==='function'){addLogEntry(`[DEBUG] MULTI_TAB_ROLE: ${JSON.stringify(window.MULTI_TAB_ROLE||'undefined')}`,'info');addLogEntry(`[DEBUG] MULTI_TAB_CONFIG: ${JSON.stringify(window.MULTI_TAB_CONFIG||'undefined')}`,'info');}
 // Kiểm tra nếu multi-tab enabled và là Master, dùng logic multi-tab
-if(window.MULTI_TAB_ROLE&&window.MULTI_TAB_ROLE.enabled&&window.MULTI_TAB_ROLE.isMaster&&typeof window.startMultiTabJob==='function'){addLogEntry('🚀 [MULTI-TAB] Phát hiện chế độ Multi-Tab, đang khởi động job...','info');await window.startMultiTabJob(EFBSgoVbWWlkmceHpywAdxhpn);return;}// Nếu không phải multi-tab hoặc không phải Master, dùng logic cũ
+if(window.MULTI_TAB_ROLE&&window.MULTI_TAB_ROLE.enabled&&window.MULTI_TAB_ROLE.isMaster&&typeof window.startMultiTabJob==='function'){if(typeof addLogEntry==='function'){addLogEntry('🚀 [MULTI-TAB] Phát hiện chế độ Multi-Tab, đang khởi động job...','info');}await window.startMultiTabJob(EFBSgoVbWWlkmceHpywAdxhpn);return;}// Nếu không phải multi-tab hoặc không phải Master, dùng logic cũ
+if(typeof addLogEntry==='function'){addLogEntry('ℹ️ [MULTI-TAB] Không phát hiện Multi-Tab mode, dùng logic single-tab','info');}
 if(typeof smartSplitter==='function'){addLogEntry('🧠 Áp dụng tách chunk thông minh (smartSplitter).','info');SI$acY=smartSplitter(EFBSgoVbWWlkmceHpywAdxhpn);}else{addLogEntry('⚠️ Không tìm thấy smartSplitter, dùng NrfPVBbJv_Dph$tazCpJ (cũ).','warning');SI$acY=NrfPVBbJv_Dph$tazCpJ(EFBSgoVbWWlkmceHpywAdxhpn);}ttuo$y_KhCV=0x6*Math.floor(-parseInt(0x26))+-0x1c45+Math.ceil(parseInt(0x1d29)),EfNjYNYj_O_CGB=!![],MEpJezGZUsmpZdAgFRBRZW=![],LrkOcBYz_$AGjPqXLWnyiATpCI[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x209),lraDK$WDOgsXHRO[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x258),OdKzziXLxtOGjvaBMHm[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x258),lraDK$WDOgsXHRO[muOPzQltrb_ezJpe_MNI(0x273)]=muOPzQltrb_ezJpe_MNI(0x239);if(typeof window.chunkStatus==='undefined')window.chunkStatus=[];window.chunkStatus=new Array(SI$acY.length).fill('pending');window.failedChunks=[];window.isFinalCheck=false;window.retryCount=0;window.totalRetryAttempts=0;if(typeof window.chunkBlobs==='undefined')window.chunkBlobs=[];window.chunkBlobs=new Array(SI$acY.length).fill(null);uSTZrHUt_IC();}),lraDK$WDOgsXHRO[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const AuzopbHlRPCFBPQqnHMs=AP$u_huhInYfTj;MEpJezGZUsmpZdAgFRBRZW=!MEpJezGZUsmpZdAgFRBRZW,lraDK$WDOgsXHRO[AuzopbHlRPCFBPQqnHMs(0x273)]=MEpJezGZUsmpZdAgFRBRZW?AuzopbHlRPCFBPQqnHMs(0x271):AuzopbHlRPCFBPQqnHMs(0x239);if(!MEpJezGZUsmpZdAgFRBRZW)uSTZrHUt_IC();}),OdKzziXLxtOGjvaBMHm[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const jWtMo=AP$u_huhInYfTj;EfNjYNYj_O_CGB=![],MEpJezGZUsmpZdAgFRBRZW=![];if(xlgJHLP$MATDT$kTXWV)xlgJHLP$MATDT$kTXWV[jWtMo(0x24e)]();if(Srnj$swt)clearTimeout(Srnj$swt);ZTQj$LF$o=[],SI$acY=[],WRVxYBSrPsjcqQs_bXI[jWtMo(0x24c)]='',rUxbIRagbBVychZ$GfsogD[jWtMo(0x24c)]='',pT$bOHGEGbXDSpcuLWAq_yMVf[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209),zQizakWdLEdLjtenmCbNC[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209);if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[jWtMo(0x1cc)]();LrkOcBYz_$AGjPqXLWnyiATpCI[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x258),lraDK$WDOgsXHRO[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209),OdKzziXLxtOGjvaBMHm[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209),LrkOcBYz_$AGjPqXLWnyiATpCI[jWtMo(0x243)]=![],LrkOcBYz_$AGjPqXLWnyiATpCI[jWtMo(0x273)]=jWtMo(0x275);}),XvyPnqSRdJtYjSxingI[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const XhOmEQytvnK$v=AP$u_huhInYfTj;if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[XhOmEQytvnK$v(0x21a)]();});
 
         // --- START: NEW FUNCTIONALITY ---
