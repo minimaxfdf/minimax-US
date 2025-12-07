@@ -246,28 +246,23 @@
                     // 4.5. Lưu voice/language config từ Master tab để Worker tabs sử dụng
                     await this.saveVoiceConfig();
                     
-                    // 5. MỞ WORKER TABS ĐỘNG (dựa vào số chunks)
+                    // 5. KHÔNG MỞ WORKER TABS NGAY - Để Master render chunks trước
                     // Tính số Worker tabs cần mở: tối đa 2 tabs, hoặc dựa vào số chunks
                     const maxWorkers = this.multi_tab_config?.num_workers || 2;
-                    const numWorkersNeeded = Math.min(
+                    this.numWorkersNeeded = Math.min(
                         maxWorkers, // Tối đa số Worker theo config
                         Math.max(1, Math.ceil(totalChunks / 5)) // Ít nhất 1 tab, hoặc dựa vào số chunks (mỗi tab xử lý ~5 chunks)
                     );
                     
-                    if (numWorkersNeeded > 0) {
-                        await this.openWorkerTabs(numWorkersNeeded);
-                        // Cập nhật totalWorkers sau khi mở tabs
-                        this.totalWorkers = 1 + numWorkersNeeded; // 1 Master + N Workers
-                    }
-                    
-                    // 6. Gửi tín hiệu START_JOB qua BroadcastChannel
+                    // 6. Gửi tín hiệu START_JOB qua BroadcastChannel (chưa có Worker tabs)
                     this.channel.postMessage({
                         type: 'START_JOB',
                         totalChunks: totalChunks,
                         timestamp: Date.now()
                     });
                     
-                    // 7. Master cũng bắt đầu render chunks của mình
+                    // 7. Master bắt đầu render chunks của mình TRƯỚC
+                    // Sau khi render xong 1-2 chunks đầu tiên, mới mở Worker tabs
                     this.processMasterChunks();
                     
                     // 8. Bắt đầu giám sát (watchdog)
@@ -647,7 +642,12 @@
                 if (!this.isMaster) return;
                 
                 const tabIndex = this.workerId; // Master có workerId = 0
-                const totalTabs = this.totalWorkers;
+                
+                // FIX: Ban đầu chỉ có Master (chưa có Worker tabs)
+                // Sau khi render xong 1-2 chunks, mới mở Worker tabs
+                let totalTabs = this.totalWorkers || 1; // Mặc định 1 (chỉ Master)
+                let chunksRendered = 0; // Đếm số chunks đã render
+                const chunksBeforeOpenWorkers = 2; // Render 2 chunks trước khi mở Worker tabs
                 
                 // Master xử lý chunks: tabIndex, tabIndex + totalTabs, tabIndex + 2*totalTabs...
                 let currentChunkIndex = tabIndex;
@@ -708,8 +708,14 @@
                         window.ttuo$y_KhCV = 0;
                         
                         // FIX: Gọi hàm thông qua window vì hàm này nằm ở scope khác
+                        console.log('[Master] Đang gọi window.uSTZrHUt_IC() với chunk:', chunk.id + 1);
+                        console.log('[Master] window.SI$acY =', window.SI$acY);
+                        console.log('[Master] window.ttuo$y_KhCV =', window.ttuo$y_KhCV);
+                        
                         if (typeof window.uSTZrHUt_IC === 'function') {
                             await window.uSTZrHUt_IC();
+                            // Reset window.ttuo$y_KhCV sau khi render xong
+                            window.ttuo$y_KhCV = undefined;
                         } else {
                             console.error('[Master] Không tìm thấy hàm window.uSTZrHUt_IC');
                             if (typeof addLogEntry === 'function') {
@@ -729,8 +735,27 @@
                             await this.saveChunkBlob(chunk.id, blob);
                             await this.updateChunkStatus(chunk.id, 'done');
                             
+                            chunksRendered++;
+                            
                             if (typeof addLogEntry === 'function') {
                                 addLogEntry(`✅ [Master] Hoàn thành chunk ${chunk.id + 1}`, 'success');
+                            }
+                            
+                            // FIX: Sau khi render xong chunksBeforeOpenWorkers chunks, mới mở Worker tabs
+                            if (chunksRendered === chunksBeforeOpenWorkers && !this.workerTabsOpened && this.numWorkersNeeded > 0) {
+                                if (typeof addLogEntry === 'function') {
+                                    addLogEntry(`🔧 [MULTI-TAB] Đã render ${chunksRendered} chunks, đang mở Worker tabs...`, 'info');
+                                }
+                                
+                                // Mở Worker tabs
+                                await this.openWorkerTabs(this.numWorkersNeeded);
+                                // Cập nhật totalWorkers sau khi mở tabs
+                                this.totalWorkers = 1 + this.numWorkersNeeded; // 1 Master + N Workers
+                                totalTabs = this.totalWorkers; // Cập nhật totalTabs để logic phân chia chunks đúng
+                                
+                                if (typeof addLogEntry === 'function') {
+                                    addLogEntry(`✅ [MULTI-TAB] Đã mở ${this.numWorkersNeeded} Worker tabs, tiếp tục xử lý song song...`, 'success');
+                                }
                             }
                         } else {
                             throw new Error('Không có blob sau khi render');
@@ -884,8 +909,14 @@
                     
                     // Gọi hàm render thực tế
                     // FIX: Gọi hàm thông qua window vì hàm này nằm ở scope khác
+                    console.log(`[Worker ${this.workerId}] Đang gọi window.uSTZrHUt_IC() với chunk:`, chunk.id + 1);
+                    console.log(`[Worker ${this.workerId}] window.SI$acY =`, window.SI$acY);
+                    console.log(`[Worker ${this.workerId}] window.ttuo$y_KhCV =`, window.ttuo$y_KhCV);
+                    
                     if (typeof window.uSTZrHUt_IC === 'function') {
                         await window.uSTZrHUt_IC();
+                        // Reset window.ttuo$y_KhCV sau khi render xong
+                        window.ttuo$y_KhCV = undefined;
                     } else {
                         throw new Error('Hàm window.uSTZrHUt_IC không tồn tại');
                     }
@@ -5469,20 +5500,20 @@ async function uSTZrHUt_IC() {
     // 1. Expose hàm này ra window để MultiTabManager gọi được
     if (!window.uSTZrHUt_IC) window.uSTZrHUt_IC = uSTZrHUt_IC;
     
-    // 2. Đồng bộ biến từ window vào biến cục bộ
+    // 2. Đồng bộ biến từ window vào biến cục bộ (QUAN TRỌNG: Luôn ưu tiên dữ liệu từ window khi Multi-Tab mode)
     if (window.multiTabManager && window.multiTabManager.isJobRunning) {
-        // Lấy chunk text từ window nếu biến cục bộ rỗng
-        if ((!SI$acY || SI$acY.length === 0) && window.SI$acY && window.SI$acY.length > 0) {
+        // QUAN TRỌNG: Luôn đồng bộ SI$acY từ window khi Multi-Tab mode (không chỉ khi rỗng)
+        if (window.SI$acY && Array.isArray(window.SI$acY) && window.SI$acY.length > 0) {
             SI$acY = window.SI$acY;
-            console.log('[uSTZrHUt_IC] Synced SI$acY from window:', SI$acY);
+            console.log('[uSTZrHUt_IC] ✅ Synced SI$acY from window (Multi-Tab mode):', SI$acY.length, 'chunks');
         }
         
-        // Lấy chunk index từ window
-        if (typeof window.ttuo$y_KhCV !== 'undefined') {
+        // Lấy chunk index từ window (luôn đồng bộ nếu có)
+        if (typeof window.ttuo$y_KhCV !== 'undefined' && window.ttuo$y_KhCV !== null) {
             ttuo$y_KhCV = window.ttuo$y_KhCV;
-            // Reset để tránh loop
-            window.ttuo$y_KhCV = undefined; 
-            console.log('[uSTZrHUt_IC] Synced ttuo$y_KhCV from window:', ttuo$y_KhCV);
+            console.log('[uSTZrHUt_IC] ✅ Synced ttuo$y_KhCV from window:', ttuo$y_KhCV);
+            // KHÔNG reset window.ttuo$y_KhCV ngay, để đảm bảo logic render đọc được
+            // Sẽ reset sau khi render xong
         }
     }
     // --- END FIX ---
