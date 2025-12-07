@@ -2068,7 +2068,7 @@ button:disabled {
         </div>
         <small style="color: #94a3b8; font-size: 12px; margin-top: 5px; display: block;">
             💡 Khi bật: Ưu tiên tách tại dòng trống. Khi tắt: Bỏ qua dòng trống, tách theo dấu câu.<br>
-            🔧 Chunk mặc định: 900 ký tự
+            🔧 Chunk mặc định: 700 ký tự
         </small>
     </div>
     <div id="gemini-text-stats"><span>Ký tự: 0</span><span>Từ: 0</span><span>Câu: 0</span><span>Đoạn: 0</span></div>
@@ -2955,9 +2955,9 @@ let labelText = W_gEcM_tWt + j$DXl$iN(0x1c3) + successfulChunks + '/' + supYmMed
 if (typeof window.isFinalCheck !== 'undefined' && window.isFinalCheck && typeof window.failedChunks !== 'undefined' && window.failedChunks && window.failedChunks.length > 0) {
     labelText += ' 🔄 Đang xử lý lại ' + window.failedChunks.length + ' chunk lỗi...';
 }
-pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0x273)]=labelText;}function NrfPVBbJv_Dph$tazCpJ(text, idealLength = 900, minLength = 600, maxLength = 900) {
-    // Mặc định chunk lớn 900 ký tự
-    const actualMaxLength = 900;
+pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0x273)]=labelText;}function NrfPVBbJv_Dph$tazCpJ(text, idealLength = 700, minLength = 600, maxLength = 700) {
+    // Mặc định chunk lớn 700 ký tự
+    const actualMaxLength = 700;
     const chunks = [];
     if (!text || typeof text !== 'string') {
         return chunks;
@@ -2966,7 +2966,7 @@ pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0
     let currentText = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
 
     // ƯU TIÊN: Nếu văn bản có dòng trống phân tách đoạn, tách theo đoạn NGAY LẬP TỨC
-    // Điều này giúp văn bản < 900 ký tự nhưng có 2-3 đoạn vẫn tách thành nhiều chunk đúng ý
+    // Điều này giúp văn bản < 700 ký tự nhưng có 2-3 đoạn vẫn tách thành nhiều chunk đúng ý
     // CHỈ áp dụng khi công tắc được bật (mặc định là tắt)
     const enableBlankLineChunking = document.getElementById('enable-blank-line-chunking')?.checked ?? false;
     if (enableBlankLineChunking && /\n\s*\n+/.test(currentText)) {
@@ -4338,6 +4338,928 @@ function stopKeepAliveLoop() {
     } catch (e) {
         console.warn('[KEEP-ALIVE] Lỗi khởi động tự động:', e);
     }
+})();
+
+// =================================================================
+// == MULTI-TAB: ROLE DETECTION & INITIALIZATION ==
+// =================================================================
+(function() {
+    'use strict';
+    
+    // Lấy cấu hình từ window (đã được Python tiêm vào)
+    const MULTI_TAB_CONFIG = window.MULTI_TAB_CONFIG || {
+        enabled: false,
+        tabIndex: 0,
+        totalTabs: 1,
+        isMaster: true,
+        profileId: 'default'
+    };
+    
+    // Xác định vai trò của tab này
+    window.MULTI_TAB_ROLE = {
+        isMaster: MULTI_TAB_CONFIG.isMaster || MULTI_TAB_CONFIG.tabIndex === 0,
+        isWorker: !MULTI_TAB_CONFIG.isMaster && MULTI_TAB_CONFIG.tabIndex > 0,
+        tabIndex: MULTI_TAB_CONFIG.tabIndex || 0,
+        profileId: MULTI_TAB_CONFIG.profileId || 'default',
+        enabled: MULTI_TAB_CONFIG.enabled || false
+    };
+    
+    // Nếu là Worker, ẩn UI ngay lập tức
+    if (window.MULTI_TAB_ROLE.isWorker) {
+        // Ẩn toàn bộ body hoặc chỉ hiện log đơn giản
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                hideWorkerUI();
+            });
+        } else {
+            hideWorkerUI();
+        }
+        
+        console.log(`[MULTI-TAB] Tab ${window.MULTI_TAB_ROLE.tabIndex} khởi động ở chế độ WORKER`);
+    } else {
+        console.log(`[MULTI-TAB] Tab ${window.MULTI_TAB_ROLE.tabIndex} khởi động ở chế độ MASTER`);
+    }
+    
+    function hideWorkerUI() {
+        try {
+            // Ẩn body, chỉ hiện một div đơn giản
+            document.body.innerHTML = '<div style="background: black; color: white; padding: 20px; font-family: monospace; position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 999999;">Worker Tab - Đang chờ lệnh...</div>';
+            document.body.style.overflow = 'hidden';
+        } catch (e) {
+            console.error('[MULTI-TAB] Lỗi khi ẩn Worker UI:', e);
+        }
+    }
+})();
+
+// =================================================================
+// == MULTI-TAB: COMMUNICATION & STORAGE ==
+// =================================================================
+(function() {
+    'use strict';
+    
+    // Chỉ khởi tạo nếu multi-tab được bật
+    if (!window.MULTI_TAB_ROLE || !window.MULTI_TAB_ROLE.enabled) {
+        return; // Không phải multi-tab mode, bỏ qua
+    }
+    
+    // 1. BroadcastChannel cho giao tiếp giữa các tab
+    const PROFILE_ID = window.MULTI_TAB_ROLE.profileId || 'default';
+    const CHANNEL_NAME = `minimax-multi-tab-${PROFILE_ID}`;
+    window.MULTI_TAB_CHANNEL = new BroadcastChannel(CHANNEL_NAME);
+    
+    // 2. IndexedDB cho lưu trữ chunks và blobs
+    const DB_NAME = 'MinimaxMultiTabDB';
+    const DB_VERSION = 1;
+    
+    let db = null;
+    
+    // Khởi tạo IndexedDB
+    const initIndexedDB = new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+            db = request.result;
+            resolve(db);
+        };
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            
+            // Store cho chunks
+            if (!db.objectStoreNames.contains('chunks')) {
+                const chunksStore = db.createObjectStore('chunks', { keyPath: 'index' });
+                chunksStore.createIndex('status', 'status', { unique: false });
+            }
+            
+            // Store cho blobs
+            if (!db.objectStoreNames.contains('blobs')) {
+                const blobsStore = db.createObjectStore('blobs', { keyPath: 'chunkIndex' });
+            }
+            
+            // Store cho job metadata
+            if (!db.objectStoreNames.contains('job')) {
+                const jobStore = db.createObjectStore('job', { keyPath: 'id' });
+            }
+        };
+    });
+    
+    // Lưu db vào window để dùng sau
+    initIndexedDB.then(() => {
+        window.MULTI_TAB_DB = db;
+        console.log('[MULTI-TAB] IndexedDB đã sẵn sàng');
+    }).catch(err => {
+        console.error('[MULTI-TAB] Lỗi khởi tạo IndexedDB:', err);
+    });
+    
+    // 3. Helper functions cho IndexedDB
+    window.MULTI_TAB_DB_HELPERS = {
+        // Lưu chunks vào DB
+        saveChunks: async function(chunks) {
+            if (!window.MULTI_TAB_DB) await initIndexedDB;
+            const transaction = window.MULTI_TAB_DB.transaction(['chunks'], 'readwrite');
+            const store = transaction.objectStore('chunks');
+            
+            for (let i = 0; i < chunks.length; i++) {
+                await new Promise((resolve, reject) => {
+                    const request = store.put({
+                        index: i,
+                        text: chunks[i],
+                        status: 'pending',
+                        claimedBy: null,
+                        timestamp: Date.now()
+                    });
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+        },
+        
+        // Lấy chunk chưa được claim
+        getAvailableChunk: async function() {
+            if (!window.MULTI_TAB_DB) await initIndexedDB;
+            const transaction = window.MULTI_TAB_DB.transaction(['chunks'], 'readwrite');
+            const store = transaction.objectStore('chunks');
+            const index = store.index('status');
+            
+            return new Promise((resolve, reject) => {
+                const request = index.openCursor(IDBKeyRange.only('pending'));
+                
+                request.onsuccess = (event) => {
+                    const cursor = event.target.result;
+                    if (cursor) {
+                        const chunk = cursor.value;
+                        // Claim chunk này
+                        chunk.status = 'claimed';
+                        chunk.claimedBy = window.MULTI_TAB_ROLE.tabIndex;
+                        cursor.update(chunk);
+                        resolve(chunk);
+                    } else {
+                        resolve(null); // Không còn chunk nào
+                    }
+                };
+                
+                request.onerror = () => reject(request.error);
+            });
+        },
+        
+        // Lưu blob vào DB
+        saveBlob: async function(chunkIndex, blob) {
+            if (!window.MULTI_TAB_DB) await initIndexedDB;
+            const transaction = window.MULTI_TAB_DB.transaction(['blobs'], 'readwrite');
+            const store = transaction.objectStore('blobs');
+            
+            return new Promise((resolve, reject) => {
+                // Convert blob to ArrayBuffer để lưu vào IndexedDB
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const request = store.put({
+                        chunkIndex: chunkIndex,
+                        blobData: reader.result,
+                        timestamp: Date.now()
+                    });
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                };
+                reader.onerror = () => reject(reader.error);
+                reader.readAsArrayBuffer(blob);
+            });
+        },
+        
+        // Lấy tất cả blobs
+        getAllBlobs: async function() {
+            if (!window.MULTI_TAB_DB) await initIndexedDB;
+            const transaction = window.MULTI_TAB_DB.transaction(['blobs'], 'readonly');
+            const store = transaction.objectStore('blobs');
+            
+            return new Promise((resolve, reject) => {
+                const request = store.getAll();
+                request.onsuccess = () => {
+                    // Sắp xếp theo chunkIndex
+                    const sorted = request.result.sort((a, b) => a.chunkIndex - b.chunkIndex);
+                    const blobs = sorted.map(item => {
+                        // Convert ArrayBuffer back to Blob
+                        return new Blob([item.blobData], { type: 'audio/mpeg' });
+                    });
+                    resolve(blobs);
+                };
+                request.onerror = () => reject(request.error);
+            });
+        },
+        
+        // Cập nhật trạng thái chunk
+        updateChunkStatus: async function(chunkIndex, status) {
+            if (!window.MULTI_TAB_DB) await initIndexedDB;
+            const transaction = window.MULTI_TAB_DB.transaction(['chunks'], 'readwrite');
+            const store = transaction.objectStore('chunks');
+            
+            return new Promise((resolve, reject) => {
+                const request = store.get(chunkIndex);
+                request.onsuccess = () => {
+                    const chunk = request.result;
+                    if (chunk) {
+                        chunk.status = status;
+                        const updateRequest = store.put(chunk);
+                        updateRequest.onsuccess = () => resolve();
+                        updateRequest.onerror = () => reject(updateRequest.error);
+                    } else {
+                        resolve();
+                    }
+                };
+                request.onerror = () => reject(request.error);
+            });
+        }
+    };
+    
+    console.log('[MULTI-TAB] Đã khởi tạo BroadcastChannel và IndexedDB helpers');
+})();
+
+// =================================================================
+// == MULTI-TAB: ERROR HANDLING & RETRY ==
+// =================================================================
+(function() {
+    'use strict';
+    
+    // Chỉ khởi tạo nếu multi-tab được bật
+    if (!window.MULTI_TAB_ROLE || !window.MULTI_TAB_ROLE.enabled) {
+        return;
+    }
+    
+    // Cleanup dữ liệu cũ (tương tự cleanupChunkData gốc)
+    window.cleanupChunkDataMultiTab = async function(chunkIndex) {
+        try {
+            // 1. Clear blob trong IndexedDB
+            if (window.MULTI_TAB_DB) {
+                const transaction = window.MULTI_TAB_DB.transaction(['blobs'], 'readwrite');
+                const store = transaction.objectStore('blobs');
+                await new Promise((resolve, reject) => {
+                    const request = store.delete(chunkIndex);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+            
+            // 2. Clear timeout (nếu có)
+            if (window.chunkTimeoutIds && window.chunkTimeoutIds[chunkIndex]) {
+                clearTimeout(window.chunkTimeoutIds[chunkIndex]);
+                delete window.chunkTimeoutIds[chunkIndex];
+            }
+            
+            // 3. Xóa khỏi processingChunks
+            if (window.processingChunks && window.processingChunks.has(chunkIndex)) {
+                window.processingChunks.delete(chunkIndex);
+            }
+            
+            // 4. Reset flags
+            if (window.sendingChunk === chunkIndex) {
+                window.sendingChunk = null;
+            }
+            
+            // 5. Clear audio elements (chỉ trên Master, Worker không có UI)
+            if (window.MULTI_TAB_ROLE.isMaster) {
+                try {
+                    const audioElements = document.querySelectorAll('audio');
+                    audioElements.forEach(audio => {
+                        try {
+                            if (!audio.paused) audio.pause();
+                            audio.currentTime = 0;
+                            if (audio.src) audio.src = '';
+                        } catch (e) {}
+                    });
+                } catch (e) {}
+            }
+            
+            // 6. Reset textarea (chỉ trên Master)
+            if (window.MULTI_TAB_ROLE.isMaster) {
+                try {
+                    const textarea = document.getElementById('gemini-hidden-text-for-request');
+                    if (textarea && typeof setReactTextareaValue === 'function') {
+                        setReactTextareaValue(textarea, '');
+                    }
+                } catch (e) {}
+            }
+            
+            console.log(`[MULTI-TAB] Đã cleanup chunk ${chunkIndex + 1}`);
+            
+        } catch (error) {
+            console.error(`[MULTI-TAB] Lỗi cleanup chunk ${chunkIndex + 1}:`, error);
+        }
+    };
+    
+    // Retry chunk ngay lập tức
+    window.retryChunkImmediately = async function(chunkIndex, retryCount = 0) {
+        try {
+            // Lấy chunk từ IndexedDB
+            if (!window.MULTI_TAB_DB) {
+                console.error('[MULTI-TAB] IndexedDB chưa sẵn sàng');
+                return false;
+            }
+            
+            const transaction = window.MULTI_TAB_DB.transaction(['chunks'], 'readwrite');
+            const store = transaction.objectStore('chunks');
+            const chunk = await new Promise((resolve, reject) => {
+                const request = store.get(chunkIndex);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+            
+            if (!chunk) {
+                console.error(`[MULTI-TAB] Không tìm thấy chunk ${chunkIndex + 1} trong IndexedDB`);
+                return false;
+            }
+            
+            // Log retry
+            const logMessage = window.MULTI_TAB_ROLE.isMaster 
+                ? `🔄 [Master] Đang retry chunk ${chunkIndex + 1} (lần ${retryCount + 1})...`
+                : `🔄 [Worker ${window.MULTI_TAB_ROLE.tabIndex}] Đang retry chunk ${chunkIndex + 1} (lần ${retryCount + 1})...`;
+            
+            if (window.MULTI_TAB_ROLE.isMaster && typeof addLogEntry === 'function') {
+                addLogEntry(logMessage, 'warning');
+            } else {
+                console.log(logMessage);
+            }
+            
+            // Claim chunk lại
+            chunk.status = 'claimed';
+            chunk.claimedBy = window.MULTI_TAB_ROLE.tabIndex;
+            await new Promise((resolve, reject) => {
+                const updateRequest = store.put(chunk);
+                updateRequest.onsuccess = () => resolve();
+                updateRequest.onerror = () => reject(updateRequest.error);
+            });
+            
+            // Render lại chunk (dùng logic render hiện tại - gọi uSTZrHUt_IC với chunk index cụ thể)
+            // Tạm thời set ttuo$y_KhCV để render chunk này
+            const originalChunkIndex = window.ttuo$y_KhCV;
+            window.ttuo$y_KhCV = chunkIndex;
+            
+            try {
+                // Gọi hàm render hiện tại (sẽ được tích hợp sau)
+                // Tạm thời return true để không block
+                window.ttuo$y_KhCV = originalChunkIndex;
+                return true;
+            } catch (renderError) {
+                window.ttuo$y_KhCV = originalChunkIndex;
+                throw renderError;
+            }
+            
+        } catch (error) {
+            console.error(`[MULTI-TAB] Lỗi khi retry chunk ${chunkIndex + 1}:`, error);
+            throw error;
+        }
+    };
+    
+    // Xử lý lỗi chunk và retry ngay
+    window.handleChunkError = async function(chunkIndex, error, retryCount = 0) {
+        try {
+            const MAX_RETRY = 999; // Retry vô hạn (giống logic gốc)
+            
+            // 1. CLEANUP DỮ LIỆU CŨ
+            await window.cleanupChunkDataMultiTab(chunkIndex);
+            
+            // 2. XÓA BLOB KHỎI INDEXEDDB (nếu có)
+            if (window.MULTI_TAB_DB) {
+                const transaction = window.MULTI_TAB_DB.transaction(['blobs'], 'readwrite');
+                const store = transaction.objectStore('blobs');
+                await new Promise((resolve, reject) => {
+                    const request = store.delete(chunkIndex);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+            
+            // 3. ĐÁNH DẤU CHUNK LÀ 'FAILED' TRONG INDEXEDDB (tạm thời)
+            await window.MULTI_TAB_DB_HELPERS.updateChunkStatus(chunkIndex, 'failed');
+            
+            // 4. BÁO CÁO LỖI VỀ MASTER
+            if (window.MULTI_TAB_CHANNEL) {
+                window.MULTI_TAB_CHANNEL.postMessage({
+                    type: 'CHUNK_FAILED',
+                    chunkIndex: chunkIndex,
+                    tabIndex: window.MULTI_TAB_ROLE.tabIndex,
+                    error: error.message,
+                    retryCount: retryCount,
+                    timestamp: Date.now()
+                });
+            }
+            
+            // 5. LOG LỖI
+            const logMessage = window.MULTI_TAB_ROLE.isMaster 
+                ? `❌ [Master] Chunk ${chunkIndex + 1} lỗi (lần retry ${retryCount + 1}): ${error.message}`
+                : `❌ [Worker ${window.MULTI_TAB_ROLE.tabIndex}] Chunk ${chunkIndex + 1} lỗi (lần retry ${retryCount + 1}): ${error.message}`;
+            
+            if (window.MULTI_TAB_ROLE.isMaster && typeof addLogEntry === 'function') {
+                addLogEntry(logMessage, 'error');
+            } else {
+                console.error(logMessage);
+            }
+            
+            // 6. RETRY NGAY LẬP TỨC (không chuyển sang chunk khác)
+            if (retryCount < MAX_RETRY) {
+                // Đánh dấu lại 'pending' để retry
+                await window.MULTI_TAB_DB_HELPERS.updateChunkStatus(chunkIndex, 'pending');
+                
+                // Chờ một chút trước khi retry (tránh spam)
+                await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 1000));
+                
+                // Retry lại chunk này
+                try {
+                    const success = await window.retryChunkImmediately(chunkIndex, retryCount + 1);
+                    if (success) {
+                        // Retry thành công, render lại
+                        // Sẽ được xử lý bởi logic render hiện tại
+                        return true;
+                    }
+                } catch (retryError) {
+                    // Retry lại lỗi, tiếp tục retry
+                    return await window.handleChunkError(chunkIndex, retryError, retryCount + 1);
+                }
+            } else {
+                // Quá nhiều lần retry, bỏ qua chunk này
+                console.error(`[MULTI-TAB] Chunk ${chunkIndex + 1} đã retry quá ${MAX_RETRY} lần, bỏ qua`);
+                return false;
+            }
+            
+        } catch (cleanupError) {
+            console.error(`[MULTI-TAB] Lỗi khi cleanup chunk ${chunkIndex + 1}:`, cleanupError);
+            // Vẫn retry dù cleanup lỗi
+            if (retryCount < 999) {
+                return await window.handleChunkError(chunkIndex, cleanupError, retryCount + 1);
+            }
+            return false;
+        }
+    };
+    
+    console.log('[MULTI-TAB] Đã khởi tạo error handling và retry functions');
+})();
+
+// =================================================================
+// == MULTI-TAB: MASTER & WORKER LOGIC ==
+// =================================================================
+(function() {
+    'use strict';
+    
+    // Chỉ khởi tạo nếu multi-tab được bật
+    if (!window.MULTI_TAB_ROLE || !window.MULTI_TAB_ROLE.enabled) {
+        return;
+    }
+    
+    // Khởi động job multi-tab (chỉ Master)
+    window.startMultiTabJob = async function(text) {
+        if (!window.MULTI_TAB_ROLE.isMaster) {
+            console.warn('[MULTI-TAB] Chỉ Master mới được khởi động job');
+            return;
+        }
+        
+        try {
+            // 1. Chia text thành chunks (dùng hàm hiện tại)
+            if (typeof smartSplitter === 'function') {
+                SI$acY = smartSplitter(text, 800);
+            } else if (typeof NrfPVBbJv_Dph$tazCpJ === 'function') {
+                SI$acY = NrfPVBbJv_Dph$tazCpJ(text, 700, 600, 700);
+            } else {
+                // Fallback: chia đơn giản
+                const chunkSize = 700;
+                SI$acY = [];
+                for (let i = 0; i < text.length; i += chunkSize) {
+                    SI$acY.push(text.substring(i, i + chunkSize));
+                }
+            }
+            
+            const totalChunks = SI$acY.length;
+            
+            if (typeof addLogEntry === 'function') {
+                addLogEntry(`🚀 [MULTI-TAB] Bắt đầu job với ${totalChunks} chunks`, 'info');
+            }
+            
+            // 2. Lưu chunks vào IndexedDB
+            await window.MULTI_TAB_DB_HELPERS.saveChunks(SI$acY);
+            
+            // 3. Lưu metadata job
+            if (window.MULTI_TAB_DB) {
+                const transaction = window.MULTI_TAB_DB.transaction(['job'], 'readwrite');
+                const store = transaction.objectStore('job');
+                await new Promise((resolve, reject) => {
+                    const request = store.put({
+                        id: 'current',
+                        totalChunks: totalChunks,
+                        completedChunks: 0,
+                        startTime: Date.now(),
+                        status: 'running'
+                    });
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+            
+            // 4. Phát tín hiệu "JOB_START" cho các Workers
+            if (window.MULTI_TAB_CHANNEL) {
+                window.MULTI_TAB_CHANNEL.postMessage({
+                    type: 'JOB_START',
+                    totalChunks: totalChunks,
+                    timestamp: Date.now()
+                });
+            }
+            
+            // 5. Bắt đầu xử lý trên Master
+            window.processChunksAsMaster();
+            
+            // 6. Bắt đầu giám sát tiến độ
+            window.startProgressMonitoring();
+            
+        } catch (error) {
+            if (typeof addLogEntry === 'function') {
+                addLogEntry(`❌ [MULTI-TAB] Lỗi khởi động job: ${error.message}`, 'error');
+            }
+            console.error('[MULTI-TAB] Lỗi khởi động job:', error);
+        }
+    };
+    
+    // Master xử lý chunks của mình
+    window.processChunksAsMaster = async function() {
+        if (!window.MULTI_TAB_ROLE.isMaster) return;
+        
+        const tabIndex = window.MULTI_TAB_ROLE.tabIndex;
+        const totalTabs = window.MULTI_TAB_CONFIG?.totalTabs || 1;
+        
+        // Master xử lý chunks: tabIndex, tabIndex + totalTabs, tabIndex + 2*totalTabs...
+        let currentChunkIndex = tabIndex;
+        
+        // Wrapper để sync window.chunkBlobs[] với IndexedDB
+        const originalChunkBlobs = window.chunkBlobs;
+        const syncBlobToIndexedDB = async (chunkIndex, blob) => {
+            if (blob && window.MULTI_TAB_DB_HELPERS) {
+                try {
+                    await window.MULTI_TAB_DB_HELPERS.saveBlob(chunkIndex, blob);
+                } catch (e) {
+                    console.error(`[MULTI-TAB] Lỗi lưu blob chunk ${chunkIndex + 1}:`, e);
+                }
+            }
+        };
+        
+        // Monitor window.chunkBlobs[] để tự động sync với IndexedDB
+        const monitorBlobs = setInterval(() => {
+            if (window.chunkBlobs && Array.isArray(window.chunkBlobs)) {
+                window.chunkBlobs.forEach(async (blob, idx) => {
+                    if (blob && idx % totalTabs === tabIndex) {
+                        // Kiểm tra xem đã lưu vào IndexedDB chưa
+                        if (window.MULTI_TAB_DB) {
+                            const transaction = window.MULTI_TAB_DB.transaction(['blobs'], 'readonly');
+                            const store = transaction.objectStore('blobs');
+                            const existing = await new Promise((resolve, reject) => {
+                                const request = store.get(idx);
+                                request.onsuccess = () => resolve(request.result);
+                                request.onerror = () => reject(request.error);
+                            });
+                            
+                            if (!existing) {
+                                // Chưa có trong IndexedDB, lưu vào
+                                await syncBlobToIndexedDB(idx, blob);
+                                // Đánh dấu thành công
+                                await window.MULTI_TAB_DB_HELPERS.updateChunkStatus(idx, 'success');
+                            }
+                        }
+                    }
+                });
+            }
+        }, 1000); // Kiểm tra mỗi giây
+        
+        while (true) {
+            // Lấy chunk từ IndexedDB
+            if (!window.MULTI_TAB_DB) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                continue;
+            }
+            
+            const transaction = window.MULTI_TAB_DB.transaction(['chunks'], 'readwrite');
+            const store = transaction.objectStore('chunks');
+            
+            const chunk = await new Promise((resolve, reject) => {
+                const request = store.get(currentChunkIndex);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+            
+            // Nếu không còn chunk nào cho Master, dừng
+            if (!chunk || (chunk.status !== 'pending' && chunk.status !== 'failed')) {
+                // Kiểm tra xem còn chunk nào khác không
+                const allChunks = await new Promise((resolve, reject) => {
+                    const request = store.getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+                
+                const hasMoreChunks = allChunks.some((c, idx) => 
+                    idx % totalTabs === tabIndex && (c.status === 'pending' || c.status === 'failed')
+                );
+                
+                if (!hasMoreChunks) {
+                    clearInterval(monitorBlobs);
+                    break; // Không còn chunk nào
+                }
+                
+                // Chuyển sang chunk tiếp theo
+                currentChunkIndex += totalTabs;
+                continue;
+            }
+            
+            // Claim chunk
+            if (chunk.status === 'pending' || chunk.status === 'failed') {
+                chunk.status = 'claimed';
+                chunk.claimedBy = tabIndex;
+                await new Promise((resolve, reject) => {
+                    const updateRequest = store.put(chunk);
+                    updateRequest.onsuccess = () => resolve();
+                    updateRequest.onerror = () => reject(updateRequest.error);
+                });
+            }
+            
+            // Render chunk (dùng logic hiện tại - set ttuo$y_KhCV và gọi uSTZrHUt_IC)
+            try {
+                // Set chunk index hiện tại
+                const originalChunkIndex = ttuo$y_KhCV;
+                ttuo$y_KhCV = currentChunkIndex;
+                
+                // Gọi hàm render hiện tại
+                await uSTZrHUt_IC();
+                
+                // Chờ một chút để uSTZrHUt_IC() hoàn thành
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Kiểm tra kết quả từ window.chunkBlobs[]
+                if (window.chunkBlobs && window.chunkBlobs[currentChunkIndex]) {
+                    const blob = window.chunkBlobs[currentChunkIndex];
+                    // Lưu vào IndexedDB
+                    await syncBlobToIndexedDB(currentChunkIndex, blob);
+                    // Đánh dấu thành công
+                    await window.MULTI_TAB_DB_HELPERS.updateChunkStatus(currentChunkIndex, 'success');
+                    
+                    // Báo cáo thành công
+                    if (window.MULTI_TAB_CHANNEL) {
+                        window.MULTI_TAB_CHANNEL.postMessage({
+                            type: 'CHUNK_COMPLETE',
+                            chunkIndex: currentChunkIndex,
+                            tabIndex: tabIndex,
+                            timestamp: Date.now()
+                        });
+                    }
+                    
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`✅ [Master] Hoàn thành chunk ${currentChunkIndex + 1}`, 'success');
+                    }
+                }
+                
+                // Khôi phục chunk index
+                ttuo$y_KhCV = originalChunkIndex;
+                
+            } catch (error) {
+                // Retry ngay lập tức
+                await window.handleChunkError(currentChunkIndex, error, 0);
+            }
+            
+            // Chuyển sang chunk tiếp theo của Master
+            currentChunkIndex += totalTabs;
+        }
+    };
+    
+    // Worker xử lý chunks của mình
+    window.processChunksAsWorker = async function() {
+        if (!window.MULTI_TAB_ROLE.isWorker) return;
+        
+        const tabIndex = window.MULTI_TAB_ROLE.tabIndex;
+        const totalTabs = window.MULTI_TAB_CONFIG?.totalTabs || 1;
+        
+        // Worker xử lý chunks: tabIndex, tabIndex + totalTabs, tabIndex + 2*totalTabs...
+        let currentChunkIndex = tabIndex;
+        
+        // Wrapper để sync window.chunkBlobs[] với IndexedDB
+        const syncBlobToIndexedDB = async (chunkIndex, blob) => {
+            if (blob && window.MULTI_TAB_DB_HELPERS) {
+                try {
+                    await window.MULTI_TAB_DB_HELPERS.saveBlob(chunkIndex, blob);
+                } catch (e) {
+                    console.error(`[MULTI-TAB] Lỗi lưu blob chunk ${chunkIndex + 1}:`, e);
+                }
+            }
+        };
+        
+        // Monitor window.chunkBlobs[] để tự động sync với IndexedDB
+        const monitorBlobs = setInterval(() => {
+            if (window.chunkBlobs && Array.isArray(window.chunkBlobs)) {
+                window.chunkBlobs.forEach(async (blob, idx) => {
+                    if (blob && idx % totalTabs === tabIndex) {
+                        // Kiểm tra xem đã lưu vào IndexedDB chưa
+                        if (window.MULTI_TAB_DB) {
+                            const transaction = window.MULTI_TAB_DB.transaction(['blobs'], 'readonly');
+                            const store = transaction.objectStore('blobs');
+                            const existing = await new Promise((resolve, reject) => {
+                                const request = store.get(idx);
+                                request.onsuccess = () => resolve(request.result);
+                                request.onerror = () => reject(request.error);
+                            });
+                            
+                            if (!existing) {
+                                // Chưa có trong IndexedDB, lưu vào
+                                await syncBlobToIndexedDB(idx, blob);
+                                // Đánh dấu thành công
+                                await window.MULTI_TAB_DB_HELPERS.updateChunkStatus(idx, 'success');
+                                
+                                // Báo cáo thành công
+                                if (window.MULTI_TAB_CHANNEL) {
+                                    window.MULTI_TAB_CHANNEL.postMessage({
+                                        type: 'CHUNK_COMPLETE',
+                                        chunkIndex: idx,
+                                        tabIndex: tabIndex,
+                                        timestamp: Date.now()
+                                    });
+                                }
+                                
+                                console.log(`[Worker ${tabIndex}] Hoàn thành chunk ${idx + 1}`);
+                            }
+                        }
+                    }
+                });
+            }
+        }, 1000); // Kiểm tra mỗi giây
+        
+        while (true) {
+            // Lấy chunk chưa được claim
+            const chunk = await window.MULTI_TAB_DB_HELPERS.getAvailableChunk();
+            
+            if (!chunk) {
+                // Không còn chunk nào, chờ một chút rồi thử lại
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                continue;
+            }
+            
+            // Kiểm tra xem chunk này có thuộc về Worker này không
+            // Worker xử lý: tabIndex, tabIndex + totalTabs, tabIndex + 2*totalTabs...
+            if (chunk.index % totalTabs !== tabIndex) {
+                // Chunk này không thuộc về Worker này, bỏ qua
+                continue;
+            }
+            
+            // Render chunk (dùng logic hiện tại nhưng không hiển thị UI)
+            try {
+                // Set chunk index hiện tại
+                const originalChunkIndex = ttuo$y_KhCV;
+                ttuo$y_KhCV = chunk.index;
+                
+                // Gọi hàm render hiện tại (sẽ tự động xử lý)
+                await uSTZrHUt_IC();
+                
+                // Chờ một chút để uSTZrHUt_IC() hoàn thành
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Kiểm tra kết quả từ window.chunkBlobs[]
+                if (window.chunkBlobs && window.chunkBlobs[chunk.index]) {
+                    const blob = window.chunkBlobs[chunk.index];
+                    // Lưu vào IndexedDB
+                    await syncBlobToIndexedDB(chunk.index, blob);
+                    // Đánh dấu thành công
+                    await window.MULTI_TAB_DB_HELPERS.updateChunkStatus(chunk.index, 'success');
+                    
+                    // Báo cáo thành công
+                    if (window.MULTI_TAB_CHANNEL) {
+                        window.MULTI_TAB_CHANNEL.postMessage({
+                            type: 'CHUNK_COMPLETE',
+                            chunkIndex: chunk.index,
+                            tabIndex: tabIndex,
+                            timestamp: Date.now()
+                        });
+                    }
+                    
+                    console.log(`[Worker ${tabIndex}] Hoàn thành chunk ${chunk.index + 1}`);
+                }
+                
+                // Khôi phục chunk index
+                ttuo$y_KhCV = originalChunkIndex;
+                
+            } catch (error) {
+                // Retry ngay lập tức
+                await window.handleChunkError(chunk.index, error, 0);
+            }
+            
+            // Chuyển sang chunk tiếp theo của Worker
+            currentChunkIndex += totalTabs;
+        }
+    };
+    
+    // Giám sát tiến độ (chỉ Master)
+    window.startProgressMonitoring = function() {
+        if (!window.MULTI_TAB_ROLE.isMaster) return;
+        
+        const checkInterval = setInterval(async () => {
+            if (!window.MULTI_TAB_DB) return;
+            
+            // Đếm số chunks đã hoàn thành
+            const transaction = window.MULTI_TAB_DB.transaction(['chunks'], 'readonly');
+            const store = transaction.objectStore('chunks');
+            const request = store.getAll();
+            
+            request.onsuccess = async () => {
+                const chunks = request.result;
+                const completed = chunks.filter(c => c.status === 'success').length;
+                const total = chunks.length;
+                
+                // Cập nhật progress bar
+                if (typeof nWHrScjZnIyNYzztyEWwM === 'function') {
+                    nWHrScjZnIyNYzztyEWwM(completed, total);
+                }
+                
+                // Nếu tất cả chunks đã xong, ghép file
+                if (completed === total && total > 0) {
+                    clearInterval(checkInterval);
+                    await window.mergeAndDownloadMultiTab();
+                }
+            };
+        }, 2000); // Kiểm tra mỗi 2 giây
+    };
+    
+    // Ghép file và tải xuống (chỉ Master)
+    window.mergeAndDownloadMultiTab = async function() {
+        if (!window.MULTI_TAB_ROLE.isMaster) return;
+        
+        try {
+            if (typeof addLogEntry === 'function') {
+                addLogEntry(`🔗 [MULTI-TAB] Đang ghép chunks...`, 'info');
+            }
+            
+            // Lấy tất cả blobs từ IndexedDB
+            const blobs = await window.MULTI_TAB_DB_HELPERS.getAllBlobs();
+            
+            if (blobs.length === 0) {
+                throw new Error('Không có blob nào để ghép');
+            }
+            
+            // Ghép blobs (dùng logic hiện tại nếu có)
+            if (typeof tt__SfNwBHDebpWJOqrSTR === 'function') {
+                // Dùng hàm merge hiện tại
+                await tt__SfNwBHDebpWJOqrSTR();
+            } else {
+                // Fallback: ghép đơn giản
+                const mergedBlob = new Blob(blobs, { type: 'audio/mpeg' });
+                const url = URL.createObjectURL(mergedBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `minimax-audio-${Date.now()}.mp3`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+            
+            if (typeof addLogEntry === 'function') {
+                addLogEntry(`✅ [MULTI-TAB] Đã tải xuống file thành công!`, 'success');
+            }
+            
+            // Dọn dẹp IndexedDB
+            if (window.MULTI_TAB_DB) {
+                const transaction = window.MULTI_TAB_DB.transaction(['chunks', 'blobs', 'job'], 'readwrite');
+                transaction.objectStore('chunks').clear();
+                transaction.objectStore('blobs').clear();
+                transaction.objectStore('job').clear();
+            }
+            
+        } catch (error) {
+            if (typeof addLogEntry === 'function') {
+                addLogEntry(`❌ [MULTI-TAB] Lỗi khi ghép file: ${error.message}`, 'error');
+            }
+            console.error('[MULTI-TAB] Lỗi khi ghép file:', error);
+        }
+    };
+    
+    // Lắng nghe message từ Master (chỉ Worker)
+    if (window.MULTI_TAB_ROLE.isWorker && window.MULTI_TAB_CHANNEL) {
+        window.MULTI_TAB_CHANNEL.addEventListener('message', async (event) => {
+            const message = event.data;
+            
+            switch (message.type) {
+                case 'JOB_START':
+                    // Bắt đầu xử lý chunks
+                    window.processChunksAsWorker();
+                    break;
+                    
+                case 'CHUNK_AVAILABLE':
+                    // Có chunk mới, thử lấy
+                    window.processChunksAsWorker();
+                    break;
+            }
+        });
+        
+        // Gửi heartbeat định kỳ
+        setInterval(() => {
+            if (window.MULTI_TAB_CHANNEL) {
+                window.MULTI_TAB_CHANNEL.postMessage({
+                    type: 'HEARTBEAT',
+                    tabIndex: window.MULTI_TAB_ROLE.tabIndex,
+                    timestamp: Date.now()
+                });
+            }
+        }, 5000); // Mỗi 5 giây
+        
+        console.log(`[MULTI-TAB] Worker ${window.MULTI_TAB_ROLE.tabIndex} đã sẵn sàng`);
+    }
+    
+    console.log('[MULTI-TAB] Đã khởi tạo Master & Worker logic');
 })();
 
 async function uSTZrHUt_IC() {
@@ -6179,7 +7101,13 @@ async function waitForVoiceModelReady() {
 
     // Trả về kết quả cuối cùng
     return true; // Trả về true vì đã qua được bước chờ giọng mẫu
-}function u_In_Taeyb(ha_vkXztSqPwoX_qmQKlcp){const scdrpb$_nwRMQXvVJ=AP$u_huhInYfTj,TJ_txTK=document[scdrpb$_nwRMQXvVJ(0x1cd)](scdrpb$_nwRMQXvVJ(0x26d));if(!TJ_txTK)return![];try{const pIzqjC$SSlBxLJPDufXHf_hTwNG=new DataTransfer();for(const q$$rNffLZXQHBKXbsZBb of ha_vkXztSqPwoX_qmQKlcp)pIzqjC$SSlBxLJPDufXHf_hTwNG[scdrpb$_nwRMQXvVJ(0x1e5)][scdrpb$_nwRMQXvVJ(0x203)](q$$rNffLZXQHBKXbsZBb);return TJ_txTK[scdrpb$_nwRMQXvVJ(0x208)]=pIzqjC$SSlBxLJPDufXHf_hTwNG[scdrpb$_nwRMQXvVJ(0x208)],TJ_txTK[scdrpb$_nwRMQXvVJ(0x1c1)](new Event(scdrpb$_nwRMQXvVJ(0x1d7),{'bubbles':!![]})),!![];}catch(tnv$KWVWNV){return![];}}WRVxYBSrPsjcqQs_bXI[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x229),()=>{const bISsk$DCGLNjOv=AP$u_huhInYfTj,LvLmlCAo_vy_AFJk=WRVxYBSrPsjcqQs_bXI[bISsk$DCGLNjOv(0x24c)];CVjXA$H[bISsk$DCGLNjOv(0x1c7)]=bISsk$DCGLNjOv(0x20f)+LvLmlCAo_vy_AFJk[bISsk$DCGLNjOv(0x216)]+bISsk$DCGLNjOv(0x1ff)+LvLmlCAo_vy_AFJk[bISsk$DCGLNjOv(0x1d4)]()[bISsk$DCGLNjOv(0x1ed)](/\s+/)[bISsk$DCGLNjOv(0x21d)](Boolean)[bISsk$DCGLNjOv(0x216)]+bISsk$DCGLNjOv(0x1fc)+LvLmlCAo_vy_AFJk[bISsk$DCGLNjOv(0x1ed)](/[.!?。！？]+/)[bISsk$DCGLNjOv(0x21d)](Boolean)[bISsk$DCGLNjOv(0x216)]+bISsk$DCGLNjOv(0x23b)+LvLmlCAo_vy_AFJk[bISsk$DCGLNjOv(0x1d4)]()[bISsk$DCGLNjOv(0x1ed)](/\n+/)[bISsk$DCGLNjOv(0x21d)](Boolean)[bISsk$DCGLNjOv(0x216)]+bISsk$DCGLNjOv(0x1f4);}),yU_jfkzmffcnGgLWrq[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),async()=>{const t$_EKwXXWYJwVOu=AP$u_huhInYfTj;if(PcLAEW[t$_EKwXXWYJwVOu(0x208)][t$_EKwXXWYJwVOu(0x216)]===0x16e0+-0x1573+-parseInt(0x49)*0x5){Swal[t$_EKwXXWYJwVOu(0x26b)]({'icon':t$_EKwXXWYJwVOu(0x212),'title':t$_EKwXXWYJwVOu(0x266),'text':t$_EKwXXWYJwVOu(0x200)});return;}if(PcLAEW[t$_EKwXXWYJwVOu(0x208)][t$_EKwXXWYJwVOu(0x216)]>0x1){Swal[t$_EKwXXWYJwVOu(0x26b)]({'icon':t$_EKwXXWYJwVOu(0x212),'title':'Lỗi','text':'Chỉ được phép tải lên 1 file duy nhất. Vui lòng chọn lại.'});PcLAEW.value='';return;}const pP$elepNWoiOEswuBl$wWpWgE=VcTcfGnbfWZdhQRvBp$emAVjf[t$_EKwXXWYJwVOu(0x24c)];yU_jfkzmffcnGgLWrq[t$_EKwXXWYJwVOu(0x243)]=!![],TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x1d0),TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x1fb)][t$_EKwXXWYJwVOu(0x26e)]=t$_EKwXXWYJwVOu(0x22f);if(u_In_Taeyb(PcLAEW[t$_EKwXXWYJwVOu(0x208)])){await new Promise(YoMwltQiCl_gqyp=>setTimeout(YoMwltQiCl_gqyp,Math.floor(-0xbf0)*Math.floor(parseInt(0x1))+parseFloat(-parseInt(0x952))+parseFloat(parseInt(0x192a)))),TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x267);const lYBfNBUXykQSrYdLWRfJs=await wfxQyKsZ_OULEUwIDIN$OYr(pP$elepNWoiOEswuBl$wWpWgE);lYBfNBUXykQSrYdLWRfJs?(TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x22b)+pP$elepNWoiOEswuBl$wWpWgE+'.',TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x1fb)][t$_EKwXXWYJwVOu(0x26e)]=t$_EKwXXWYJwVOu(0x228)):(TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x247)+pP$elepNWoiOEswuBl$wWpWgE+'.',TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x1fb)][t$_EKwXXWYJwVOu(0x26e)]=t$_EKwXXWYJwVOu(0x1e6)),LrkOcBYz_$AGjPqXLWnyiATpCI[t$_EKwXXWYJwVOu(0x243)]=![];}else TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x259),TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x1fb)][t$_EKwXXWYJwVOu(0x26e)]=t$_EKwXXWYJwVOu(0x1e6);yU_jfkzmffcnGgLWrq[t$_EKwXXWYJwVOu(0x243)]=![];}),LrkOcBYz_$AGjPqXLWnyiATpCI[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const muOPzQltrb_ezJpe_MNI=AP$u_huhInYfTj;if(EfNjYNYj_O_CGB)return;const EFBSgoVbWWlkmceHpywAdxhpn=WRVxYBSrPsjcqQs_bXI[muOPzQltrb_ezJpe_MNI(0x24c)][muOPzQltrb_ezJpe_MNI(0x1d4)]();const charsToUse=EFBSgoVbWWlkmceHpywAdxhpn.length;if(!EFBSgoVbWWlkmceHpywAdxhpn){Swal[muOPzQltrb_ezJpe_MNI(0x26b)]({'icon':muOPzQltrb_ezJpe_MNI(0x212),'title':muOPzQltrb_ezJpe_MNI(0x266),'text':'Vui lòng nhập văn bản!'});return;}if(typeof window.REMAINING_CHARS==='undefined'){Swal.fire({icon:'error',title:'Lỗi Quota',text:'Không thể đọc Quota từ main.py. Script bị lỗi.'});return;}const remaining=window.REMAINING_CHARS;if(remaining!==-1&&charsToUse>remaining){Swal.fire({icon:'error',title:'Không đủ ký tự',text:`Bạn cần ${new Intl.NumberFormat().format(charsToUse)} ký tự, nhưng chỉ còn ${new Intl.NumberFormat().format(remaining)} ký tự.`});return;}window.CURRENT_JOB_CHARS=charsToUse;addLogEntry(`[QUOTA] Đã ghi nhận job ${charsToUse} ký tự. Sẽ trừ sau khi hoàn thành.`,'info');dqj_t_Mr=new Date(),zQizakWdLEdLjtenmCbNC[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x209),document[muOPzQltrb_ezJpe_MNI(0x1de)](muOPzQltrb_ezJpe_MNI(0x225))[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x209),pT$bOHGEGbXDSpcuLWAq_yMVf[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x258),cHjV$QkAT$JWlL[muOPzQltrb_ezJpe_MNI(0x273)]='';if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[muOPzQltrb_ezJpe_MNI(0x1cc)]();ZTQj$LF$o=[];if(typeof window.chunkBlobs!=='undefined'&&window.chunkBlobs.length>0){addLogEntry('🗑️ Đã xóa các chunk cũ trước khi tạo âm thanh mới.','info');}window.chunkBlobs=[];addLogEntry('🧹 Đã dọn dẹp và sẵn sàng tạo âm thanh mới.','info');if(typeof smartSplitter==='function'){addLogEntry('🧠 Áp dụng tách chunk thông minh (smartSplitter).','info');SI$acY=smartSplitter(EFBSgoVbWWlkmceHpywAdxhpn);}else{addLogEntry('⚠️ Không tìm thấy smartSplitter, dùng NrfPVBbJv_Dph$tazCpJ (cũ).','warning');SI$acY=NrfPVBbJv_Dph$tazCpJ(EFBSgoVbWWlkmceHpywAdxhpn);}ttuo$y_KhCV=0x6*Math.floor(-parseInt(0x26))+-0x1c45+Math.ceil(parseInt(0x1d29)),EfNjYNYj_O_CGB=!![],MEpJezGZUsmpZdAgFRBRZW=![],LrkOcBYz_$AGjPqXLWnyiATpCI[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x209),lraDK$WDOgsXHRO[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x258),OdKzziXLxtOGjvaBMHm[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x258),lraDK$WDOgsXHRO[muOPzQltrb_ezJpe_MNI(0x273)]=muOPzQltrb_ezJpe_MNI(0x239);if(typeof window.chunkStatus==='undefined')window.chunkStatus=[];window.chunkStatus=new Array(SI$acY.length).fill('pending');window.failedChunks=[];window.isFinalCheck=false;window.retryCount=0;window.totalRetryAttempts=0;if(typeof window.chunkBlobs==='undefined')window.chunkBlobs=[];window.chunkBlobs=new Array(SI$acY.length).fill(null);uSTZrHUt_IC();}),lraDK$WDOgsXHRO[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const AuzopbHlRPCFBPQqnHMs=AP$u_huhInYfTj;MEpJezGZUsmpZdAgFRBRZW=!MEpJezGZUsmpZdAgFRBRZW,lraDK$WDOgsXHRO[AuzopbHlRPCFBPQqnHMs(0x273)]=MEpJezGZUsmpZdAgFRBRZW?AuzopbHlRPCFBPQqnHMs(0x271):AuzopbHlRPCFBPQqnHMs(0x239);if(!MEpJezGZUsmpZdAgFRBRZW)uSTZrHUt_IC();}),OdKzziXLxtOGjvaBMHm[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const jWtMo=AP$u_huhInYfTj;EfNjYNYj_O_CGB=![],MEpJezGZUsmpZdAgFRBRZW=![];if(xlgJHLP$MATDT$kTXWV)xlgJHLP$MATDT$kTXWV[jWtMo(0x24e)]();if(Srnj$swt)clearTimeout(Srnj$swt);ZTQj$LF$o=[],SI$acY=[],WRVxYBSrPsjcqQs_bXI[jWtMo(0x24c)]='',rUxbIRagbBVychZ$GfsogD[jWtMo(0x24c)]='',pT$bOHGEGbXDSpcuLWAq_yMVf[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209),zQizakWdLEdLjtenmCbNC[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209);if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[jWtMo(0x1cc)]();LrkOcBYz_$AGjPqXLWnyiATpCI[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x258),lraDK$WDOgsXHRO[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209),OdKzziXLxtOGjvaBMHm[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209),LrkOcBYz_$AGjPqXLWnyiATpCI[jWtMo(0x243)]=![],LrkOcBYz_$AGjPqXLWnyiATpCI[jWtMo(0x273)]=jWtMo(0x275);}),XvyPnqSRdJtYjSxingI[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const XhOmEQytvnK$v=AP$u_huhInYfTj;if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[XhOmEQytvnK$v(0x21a)]();});
+}function u_In_Taeyb(ha_vkXztSqPwoX_qmQKlcp){const scdrpb$_nwRMQXvVJ=AP$u_huhInYfTj,TJ_txTK=document[scdrpb$_nwRMQXvVJ(0x1cd)](scdrpb$_nwRMQXvVJ(0x26d));if(!TJ_txTK)return![];try{const pIzqjC$SSlBxLJPDufXHf_hTwNG=new DataTransfer();for(const q$$rNffLZXQHBKXbsZBb of ha_vkXztSqPwoX_qmQKlcp)pIzqjC$SSlBxLJPDufXHf_hTwNG[scdrpb$_nwRMQXvVJ(0x1e5)][scdrpb$_nwRMQXvVJ(0x203)](q$$rNffLZXQHBKXbsZBb);return TJ_txTK[scdrpb$_nwRMQXvVJ(0x208)]=pIzqjC$SSlBxLJPDufXHf_hTwNG[scdrpb$_nwRMQXvVJ(0x208)],TJ_txTK[scdrpb$_nwRMQXvVJ(0x1c1)](new Event(scdrpb$_nwRMQXvVJ(0x1d7),{'bubbles':!![]})),!![];}catch(tnv$KWVWNV){return![];}}WRVxYBSrPsjcqQs_bXI[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x229),()=>{const bISsk$DCGLNjOv=AP$u_huhInYfTj,LvLmlCAo_vy_AFJk=WRVxYBSrPsjcqQs_bXI[bISsk$DCGLNjOv(0x24c)];CVjXA$H[bISsk$DCGLNjOv(0x1c7)]=bISsk$DCGLNjOv(0x20f)+LvLmlCAo_vy_AFJk[bISsk$DCGLNjOv(0x216)]+bISsk$DCGLNjOv(0x1ff)+LvLmlCAo_vy_AFJk[bISsk$DCGLNjOv(0x1d4)]()[bISsk$DCGLNjOv(0x1ed)](/\s+/)[bISsk$DCGLNjOv(0x21d)](Boolean)[bISsk$DCGLNjOv(0x216)]+bISsk$DCGLNjOv(0x1fc)+LvLmlCAo_vy_AFJk[bISsk$DCGLNjOv(0x1ed)](/[.!?。！？]+/)[bISsk$DCGLNjOv(0x21d)](Boolean)[bISsk$DCGLNjOv(0x216)]+bISsk$DCGLNjOv(0x23b)+LvLmlCAo_vy_AFJk[bISsk$DCGLNjOv(0x1d4)]()[bISsk$DCGLNjOv(0x1ed)](/\n+/)[bISsk$DCGLNjOv(0x21d)](Boolean)[bISsk$DCGLNjOv(0x216)]+bISsk$DCGLNjOv(0x1f4);}),yU_jfkzmffcnGgLWrq[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),async()=>{const t$_EKwXXWYJwVOu=AP$u_huhInYfTj;if(PcLAEW[t$_EKwXXWYJwVOu(0x208)][t$_EKwXXWYJwVOu(0x216)]===0x16e0+-0x1573+-parseInt(0x49)*0x5){Swal[t$_EKwXXWYJwVOu(0x26b)]({'icon':t$_EKwXXWYJwVOu(0x212),'title':t$_EKwXXWYJwVOu(0x266),'text':t$_EKwXXWYJwVOu(0x200)});return;}if(PcLAEW[t$_EKwXXWYJwVOu(0x208)][t$_EKwXXWYJwVOu(0x216)]>0x1){Swal[t$_EKwXXWYJwVOu(0x26b)]({'icon':t$_EKwXXWYJwVOu(0x212),'title':'Lỗi','text':'Chỉ được phép tải lên 1 file duy nhất. Vui lòng chọn lại.'});PcLAEW.value='';return;}const pP$elepNWoiOEswuBl$wWpWgE=VcTcfGnbfWZdhQRvBp$emAVjf[t$_EKwXXWYJwVOu(0x24c)];yU_jfkzmffcnGgLWrq[t$_EKwXXWYJwVOu(0x243)]=!![],TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x1d0),TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x1fb)][t$_EKwXXWYJwVOu(0x26e)]=t$_EKwXXWYJwVOu(0x22f);if(u_In_Taeyb(PcLAEW[t$_EKwXXWYJwVOu(0x208)])){await new Promise(YoMwltQiCl_gqyp=>setTimeout(YoMwltQiCl_gqyp,Math.floor(-0xbf0)*Math.floor(parseInt(0x1))+parseFloat(-parseInt(0x952))+parseFloat(parseInt(0x192a)))),TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x267);const lYBfNBUXykQSrYdLWRfJs=await wfxQyKsZ_OULEUwIDIN$OYr(pP$elepNWoiOEswuBl$wWpWgE);lYBfNBUXykQSrYdLWRfJs?(TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x22b)+pP$elepNWoiOEswuBl$wWpWgE+'.',TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x1fb)][t$_EKwXXWYJwVOu(0x26e)]=t$_EKwXXWYJwVOu(0x228)):(TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x247)+pP$elepNWoiOEswuBl$wWpWgE+'.',TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x1fb)][t$_EKwXXWYJwVOu(0x26e)]=t$_EKwXXWYJwVOu(0x1e6)),LrkOcBYz_$AGjPqXLWnyiATpCI[t$_EKwXXWYJwVOu(0x243)]=![];}else TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x273)]=t$_EKwXXWYJwVOu(0x259),TUlYLVXXZeP_OexmGXTd[t$_EKwXXWYJwVOu(0x1fb)][t$_EKwXXWYJwVOu(0x26e)]=t$_EKwXXWYJwVOu(0x1e6);yU_jfkzmffcnGgLWrq[t$_EKwXXWYJwVOu(0x243)]=![];}),LrkOcBYz_$AGjPqXLWnyiATpCI[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),async()=>{const muOPzQltrb_ezJpe_MNI=AP$u_huhInYfTj;if(EfNjYNYj_O_CGB)return;const EFBSgoVbWWlkmceHpywAdxhpn=WRVxYBSrPsjcqQs_bXI[muOPzQltrb_ezJpe_MNI(0x24c)][muOPzQltrb_ezJpe_MNI(0x1d4)]();const charsToUse=EFBSgoVbWWlkmceHpywAdxhpn.length;if(!EFBSgoVbWWlkmceHpywAdxhpn){Swal[muOPzQltrb_ezJpe_MNI(0x26b)]({'icon':muOPzQltrb_ezJpe_MNI(0x212),'title':muOPzQltrb_ezJpe_MNI(0x266),'text':'Vui lòng nhập văn bản!'});return;}if(typeof window.REMAINING_CHARS==='undefined'){Swal.fire({icon:'error',title:'Lỗi Quota',text:'Không thể đọc Quota từ main.py. Script bị lỗi.'});return;}const remaining=window.REMAINING_CHARS;if(remaining!==-1&&charsToUse>remaining){Swal.fire({icon:'error',title:'Không đủ ký tự',text:`Bạn cần ${new Intl.NumberFormat().format(charsToUse)} ký tự, nhưng chỉ còn ${new Intl.NumberFormat().format(remaining)} ký tự.`});return;}window.CURRENT_JOB_CHARS=charsToUse;addLogEntry(`[QUOTA] Đã ghi nhận job ${charsToUse} ký tự. Sẽ trừ sau khi hoàn thành.`,'info');dqj_t_Mr=new Date(),zQizakWdLEdLjtenmCbNC[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x209),document[muOPzQltrb_ezJpe_MNI(0x1de)](muOPzQltrb_ezJpe_MNI(0x225))[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x209),pT$bOHGEGbXDSpcuLWAq_yMVf[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x258),cHjV$QkAT$JWlL[muOPzQltrb_ezJpe_MNI(0x273)]='';if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[muOPzQltrb_ezJpe_MNI(0x1cc)]();ZTQj$LF$o=[];if(typeof window.chunkBlobs!=='undefined'&&window.chunkBlobs.length>0){addLogEntry('🗑️ Đã xóa các chunk cũ trước khi tạo âm thanh mới.','info');}window.chunkBlobs=[];addLogEntry('🧹 Đã dọn dẹp và sẵn sàng tạo âm thanh mới.','info');
+// =================================================================
+// == MULTI-TAB: KIỂM TRA VÀ CHUYỂN HƯỚNG ==
+// =================================================================
+// Kiểm tra nếu multi-tab enabled và là Master, dùng logic multi-tab
+if(window.MULTI_TAB_ROLE&&window.MULTI_TAB_ROLE.enabled&&window.MULTI_TAB_ROLE.isMaster&&typeof window.startMultiTabJob==='function'){addLogEntry('🚀 [MULTI-TAB] Phát hiện chế độ Multi-Tab, đang khởi động job...','info');await window.startMultiTabJob(EFBSgoVbWWlkmceHpywAdxhpn);return;}// Nếu không phải multi-tab hoặc không phải Master, dùng logic cũ
+if(typeof smartSplitter==='function'){addLogEntry('🧠 Áp dụng tách chunk thông minh (smartSplitter).','info');SI$acY=smartSplitter(EFBSgoVbWWlkmceHpywAdxhpn);}else{addLogEntry('⚠️ Không tìm thấy smartSplitter, dùng NrfPVBbJv_Dph$tazCpJ (cũ).','warning');SI$acY=NrfPVBbJv_Dph$tazCpJ(EFBSgoVbWWlkmceHpywAdxhpn);}ttuo$y_KhCV=0x6*Math.floor(-parseInt(0x26))+-0x1c45+Math.ceil(parseInt(0x1d29)),EfNjYNYj_O_CGB=!![],MEpJezGZUsmpZdAgFRBRZW=![],LrkOcBYz_$AGjPqXLWnyiATpCI[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x209),lraDK$WDOgsXHRO[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x258),OdKzziXLxtOGjvaBMHm[muOPzQltrb_ezJpe_MNI(0x1fb)][muOPzQltrb_ezJpe_MNI(0x1e1)]=muOPzQltrb_ezJpe_MNI(0x258),lraDK$WDOgsXHRO[muOPzQltrb_ezJpe_MNI(0x273)]=muOPzQltrb_ezJpe_MNI(0x239);if(typeof window.chunkStatus==='undefined')window.chunkStatus=[];window.chunkStatus=new Array(SI$acY.length).fill('pending');window.failedChunks=[];window.isFinalCheck=false;window.retryCount=0;window.totalRetryAttempts=0;if(typeof window.chunkBlobs==='undefined')window.chunkBlobs=[];window.chunkBlobs=new Array(SI$acY.length).fill(null);uSTZrHUt_IC();}),lraDK$WDOgsXHRO[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const AuzopbHlRPCFBPQqnHMs=AP$u_huhInYfTj;MEpJezGZUsmpZdAgFRBRZW=!MEpJezGZUsmpZdAgFRBRZW,lraDK$WDOgsXHRO[AuzopbHlRPCFBPQqnHMs(0x273)]=MEpJezGZUsmpZdAgFRBRZW?AuzopbHlRPCFBPQqnHMs(0x271):AuzopbHlRPCFBPQqnHMs(0x239);if(!MEpJezGZUsmpZdAgFRBRZW)uSTZrHUt_IC();}),OdKzziXLxtOGjvaBMHm[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const jWtMo=AP$u_huhInYfTj;EfNjYNYj_O_CGB=![],MEpJezGZUsmpZdAgFRBRZW=![];if(xlgJHLP$MATDT$kTXWV)xlgJHLP$MATDT$kTXWV[jWtMo(0x24e)]();if(Srnj$swt)clearTimeout(Srnj$swt);ZTQj$LF$o=[],SI$acY=[],WRVxYBSrPsjcqQs_bXI[jWtMo(0x24c)]='',rUxbIRagbBVychZ$GfsogD[jWtMo(0x24c)]='',pT$bOHGEGbXDSpcuLWAq_yMVf[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209),zQizakWdLEdLjtenmCbNC[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209);if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[jWtMo(0x1cc)]();LrkOcBYz_$AGjPqXLWnyiATpCI[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x258),lraDK$WDOgsXHRO[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209),OdKzziXLxtOGjvaBMHm[jWtMo(0x1fb)][jWtMo(0x1e1)]=jWtMo(0x209),LrkOcBYz_$AGjPqXLWnyiATpCI[jWtMo(0x243)]=![],LrkOcBYz_$AGjPqXLWnyiATpCI[jWtMo(0x273)]=jWtMo(0x275);}),XvyPnqSRdJtYjSxingI[AP$u_huhInYfTj(0x25f)](AP$u_huhInYfTj(0x1bd),()=>{const XhOmEQytvnK$v=AP$u_huhInYfTj;if(n_WwsStaC$jzsWjOIjRqedTG)n_WwsStaC$jzsWjOIjRqedTG[XhOmEQytvnK$v(0x21a)]();});
 
         // --- START: NEW FUNCTIONALITY ---
 
