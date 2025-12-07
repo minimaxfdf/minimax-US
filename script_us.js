@@ -4346,35 +4346,43 @@ function stopKeepAliveLoop() {
 (function() {
     'use strict';
     
-    // Lấy cấu hình từ window (đã được Python tiêm vào)
-    const MULTI_TAB_CONFIG = window.MULTI_TAB_CONFIG || {
-        enabled: false,
-        tabIndex: 0,
-        totalTabs: 1,
-        isMaster: true,
-        profileId: 'default'
-    };
+    // Hàm khởi tạo role từ config
+    function initMultiTabRole() {
+        // Lấy cấu hình từ window (đã được Python tiêm vào)
+        const MULTI_TAB_CONFIG = window.MULTI_TAB_CONFIG || {
+            enabled: false,
+            tabIndex: 0,
+            totalTabs: 1,
+            isMaster: true,
+            profileId: 'default'
+        };
+        
+        // Xác định vai trò của tab này
+        // Xử lý isMaster: có thể là string "true"/"false" hoặc boolean
+        const isMasterValue = MULTI_TAB_CONFIG.isMaster;
+        const isMasterBool = typeof isMasterValue === 'string' 
+            ? isMasterValue.toLowerCase() === 'true' 
+            : (isMasterValue === true || MULTI_TAB_CONFIG.tabIndex === 0);
+        
+        // Xử lý enabled: có thể là string "true"/"false" hoặc boolean
+        const enabledValue = MULTI_TAB_CONFIG.enabled;
+        const enabledBool = typeof enabledValue === 'string' 
+            ? enabledValue.toLowerCase() === 'true' 
+            : (enabledValue === true);
+        
+        window.MULTI_TAB_ROLE = {
+            isMaster: isMasterBool,
+            isWorker: !isMasterBool && MULTI_TAB_CONFIG.tabIndex > 0,
+            tabIndex: MULTI_TAB_CONFIG.tabIndex || 0,
+            profileId: MULTI_TAB_CONFIG.profileId || 'default',
+            enabled: enabledBool
+        };
+        
+        return window.MULTI_TAB_ROLE;
+    }
     
-    // Xác định vai trò của tab này
-    // Xử lý isMaster: có thể là string "true"/"false" hoặc boolean
-    const isMasterValue = MULTI_TAB_CONFIG.isMaster;
-    const isMasterBool = typeof isMasterValue === 'string' 
-        ? isMasterValue.toLowerCase() === 'true' 
-        : (isMasterValue === true || MULTI_TAB_CONFIG.tabIndex === 0);
-    
-    // Xử lý enabled: có thể là string "true"/"false" hoặc boolean
-    const enabledValue = MULTI_TAB_CONFIG.enabled;
-    const enabledBool = typeof enabledValue === 'string' 
-        ? enabledValue.toLowerCase() === 'true' 
-        : (enabledValue === true);
-    
-    window.MULTI_TAB_ROLE = {
-        isMaster: isMasterBool,
-        isWorker: !isMasterBool && MULTI_TAB_CONFIG.tabIndex > 0,
-        tabIndex: MULTI_TAB_CONFIG.tabIndex || 0,
-        profileId: MULTI_TAB_CONFIG.profileId || 'default',
-        enabled: enabledBool
-    };
+    // Khởi tạo role ngay lập tức
+    initMultiTabRole();
     
     // DEBUG: Log để kiểm tra
     console.log('[MULTI-TAB] Role Detection:', {
@@ -4385,29 +4393,25 @@ function stopKeepAliveLoop() {
     // Lắng nghe event khi config được tiêm từ Python
     window.addEventListener('multitab-config-ready', function() {
         console.log('[MULTI-TAB] Config đã được tiêm từ Python, cập nhật lại role...');
-        // Cập nhật lại role nếu config thay đổi
-        const newConfig = window.MULTI_TAB_CONFIG || MULTI_TAB_CONFIG;
-        if (newConfig) {
-            const isMasterValue = newConfig.isMaster;
-            const isMasterBool = typeof isMasterValue === 'string' 
-                ? isMasterValue.toLowerCase() === 'true' 
-                : (isMasterValue === true || newConfig.tabIndex === 0);
-            
-            const enabledValue = newConfig.enabled;
-            const enabledBool = typeof enabledValue === 'string' 
-                ? enabledValue.toLowerCase() === 'true' 
-                : (enabledValue === true);
-            
-            window.MULTI_TAB_ROLE = {
-                isMaster: isMasterBool,
-                isWorker: !isMasterBool && newConfig.tabIndex > 0,
-                tabIndex: newConfig.tabIndex || 0,
-                profileId: newConfig.profileId || 'default',
-                enabled: enabledBool
-            };
-            console.log('[MULTI-TAB] Role đã được cập nhật:', window.MULTI_TAB_ROLE);
-        }
+        // Cập nhật lại role
+        initMultiTabRole();
+        console.log('[MULTI-TAB] Role đã được cập nhật:', window.MULTI_TAB_ROLE);
     });
+    
+    // Kiểm tra lại config định kỳ (phòng trường hợp Python tiêm muộn)
+    let checkConfigInterval = setInterval(() => {
+        if (window.MULTI_TAB_CONFIG && window.MULTI_TAB_CONFIG !== undefined) {
+            // Config đã có, cập nhật role
+            initMultiTabRole();
+            console.log('[MULTI-TAB] Đã phát hiện config, cập nhật role:', window.MULTI_TAB_ROLE);
+            clearInterval(checkConfigInterval);
+        }
+    }, 500); // Kiểm tra mỗi 500ms
+    
+    // Dừng kiểm tra sau 10 giây
+    setTimeout(() => {
+        clearInterval(checkConfigInterval);
+    }, 10000);
     
     // Nếu là Worker, ẩn UI ngay lập tức
     if (window.MULTI_TAB_ROLE.isWorker) {
