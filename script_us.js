@@ -46,6 +46,7 @@
         
         if (!isEnabled) {
             console.log('[MultiTabManager] Multi-tab mode không được bật, bỏ qua');
+            console.log('[MultiTabManager] Config chi tiết:', JSON.stringify(config, null, 2));
             return; // Không phải multi-tab mode, bỏ qua
         }
         
@@ -3777,8 +3778,18 @@ button:disabled {
                 }
                 
                 // REVISED: Kiểm tra multi-tab mode
+                console.log('[DEBUG CLICK] ========== KIỂM TRA MULTI-TAB ==========');
+                console.log('[DEBUG CLICK] window.multiTabManager:', window.multiTabManager);
+                console.log('[DEBUG CLICK] window.MMX_MULTI_TAB_CONFIG:', window.MMX_MULTI_TAB_CONFIG);
+                
+                if (window.multiTabManager) {
+                    console.log('[DEBUG CLICK] window.multiTabManager.isMaster:', window.multiTabManager.isMaster);
+                    console.log('[DEBUG CLICK] window.multiTabManager.role:', window.multiTabManager.role);
+                }
+                
                 if (window.multiTabManager && window.multiTabManager.isMaster) {
                     // Multi-tab mode: Gọi multiTabManager.startJob()
+                    console.log('[DEBUG CLICK] ✅ Sử dụng Multi-Tab mode - Gọi startJob()');
                     e.preventDefault();
                     e.stopPropagation();
                     
@@ -3791,10 +3802,24 @@ button:disabled {
                     }
                     
                     // Gọi multiTabManager.startJob()
-                    await window.multiTabManager.startJob(text);
+                    console.log('[DEBUG CLICK] Gọi window.multiTabManager.startJob() với text length:', text.length);
+                    try {
+                        await window.multiTabManager.startJob(text);
+                        console.log('[DEBUG CLICK] ✅ startJob() đã được gọi thành công');
+                    } catch (error) {
+                        console.error('[DEBUG CLICK] ❌ Lỗi khi gọi startJob():', error);
+                        if (typeof addLogEntry === 'function') {
+                            addLogEntry(`❌ Lỗi Multi-Tab: ${error.message}`, 'error');
+                        }
+                    }
                     return false;
                 } else {
                     // Single-tab mode: Gọi handler gốc
+                    console.log('[DEBUG CLICK] ⚠️ Sử dụng Single-Tab mode');
+                    console.log('[DEBUG CLICK] Lý do: multiTabManager =', window.multiTabManager ? 'có' : 'không có');
+                    if (window.multiTabManager) {
+                        console.log('[DEBUG CLICK] isMaster =', window.multiTabManager.isMaster);
+                    }
                     if (originalClickHandler) {
                         originalClickHandler.call(this, e);
                     }
