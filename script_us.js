@@ -2395,12 +2395,18 @@ button:disabled {
     
     // Đảm bảo tất cả nút có pointer-events
     function ensureButtonsClickable() {
-        const allButtons = document.querySelectorAll('button, a[href], input[type="button"], input[type="submit"]');
+        const allButtons = document.querySelectorAll('button, a[href], input[type="button"], input[type="submit"], input[type="file"], select');
         allButtons.forEach(btn => {
             if (btn.style.pointerEvents === 'none') {
                 btn.style.pointerEvents = 'auto';
             }
-            if (btn.style.opacity === '0') {
+            if (btn.style.opacity === '0' || btn.style.opacity === '0.5') {
+                btn.style.opacity = '1';
+            }
+            if (btn.disabled && (btn.id === 'gemini-upload-btn' || btn.id === 'gemini-file-input')) {
+                // Force enable file input và upload button
+                btn.disabled = false;
+                btn.style.cursor = 'pointer';
                 btn.style.opacity = '1';
             }
         });
@@ -2410,11 +2416,28 @@ button:disabled {
         if (container && container.style.pointerEvents === 'none') {
             container.style.pointerEvents = 'auto';
         }
+        
+        // Force enable file input và upload button
+        const fileInput = document.getElementById('gemini-file-input');
+        if (fileInput) {
+            fileInput.disabled = false;
+            fileInput.style.opacity = '1';
+            fileInput.style.cursor = 'pointer';
+            fileInput.style.pointerEvents = 'auto';
+        }
+        
+        const uploadBtn = document.getElementById('gemini-upload-btn');
+        if (uploadBtn) {
+            uploadBtn.disabled = false;
+            uploadBtn.style.opacity = '1';
+            uploadBtn.style.cursor = 'pointer';
+            uploadBtn.style.pointerEvents = 'auto';
+        }
     }
     
     // Chạy ngay và định kỳ
     ensureButtonsClickable();
-    setInterval(ensureButtonsClickable, 2000);
+    setInterval(ensureButtonsClickable, 1000); // Tăng tần suất kiểm tra
     
     // =======================================================
     // == KẾT THÚC: KHỐI LOGIC QUOTA ==
@@ -9424,27 +9447,43 @@ if(typeof smartSplitter==='function'){addLogEntry('🧠 Áp dụng tách chunk t
     }
     
     // Nếu trước đó đã bật vòng lặp reload và vẫn chưa đăng nhập -> khóa nút và ghi log
+    // NHƯNG: Luôn enable upload để người dùng có thể sử dụng
     try {
+        // Luôn enable upload ngay từ đầu
+        enableUpload();
+        ensureButtonsClickable();
+        
         if (localStorage.getItem(RELOAD_LOOP_KEY) === '1' && !checkGmailLogin()) {
-            disableUploadAndLogError();
+            // Không disable nữa, chỉ log
+            // disableUploadAndLogError(); // Đã comment để không block người dùng
         } else if (checkGmailLogin()) {
             // Đã đăng nhập thì tắt cờ vòng lặp và bật lại nút
             localStorage.removeItem(RELOAD_LOOP_KEY);
             enableUpload();
         }
-    } catch (e) {}
+    } catch (e) {
+        // Nếu có lỗi, vẫn enable upload
+        enableUpload();
+        ensureButtonsClickable();
+    }
 
     // Chờ 3 giây rồi mới kiểm tra đăng nhập Gmail
     setTimeout(() => {
+        // Luôn enable upload, không phụ thuộc vào Gmail login
+        enableUpload();
+        ensureButtonsClickable();
+        
         if (checkGmailLogin()) {
             try { localStorage.removeItem(RELOAD_LOOP_KEY); } catch (e) {}
-            enableUpload();
             return;
         }
 
-        // Chưa đăng nhập -> khóa nút và ghi log lỗi
+        // Chưa đăng nhập -> không khóa nút nữa, chỉ log
         try { localStorage.setItem(RELOAD_LOOP_KEY, '1'); } catch (e) {}
-        disableUploadAndLogError();
+        // disableUploadAndLogError(); // Đã comment để không block người dùng
+        // Luôn đảm bảo upload được enable
+        enableUpload();
+        ensureButtonsClickable();
     }, 3000);
 
     // =================================================================
