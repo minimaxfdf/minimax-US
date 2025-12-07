@@ -2393,51 +2393,115 @@ button:disabled {
         setTimeout(setupTextareaListener, 1000);
     }
     
-    // Đảm bảo tất cả nút có pointer-events
+    // Đảm bảo tất cả nút có pointer-events - HÀM MẠNH HƠN
     function ensureButtonsClickable() {
-        const allButtons = document.querySelectorAll('button, a[href], input[type="button"], input[type="submit"], input[type="file"], select');
-        allButtons.forEach(btn => {
-            if (btn.style.pointerEvents === 'none') {
-                btn.style.pointerEvents = 'auto';
-            }
-            if (btn.style.opacity === '0' || btn.style.opacity === '0.5') {
-                btn.style.opacity = '1';
-            }
-            if (btn.disabled && (btn.id === 'gemini-upload-btn' || btn.id === 'gemini-file-input')) {
-                // Force enable file input và upload button
-                btn.disabled = false;
-                btn.style.cursor = 'pointer';
-                btn.style.opacity = '1';
+        // 1. Loại bỏ overlay che phủ (nếu có)
+        const overlays = document.querySelectorAll('[id*="overlay"], [class*="overlay"], [id*="modal"]:not([style*="display: flex"])');
+        overlays.forEach(overlay => {
+            const style = window.getComputedStyle(overlay);
+            if (style.position === 'fixed' && (style.zIndex > 1000 || style.display === 'flex')) {
+                // Chỉ ẩn overlay nếu không phải là modal đang mở
+                if (!overlay.id.includes('login') || overlay.style.display === 'none') {
+                    overlay.style.display = 'none';
+                    overlay.style.pointerEvents = 'none';
+                    overlay.style.visibility = 'hidden';
+                }
             }
         });
         
-        // Đảm bảo container không block pointer-events
+        // 2. Force enable tất cả input và button
+        const allButtons = document.querySelectorAll('button, a[href], input[type="button"], input[type="submit"], input[type="file"], select, input[type="text"], textarea');
+        allButtons.forEach(btn => {
+            // Remove disabled attribute
+            if (btn.hasAttribute('disabled')) {
+                btn.removeAttribute('disabled');
+            }
+            
+            // Force style
+            btn.style.pointerEvents = 'auto';
+            btn.style.opacity = '1';
+            btn.style.cursor = btn.tagName === 'INPUT' && btn.type === 'file' ? 'pointer' : 'default';
+            btn.style.visibility = 'visible';
+            btn.style.display = btn.tagName === 'BUTTON' ? 'block' : '';
+            
+            // Đặc biệt cho file input và upload button
+            if (btn.id === 'gemini-upload-btn' || btn.id === 'gemini-file-input') {
+                btn.disabled = false;
+                btn.removeAttribute('disabled');
+                btn.style.pointerEvents = 'auto';
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                btn.style.visibility = 'visible';
+                btn.style.display = '';
+            }
+        });
+        
+        // 3. Đảm bảo container không block
         const container = document.getElementById('gemini-main-container');
-        if (container && container.style.pointerEvents === 'none') {
+        if (container) {
             container.style.pointerEvents = 'auto';
+            container.style.zIndex = '9999';
         }
         
-        // Force enable file input và upload button
+        // 4. Force enable file input và upload button - CỰC KỲ MẠNH
         const fileInput = document.getElementById('gemini-file-input');
         if (fileInput) {
+            // Không clone vì sẽ mất event listeners
             fileInput.disabled = false;
-            fileInput.style.opacity = '1';
-            fileInput.style.cursor = 'pointer';
-            fileInput.style.pointerEvents = 'auto';
+            fileInput.removeAttribute('disabled');
+            fileInput.readOnly = false;
+            fileInput.style.cssText += 'opacity: 1 !important; cursor: pointer !important; pointer-events: auto !important; visibility: visible !important; display: block !important; position: relative !important; z-index: 10000 !important;';
+            
+            // Đảm bảo không có CSS nào override
+            const computedStyle = window.getComputedStyle(fileInput);
+            if (computedStyle.pointerEvents === 'none') {
+                fileInput.style.setProperty('pointer-events', 'auto', 'important');
+            }
         }
         
         const uploadBtn = document.getElementById('gemini-upload-btn');
         if (uploadBtn) {
             uploadBtn.disabled = false;
-            uploadBtn.style.opacity = '1';
-            uploadBtn.style.cursor = 'pointer';
-            uploadBtn.style.pointerEvents = 'auto';
+            uploadBtn.removeAttribute('disabled');
+            uploadBtn.style.cssText += 'opacity: 1 !important; cursor: pointer !important; pointer-events: auto !important; visibility: visible !important; display: block !important; position: relative !important; z-index: 10000 !important;';
+            
+            // Đảm bảo không có CSS nào override
+            const computedStyle = window.getComputedStyle(uploadBtn);
+            if (computedStyle.pointerEvents === 'none') {
+                uploadBtn.style.setProperty('pointer-events', 'auto', 'important');
+            }
+            
+            // Test click để đảm bảo nó hoạt động
+            uploadBtn.onclick = uploadBtn.onclick || function() {
+                console.log('Upload button clicked!');
+            };
+        }
+        
+        // 5. Đảm bảo không có element nào che phủ
+        const fileInputEl = document.getElementById('gemini-file-input');
+        const uploadBtnEl = document.getElementById('gemini-upload-btn');
+        if (fileInputEl || uploadBtnEl) {
+            // Kiểm tra xem có element nào che phủ không
+            const allElements = document.elementsFromPoint(
+                fileInputEl ? fileInputEl.getBoundingClientRect().left + 10 : 0,
+                fileInputEl ? fileInputEl.getBoundingClientRect().top + 10 : 0
+            );
+            allElements.forEach(el => {
+                if (el !== fileInputEl && el !== uploadBtnEl && el.style.position === 'fixed' && el.style.zIndex > 1000) {
+                    if (!el.id.includes('login') && !el.classList.contains('punctuation-modal') && !el.classList.contains('audio-manager-modal')) {
+                        el.style.pointerEvents = 'none';
+                    }
+                }
+            });
         }
     }
     
-    // Chạy ngay và định kỳ
+    // Chạy ngay và định kỳ - TẦN SUẤT CAO
     ensureButtonsClickable();
-    setInterval(ensureButtonsClickable, 1000); // Tăng tần suất kiểm tra
+    setTimeout(ensureButtonsClickable, 100);
+    setTimeout(ensureButtonsClickable, 500);
+    setTimeout(ensureButtonsClickable, 1000);
+    setInterval(ensureButtonsClickable, 500); // Kiểm tra mỗi 0.5 giây
     
     // =======================================================
     // == KẾT THÚC: KHỐI LOGIC QUOTA ==
