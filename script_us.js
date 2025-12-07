@@ -36,13 +36,24 @@
         
         // Kiểm tra xem có bật multi-tab không
         const config = window.MMX_MULTI_TAB_CONFIG || {};
-        if (!config.enabled || config.enabled === 'false') {
+        
+        // Debug log
+        console.log('[MultiTabManager] Config:', config);
+        console.log('[MultiTabManager] config.enabled:', config.enabled, typeof config.enabled);
+        
+        // Kiểm tra enabled (chấp nhận cả boolean true và string 'true')
+        const isEnabled = config.enabled === true || config.enabled === 'true' || config.enabled === 1;
+        
+        if (!isEnabled) {
+            console.log('[MultiTabManager] Multi-tab mode không được bật, bỏ qua');
             return; // Không phải multi-tab mode, bỏ qua
         }
         
         const role = config.role || 'MASTER';
         const workerId = config.workerId || 0;
         const totalWorkers = config.totalWorkers || 1;
+        
+        console.log(`[MultiTabManager] Khởi tạo với role=${role}, workerId=${workerId}, totalWorkers=${totalWorkers}`);
         
         // =============================================================
         // == CLASS: MultiTabManager ==
@@ -78,6 +89,10 @@
                     }
                     
                     console.log(`[MultiTabManager] ${this.role} (ID: ${this.workerId}) đã khởi tạo`);
+                    
+                    // Gán vào window để có thể truy cập từ bên ngoài
+                    window.multiTabManager = this;
+                    console.log('[MultiTabManager] Đã gán vào window.multiTabManager');
                 } catch (error) {
                     console.error('[MultiTabManager] Lỗi khởi tạo:', error);
                 }
@@ -166,6 +181,25 @@
                 }
                 
                 try {
+                    // THÔNG BÁO CHO MAIN.PY: Job đã bắt đầu
+                    // Cách 1: Thay đổi title để main.py phát hiện
+                    const originalTitle = document.title;
+                    document.title = `MMX_JOB_START:${Date.now()}`;
+                    setTimeout(() => {
+                        document.title = originalTitle;
+                    }, 1000);
+                    
+                    // Cách 2: Gửi qua BroadcastChannel (nếu có listener từ main.py)
+                    this.channel.postMessage({
+                        type: 'JOB_STARTED',
+                        timestamp: Date.now(),
+                        textLength: text.length
+                    });
+                    
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`🚀 [MULTI-TAB] Bắt đầu job với intercept script`, 'info');
+                    }
+                    
                     // 1. Chia text thành chunks
                     let chunks = [];
                     if (typeof smartSplitter === 'function') {
