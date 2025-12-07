@@ -580,6 +580,17 @@
                         
                         // Đóng Worker tabs sau khi merge xong
                         await this.closeWorkerTabs();
+                        
+                        // --- FIX: HIỆN LẠI NÚT BẮT ĐẦU SAU KHI XONG ---
+                        const startBtn = document.getElementById('gemini-start-queue-btn');
+                        if (startBtn) {
+                            startBtn.disabled = false;
+                            startBtn.style.display = 'block';
+                            if (startBtn.textContent !== 'Bắt đầu tạo âm thanh') {
+                                startBtn.textContent = 'Bắt đầu tạo âm thanh';
+                            }
+                        }
+                        // ----------------------------------------------
                     };
                 } catch (error) {
                     console.error('[MultiTabManager] Lỗi merge:', error);
@@ -8962,7 +8973,14 @@ async function waitForVoiceModelReady() {
     const playPauseWaveformBtn = document.getElementById('waveform-play-pause');
 
     if (startBtn) {
-        startBtn.addEventListener('click', () => {
+        startBtn.addEventListener('click', (e) => {
+            // --- FIX: CHẶN CODE CŨ KHI DÙNG MULTI-TAB ---
+            if (window.multiTabManager && window.multiTabManager.isMaster) {
+                console.log('🛑 [Legacy Listener] Phát hiện Multi-Tab Mode -> Dừng listener cũ để ưu tiên startJob()');
+                return; 
+            }
+            // ---------------------------------------------
+            
             // [BẮT ĐẦU CODE THAY THẾ]
 
             // 1. Lấy và làm sạch văn bản (Giữ nguyên từ code mới)
