@@ -132,6 +132,15 @@
                                 addLogEntry(`[Worker ${message.workerId}] ${message.status}`, 'info');
                             }
                             break;
+                        case 'CLOSE_WORKER':
+                            // Worker tự đóng tab khi nhận lệnh
+                            if (this.isWorker) {
+                                console.log(`[Worker ${this.workerId}] Nhận lệnh đóng tab`);
+                                setTimeout(() => {
+                                    window.close();
+                                }, 1000); // Đợi 1 giây rồi đóng
+                            }
+                            break;
                     }
                 });
             }
@@ -185,17 +194,34 @@
                     // 4. Lưu metadata job
                     await this.saveJobMetadata(totalChunks);
                     
-                    // 5. Gửi tín hiệu START_JOB qua BroadcastChannel
+                    // 4.5. Lưu voice/language config từ Master tab để Worker tabs sử dụng
+                    await this.saveVoiceConfig();
+                    
+                    // 5. MỞ WORKER TABS ĐỘNG (dựa vào số chunks)
+                    // Tính số Worker tabs cần mở: tối đa 2 tabs, hoặc dựa vào số chunks
+                    const maxWorkers = this.multi_tab_config?.num_workers || 2;
+                    const numWorkersNeeded = Math.min(
+                        maxWorkers, // Tối đa số Worker theo config
+                        Math.max(1, Math.ceil(totalChunks / 5)) // Ít nhất 1 tab, hoặc dựa vào số chunks (mỗi tab xử lý ~5 chunks)
+                    );
+                    
+                    if (numWorkersNeeded > 0) {
+                        await this.openWorkerTabs(numWorkersNeeded);
+                        // Cập nhật totalWorkers sau khi mở tabs
+                        this.totalWorkers = 1 + numWorkersNeeded; // 1 Master + N Workers
+                    }
+                    
+                    // 6. Gửi tín hiệu START_JOB qua BroadcastChannel
                     this.channel.postMessage({
                         type: 'START_JOB',
                         totalChunks: totalChunks,
                         timestamp: Date.now()
                     });
                     
-                    // 6. Master cũng bắt đầu render chunks của mình
+                    // 7. Master cũng bắt đầu render chunks của mình
                     this.processMasterChunks();
                     
-                    // 7. Bắt đầu giám sát (watchdog)
+                    // 8. Bắt đầu giám sát (watchdog)
                     this.startWatchdog();
                     
                 } catch (error) {
@@ -203,6 +229,59 @@
                     if (typeof addLogEntry === 'function') {
                         addLogEntry(`❌ [MULTI-TAB] Lỗi: ${error.message}`, 'error');
                     }
+                }
+            }
+            
+            // Mở Worker tabs động (dựa vào số chunks)
+            async openWorkerTabs(numWorkers) {
+                if (!this.isMaster) return;
+                
+                const targetUrl = 'https://www.minimax.io/audio/voices-cloning';
+                
+                if (typeof addLogEntry === 'function') {
+                    addLogEntry(`🔧 [MULTI-TAB] Đang mở ${numWorkers} Worker tab(s) để xử lý song song...`, 'info');
+                }
+                
+                for (let i = 0; i < numWorkers; i++) {
+                    try {
+                        // Mở tab mới
+                        const newWindow = window.open(targetUrl, '_blank');
+                        
+                        if (newWindow) {
+                            // Chờ tab load xong (cần thời gian để tab mới load script)
+                            await new Promise(resolve => setTimeout(resolve, 3000));
+                            
+                            if (typeof addLogEntry === 'function') {
+                                addLogEntry(`✅ [MULTI-TAB] Đã mở Worker tab ${i + 1}`, 'info');
+                            }
+                        } else {
+                            console.warn(`[MultiTabManager] Không thể mở Worker tab ${i + 1} (bị chặn popup?)`);
+                            if (typeof addLogEntry === 'function') {
+                                addLogEntry(`⚠️ [MULTI-TAB] Không thể mở Worker tab ${i + 1} (có thể bị chặn popup)`, 'warning');
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`[MultiTabManager] Lỗi mở Worker tab ${i + 1}:`, error);
+                    }
+                }
+            }
+            
+            // Đóng Worker tabs sau khi job hoàn thành
+            async closeWorkerTabs() {
+                if (!this.isMaster) return;
+                
+                try {
+                    // Gửi lệnh đóng qua BroadcastChannel để Worker tabs tự đóng
+                    this.channel.postMessage({
+                        type: 'CLOSE_WORKER',
+                        timestamp: Date.now()
+                    });
+                    
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`🔒 [MULTI-TAB] Đã yêu cầu đóng Worker tabs`, 'info');
+                    }
+                } catch (error) {
+                    console.error('[MultiTabManager] Lỗi đóng Worker tabs:', error);
                 }
             }
             
@@ -258,6 +337,87 @@
                 });
             }
             
+            // Lưu voice/language config từ Master tab
+            async saveVoiceConfig() {
+                if (!this.isMaster) return;
+                
+                try {
+                    // Lấy language từ select box
+                    const languageSelect = document.getElementById('gemini-language-select');
+                    const language = languageSelect ? languageSelect.value : null;
+                    
+                    // Lấy voice ID từ payload đầu tiên hoặc từ DOM
+                    // Tìm voice ID từ các nguồn có thể:
+                    // 1. Từ payload đã intercept (nếu có)
+                    // 2. Từ DOM elements
+                    let voiceId = null;
+                    
+                    // Thử lấy từ window nếu đã có (từ request trước đó)
+                    if (window.lastVoiceId) {
+                        voiceId = window.lastVoiceId;
+                    } else {
+                        // Thử tìm trong DOM
+                        const voiceElements = document.querySelectorAll('[data-voice-id], [voice-id], .voice-item[data-id]');
+                        if (voiceElements.length > 0) {
+                            const selectedVoice = Array.from(voiceElements).find(el => 
+                                el.classList.contains('selected') || 
+                                el.classList.contains('active') ||
+                                el.getAttribute('aria-selected') === 'true'
+                            );
+                            if (selectedVoice) {
+                                voiceId = selectedVoice.getAttribute('data-voice-id') || 
+                                          selectedVoice.getAttribute('voice-id') ||
+                                          selectedVoice.getAttribute('data-id');
+                            }
+                        }
+                    }
+                    
+                    // Lưu vào IndexedDB
+                    const transaction = this.db.transaction(['system'], 'readwrite');
+                    const store = transaction.objectStore('system');
+                    
+                    await new Promise((resolve, reject) => {
+                        const request = store.put({
+                            key: 'voiceConfig',
+                            language: language,
+                            voiceId: voiceId,
+                            timestamp: Date.now()
+                        });
+                        request.onsuccess = () => {
+                            if (typeof addLogEntry === 'function') {
+                                addLogEntry(`💾 [MULTI-TAB] Đã lưu config: Language=${language}, VoiceId=${voiceId || 'auto-detect'}`, 'info');
+                            }
+                            resolve();
+                        };
+                        request.onerror = () => reject(request.error);
+                    });
+                } catch (error) {
+                    console.error('[MultiTabManager] Lỗi lưu voice config:', error);
+                }
+            }
+            
+            // Đọc voice/language config từ IndexedDB (cho Worker tabs)
+            async getVoiceConfig() {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['system'], 'readonly');
+                    const store = transaction.objectStore('system');
+                    const request = store.get('voiceConfig');
+                    
+                    request.onsuccess = () => {
+                        const config = request.result;
+                        if (config) {
+                            resolve({
+                                language: config.language,
+                                voiceId: config.voiceId
+                            });
+                        } else {
+                            resolve(null);
+                        }
+                    };
+                    request.onerror = () => reject(request.error);
+                });
+            }
+            
             startWatchdog() {
                 // Giám sát tiến độ mỗi 5 giây
                 setInterval(async () => {
@@ -275,6 +435,8 @@
                         // Nếu tất cả chunks đã xong, merge và download
                         if (progress.completed === progress.total && progress.total > 0) {
                             await this.mergeAndDownload();
+                            // Đóng Worker tabs sau khi merge xong
+                            await this.closeWorkerTabs();
                         }
                     } catch (error) {
                         console.error('[MultiTabManager] Lỗi watchdog:', error);
@@ -380,6 +542,9 @@
                         
                         // Dọn dẹp
                         await this.clearOldData();
+                        
+                        // Đóng Worker tabs sau khi merge xong
+                        await this.closeWorkerTabs();
                     };
                 } catch (error) {
                     console.error('[MultiTabManager] Lỗi merge:', error);
@@ -586,6 +751,32 @@
             async processChunk(chunk) {
                 try {
                     console.log(`[Worker ${this.workerId}] Đang xử lý chunk ${chunk.id + 1}...`);
+                    
+                    // QUAN TRỌNG: Lấy voice/language config từ Master tab
+                    const voiceConfig = await this.getVoiceConfig();
+                    if (voiceConfig) {
+                        // Áp dụng language config nếu có
+                        if (voiceConfig.language) {
+                            const languageSelect = document.getElementById('gemini-language-select');
+                            if (languageSelect && languageSelect.value !== voiceConfig.language) {
+                                languageSelect.value = voiceConfig.language;
+                                // Trigger change event để website cập nhật
+                                languageSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                                await new Promise(resolve => setTimeout(resolve, 500)); // Chờ website cập nhật
+                            }
+                        }
+                        
+                        // Lưu voiceId để intercept script sử dụng
+                        if (voiceConfig.voiceId) {
+                            window.lastVoiceId = voiceConfig.voiceId;
+                        }
+                        
+                        if (typeof addLogEntry === 'function') {
+                            addLogEntry(`🔧 [Worker ${this.workerId}] Đã áp dụng config: Language=${voiceConfig.language}, VoiceId=${voiceConfig.voiceId || 'auto'}`, 'info');
+                        }
+                    } else {
+                        console.warn(`[Worker ${this.workerId}] Không tìm thấy voice config, sẽ dùng config mặc định`);
+                    }
                     
                     // Gọi hàm render hiện tại (uSTZrHUt_IC) với chunk này
                     // Set SI$acY và ttuo$y_KhCV để render chunk này
@@ -928,6 +1119,28 @@
         // Hàm xử lý payload (có thể là string JSON hoặc FormData)
         function processPayload(payload, url = '') {
             if (!payload) return payload;
+            
+            // QUAN TRỌNG: Nếu là Worker tab và có voice config, áp dụng voiceId vào payload
+            if (window.MMX_MULTI_TAB_CONFIG && window.MMX_MULTI_TAB_CONFIG.role === 'WORKER' && window.lastVoiceId) {
+                try {
+                    if (typeof payload === 'string') {
+                        const parsed = JSON.parse(payload);
+                        if (parsed && typeof parsed === 'object') {
+                            // Tìm và cập nhật voice_id trong payload
+                            if (!parsed.voice_id && !parsed.voiceId) {
+                                parsed.voice_id = window.lastVoiceId;
+                            } else if (parsed.voice_id) {
+                                parsed.voice_id = window.lastVoiceId;
+                            } else if (parsed.voiceId) {
+                                parsed.voiceId = window.lastVoiceId;
+                            }
+                            return JSON.stringify(parsed);
+                        }
+                    }
+                } catch (e) {
+                    // Không phải JSON, bỏ qua
+                }
+            }
             
             // CHẾ ĐỘ MỚI: Nếu USE_PAYLOAD_MODE bật và có INTERCEPT_CURRENT_TEXT, thay trực tiếp trong payload
             if (window.USE_PAYLOAD_MODE && window.INTERCEPT_CURRENT_TEXT) {
