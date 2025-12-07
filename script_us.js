@@ -1048,7 +1048,14 @@
             console.log('[MultiTabManager] window.MMX_MULTI_TAB_CONFIG:', window.MMX_MULTI_TAB_CONFIG);
             
             // Kiểm tra Multi-Tab mode
-            if (window.multiTabManager && window.multiTabManager.isMaster) {
+            // QUAN TRỌNG: Kiểm tra cả window.MMX_MULTI_TAB_CONFIG và window.multiTabManager
+            const isMultiTabEnabled = window.MMX_MULTI_TAB_CONFIG && window.MMX_MULTI_TAB_CONFIG.enabled;
+            const isMaster = window.multiTabManager && window.multiTabManager.isMaster;
+            
+            console.log('[MultiTabManager] isMultiTabEnabled:', isMultiTabEnabled);
+            console.log('[MultiTabManager] isMaster:', isMaster);
+            
+            if (isMultiTabEnabled && isMaster) {
                 console.log('[MultiTabManager] ✅ Phát hiện Multi-Tab mode - Chặn event và gọi startJob()');
                 
                 // Kiểm tra xem đã có job đang chạy chưa
@@ -3965,7 +3972,14 @@ button:disabled {
                     console.log('[DEBUG CLICK] window.multiTabManager.role:', window.multiTabManager.role);
                 }
                 
-                if (window.multiTabManager && window.multiTabManager.isMaster) {
+                // QUAN TRỌNG: Kiểm tra cả window.MMX_MULTI_TAB_CONFIG và window.multiTabManager
+                const isMultiTabEnabled = window.MMX_MULTI_TAB_CONFIG && window.MMX_MULTI_TAB_CONFIG.enabled;
+                const isMaster = window.multiTabManager && window.multiTabManager.isMaster;
+                
+                console.log('[DEBUG CLICK] isMultiTabEnabled:', isMultiTabEnabled);
+                console.log('[DEBUG CLICK] isMaster:', isMaster);
+                
+                if (isMultiTabEnabled && isMaster) {
                     // Kiểm tra xem đã có job đang chạy chưa
                     if (window.multiTabManager.isJobRunning) {
                         console.warn('[DEBUG CLICK] ⚠️ Đã có job đang chạy, bỏ qua click này');
