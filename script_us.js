@@ -72,43 +72,52 @@
         
         // Kiểm tra extension đã cài chưa (cải thiện: kiểm tra nhiều cách)
         function checkExtensionInstalled() {
-            // Cách 1: Kiểm tra chrome.runtime.id (extension đã được inject vào page)
-            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
-                // Extension đã được inject vào page
-                // Kiểm tra xem API đã được expose chưa
-                if (typeof window.openWorkerTab === 'function') {
-                    window.multiThreadWorkers.extensionInstalled = true;
-                    if (typeof window.addLogEntry === 'function') {
-                        window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện', 'success');
-                    }
-                    return true;
-                } else {
-                    // Extension có trong page nhưng API chưa được expose
-                    // Có thể content script chưa chạy xong, thử gửi message để kích hoạt
-                    try {
-                        chrome.runtime.sendMessage({ action: 'ping' }, (response) => {
-                            // Nếu có response, extension đang hoạt động
-                            // Đợi một chút để content script expose API
-                            setTimeout(() => {
-                                if (typeof window.openWorkerTab === 'function') {
-                                    window.multiThreadWorkers.extensionInstalled = true;
-                                    if (typeof window.addLogEntry === 'function') {
-                                        window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện', 'success');
-                                    }
-                                }
-                            }, 500);
-                        });
-                    } catch (e) {
-                        // Không thể gửi message
-                    }
-                    // Trả về false nhưng đã trigger check lại
-                    return false;
+            // Cách 1: Kiểm tra flag đã được set chưa (nhanh nhất)
+            if (window.__multiThreadExtensionReady === true) {
+                window.multiThreadWorkers.extensionInstalled = true;
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện', 'success');
                 }
+                return true;
             }
             
-            // Cách 2: Kiểm tra bằng cách gửi message trực tiếp (nếu chrome.runtime.id không có)
+            // Cách 2: Kiểm tra API đã được expose chưa
+            if (typeof window.openWorkerTab === 'function') {
+                window.multiThreadWorkers.extensionInstalled = true;
+                window.__multiThreadExtensionReady = true; // Set flag
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện', 'success');
+                }
+                return true;
+            }
+            
+            // Cách 2: Kiểm tra chrome.runtime.id (extension đã được inject vào page)
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
+                // Extension có trong page nhưng API chưa được expose
+                // Có thể content script chưa chạy xong, thử gửi message để kích hoạt
+                try {
+                    chrome.runtime.sendMessage({ action: 'ping' }, (response) => {
+                        // Nếu có response, extension đang hoạt động
+                        // Đợi một chút để content script expose API
+                        setTimeout(() => {
+                            if (typeof window.openWorkerTab === 'function') {
+                                window.multiThreadWorkers.extensionInstalled = true;
+                                if (typeof window.addLogEntry === 'function') {
+                                    window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện', 'success');
+                                }
+                            }
+                        }, 500);
+                    });
+                } catch (e) {
+                    // Không thể gửi message
+                }
+                // Trả về false nhưng đã trigger check lại
+                return false;
+            }
+            
+            // Cách 3: Thử inject script để kiểm tra extension (nếu content script không chạy)
             // Nhưng cách này chỉ hoạt động nếu biết extension ID
-            // Tạm thời chỉ dùng cách 1
+            // Tạm thời chỉ dùng cách 1 và 2
             
             window.multiThreadWorkers.extensionInstalled = false;
             return false;
@@ -321,12 +330,29 @@
         window.activateMultiThreading = activateMultiThreading;
         
         // Kiểm tra extension khi script load và hiển thị cảnh báo nếu chưa cài
+        // Đợi lâu hơn để đảm bảo content script đã chạy
         setTimeout(() => {
-            if (!checkExtensionInstalled()) {
-                // Extension chưa cài, hiển thị cảnh báo ngay khi script load
-                checkExtensionRequired();
-            }
-        }, 2000);
+            // Kiểm tra nhiều lần với delay tăng dần
+            let checkCount = 0;
+            const maxChecks = 10; // Kiểm tra 10 lần
+            
+            const checkInterval = setInterval(() => {
+                checkCount++;
+                const isInstalled = checkExtensionInstalled();
+                
+                if (isInstalled) {
+                    clearInterval(checkInterval);
+                    return;
+                }
+                
+                // Sau 5 giây (10 lần x 500ms), hiển thị cảnh báo
+                if (checkCount >= maxChecks) {
+                    clearInterval(checkInterval);
+                    // Extension chưa cài, hiển thị cảnh báo
+                    checkExtensionRequired();
+                }
+            }, 500); // Kiểm tra mỗi 500ms
+        }, 1000); // Bắt đầu kiểm tra sau 1 giây
         
         // Helper: Log vào UI (nếu addLogEntry đã sẵn sàng)
         // BẢO MẬT: Không log các message liên quan đến NETWORK INTERCEPTOR
