@@ -170,15 +170,15 @@
             let isInstalled = checkExtensionInstalled();
             
             // Nếu extension có trong page (chrome.runtime.id) nhưng API chưa sẵn sàng
-            // Đợi thêm một chút để content script expose API
+            // Đợi thêm một chút để content script expose API hoặc tự tạo API
             if (!isInstalled && typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
                 // Extension có trong page nhưng API chưa được expose
-                // Đợi tối đa 3 giây để API được expose
+                // Đợi tối đa 5 giây để API được expose hoặc tự tạo
                 let waitCount = 0;
-                const maxWait = 6; // 6 lần x 500ms = 3 giây
+                const maxWait = 10; // 10 lần x 500ms = 5 giây
                 const checkInterval = setInterval(() => {
                     waitCount++;
-                    isInstalled = checkExtensionInstalled();
+                    isInstalled = checkExtensionInstalled(); // Hàm này sẽ tự tạo API nếu cần
                     if (isInstalled || waitCount >= maxWait) {
                         clearInterval(checkInterval);
                         if (isInstalled) {
@@ -188,14 +188,31 @@
                     }
                 }, 500);
                 
-                // Nếu sau 3 giây vẫn chưa có API, hiển thị cảnh báo
+                // Nếu sau 5 giây vẫn chưa có API, hiển thị cảnh báo
                 setTimeout(() => {
                     if (!window.multiThreadWorkers.extensionInstalled) {
                         // Vẫn chưa có API, hiển thị cảnh báo
                         showExtensionWarning();
                         return false;
                     }
-                }, 3000);
+                }, 5000);
+                
+                // Trả về false tạm thời, nhưng đã trigger check lại
+                return false;
+            }
+            
+            // Nếu không có chrome.runtime.id, có thể là userscript context
+            // Thử kiểm tra bằng cách khác hoặc cho phép tool chạy với cảnh báo
+            if (!isInstalled && (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.id)) {
+                // Không có chrome.runtime, có thể là userscript
+                // Hiển thị cảnh báo nhưng không chặn tool (cho phép chạy đơn luồng)
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry('⚠️ Không thể phát hiện extension. Tool sẽ chạy ở chế độ đơn luồng (không có đa luồng).', 'warning');
+                    window.addLogEntry('💡 Để sử dụng đa luồng, vui lòng cài extension Multi-Thread Render Helper.', 'info');
+                }
+                // Cho phép tool chạy nhưng không có đa luồng
+                window.multiThreadWorkers.extensionInstalled = false;
+                return true; // Cho phép chạy nhưng không có đa luồng
             }
             
             if (!isInstalled) {
@@ -367,6 +384,16 @@
         
         // Expose function
         window.activateMultiThreading = activateMultiThreading;
+        
+        // Lắng nghe event từ extension khi extension sẵn sàng
+        window.addEventListener('multiThreadExtensionReady', function(event) {
+            console.log('[MultiThread] Nhận event multiThreadExtensionReady từ extension:', event.detail);
+            window.multiThreadWorkers.extensionInstalled = true;
+            window.__multiThreadExtensionReady = true;
+            if (typeof window.addLogEntry === 'function') {
+                window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện qua event', 'success');
+            }
+        });
         
         // Kiểm tra extension khi script load và hiển thị cảnh báo nếu chưa cài
         // Kiểm tra NGAY và liên tục để đảm bảo phát hiện extension
