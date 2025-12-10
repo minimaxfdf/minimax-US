@@ -5491,7 +5491,7 @@ async function uSTZrHUt_IC() {
                         window.INTERCEPT_CURRENT_INDEX = null;
                         // Clear flag log để chunk tiếp theo có thể log lại
                         window._interceptLoggedForChunk = null;
-                        addLogEntry(`🧹 [Chunk ${ttuo$y_KhCV + 1}] Đã clear INTERCEPT_CURRENT_TEXT sau khi gửi request`, 'info');
+                        addLogEntry(`🧹 [Chunk ${ttuo$y_KhCV + 1}] Đã clear ...`, 'info');
                     }
                 }, 2000); // Chờ 2 giây để đảm bảo request đã được gửi
             }
@@ -5593,12 +5593,12 @@ async function uSTZrHUt_IC() {
                                 setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Retry sau delay 1-3 giây
                             })();
                         } else {
-                            addLogEntry(`✅ [Chunk ${originalChunkIndex + 1}] Kiểm tra payload sau 3 giây: KHÔNG phát hiện thay đổi (${originalChunkText.length} ký tự)`, 'info');
+                            addLogEntry(`✅ [Chunk ${originalChunkIndex + 1}] Kiểm tra ...`, 'info');
                         }
                     }
                 } else if (window.USE_PAYLOAD_MODE && !window.INTERCEPT_CURRENT_TEXT) {
                     // Nếu USE_PAYLOAD_MODE bật nhưng INTERCEPT_CURRENT_TEXT đã bị clear (có thể đã được gửi)
-                    addLogEntry(`ℹ️ [Chunk ${originalChunkIndex + 1}] Kiểm tra payload sau 3 giây: INTERCEPT_CURRENT_TEXT đã được clear (có thể request đã được gửi)`, 'info');
+                    addLogEntry(`ℹ️ [Chunk ${originalChunkIndex + 1}] Kiểm tra`, 'info');
                 }
             } catch (payloadCheckError) {
                 console.warn(`Lỗi khi kiểm tra payload sau 3 giây cho chunk ${originalChunkIndex + 1}:`, payloadCheckError);
@@ -5833,7 +5833,7 @@ function igyo$uwVChUzI() {
         xlgJHLP$MATDT$kTXWV = null;
     }
     
-    addLogEntry(`👁️ [Chunk ${ttuo$y_KhCV + 1}] Đang thiết lập MutationObserver để detect audio element...`, 'info');
+    addLogEntry(`👁️ [Chunk ${ttuo$y_KhCV + 1}] Đang thiết lập ...`, 'info');
 
     // DEBOUNCE: Khởi tạo timestamp cho callback
     if (typeof window.observerCallbackLastRun === 'undefined') {
@@ -6152,7 +6152,7 @@ function igyo$uwVChUzI() {
                             return; // Dừng xử lý, không lưu blob
                         }
 
-                        addLogEntry(`🔍 [Chunk ${currentChunkIndex + 1}] Dung lượng blob = ${chunkSizeKB.toFixed(2)} KB. Đang kiểm tra sóng âm...`, 'info');
+                        addLogEntry(`🔍 [Chunk ${currentChunkIndex + 1}] Dung lượng blob ...`, 'info');
 
                         // Kiểm tra sóng âm cho mọi chunk
                         const hasWaveform = await checkAudioWaveform(qILAV);
@@ -6232,14 +6232,14 @@ function igyo$uwVChUzI() {
                             return; // Dừng xử lý, không lưu blob
                         } else {
                             // Có sóng âm → hợp lệ, tiếp tục bình thường
-                            addLogEntry(`✅ [Chunk ${currentChunkIndex + 1}] Dung lượng blob = ${chunkSizeKB.toFixed(2)} KB và CÓ sóng âm - Hợp lệ!`, 'info');
+                            addLogEntry(`✅ [Chunk ${currentChunkIndex + 1}] Dung lượng blob ...`, 'info');
                         }
                         // =======================================================
                         // == END: KIỂM TRA DUNG LƯỢNG & SÓNG ÂM BLOB ==
                         // =======================================================
                         
                         // Log xác nhận kiểm tra dung lượng đã chạy và blob hợp lệ
-                        addLogEntry(`✅ [Chunk ${currentChunkIndex + 1}] Đã kiểm tra dung lượng blob: ${(qILAV.size / 1024).toFixed(2)} KB - Hợp lệ`, 'info');
+                        addLogEntry(`✅ [Chunk ${currentChunkIndex + 1}] Đã kiểm tra dung lượng ...`, 'info');
                         
                         
                         // Lưu chunk vào đúng vị trí dựa trên currentChunkIndex (đã lưu ở đầu callback)
@@ -6392,7 +6392,7 @@ function igyo$uwVChUzI() {
         window.isSettingUpObserver = false;
     }, 100);
     
-    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] MutationObserver đã được thiết lập và đang observe audio element`, 'success');
+    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] MutationObserver...`, 'success');
 }function rBuqJlBFmwzdZnXtjIL(){const fgUnHA=AP$u_huhInYfTj,ytkOLYJZOEaDOhowaP=document[fgUnHA(0x1cd)](fgUnHA(0x246));ytkOLYJZOEaDOhowaP&&ytkOLYJZOEaDOhowaP[fgUnHA(0x224)](fgUnHA(0x1bc))===fgUnHA(0x1fe)&&KxTOuAJu(ytkOLYJZOEaDOhowaP);}function ZGEvDUSUwgCtRqI(XOH_jolXfrzfb$u){return new Promise(f$o$ehE=>{const XfxSTlMrygLQP$ENoXGlumBRM=DHk$uTvcFuLEMnixYuADkCeA,MvjhInrbVXjKVUruwh=document[XfxSTlMrygLQP$ENoXGlumBRM(0x1cd)](XfxSTlMrygLQP$ENoXGlumBRM(0x254));if(MvjhInrbVXjKVUruwh&&MvjhInrbVXjKVUruwh[XfxSTlMrygLQP$ENoXGlumBRM(0x273)][XfxSTlMrygLQP$ENoXGlumBRM(0x1d4)]()===XOH_jolXfrzfb$u){f$o$ehE(!![]);return;}if(!MvjhInrbVXjKVUruwh){f$o$ehE(![]);return;}const VZYZVbVjefOZtpoGN=[MvjhInrbVXjKVUruwh,MvjhInrbVXjKVUruwh[XfxSTlMrygLQP$ENoXGlumBRM(0x227)],document[XfxSTlMrygLQP$ENoXGlumBRM(0x1cd)](XfxSTlMrygLQP$ENoXGlumBRM(0x22e)),document[XfxSTlMrygLQP$ENoXGlumBRM(0x1cd)](XfxSTlMrygLQP$ENoXGlumBRM(0x268))][XfxSTlMrygLQP$ENoXGlumBRM(0x21d)](Boolean);let VIEdKkRYRVRqqJcvauv$yeqJs=![];for(const aSzLyIxGR$iZOAwaUnO of VZYZVbVjefOZtpoGN){if(KxTOuAJu(aSzLyIxGR$iZOAwaUnO)){VIEdKkRYRVRqqJcvauv$yeqJs=!![];break;}}if(!VIEdKkRYRVRqqJcvauv$yeqJs){f$o$ehE(![]);return;}let iravm_ITtG=Math.ceil(parseInt(0x93c))*0x3+Math.floor(-parseInt(0xb3a))+Math.max(-parseInt(0xde),-0xde)*Math.trunc(parseInt(0x13));const yZNPe_Cff=-0xf73*0x2+Math.floor(-parseInt(0xae3))*parseInt(0x1)+-parseInt(0x14e7)*-0x2;function ZUTCwm$ZO(){const Yh_c_kdQDftCJybILCYnKDHP=XfxSTlMrygLQP$ENoXGlumBRM;iravm_ITtG++;let XLdCvwP_ExUgMYvoF$PgmcYQoDm=null;for(const KhpCpYqdNeshDhzcz$YopPRCnq of[Yh_c_kdQDftCJybILCYnKDHP(0x204),Yh_c_kdQDftCJybILCYnKDHP(0x1e8),Yh_c_kdQDftCJybILCYnKDHP(0x220),Yh_c_kdQDftCJybILCYnKDHP(0x252)]){XLdCvwP_ExUgMYvoF$PgmcYQoDm=document[Yh_c_kdQDftCJybILCYnKDHP(0x1cd)](KhpCpYqdNeshDhzcz$YopPRCnq);if(XLdCvwP_ExUgMYvoF$PgmcYQoDm&&XLdCvwP_ExUgMYvoF$PgmcYQoDm[Yh_c_kdQDftCJybILCYnKDHP(0x213)]>parseInt(0xc0b)*-0x3+parseInt(0x59f)*-0x1+parseInt(0x8)*parseInt(0x538))break;}if(!XLdCvwP_ExUgMYvoF$PgmcYQoDm){iravm_ITtG<yZNPe_Cff?setTimeout(ZUTCwm$ZO,Math.trunc(-parseInt(0x1))*parseInt(0x8b1)+-0x7e9+0x128e):f$o$ehE(![]);return;}let wUar$U_QcohStsk=null;for(const JawipkxmmQvXAvdYtibQwPC of[Yh_c_kdQDftCJybILCYnKDHP(0x272),Yh_c_kdQDftCJybILCYnKDHP(0x1d3),Yh_c_kdQDftCJybILCYnKDHP(0x232),Yh_c_kdQDftCJybILCYnKDHP(0x21c),Yh_c_kdQDftCJybILCYnKDHP(0x222)]){const ndE_dgEnXpLZ=XLdCvwP_ExUgMYvoF$PgmcYQoDm[Yh_c_kdQDftCJybILCYnKDHP(0x207)](JawipkxmmQvXAvdYtibQwPC);for(const dGawOEsCtvghrtIQyMuYTxt of ndE_dgEnXpLZ){if(dGawOEsCtvghrtIQyMuYTxt[Yh_c_kdQDftCJybILCYnKDHP(0x273)][Yh_c_kdQDftCJybILCYnKDHP(0x1d4)]()===XOH_jolXfrzfb$u){wUar$U_QcohStsk=dGawOEsCtvghrtIQyMuYTxt;break;}}if(wUar$U_QcohStsk)break;}if(!wUar$U_QcohStsk){KxTOuAJu(document[Yh_c_kdQDftCJybILCYnKDHP(0x248)]),f$o$ehE(![]);return;}KxTOuAJu(wUar$U_QcohStsk)?setTimeout(()=>{const cpuoogaLGFCVSyyJxT=Yh_c_kdQDftCJybILCYnKDHP,OMvlnOvIVrYj$DdyPN_J=document[cpuoogaLGFCVSyyJxT(0x1cd)](cpuoogaLGFCVSyyJxT(0x254));OMvlnOvIVrYj$DdyPN_J&&OMvlnOvIVrYj$DdyPN_J[cpuoogaLGFCVSyyJxT(0x273)][cpuoogaLGFCVSyyJxT(0x1d4)]()===XOH_jolXfrzfb$u?f$o$ehE(!![]):f$o$ehE(![]);},Math.ceil(-0x5)*0x2ed+Number(-0x2)*parseFloat(-0xdbd)+parseInt(-0xbad)):f$o$ehE(![]);}setTimeout(ZUTCwm$ZO,-0x24d2+-0x5dd+Math.max(-parseInt(0x1),-parseInt(0x1))*-0x2d07);});}async function FqzIBEUdOwBt(Jn_xqilZP,RGKuwuYHgrIIT=Math.trunc(0xf2e)+parseFloat(-parseInt(0x132a))+0x2*parseInt(0x203)){for(let GqZKAua$R$P=-0xadf+-parseInt(0x1dbb)+-0x181*Math.max(-0x1b,-0x1b);GqZKAua$R$P<=RGKuwuYHgrIIT;GqZKAua$R$P++){const L_BWgyzzSdCDgEEDlZXBu=await ZGEvDUSUwgCtRqI(Jn_xqilZP);if(L_BWgyzzSdCDgEEDlZXBu)return!![];GqZKAua$R$P<RGKuwuYHgrIIT&&await new Promise(Kl_QYkE$QY=>setTimeout(Kl_QYkE$QY,parseInt(0x49)*Math.trunc(0x35)+-parseInt(0x966)+0x1*Math.ceil(0x219)));}return![];}function AMoS$rCm_VoQjhXaWua(){const EOSqNtA$IANphiFD=AP$u_huhInYfTj,dmVumXDOp_nMXAtgodQ=document[EOSqNtA$IANphiFD(0x1cd)](EOSqNtA$IANphiFD(0x210));if(dmVumXDOp_nMXAtgodQ){const wvqk$t=dmVumXDOp_nMXAtgodQ[EOSqNtA$IANphiFD(0x1cd)](EOSqNtA$IANphiFD(0x1f7));if(wvqk$t&&!wvqk$t[EOSqNtA$IANphiFD(0x221)])dmVumXDOp_nMXAtgodQ[EOSqNtA$IANphiFD(0x1bd)]();}}function iDQh_nSiOgsDLmvTjcMSSdUwBv(acdMRck){const BgkEiDtfuwpVhu=AP$u_huhInYfTj,gl_lA_GFvtWJu=document[BgkEiDtfuwpVhu(0x207)](BgkEiDtfuwpVhu(0x1f3));for(const iTilPnjRKvhmFKI$iUCuXlnI of gl_lA_GFvtWJu){if(iTilPnjRKvhmFKI$iUCuXlnI[BgkEiDtfuwpVhu(0x273)]&&iTilPnjRKvhmFKI$iUCuXlnI[BgkEiDtfuwpVhu(0x273)][BgkEiDtfuwpVhu(0x1d4)]()[BgkEiDtfuwpVhu(0x20e)](acdMRck)){const utDJyOyXyOqpqxwzxcVx=iTilPnjRKvhmFKI$iUCuXlnI[BgkEiDtfuwpVhu(0x249)](BgkEiDtfuwpVhu(0x1f9));if(utDJyOyXyOqpqxwzxcVx){const DLOMspx=utDJyOyXyOqpqxwzxcVx[BgkEiDtfuwpVhu(0x1cd)](BgkEiDtfuwpVhu(0x25e));if(DLOMspx){DLOMspx[BgkEiDtfuwpVhu(0x1bd)]();break;}}}}}/**
  * Hàm mới: Chờ cho đến khi giọng mẫu trên web được tải xong.
  * Nó sẽ theo dõi sự biến mất của biểu tượng loading.
