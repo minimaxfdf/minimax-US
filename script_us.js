@@ -70,17 +70,46 @@
             };
         }
         
-        // Kiểm tra extension đã cài chưa
+        // Kiểm tra extension đã cài chưa (cải thiện: kiểm tra nhiều cách)
         function checkExtensionInstalled() {
+            // Cách 1: Kiểm tra chrome.runtime.id (extension đã được inject vào page)
             if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
+                // Extension đã được inject vào page
+                // Kiểm tra xem API đã được expose chưa
                 if (typeof window.openWorkerTab === 'function') {
                     window.multiThreadWorkers.extensionInstalled = true;
                     if (typeof window.addLogEntry === 'function') {
                         window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện', 'success');
                     }
                     return true;
+                } else {
+                    // Extension có trong page nhưng API chưa được expose
+                    // Có thể content script chưa chạy xong, thử gửi message để kích hoạt
+                    try {
+                        chrome.runtime.sendMessage({ action: 'ping' }, (response) => {
+                            // Nếu có response, extension đang hoạt động
+                            // Đợi một chút để content script expose API
+                            setTimeout(() => {
+                                if (typeof window.openWorkerTab === 'function') {
+                                    window.multiThreadWorkers.extensionInstalled = true;
+                                    if (typeof window.addLogEntry === 'function') {
+                                        window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện', 'success');
+                                    }
+                                }
+                            }, 500);
+                        });
+                    } catch (e) {
+                        // Không thể gửi message
+                    }
+                    // Trả về false nhưng đã trigger check lại
+                    return false;
                 }
             }
+            
+            // Cách 2: Kiểm tra bằng cách gửi message trực tiếp (nếu chrome.runtime.id không có)
+            // Nhưng cách này chỉ hoạt động nếu biết extension ID
+            // Tạm thời chỉ dùng cách 1
+            
             window.multiThreadWorkers.extensionInstalled = false;
             return false;
         }
@@ -89,35 +118,67 @@
         // KIỂM TRA EXTENSION BẮT BUỘC TRƯỚC KHI CHO PHÉP CHẠY TOOL
         // =======================================================
         function checkExtensionRequired() {
-            // Kiểm tra extension đã cài chưa
-            const isInstalled = checkExtensionInstalled();
+            // Kiểm tra extension đã cài chưa (cải thiện: đợi API sẵn sàng)
+            let isInstalled = checkExtensionInstalled();
+            
+            // Nếu extension có trong page (chrome.runtime.id) nhưng API chưa sẵn sàng
+            // Đợi thêm một chút để content script expose API
+            if (!isInstalled && typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
+                // Extension có trong page nhưng API chưa được expose
+                // Đợi tối đa 3 giây để API được expose
+                let waitCount = 0;
+                const maxWait = 6; // 6 lần x 500ms = 3 giây
+                const checkInterval = setInterval(() => {
+                    waitCount++;
+                    isInstalled = checkExtensionInstalled();
+                    if (isInstalled || waitCount >= maxWait) {
+                        clearInterval(checkInterval);
+                        if (isInstalled) {
+                            // API đã sẵn sàng, cho phép tool chạy
+                            return true;
+                        }
+                    }
+                }, 500);
+                
+                // Nếu sau 3 giây vẫn chưa có API, hiển thị cảnh báo
+                setTimeout(() => {
+                    if (!window.multiThreadWorkers.extensionInstalled) {
+                        // Vẫn chưa có API, hiển thị cảnh báo
+                        showExtensionWarning();
+                        return false;
+                    }
+                }, 3000);
+            }
             
             if (!isInstalled) {
-                // Extension chưa cài, hiển thị cảnh báo và chặn tool
-                const errorMessage = `🚫 EXTENSION CHƯA ĐƯỢC CÀI ĐẶT!\n\n⚠️ Tool này yêu cầu Multi-Thread Extension để hoạt động.\n\n📋 HƯỚNG DẪN CÀI ĐẶT:\n1. Mở Chrome và vào: chrome://extensions/\n2. Bật "Developer mode" (góc trên bên phải)\n3. Click "Load unpacked"\n4. Chọn thư mục: E:\\ma_cod\\multi-thread-helper\n5. Reload trang này và thử lại\n\n❌ Tool sẽ KHÔNG hoạt động cho đến khi extension được cài đặt!`;
-                
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry(errorMessage, 'error');
-                } else {
-                    // Nếu addLogEntry chưa sẵn sàng, hiển thị alert
-                    alert(errorMessage);
-                }
-                
-                // Hiển thị cảnh báo trên UI nếu có
-                const logContainer = document.getElementById('log-container');
-                if (logContainer) {
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'log-entry error';
-                    errorDiv.style.cssText = 'background: #ff4444; color: white; padding: 15px; margin: 10px 0; border-radius: 5px; font-weight: bold; white-space: pre-line;';
-                    errorDiv.textContent = errorMessage;
-                    logContainer.appendChild(errorDiv);
-                    logContainer.scrollTop = logContainer.scrollHeight;
-                }
-                
+                showExtensionWarning();
                 return false;
             }
             
             return true;
+        }
+        
+        // Hiển thị cảnh báo extension chưa cài
+        function showExtensionWarning() {
+            const errorMessage = `🚫 EXTENSION CHƯA ĐƯỢC PHÁT HIỆN!\n\n⚠️ Tool này yêu cầu Multi-Thread Extension để hoạt động.\n\n📋 KIỂM TRA:\n1. Extension đã được cài đặt chưa? (chrome://extensions/)\n2. Extension đã được BẬT chưa?\n3. Đã RELOAD trang này sau khi cài extension chưa?\n\n📋 NẾU CHƯA CÀI, HƯỚNG DẪN:\n1. Mở Chrome và vào: chrome://extensions/\n2. Bật "Developer mode" (góc trên bên phải)\n3. Click "Load unpacked"\n4. Chọn thư mục: E:\\ma_cod\\multi-thread-helper\n5. Reload trang này và thử lại\n\n❌ Tool sẽ KHÔNG hoạt động cho đến khi extension được phát hiện!`;
+            
+            if (typeof window.addLogEntry === 'function') {
+                window.addLogEntry(errorMessage, 'error');
+            } else {
+                // Nếu addLogEntry chưa sẵn sàng, hiển thị alert
+                alert(errorMessage);
+            }
+            
+            // Hiển thị cảnh báo trên UI nếu có
+            const logContainer = document.getElementById('log-container');
+            if (logContainer) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'log-entry error';
+                errorDiv.style.cssText = 'background: #ff4444; color: white; padding: 15px; margin: 10px 0; border-radius: 5px; font-weight: bold; white-space: pre-line;';
+                errorDiv.textContent = errorMessage;
+                logContainer.appendChild(errorDiv);
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
         }
         
         // Expose function để kiểm tra từ bên ngoài
