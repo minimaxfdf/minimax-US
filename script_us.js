@@ -3201,32 +3201,24 @@ function smartSplitter(text, maxLength = 800) {
         .trim();
 
     // Luôn gọi hàm tách chunk cũ với toàn bộ văn bản đã chuẩn hóa
-    // BẢO VỆ: Tránh gọi nhiều lần do nhiều event listener - Dùng timestamp để tránh race condition
-    const now = Date.now();
+    // BẢO VỆ: Tránh gọi nhiều lần do nhiều event listener
     if (typeof window._smartSplitterRunning === 'undefined') {
         window._smartSplitterRunning = false;
-        window._smartSplitterLastCall = 0;
     }
     
-    // Kiểm tra xem có đang chạy không HOẶC vừa mới gọi gần đây (< 500ms) - Tăng thời gian để chắc chắn
-    const timeSinceLastCall = now - window._smartSplitterLastCall;
-    if (window._smartSplitterRunning || (timeSinceLastCall < 500)) {
-        // Đang chạy rồi hoặc vừa mới gọi, bỏ qua lần gọi này
-        console.warn(`[smartSplitter] Bỏ qua lần gọi trùng lặp - Đang chạy: ${window._smartSplitterRunning}, Thời gian từ lần gọi trước: ${timeSinceLastCall}ms`);
+    if (window._smartSplitterRunning) {
+        // Đang chạy rồi, bỏ qua lần gọi này
+        console.warn('[smartSplitter] Đang chạy rồi, bỏ qua lần gọi trùng lặp');
         return []; // Trả về mảng rỗng để tránh lỗi
     }
     
-    // Set flag và timestamp TRƯỚC KHI log để tránh race condition
     window._smartSplitterRunning = true;
-    window._smartSplitterLastCall = now;
-    
     try {
         addLogEntry(`🧠 Áp dụng tách chunk thông minh (smartSplitter)`, 'info');
         const chunks = NrfPVBbJv_Dph$tazCpJ(normalized, 600, 500, actualMaxLength);
         return chunks.filter(c => c.length > 0);
     } finally {
         // QUAN TRỌNG: Reset flag trong finally để đảm bảo luôn được reset dù có lỗi hay không
-        // Nhưng KHÔNG reset timestamp để vẫn có thể phát hiện lần gọi gần đây
         window._smartSplitterRunning = false;
     }
 }
@@ -5520,6 +5512,100 @@ async function uSTZrHUt_IC() {
         
         // Thiết lập timeout 35 giây cho chunk này
         addLogEntry(`⏱️ [Chunk ${ttuo$y_KhCV + 1}] Bắt đầu render - Timeout 35 giây`, 'info');
+        
+        // =======================================================
+        // KIỂM TRA PAYLOAD SAU 3 GIÂY - PHÁT HIỆN THAY ĐỔI
+        // =======================================================
+        // Lưu text gốc của chunk để so sánh sau 3 giây
+        const originalChunkText = chunkText;
+        const originalChunkIndex = ttuo$y_KhCV;
+        
+        // Chờ 3 giây sau khi bắt đầu render để kiểm tra payload
+        setTimeout(() => {
+            try {
+                // Kiểm tra xem chunk đã thành công chưa (nếu đã thành công thì không cần kiểm tra)
+                if (window.chunkStatus && window.chunkStatus[originalChunkIndex] === 'success') {
+                    return; // Chunk đã thành công, không cần kiểm tra
+                }
+                
+                // Kiểm tra nếu INTERCEPT_CURRENT_TEXT đã bị thay đổi
+                if (window.USE_PAYLOAD_MODE && window.INTERCEPT_CURRENT_TEXT) {
+                    const currentInterceptText = window.INTERCEPT_CURRENT_TEXT;
+                    const currentInterceptIndex = window.INTERCEPT_CURRENT_INDEX;
+                    
+                    // Kiểm tra nếu đây là chunk đang được xử lý và text đã bị thay đổi
+                    if (currentInterceptIndex === originalChunkIndex) {
+                        // So sánh text hiện tại với text gốc
+                        if (currentInterceptText !== originalChunkText) {
+                            addLogEntry(`🚨 [Chunk ${originalChunkIndex + 1}] PHÁT HIỆN: Payload đã bị thay đổi nội dung sau 3 giây!`, 'error');
+                            addLogEntry(`⚠️ [Chunk ${originalChunkIndex + 1}] Text gốc: ${originalChunkText.length} ký tự, Text hiện tại: ${currentInterceptText.length} ký tự`, 'warning');
+                            addLogEntry(`🔄 [Chunk ${originalChunkIndex + 1}] Đánh dấu thất bại và kích hoạt cơ chế retry (xáo dữ liệu rác)...`, 'warning');
+                            
+                            // Đánh dấu chunk này là thất bại
+                            if (!window.chunkStatus) window.chunkStatus = [];
+                            window.chunkStatus[originalChunkIndex] = 'failed';
+                            if (!window.failedChunks) window.failedChunks = [];
+                            if (!window.failedChunks.includes(originalChunkIndex)) {
+                                window.failedChunks.push(originalChunkIndex);
+                            }
+                            
+                            // Reset flag sendingChunk khi chunk thất bại
+                            if (window.sendingChunk === originalChunkIndex) {
+                                window.sendingChunk = null;
+                            }
+                            
+                            // Dừng observer nếu đang chạy
+                            if (xlgJHLP$MATDT$kTXWV) {
+                                xlgJHLP$MATDT$kTXWV.disconnect();
+                            }
+                            
+                            // QUAN TRỌNG: Đảm bảo vị trí này để trống (null) để sau này retry có thể lưu vào
+                            if (typeof window.chunkBlobs === 'undefined') {
+                                window.chunkBlobs = new Array(SI$acY.length).fill(null);
+                            }
+                            // Đảm bảo window.chunkBlobs có đủ độ dài
+                            while (window.chunkBlobs.length <= originalChunkIndex) {
+                                window.chunkBlobs.push(null);
+                            }
+                            window.chunkBlobs[originalChunkIndex] = null; // Đảm bảo vị trí này để trống
+                            
+                            // ĐỒNG BỘ HÓA ZTQj$LF$o: Đảm bảo ZTQj$LF$o cũng để trống
+                            while (ZTQj$LF$o.length <= originalChunkIndex) {
+                                ZTQj$LF$o.push(null);
+                            }
+                            ZTQj$LF$o[originalChunkIndex] = null; // Đảm bảo vị trí này để trống
+                            
+                            // Clear timeout của chunk này nếu đang chạy
+                            if (window.chunkTimeoutIds && window.chunkTimeoutIds[originalChunkIndex]) {
+                                clearTimeout(window.chunkTimeoutIds[originalChunkIndex]);
+                                delete window.chunkTimeoutIds[originalChunkIndex];
+                            }
+                            
+                            // CƠ CHẾ RETRY: Cleanup data rác và retry lại chunk này vô hạn
+                            addLogEntry(`🔄 [Chunk ${originalChunkIndex + 1}] Payload bị thay đổi - Cleanup data rác và retry lại chunk này vô hạn cho đến khi thành công`, 'warning');
+                            window.retryCount = 0; // Reset bộ đếm retry
+                            
+                            // Cleanup data rác và reset trước khi retry
+                            (async () => {
+                                await cleanupChunkData(originalChunkIndex); // Cleanup data rác trước
+                                await resetWebInterface(); // Reset web interface
+                                // KHÔNG tăng ttuo$y_KhCV, giữ nguyên để retry lại chunk này
+                                setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Retry sau delay 1-3 giây
+                            })();
+                        } else {
+                            addLogEntry(`✅ [Chunk ${originalChunkIndex + 1}] Kiểm tra payload sau 3 giây: KHÔNG phát hiện thay đổi (${originalChunkText.length} ký tự)`, 'info');
+                        }
+                    }
+                } else if (window.USE_PAYLOAD_MODE && !window.INTERCEPT_CURRENT_TEXT) {
+                    // Nếu USE_PAYLOAD_MODE bật nhưng INTERCEPT_CURRENT_TEXT đã bị clear (có thể đã được gửi)
+                    addLogEntry(`ℹ️ [Chunk ${originalChunkIndex + 1}] Kiểm tra payload sau 3 giây: INTERCEPT_CURRENT_TEXT đã được clear (có thể request đã được gửi)`, 'info');
+                }
+            } catch (payloadCheckError) {
+                console.warn(`Lỗi khi kiểm tra payload sau 3 giây cho chunk ${originalChunkIndex + 1}:`, payloadCheckError);
+                addLogEntry(`⚠️ [Chunk ${originalChunkIndex + 1}] Lỗi khi kiểm tra payload: ${payloadCheckError.message}`, 'warning');
+            }
+        }, 3000); // Chờ 3 giây sau khi bắt đầu render
+        
         window.chunkTimeoutIds[ttuo$y_KhCV] = setTimeout(async () => {
             // QUAN TRỌNG: Kiểm tra xem chunk đã thành công chưa trước khi trigger timeout
             if (window.chunkStatus && window.chunkStatus[ttuo$y_KhCV] === 'success') {
@@ -8322,14 +8408,10 @@ async function waitForVoiceModelReady() {
             // 5. QUAN TRỌNG: Sử dụng hàm smartSplitter MỚI để chia chunk
             // Đảm bảo EfNjYNYj_O_CGB = true TRƯỚC KHI chia chunk để uSTZrHUt_IC() biết đây là job mới
             // BẢO VỆ: Tránh gọi nhiều lần do nhiều event listener
-            const nowBeforeCall = Date.now();
-            const timeSinceLastCall = nowBeforeCall - (window._smartSplitterLastCall || 0);
-            if (window._smartSplitterRunning || timeSinceLastCall < 500) {
-                addLogEntry(`⚠️ smartSplitter đang chạy hoặc vừa mới gọi (${timeSinceLastCall}ms trước), bỏ qua lần gọi trùng lặp`, 'warning');
-                console.warn(`[Start Button] Bỏ qua gọi smartSplitter - Running: ${window._smartSplitterRunning}, Time since last: ${timeSinceLastCall}ms`);
+            if (window._smartSplitterRunning) {
+                addLogEntry(`⚠️ smartSplitter đang chạy, bỏ qua lần gọi trùng lặp`, 'warning');
                 return; // Dừng xử lý để tránh gọi lại
             }
-            console.log(`[Start Button] Gọi smartSplitter - Running: ${window._smartSplitterRunning}, Time since last: ${timeSinceLastCall}ms`);
             SI$acY = smartSplitter(sanitizedText, 3000); // Mảng chứa text (legacy)
             
             // Kiểm tra xem có chunk nào không
