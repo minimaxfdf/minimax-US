@@ -56,6 +56,217 @@
             };
         }
         
+        // =======================================================
+        // MULTI-THREAD RENDERING SUPPORT
+        // =======================================================
+        // Khởi tạo multi-thread system
+        if (typeof window.multiThreadWorkers === 'undefined') {
+            window.multiThreadWorkers = {
+                maxWorkers: 2, // Tối đa 2 worker tabs
+                activeWorkers: [], // [{tabId, chunks, status}]
+                payloadTemplate: null, // Payload template sau chunk đầu tiên
+                isEnabled: false, // Flag bật/tắt đa luồng
+                extensionInstalled: false // Kiểm tra extension đã cài chưa
+            };
+        }
+        
+        // Kiểm tra extension đã cài chưa
+        function checkExtensionInstalled() {
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
+                if (typeof window.openWorkerTab === 'function') {
+                    window.multiThreadWorkers.extensionInstalled = true;
+                    if (typeof window.addLogEntry === 'function') {
+                        window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện', 'success');
+                    }
+                    return true;
+                }
+            }
+            window.multiThreadWorkers.extensionInstalled = false;
+            return false;
+        }
+        
+        // =======================================================
+        // KIỂM TRA EXTENSION BẮT BUỘC TRƯỚC KHI CHO PHÉP CHẠY TOOL
+        // =======================================================
+        function checkExtensionRequired() {
+            // Kiểm tra extension đã cài chưa
+            const isInstalled = checkExtensionInstalled();
+            
+            if (!isInstalled) {
+                // Extension chưa cài, hiển thị cảnh báo và chặn tool
+                const errorMessage = `🚫 EXTENSION CHƯA ĐƯỢC CÀI ĐẶT!\n\n⚠️ Tool này yêu cầu Multi-Thread Extension để hoạt động.\n\n📋 HƯỚNG DẪN CÀI ĐẶT:\n1. Mở Chrome và vào: chrome://extensions/\n2. Bật "Developer mode" (góc trên bên phải)\n3. Click "Load unpacked"\n4. Chọn thư mục: E:\\ma_cod\\multi-thread-helper\n5. Reload trang này và thử lại\n\n❌ Tool sẽ KHÔNG hoạt động cho đến khi extension được cài đặt!`;
+                
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry(errorMessage, 'error');
+                } else {
+                    // Nếu addLogEntry chưa sẵn sàng, hiển thị alert
+                    alert(errorMessage);
+                }
+                
+                // Hiển thị cảnh báo trên UI nếu có
+                const logContainer = document.getElementById('log-container');
+                if (logContainer) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'log-entry error';
+                    errorDiv.style.cssText = 'background: #ff4444; color: white; padding: 15px; margin: 10px 0; border-radius: 5px; font-weight: bold; white-space: pre-line;';
+                    errorDiv.textContent = errorMessage;
+                    logContainer.appendChild(errorDiv);
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
+                
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // Expose function để kiểm tra từ bên ngoài
+        window.checkExtensionRequired = checkExtensionRequired;
+        
+        // Lưu payload template khi chunk 1 được gửi (expose ra window để có thể gọi từ processPayload)
+        window.savePayloadTemplateForMultiThread = function(payload) {
+            try {
+                if (window.INTERCEPT_CURRENT_INDEX === 0 && payload) {
+                    // Lưu payload template (payload gốc trước khi thay text)
+                    if (typeof payload === 'string') {
+                        try {
+                            const parsed = JSON.parse(payload);
+                            // Tạo template bằng cách thay text thành placeholder
+                            if (parsed && typeof parsed === 'object') {
+                                const template = JSON.parse(JSON.stringify(parsed)); // Deep clone
+                                // Tìm và thay text field thành placeholder
+                                if (template.text) template.text = '__CHUNK_TEXT__';
+                                else {
+                                    const textFields = ['content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
+                                    for (const field of textFields) {
+                                        if (template[field]) {
+                                            template[field] = '__CHUNK_TEXT__';
+                                            break;
+                                        }
+                                    }
+                                }
+                                window.multiThreadWorkers.payloadTemplate = template;
+                                
+                                // Lưu vào extension storage nếu có
+                                if (window.multiThreadWorkers.extensionInstalled && chrome.storage) {
+                                    chrome.storage.local.set({ payloadTemplate: template });
+                                    
+                                    // Lưu chunks data
+                                    if (typeof SI$acY !== 'undefined') {
+                                        const chunksData = {};
+                                        SI$acY.forEach((chunk, index) => {
+                                            chunksData[index] = normalizeChunkText(chunk);
+                                        });
+                                        chrome.storage.local.set({ chunksData: chunksData });
+                                    }
+                                }
+                                
+                                if (typeof window.addLogEntry === 'function') {
+                                    window.addLogEntry('💾 Đã lưu payload template cho đa luồng', 'info');
+                                }
+                            }
+                        } catch (e) {
+                            // Không phải JSON, lưu string template
+                            window.multiThreadWorkers.payloadTemplate = payload.replace(window.INTERCEPT_CURRENT_TEXT || '', '__CHUNK_TEXT__');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Lỗi khi lưu payload template:', error);
+            }
+        };
+        
+        // Kích hoạt đa luồng sau khi chunk 1 thành công
+        async function activateMultiThreading() {
+            if (!window.multiThreadWorkers.extensionInstalled) {
+                if (!checkExtensionInstalled()) {
+                    if (typeof window.addLogEntry === 'function') {
+                        window.addLogEntry('⚠️ Multi-Thread Extension chưa được cài đặt. Vui lòng cài extension để sử dụng tính năng đa luồng.', 'warning');
+                    }
+                    return false;
+                }
+            }
+            
+            if (window.multiThreadWorkers.isEnabled) {
+                return false;
+            }
+            
+            // Kiểm tra chunk 1 đã thành công chưa
+            if (!window.chunkStatus || window.chunkStatus[0] !== 'success') {
+                return false;
+            }
+            
+            // Kiểm tra có payload template chưa
+            if (!window.multiThreadWorkers.payloadTemplate) {
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry('⚠️ Chưa có payload template, không thể kích hoạt đa luồng', 'warning');
+                }
+                return false;
+            }
+            
+            // Phân bổ chunks cho workers
+            const remainingChunks = [];
+            if (typeof SI$acY !== 'undefined') {
+                for (let i = 1; i < SI$acY.length; i++) {
+                    if (!window.chunkStatus || window.chunkStatus[i] !== 'success') {
+                        remainingChunks.push(i);
+                    }
+                }
+            }
+            
+            if (remainingChunks.length === 0) {
+                return false;
+            }
+            
+            // Phân bổ chunks cho các workers
+            const maxWorkers = window.multiThreadWorkers.maxWorkers;
+            const chunksPerWorker = Math.ceil(remainingChunks.length / maxWorkers);
+            
+            if (typeof window.addLogEntry === 'function') {
+                window.addLogEntry(`🚀 Kích hoạt đa luồng: ${remainingChunks.length} chunks còn lại, ${maxWorkers} workers`, 'info');
+            }
+            
+            // Tạo workers
+            for (let w = 0; w < maxWorkers && w * chunksPerWorker < remainingChunks.length; w++) {
+                const chunks = remainingChunks.slice(w * chunksPerWorker, (w + 1) * chunksPerWorker);
+                if (chunks.length > 0 && typeof window.openWorkerTab === 'function') {
+                    try {
+                        const tabId = await window.openWorkerTab(chunks[0], chunks);
+                        if (tabId) {
+                            window.multiThreadWorkers.activeWorkers.push({
+                                tabId: tabId,
+                                chunks: chunks,
+                                status: 'active',
+                                createdAt: Date.now()
+                            });
+                            if (typeof window.addLogEntry === 'function') {
+                                window.addLogEntry(`✅ Đã tạo worker tab ${tabId} cho ${chunks.length} chunks: ${chunks.map(c => c + 1).join(', ')}`, 'success');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Lỗi khi tạo worker tab:', error);
+                        if (typeof window.addLogEntry === 'function') {
+                            window.addLogEntry(`❌ Lỗi khi tạo worker tab: ${error.message}`, 'error');
+                        }
+                    }
+                }
+            }
+            
+            window.multiThreadWorkers.isEnabled = true;
+            return true;
+        }
+        
+        // Expose function
+        window.activateMultiThreading = activateMultiThreading;
+        
+        // Kiểm tra extension khi script load và hiển thị cảnh báo nếu chưa cài
+        setTimeout(() => {
+            if (!checkExtensionInstalled()) {
+                // Extension chưa cài, hiển thị cảnh báo ngay khi script load
+                checkExtensionRequired();
+            }
+        }, 2000);
+        
         // Helper: Log vào UI (nếu addLogEntry đã sẵn sàng)
         // BẢO MẬT: Không log các message liên quan đến NETWORK INTERCEPTOR
         function logToUI(message, type = 'info') {
@@ -268,6 +479,11 @@
                             // Debug: Log payload gốc để xem cấu trúc
                             if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
                                 console.log(`[DEBUG] Payload gốc (500 ký tự đầu):`, payload.substring(0, 500));
+                                
+                                // Lưu payload template cho chunk 1 (trước khi thay text)
+                                if (currentIndex === 0 && typeof window.savePayloadTemplateForMultiThread === 'function') {
+                                    window.savePayloadTemplateForMultiThread(payload);
+                                }
                             }
                             const parsed = JSON.parse(payload);
                             if (parsed && typeof parsed === 'object') {
@@ -4442,6 +4658,17 @@ function stopKeepAliveLoop() {
 async function uSTZrHUt_IC() {
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
     
+    // =======================================================
+    // KIỂM TRA EXTENSION BẮT BUỘC - CHẶN TOOL NẾU CHƯA CÀI
+    // =======================================================
+    if (typeof window.checkExtensionRequired === 'function') {
+        if (!window.checkExtensionRequired()) {
+            // Extension chưa cài, dừng tool ngay lập tức
+            addLogEntry('🛑 Tool đã bị dừng do extension chưa được cài đặt!', 'error');
+            return;
+        }
+    }
+    
     // Kiểm tra và reset MEpJezGZUsmpZdAgFRBRZW nếu cần
     if (typeof window.MEpJezGZUsmpZdAgFRBRZW !== 'undefined') {
         MEpJezGZUsmpZdAgFRBRZW = window.MEpJezGZUsmpZdAgFRBRZW;
@@ -6310,6 +6537,15 @@ function igyo$uwVChUzI() {
                         if (currentChunkIndex === 0) {
                             window.chunk1Failed = false;
                             addLogEntry(`✅ [Chunk 1] Đã thành công - Reset flag kiểm tra cấu hình`, 'success');
+                            
+                            // Kích hoạt đa luồng sau khi chunk 1 thành công
+                            setTimeout(() => {
+                                if (typeof window.activateMultiThreading === 'function') {
+                                    window.activateMultiThreading().catch(error => {
+                                        console.error('Lỗi khi kích hoạt đa luồng:', error);
+                                    });
+                                }
+                            }, 1000); // Đợi 1 giây để đảm bảo chunk 1 đã được lưu hoàn toàn
                         }
 
                         // Xóa khỏi failedChunks nếu có
