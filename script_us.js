@@ -91,33 +91,72 @@
                 return true;
             }
             
-            // Cách 2: Kiểm tra chrome.runtime.id (extension đã được inject vào page)
+            // Cách 3: Kiểm tra chrome.runtime.id và tự tạo API nếu cần
             if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
                 // Extension có trong page nhưng API chưa được expose
-                // Có thể content script chưa chạy xong, thử gửi message để kích hoạt
+                // Tự tạo API ngay tại đây để đảm bảo có sẵn
                 try {
-                    chrome.runtime.sendMessage({ action: 'ping' }, (response) => {
-                        // Nếu có response, extension đang hoạt động
-                        // Đợi một chút để content script expose API
-                        setTimeout(() => {
-                            if (typeof window.openWorkerTab === 'function') {
-                                window.multiThreadWorkers.extensionInstalled = true;
-                                if (typeof window.addLogEntry === 'function') {
-                                    window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện', 'success');
+                    // Tạo API ngay lập tức
+                    window.openWorkerTab = window.openWorkerTab || async function(chunkIndex, chunks) {
+                        return new Promise((resolve, reject) => {
+                            chrome.runtime.sendMessage({
+                                action: 'openWorkerTab',
+                                chunkIndex: chunkIndex,
+                                chunks: chunks
+                            }, (response) => {
+                                if (chrome.runtime.lastError) {
+                                    reject(new Error(chrome.runtime.lastError.message));
+                                    return;
                                 }
-                            }
-                        }, 500);
-                    });
+                                if (response && response.success) {
+                                    resolve(response.tabId);
+                                } else {
+                                    reject(new Error(response?.error || 'Không thể mở worker tab'));
+                                }
+                            });
+                        });
+                    };
+                    
+                    window.savePayloadTemplate = window.savePayloadTemplate || function(payloadTemplate) {
+                        chrome.runtime.sendMessage({
+                            action: 'savePayloadTemplate',
+                            payloadTemplate: payloadTemplate
+                        });
+                    };
+                    
+                    window.getPayloadTemplate = window.getPayloadTemplate || function() {
+                        return new Promise((resolve, reject) => {
+                            chrome.runtime.sendMessage({
+                                action: 'getPayloadTemplate'
+                            }, (response) => {
+                                if (chrome.runtime.lastError) {
+                                    reject(new Error(chrome.runtime.lastError.message));
+                                    return;
+                                }
+                                if (response && response.success) {
+                                    resolve(response.payloadTemplate);
+                                } else {
+                                    reject(new Error('Không thể lấy payload template'));
+                                }
+                            });
+                        });
+                    };
+                    
+                    // Set flag
+                    window.__multiThreadExtensionReady = true;
+                    window.multiThreadWorkers.extensionInstalled = true;
+                    
+                    if (typeof window.addLogEntry === 'function') {
+                        window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện và API đã được tạo', 'success');
+                    }
+                    
+                    console.log('[MultiThread] ✅ Đã tự tạo API từ script 33.js');
+                    return true;
                 } catch (e) {
-                    // Không thể gửi message
+                    console.error('[MultiThread] Lỗi khi tạo API:', e);
+                    return false;
                 }
-                // Trả về false nhưng đã trigger check lại
-                return false;
             }
-            
-            // Cách 3: Thử inject script để kiểm tra extension (nếu content script không chạy)
-            // Nhưng cách này chỉ hoạt động nếu biết extension ID
-            // Tạm thời chỉ dùng cách 1 và 2
             
             window.multiThreadWorkers.extensionInstalled = false;
             return false;
@@ -330,11 +369,16 @@
         window.activateMultiThreading = activateMultiThreading;
         
         // Kiểm tra extension khi script load và hiển thị cảnh báo nếu chưa cài
-        // Đợi lâu hơn để đảm bảo content script đã chạy
-        setTimeout(() => {
-            // Kiểm tra nhiều lần với delay tăng dần
+        // Kiểm tra NGAY và liên tục để đảm bảo phát hiện extension
+        (function checkExtensionOnLoad() {
+            // Kiểm tra ngay lập tức
+            if (checkExtensionInstalled()) {
+                return; // Extension đã được phát hiện
+            }
+            
+            // Nếu chưa có, kiểm tra liên tục
             let checkCount = 0;
-            const maxChecks = 10; // Kiểm tra 10 lần
+            const maxChecks = 20; // Kiểm tra 20 lần (10 giây)
             
             const checkInterval = setInterval(() => {
                 checkCount++;
@@ -342,17 +386,20 @@
                 
                 if (isInstalled) {
                     clearInterval(checkInterval);
+                    if (typeof window.addLogEntry === 'function') {
+                        window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện sau ' + (checkCount * 0.5) + ' giây', 'success');
+                    }
                     return;
                 }
                 
-                // Sau 5 giây (10 lần x 500ms), hiển thị cảnh báo
+                // Sau 10 giây (20 lần x 500ms), hiển thị cảnh báo
                 if (checkCount >= maxChecks) {
                     clearInterval(checkInterval);
                     // Extension chưa cài, hiển thị cảnh báo
                     checkExtensionRequired();
                 }
             }, 500); // Kiểm tra mỗi 500ms
-        }, 1000); // Bắt đầu kiểm tra sau 1 giây
+        })();
         
         // Helper: Log vào UI (nếu addLogEntry đã sẵn sàng)
         // BẢO MẬT: Không log các message liên quan đến NETWORK INTERCEPTOR
