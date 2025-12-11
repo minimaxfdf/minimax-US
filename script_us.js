@@ -7748,249 +7748,64 @@ async function waitForVoiceModelReady() {
             }
         });
 
-        // --- 5. Punctuation Detection Functionality ---
+        // --- 5. Auto Replace Words Functionality ---
         (function() {
-            let punctuationDetectionEnabled = true;
-            let detectedPunctuationIssues = [];
+            let autoReplaceEnabled = true;
 
-            // Hàm phát hiện dấu câu trùng lặp
-            function detectPunctuationIssues(text) {
-                if (!punctuationDetectionEnabled || !text) return [];
+            // Hàm tự động thay thế từ: "ai" → "Ai" và "im" → "Im"
+            function autoReplaceWords(text) {
+                if (!autoReplaceEnabled || !text) return text;
 
-                const issues = [];
+                let newText = text;
 
-                // Pattern tổng quát để phát hiện tất cả cụm dấu câu (2 ký tự trở lên)
-                // Dấu ngoặc kép chỉ bị phát hiện khi nằm cùng với dấu câu khác
-                const generalPattern = /[.!?,;:]{2,}|[.!?,;:]["']|["'][.!?,;:]|["'][.!?,;:]{2,}|[.!?,;:]{2,}["']/g;
-
-                let match;
-                while ((match = generalPattern.exec(text)) !== null) {
-                    const matchedText = match[0];
-                    const start = match.index;
-                    const end = match.index + matchedText.length;
-
-                    // Bỏ qua dấu ba chấm (...) - không phát hiện như lỗi
-                    if (matchedText === '...') {
-                        continue;
-                    }
-
-                    // Phân loại loại lỗi
-                    let type = 'Dấu câu trùng lặp';
-                    if (/[.!?]{2,}/.test(matchedText)) {
-                        type = 'Dấu chấm/chấm hỏi/chấm than trùng lặp';
-                    } else if (/[,;]{2,}/.test(matchedText)) {
-                        type = 'Dấu phẩy/chấm phẩy trùng lặp';
-                    } else if (/[:]{2,}/.test(matchedText)) {
-                        type = 'Dấu hai chấm trùng lặp';
-                    } else if (/["'][.!?,;:]|[.!?,;:]["']/.test(matchedText)) {
-                        type = 'Dấu ngoặc kép kết hợp với dấu câu khác';
-                    } else if (/[.!?][,;:]|[;:,][.!?]/.test(matchedText)) {
-                        type = 'Dấu câu kết hợp khác nhau';
-                    }
-
-                    issues.push({
-                        text: matchedText,
-                        start: start,
-                        end: end,
-                        type: type,
-                        suggestion: getPunctuationSuggestion(matchedText)
-                    });
-                }
-
-                return issues;
-            }
-
-            // Hàm đề xuất dấu câu thay thế
-            function getPunctuationSuggestion(originalText) {
-                // Nếu có dấu chấm hỏi, ưu tiên giữ dấu chấm hỏi
-                if (originalText.includes('?')) return '?';
-                // Nếu có dấu chấm than, ưu tiên giữ dấu chấm than
-                if (originalText.includes('!')) return '!';
-                // Nếu có dấu chấm, ưu tiên giữ dấu chấm
-                if (originalText.includes('.')) return '.';
-                // Nếu có dấu phẩy, ưu tiên giữ dấu phẩy
-                if (originalText.includes(',')) return ',';
-                // Nếu có dấu ngoặc kép, ưu tiên giữ dấu ngoặc kép
-                if (originalText.includes('"')) return '"';
-                // Nếu có dấu ngoặc đơn, ưu tiên giữ dấu ngoặc đơn
-                if (originalText.includes("'")) return "'";
-                // Mặc định là dấu chấm
-                return '.';
-            }
-
-            // Hàm hiển thị danh sách lỗi dấu câu
-            function displayPunctuationIssues(issues) {
-                const modal = document.getElementById('punctuation-detection-modal');
-                const issuesList = document.getElementById('punctuation-issues-list');
-
-                if (!issues || issues.length === 0) {
-                    modal.style.display = 'none';
-                    return;
-                }
-
-                issuesList.innerHTML = '';
-                issues.forEach((issue, index) => {
-                    const issueDiv = document.createElement('div');
-                    issueDiv.style.cssText = `
-                        background: #44475a;
-                        border: 1px solid #6272a4;
-                        border-radius: 6px;
-                        padding: 12px;
-                        margin-bottom: 10px;
-                        font-size: 14px;
-                    `;
-
-                    issueDiv.className = 'punctuation-issue-item';
-                    issueDiv.innerHTML = `
-                        <div style="color: #ffb86c; font-weight: bold; margin-bottom: 6px; font-size: 15px;">
-                            ${issue.type}
-                        </div>
-                        <div style="color: #f8f8f2; margin-bottom: 6px;">
-                            <strong>Phát hiện:</strong> <span style="background: #ff5555; color: white; padding: 2px 6px; border-radius: 3px; font-family: monospace;">"${issue.text}"</span>
-                        </div>
-                        <div style="color: #50fa7b;">
-                            <strong>Đề xuất:</strong> <span style="background: #50fa7b; color: #282a36; padding: 2px 6px; border-radius: 3px; font-family: monospace;">"${issue.suggestion}"</span>
-                        </div>
-                    `;
-
-                    issuesList.appendChild(issueDiv);
+                // Thay thế "ai" thành "Ai" (chỉ thay thế theo từ, không phải theo ký tự)
+                // Sử dụng word boundary để chỉ thay thế từ đầy đủ
+                // \b là word boundary, đảm bảo chỉ thay thế từ "ai" độc lập
+                newText = newText.replace(/\bai\b/gi, (match) => {
+                    // Giữ nguyên case của chữ đầu tiên nếu đã viết hoa
+                    return match.charAt(0).toUpperCase() + match.slice(1).toLowerCase();
                 });
 
-                // Hiển thị modal
-                modal.style.display = 'flex';
-            }
-
-            // Hàm tự động sửa tất cả lỗi dấu câu
-            function autoFixAllPunctuationIssues() {
-                console.log('autoFixAllPunctuationIssues called');
-
-                const textarea = document.getElementById('gemini-main-textarea');
-                const defaultPunctuation = document.getElementById('default-punctuation-select');
-                const modal = document.getElementById('punctuation-detection-modal');
-
-                console.log('Elements found:', {
-                    textarea: !!textarea,
-                    defaultPunctuation: !!defaultPunctuation,
-                    modal: !!modal,
-                    issuesCount: detectedPunctuationIssues.length
+                // Thay thế "im" thành "Im" (chỉ thay thế theo từ, không phải theo ký tự)
+                newText = newText.replace(/\bim\b/gi, (match) => {
+                    // Giữ nguyên case của chữ đầu tiên nếu đã viết hoa
+                    return match.charAt(0).toUpperCase() + match.slice(1).toLowerCase();
                 });
 
-                if (!textarea) {
-                    console.error('Textarea not found');
-                    return;
-                }
-
-                if (!defaultPunctuation) {
-                    console.error('Default punctuation select not found');
-                    return;
-                }
-
-                if (!modal) {
-                    console.error('Modal not found');
-                    return;
-                }
-
-                if (!detectedPunctuationIssues.length) {
-                    console.log('No issues to fix');
-                    modal.style.display = 'none';
-                    return;
-                }
-
-                const punctuationValue = defaultPunctuation.value;
-                console.log('Using punctuation:', punctuationValue);
-
-                let text = textarea.value;
-                console.log('Original text length:', text.length);
-
-                // Sắp xếp các lỗi theo thứ tự ngược để tránh ảnh hưởng đến index
-                const sortedIssues = [...detectedPunctuationIssues].sort((a, b) => b.start - a.start);
-                console.log('Issues to fix:', sortedIssues.length);
-
-                sortedIssues.forEach((issue, index) => {
-                    console.log(`Fixing issue ${index + 1}:`, issue);
-                    const beforeText = text.substring(0, issue.start);
-                    const afterText = text.substring(issue.end);
-                    // Thay thế toàn bộ cụm dấu câu bằng dấu câu mặc định
-                    text = beforeText + punctuationValue + afterText;
-                });
-
-                textarea.value = text;
-                detectedPunctuationIssues = [];
-
-                // Đóng modal
-                modal.style.display = 'none';
-                console.log('Modal closed');
-
-                // Trigger input event để cập nhật stats
-                textarea.dispatchEvent(new Event('input'));
-
-                // Hiển thị thông báo thành công
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: 'success',
-                        title: 'Đã sửa dấu câu',
-                        text: `Đã tự động sửa ${sortedIssues.length} lỗi dấu câu`,
-                        showConfirmButton: false,
-                        timer: 2000,
-                        timerProgressBar: true
-                    });
-                }
+                return newText;
             }
 
-            // Hàm bỏ qua tất cả lỗi dấu câu
+            // Hàm bỏ qua (giữ lại để tương thích với HTML)
             function ignoreAllPunctuationIssues() {
-                console.log('ignoreAllPunctuationIssues called');
-
-                const modal = document.getElementById('punctuation-detection-modal');
-                console.log('Modal found:', !!modal);
-
-                detectedPunctuationIssues = [];
-
-                if (modal) {
-                    modal.style.display = 'none';
-                    console.log('Modal closed');
-                } else {
-                    console.error('Modal not found for closing');
-                }
+                // Không làm gì cả, chỉ để tương thích với HTML
             }
 
             // Thêm các hàm vào global scope để có thể gọi từ HTML
-            window.autoFixAllPunctuationIssues = autoFixAllPunctuationIssues;
+            window.autoFixAllPunctuationIssues = ignoreAllPunctuationIssues;
             window.ignoreAllPunctuationIssues = ignoreAllPunctuationIssues;
 
-            // Event listener cho textarea để phát hiện dấu câu
+            // Event listener cho textarea để tự động thay thế từ
             const textarea = document.getElementById('gemini-main-textarea');
             if (textarea) {
+                let isReplacing = false; // Flag để tránh vòng lặp vô hạn
+                
                 textarea.addEventListener('input', function() {
-                    const text = this.value;
-                    detectedPunctuationIssues = detectPunctuationIssues(text);
-
-                    if (detectedPunctuationIssues.length > 0) {
-                        displayPunctuationIssues(detectedPunctuationIssues);
+                    if (isReplacing) return; // Tránh vòng lặp vô hạn
+                    
+                    const originalText = this.value;
+                    const replacedText = autoReplaceWords(originalText);
+                    
+                    // Nếu có thay đổi, cập nhật textarea
+                    if (replacedText !== originalText) {
+                        isReplacing = true;
+                        const cursorPosition = this.selectionStart;
+                        this.value = replacedText;
+                        
+                        // Giữ nguyên vị trí con trỏ
+                        this.setSelectionRange(cursorPosition, cursorPosition);
+                        isReplacing = false;
                     }
                 });
-            }
-
-            // Event listener cho nút "Bắt đầu tạo âm thanh" để kiểm tra dấu câu
-            // LƯU Ý: Event listener này chỉ kiểm tra dấu câu, KHÔNG ngăn event listener chính
-            // Nếu có lỗi dấu câu, chỉ hiển thị cảnh báo nhưng VẪN CHO PHÉP job chạy
-            // (Người dùng có thể bỏ qua cảnh báo và tiếp tục)
-            const startBtnPunctuation = document.getElementById('gemini-start-queue-btn');
-            if (startBtnPunctuation) {
-                startBtnPunctuation.addEventListener('click', function(e) {
-                    const text = textarea ? textarea.value : '';
-                    detectedPunctuationIssues = detectPunctuationIssues(text);
-
-                    if (detectedPunctuationIssues.length > 0) {
-                        displayPunctuationIssues(detectedPunctuationIssues);
-                        // CHỈ hiển thị cảnh báo, KHÔNG ngăn event listener chính chạy
-                        // Event listener chính sẽ được gọi bình thường
-                    }
-                    // Nếu không có lỗi dấu câu hoặc có lỗi nhưng người dùng muốn tiếp tục,
-                    // event sẽ tiếp tục đến event listener chính
-                }, false); // Sử dụng bubbling phase để chạy SAU event listener chính (hoặc cùng lúc)
             }
 
             // Event listener cho modal
