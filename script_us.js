@@ -8619,6 +8619,11 @@ async function waitForVoiceModelReady() {
                     const hasPendingFiles = window.batchRenderQueue.items.some(item => item.status === 'pending');
                     
                     if (hasPendingFiles && window.batchRenderQueue.isRunning && !window.batchRenderQueue.isPaused) {
+                        // Đợi 3 giây trước khi tiếp tục với file tiếp theo
+                        if (typeof addLogEntry === 'function') {
+                            addLogEntry(`⏳ [BATCH] Đợi 3 giây trước khi render file tiếp theo...`, 'info');
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 3000));
                         // Còn file chưa render → Tiếp tục với file tiếp theo
                         await processNextFile();
                     } else {
@@ -8640,8 +8645,11 @@ async function waitForVoiceModelReady() {
                         addLogEntry(`❌ [BATCH] Lỗi ${nextItem.fileName}: ${error.message}`, 'error');
                     }
                     
-                    // Đợi một chút rồi tiếp tục với file tiếp theo
-                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    // Đợi 3 giây rồi tiếp tục với file tiếp theo
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`⏳ [BATCH] Đợi 3 giây trước khi tiếp tục với file tiếp theo...`, 'info');
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 3000));
                     await processNextFile();
                 }
             }
