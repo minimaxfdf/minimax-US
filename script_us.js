@@ -854,11 +854,7 @@
 
 /* Đảm bảo modal container căn giữa card */
 #audio-manager-modal.punctuation-modal,
-#audio-manager-modal[class*="punctuation-modal"],
-#history-modal.punctuation-modal,
-#history-modal[class*="punctuation-modal"],
-#batch-render-modal.punctuation-modal,
-#batch-render-modal[class*="punctuation-modal"] {
+#audio-manager-modal[class*="punctuation-modal"] {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -872,19 +868,7 @@
 #gemini-col-1 #audio-manager-modal,
 #gemini-main-container #audio-manager-modal,
 body #audio-manager-modal,
-html #audio-manager-modal,
-#gemini-col-3 #history-modal,
-#gemini-col-2 #history-modal,
-#gemini-col-1 #history-modal,
-#gemini-main-container #history-modal,
-body #history-modal,
-html #history-modal,
-#gemini-col-3 #batch-render-modal,
-#gemini-col-2 #batch-render-modal,
-#gemini-col-1 #batch-render-modal,
-#gemini-main-container #batch-render-modal,
-body #batch-render-modal,
-html #batch-render-modal {
+html #audio-manager-modal {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
@@ -933,6 +917,125 @@ html #batch-render-modal {
     opacity: 0 !important;
     z-index: -1 !important;
 }
+
+/* START: Styles for History Modal - Đảm bảo hiển thị đầy đủ trong cột 3 */
+#history-modal {
+    z-index: 10001 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    display: none !important; /* Mặc định ẩn */
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+}
+
+/* Khi modal được hiển thị */
+#history-modal[style*="display: flex"],
+#history-modal[style*="display:flex"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-direction: row !important;
+}
+
+/* Đảm bảo modal card được căn giữa và có thể co giãn */
+#history-modal .punctuation-modal-card,
+#history-modal.punctuation-modal .punctuation-modal-card,
+.punctuation-modal#history-modal .punctuation-modal-card {
+    margin: 0 auto !important;
+    position: relative !important;
+    transform: none !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    float: none !important;
+    clear: both !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-self: center !important;
+    justify-self: center !important;
+    width: 80vw !important;
+    max-width: 900px !important;
+    max-height: 90vh !important;
+    height: auto !important;
+    min-height: 300px !important;
+    overflow: visible !important;
+    border-radius: 8px !important;
+}
+
+/* Đảm bảo modal container căn giữa card */
+#history-modal.punctuation-modal,
+#history-modal[class*="punctuation-modal"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-direction: row !important;
+    text-align: center !important;
+}
+
+/* Đảm bảo modal không bị giới hạn bởi container cha - Tính từ viewport */
+#gemini-col-3 #history-modal,
+#gemini-col-2 #history-modal,
+#gemini-col-1 #history-modal,
+#gemini-main-container #history-modal,
+body #history-modal,
+html #history-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    z-index: 10001 !important;
+    overflow: visible !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+    inset: 0 !important;
+}
+
+/* Đảm bảo modal body có thể scroll và hiển thị đầy đủ */
+#history-modal .punctuation-modal-body {
+    overflow-y: auto !important;
+    overflow-x: visible !important;
+    max-height: calc(90vh - 120px) !important;
+    min-height: 200px !important;
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Đảm bảo modal chỉ che phủ khi đang hiển thị */
+#history-modal[style*="display: none"],
+#history-modal[style*="display:none"],
+#history-modal:not([style*="display: flex"]):not([style*="display:flex"]) {
+    display: none !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    z-index: -1 !important;
+}
+/* END: Styles for History Modal */
 
 /* Đảm bảo các modal khác cũng không che phủ cột 3 khi đóng */
 .punctuation-modal[style*="display: none"],
@@ -1092,8 +1195,50 @@ html, body {
 }
 /* END: Styles for Audio Folder Manager */
 
-/* START: Styles for Punctuation Detection Modal - ĐÃ XÓA */
-/* Thay bằng tự động viết hoa "ai" → "Ai", "im" → "Im" ở đầu câu */
+/* START: Styles for Punctuation Detection Modal */
+#punctuation-detection-modal {
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.3s ease;
+}
+
+#punctuation-detection-modal > div {
+    animation: slideIn 0.3s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Danh sách lỗi dấu câu */
+#punctuation-issues-list {
+    max-height: 35vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #6272a4 #282a36;
+}
+
+#punctuation-issues-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+#punctuation-issues-list::-webkit-scrollbar-track {
+    background: #282a36;
+    border-radius: 4px;
+}
+
+#punctuation-issues-list::-webkit-scrollbar-thumb {
+    background: #6272a4;
+    border-radius: 4px;
+}
+
+#punctuation-issues-list::-webkit-scrollbar-thumb:hover {
+    background: #50fa7b;
+}
+
+/* Nút trong modal */
+#auto-fix-punctuation-btn, #ignore-punctuation-btn {
+    transition: all 0.3s ease;
+    font-weight: bold;
+    position: relative;
+    overflow: hidden;
+}
 
 #auto-fix-punctuation-btn:hover {
     background: #45e06a !important;
@@ -1989,7 +2134,6 @@ button:disabled {
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Đang tải quota...</div>
         </div> 
     <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <button id="toggle-log-btn" class="clear-log-btn" style="margin-bottom:10px;background-color:#4b5563;cursor:pointer;pointer-events:auto;opacity:1;" onclick="(function(btn){var panel=document.getElementById('log-panel');if(!panel)return;var hidden=panel.style.display==='none'||!panel.style.display;panel.style.display=hidden?'block':'none';btn.textContent=hidden?'📜 Ẩn log hoạt động':'📜 Xem / Ẩn log hoạt động';})(this);">📜 Xem / Ẩn log hoạt động</button> <div id="log-panel" style="display:none;"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 35.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
-    <button id="open-batch-render-modal-btn" style="background-color: #50fa7b; color: #282a36; width: 100%; padding: 10px 15px; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 10px; position: relative; z-index: 1; pointer-events: auto !important;">🎯 Render hàng loạt file</button>
     <div class="text-input-options">
         <div class="input-tabs">
             <button id="text-tab" class="tab-btn active">Nhập trực tiếp</button>
@@ -2085,7 +2229,7 @@ button:disabled {
     </div>
     <div id="gemini-text-stats"><span>Ký tự: 0</span><span>Từ: 0</span><span>Câu: 0</span><span>Đoạn: 0</span></div>
 
-<button id="gemini-merge-btn">Ghép đoạn hội thoại</button> <button id="gemini-start-queue-btn" disabled>Bắt đầu tạo âm thanh</button> <button id="apply-punctuation-btn" style="display:none; background-color: #ffb86c; color: #282a36; margin-top: 10px;">Áp dụng thiết lập dấu câu</button> <button id="gemini-pause-btn" style="display:none;">Tạm dừng</button> <button id="gemini-stop-btn" style="display:none;">Dừng hẳn</button> <div id="gemini-progress-container" style="display:none;"><div id="gemini-progress-bar"></div><span id="gemini-progress-label">0%</span></div> <div id="gemini-final-result" style="display:none;"> <h4>Kết quả cuối cùng</h4> <div id="gemini-time-taken"></div> <div id="gemini-waveform"></div> <div id="waveform-controls" style="display:none;"><button id="waveform-play-pause">▶️</button><a id="gemini-download-merged-btn" href="#" download="merged_output.mp3">Tải xuống âm thanh</a><button id="gemini-download-chunks-btn" style="display: none; background-color: #ffb86c; color: #282a36;">Tải các chunk (ZIP)</button></div> </div> </div> </div> </div> <div id="gemini-col-3" class="gemini-column"> <div class="column-header"><h3></h3></div> <div class="column-content banner-column"> <div class="section"> <button id="open-audio-manager-btn" style="background-color: #8be9fd; color: #282a36; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px;">📂 Mở Kho Âm Thanh (Online)</button> <button id="open-history-btn" style="background-color: #bd93f9; color: #282a36; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px;">📚 Lịch sử</button> </div><div id="batch-replace-section"><h4>Đổi văn bản hàng loạt</h4><div id="batch-replace-pairs"></div><div id="batch-replace-actions"><button id="add-replace-pair-btn" title="Thêm cặp từ">+</button><button id="execute-replace-btn">Thực hiện đổi</button></div></div> <button id="open-punctuation-settings-btn">Thiết lập dấu câu</button> <div class="section" style="margin-top: 20px;"> <a href="https://zalo.me/g/vyajle175" target="_blank" style="display: block; background-color: #0068ff; color: #fff; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; text-align: center; text-decoration: none; cursor: pointer; transition: all 0.3s ease;">💬 Nhóm Zalo Hỗ Trợ</a> <div style="margin-top: 12px; padding: 10px 16px; border-radius: 8px; background: linear-gradient(135deg,#111827 0%,#020617 100%); border: 1px solid #4b5563; color: #e5e7eb; font-size: 13px; font-weight: 700; text-align: center;">⚠️ Khuyến nghị: Chỉ nên render dưới <span style="font-weight: 800; color: #fbbf24;">80.000 ký tự / lần</span> để tránh lỗi và giảm nguy cơ treo web.</div> </div> </div>     <textarea id="gemini-hidden-text-for-request" style="display:none;"></textarea>
+<button id="gemini-merge-btn">Ghép đoạn hội thoại</button> <button id="gemini-start-queue-btn" disabled>Bắt đầu tạo âm thanh</button> <button id="apply-punctuation-btn" style="display:none; background-color: #ffb86c; color: #282a36; margin-top: 10px;">Áp dụng thiết lập dấu câu</button> <button id="gemini-pause-btn" style="display:none;">Tạm dừng</button> <button id="gemini-stop-btn" style="display:none;">Dừng hẳn</button> <div id="gemini-progress-container" style="display:none;"><div id="gemini-progress-bar"></div><span id="gemini-progress-label">0%</span></div> <div id="gemini-final-result" style="display:none;"> <h4>Kết quả cuối cùng</h4> <div id="gemini-time-taken"></div> <div id="gemini-waveform"></div> <div id="waveform-controls" style="display:none;"><button id="waveform-play-pause">▶️</button><a id="gemini-download-merged-btn" href="#" download="merged_output.mp3">Tải xuống âm thanh</a><button id="gemini-download-chunks-btn" style="display: none; background-color: #ffb86c; color: #282a36;">Tải các chunk (ZIP)</button></div> </div> </div> </div> </div> <div id="gemini-col-3" class="gemini-column"> <div class="column-header"><h3></h3></div> <div class="column-content banner-column"> <div class="section"> <button id="open-audio-manager-btn" style="background-color: #8be9fd; color: #282a36; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px;">📂 Mở Kho Âm Thanh (Online)</button> <button id="open-history-btn" style="background-color: #bd93f9; color: #282a36; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px;">📚 Lịch sử</button> </div><div id="batch-replace-section"><h4>Đổi văn bản hàng loạt</h4><div id="batch-replace-pairs"></div><div id="batch-replace-actions"><button id="add-replace-pair-btn" title="Thêm cặp từ">+</button><button id="execute-replace-btn">Thực hiện đổi</button></div></div> <div id="batch-render-section" class="section" style="margin-top: 20px;"><h4>🎯 Render Hàng Loạt (Batch Render)</h4><div class="batch-input-section"><input type="file" id="batch-file-input" multiple accept=".txt" style="display: none;"><button id="batch-select-files-btn" class="batch-btn-primary">📁 Chọn nhiều file (.txt)</button><small style="color: #94a3b8; font-size: 12px; display: block; margin-top: 5px;">💡 Bạn có thể chọn 10-20 file .txt cùng lúc</small></div><div id="batch-queue-container" style="margin-top: 15px; display: none;"><div class="batch-queue-header"><h5>📋 Danh sách chờ (Queue)</h5><span id="batch-queue-count" style="color: #8be9fd; font-size: 12px;">0 file</span></div><div id="batch-queue-list" class="batch-queue-list"></div></div><div class="batch-controls" style="margin-top: 15px; display: none;"><button id="batch-start-btn" class="batch-btn-start" disabled>▶️ Bắt đầu chạy Batch</button><button id="batch-pause-btn" class="batch-btn-pause" style="display: none;">⏸️ Tạm dừng</button><button id="batch-stop-btn" class="batch-btn-stop" style="display: none;">⏹️ Dừng hẳn</button><button id="batch-clear-btn" class="batch-btn-clear">🗑️ Xóa danh sách</button></div><div id="batch-progress-container" style="margin-top: 15px; display: none;"><div class="batch-progress-info"><span id="batch-progress-text">Đang xử lý: 0/0</span><span id="batch-progress-percent">0%</span></div><div class="batch-progress-bar-container"><div id="batch-progress-bar" class="batch-progress-bar"></div></div></div></div> <button id="open-punctuation-settings-btn">Thiết lập dấu câu</button> <div class="section" style="margin-top: 20px;"> <a href="https://zalo.me/g/vyajle175" target="_blank" style="display: block; background-color: #0068ff; color: #fff; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; text-align: center; text-decoration: none; cursor: pointer; transition: all 0.3s ease;">💬 Nhóm Zalo Hỗ Trợ</a> <div style="margin-top: 12px; padding: 10px 16px; border-radius: 8px; background: linear-gradient(135deg,#111827 0%,#020617 100%); border: 1px solid #4b5563; color: #e5e7eb; font-size: 13px; font-weight: 700; text-align: center;">⚠️ Khuyến nghị: Chỉ nên render dưới <span style="font-weight: 800; color: #fbbf24;">80.000 ký tự / lần</span> để tránh lỗi và giảm nguy cơ treo web.</div> </div> </div>     <textarea id="gemini-hidden-text-for-request" style="display:none;"></textarea>
 
     <!-- Modal Kho Âm Thanh Online -->
     <div id="audio-manager-modal" class="punctuation-modal" style="display:none;">
@@ -2102,12 +2246,12 @@ button:disabled {
 
     <!-- Modal Lịch sử -->
     <div id="history-modal" class="punctuation-modal" style="display:none;">
-        <div class="punctuation-modal-card" style="width: 90vw; max-width: 1200px; max-height: 85vh;">
+        <div class="punctuation-modal-card" style="width: 80vw; max-width: 900px; max-height: 90vh; height: auto; min-height: 300px; overflow: visible;">
             <div class="punctuation-modal-header">
                 <h3>📚 Lịch sử</h3>
                 <button id="close-history-btn" class="punctuation-modal-close-btn">&times;</button>
             </div>
-            <div class="punctuation-modal-body" style="max-height: calc(85vh - 120px); overflow-y: auto;">
+            <div class="punctuation-modal-body" style="max-height: calc(90vh - 120px); overflow-y: auto; overflow-x: visible; min-height: 200px; flex: 1 1 auto;">
                 <div id="history-list-container" style="min-height: 200px;">
                     <div style="text-align: center; padding: 40px; color: #94a3b8;">
                         <p>Đang tải lịch sử...</p>
@@ -2120,48 +2264,34 @@ button:disabled {
         </div>
     </div>
 
-    <!-- Modal Render Hàng Loạt -->
-    <div id="batch-render-modal" class="punctuation-modal" style="display:none;">
-        <div class="punctuation-modal-card" style="width: 90vw; max-width: 1000px; max-height: 90vh;">
-            <div class="punctuation-modal-header">
-                <h3>🎯 Render Hàng Loạt (Batch Render)</h3>
-                <button id="close-batch-render-modal-btn" class="punctuation-modal-close-btn">&times;</button>
+    <!-- Modal phát hiện dấu câu -->
+    <div id="punctuation-detection-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 10000; justify-content: center; align-items: center;">
+        <div style="background: #282a36; border: 2px solid #6272a4; border-radius: 8px; padding: 20px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: #ffb86c; font-size: 18px;">⚠️ Phát hiện dấu câu trùng lặp</h3>
+                <button id="close-punctuation-modal" onclick="window.ignoreAllPunctuationIssues()" style="background: #ff5555; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 14px;">✕</button>
             </div>
-            <div class="punctuation-modal-body" style="max-height: calc(90vh - 120px); overflow-y: auto; padding: 20px;">
-                <div id="batch-render-section" class="section" style="margin-top: 0;">
-                    <div class="batch-input-section">
-                        <input type="file" id="batch-file-input" multiple accept=".txt" style="display: none;">
-                        <button id="batch-select-files-btn" class="batch-btn-primary">📁 Chọn nhiều file (.txt)</button>
-                        <small style="color: #94a3b8; font-size: 12px; display: block; margin-top: 5px;">💡 Bạn có thể chọn 10-20 file .txt cùng lúc</small>
-                    </div>
-                    <div id="batch-queue-container" style="margin-top: 15px; display: none;">
-                        <div class="batch-queue-header">
-                            <h5>📋 Danh sách chờ (Queue)</h5>
-                            <span id="batch-queue-count" style="color: #8be9fd; font-size: 12px;">0 file</span>
-                        </div>
-                        <div id="batch-queue-list" class="batch-queue-list"></div>
-                    </div>
-                    <div class="batch-controls" style="margin-top: 15px; display: none;">
-                        <button id="batch-start-btn" class="batch-btn-start" disabled>▶️ Bắt đầu chạy Batch</button>
-                        <button id="batch-pause-btn" class="batch-btn-pause" style="display: none;">⏸️ Tạm dừng</button>
-                        <button id="batch-stop-btn" class="batch-btn-stop" style="display: none;">⏹️ Dừng hẳn</button>
-                        <button id="batch-clear-btn" class="batch-btn-clear">🗑️ Xóa danh sách</button>
-                    </div>
-                    <div id="batch-progress-container" style="margin-top: 15px; display: none;">
-                        <div class="batch-progress-info">
-                            <span id="batch-progress-text">Đang xử lý: 0/0</span>
-                            <span id="batch-progress-percent">0%</span>
-                        </div>
-                        <div class="batch-progress-bar-container">
-                            <div id="batch-progress-bar" class="batch-progress-bar"></div>
-                        </div>
-                    </div>
+
+            <div id="punctuation-issues-list" style="margin-bottom: 20px;"></div>
+
+            <div style="background: #44475a; padding: 15px; border-radius: 6px; border: 1px solid #6272a4;">
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <label style="color: #f8f8f2; font-size: 14px; font-weight: bold;">Dấu câu mặc định:</label>
+                    <select id="default-punctuation-select" style="background: #282a36; color: #f8f8f2; border: 1px solid #6272a4; border-radius: 4px; padding: 8px 12px; font-size: 14px; min-width: 150px;">
+                        <option value=".">Dấu chấm (.)</option>
+                        <option value=",">Dấu phẩy (,)</option>
+                        <option value="!">Dấu chấm than (!)</option>
+                        <option value="?">Dấu chấm hỏi (?)</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 15px; justify-content: center;">
+                    <button id="auto-fix-punctuation-btn" onclick="window.autoFixAllPunctuationIssues()" style="background: #50fa7b; color: #282a36; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; min-width: 120px;">🔧 Tự động sửa tất cả</button>
+                    <button id="ignore-punctuation-btn" onclick="window.ignoreAllPunctuationIssues()" style="background: #6272a4; color: #f8f8f2; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; min-width: 120px;">❌ Bỏ qua tất cả</button>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Modal phát hiện dấu câu (ĐÃ BỎ - Thay bằng tự động viết hoa) -->
 
     <!-- Modal thiết lập dấu câu -->
     <div id="punctuation-settings-modal" class="punctuation-modal" style="display:none;">
@@ -7366,55 +7496,254 @@ async function waitForVoiceModelReady() {
         // --- 5. Punctuation Detection Functionality ---
         (function() {
             let punctuationDetectionEnabled = true;
-            // Hàm tự động viết hoa chữ đầu câu: "ai" → "Ai", "im" → "Im"
-            // Chỉ áp dụng khi từ đứng ở đầu câu (sau dấu chấm, chấm hỏi, chấm than, xuống dòng)
-            function autoCapitalizeWords(text) {
-                if (!text || !punctuationDetectionEnabled) return text;
+            let detectedPunctuationIssues = [];
 
-                let result = text;
-                
-                // Đổi "ai" thành "Ai" ở đầu câu
-                // Pattern: (đầu text HOẶC sau dấu chấm/chấm hỏi/chấm than + khoảng trắng) + "ai" + word boundary
-                result = result.replace(/(?:^|[.!?]\s+)(ai\b)/g, (match, word, offset) => {
-                    // offset là vị trí của toàn bộ match
-                    // Nếu offset = 0 → đầu text
-                    // Nếu offset > 0 → sau dấu câu + khoảng trắng
-                    return match.replace(/ai\b/i, 'Ai');
-                });
-                
-                // Đổi "im" thành "Im" ở đầu câu
-                result = result.replace(/(?:^|[.!?]\s+)(im\b)/g, (match, word, offset) => {
-                    return match.replace(/im\b/i, 'Im');
-                });
+            // Hàm phát hiện dấu câu trùng lặp
+            function detectPunctuationIssues(text) {
+                if (!punctuationDetectionEnabled || !text) return [];
 
-                return result;
+                const issues = [];
+
+                // Pattern tổng quát để phát hiện tất cả cụm dấu câu (2 ký tự trở lên)
+                // Dấu ngoặc kép chỉ bị phát hiện khi nằm cùng với dấu câu khác
+                const generalPattern = /[.!?,;:]{2,}|[.!?,;:]["']|["'][.!?,;:]|["'][.!?,;:]{2,}|[.!?,;:]{2,}["']/g;
+
+                let match;
+                while ((match = generalPattern.exec(text)) !== null) {
+                    const matchedText = match[0];
+                    const start = match.index;
+                    const end = match.index + matchedText.length;
+
+                    // Bỏ qua dấu ba chấm (...) - không phát hiện như lỗi
+                    if (matchedText === '...') {
+                        continue;
+                    }
+
+                    // Phân loại loại lỗi
+                    let type = 'Dấu câu trùng lặp';
+                    if (/[.!?]{2,}/.test(matchedText)) {
+                        type = 'Dấu chấm/chấm hỏi/chấm than trùng lặp';
+                    } else if (/[,;]{2,}/.test(matchedText)) {
+                        type = 'Dấu phẩy/chấm phẩy trùng lặp';
+                    } else if (/[:]{2,}/.test(matchedText)) {
+                        type = 'Dấu hai chấm trùng lặp';
+                    } else if (/["'][.!?,;:]|[.!?,;:]["']/.test(matchedText)) {
+                        type = 'Dấu ngoặc kép kết hợp với dấu câu khác';
+                    } else if (/[.!?][,;:]|[;:,][.!?]/.test(matchedText)) {
+                        type = 'Dấu câu kết hợp khác nhau';
+                    }
+
+                    issues.push({
+                        text: matchedText,
+                        start: start,
+                        end: end,
+                        type: type,
+                        suggestion: getPunctuationSuggestion(matchedText)
+                    });
+                }
+
+                return issues;
             }
 
-            // Event listener cho textarea để tự động viết hoa
+            // Hàm đề xuất dấu câu thay thế
+            function getPunctuationSuggestion(originalText) {
+                // Nếu có dấu chấm hỏi, ưu tiên giữ dấu chấm hỏi
+                if (originalText.includes('?')) return '?';
+                // Nếu có dấu chấm than, ưu tiên giữ dấu chấm than
+                if (originalText.includes('!')) return '!';
+                // Nếu có dấu chấm, ưu tiên giữ dấu chấm
+                if (originalText.includes('.')) return '.';
+                // Nếu có dấu phẩy, ưu tiên giữ dấu phẩy
+                if (originalText.includes(',')) return ',';
+                // Nếu có dấu ngoặc kép, ưu tiên giữ dấu ngoặc kép
+                if (originalText.includes('"')) return '"';
+                // Nếu có dấu ngoặc đơn, ưu tiên giữ dấu ngoặc đơn
+                if (originalText.includes("'")) return "'";
+                // Mặc định là dấu chấm
+                return '.';
+            }
+
+            // Hàm hiển thị danh sách lỗi dấu câu
+            function displayPunctuationIssues(issues) {
+                const modal = document.getElementById('punctuation-detection-modal');
+                const issuesList = document.getElementById('punctuation-issues-list');
+
+                if (!issues || issues.length === 0) {
+                    modal.style.display = 'none';
+                    return;
+                }
+
+                issuesList.innerHTML = '';
+                issues.forEach((issue, index) => {
+                    const issueDiv = document.createElement('div');
+                    issueDiv.style.cssText = `
+                        background: #44475a;
+                        border: 1px solid #6272a4;
+                        border-radius: 6px;
+                        padding: 12px;
+                        margin-bottom: 10px;
+                        font-size: 14px;
+                    `;
+
+                    issueDiv.className = 'punctuation-issue-item';
+                    issueDiv.innerHTML = `
+                        <div style="color: #ffb86c; font-weight: bold; margin-bottom: 6px; font-size: 15px;">
+                            ${issue.type}
+                        </div>
+                        <div style="color: #f8f8f2; margin-bottom: 6px;">
+                            <strong>Phát hiện:</strong> <span style="background: #ff5555; color: white; padding: 2px 6px; border-radius: 3px; font-family: monospace;">"${issue.text}"</span>
+                        </div>
+                        <div style="color: #50fa7b;">
+                            <strong>Đề xuất:</strong> <span style="background: #50fa7b; color: #282a36; padding: 2px 6px; border-radius: 3px; font-family: monospace;">"${issue.suggestion}"</span>
+                        </div>
+                    `;
+
+                    issuesList.appendChild(issueDiv);
+                });
+
+                // Hiển thị modal
+                modal.style.display = 'flex';
+            }
+
+            // Hàm tự động sửa tất cả lỗi dấu câu
+            function autoFixAllPunctuationIssues() {
+                console.log('autoFixAllPunctuationIssues called');
+
+                const textarea = document.getElementById('gemini-main-textarea');
+                const defaultPunctuation = document.getElementById('default-punctuation-select');
+                const modal = document.getElementById('punctuation-detection-modal');
+
+                console.log('Elements found:', {
+                    textarea: !!textarea,
+                    defaultPunctuation: !!defaultPunctuation,
+                    modal: !!modal,
+                    issuesCount: detectedPunctuationIssues.length
+                });
+
+                if (!textarea) {
+                    console.error('Textarea not found');
+                    return;
+                }
+
+                if (!defaultPunctuation) {
+                    console.error('Default punctuation select not found');
+                    return;
+                }
+
+                if (!modal) {
+                    console.error('Modal not found');
+                    return;
+                }
+
+                if (!detectedPunctuationIssues.length) {
+                    console.log('No issues to fix');
+                    modal.style.display = 'none';
+                    return;
+                }
+
+                const punctuationValue = defaultPunctuation.value;
+                console.log('Using punctuation:', punctuationValue);
+
+                let text = textarea.value;
+                console.log('Original text length:', text.length);
+
+                // Sắp xếp các lỗi theo thứ tự ngược để tránh ảnh hưởng đến index
+                const sortedIssues = [...detectedPunctuationIssues].sort((a, b) => b.start - a.start);
+                console.log('Issues to fix:', sortedIssues.length);
+
+                sortedIssues.forEach((issue, index) => {
+                    console.log(`Fixing issue ${index + 1}:`, issue);
+                    const beforeText = text.substring(0, issue.start);
+                    const afterText = text.substring(issue.end);
+                    // Thay thế toàn bộ cụm dấu câu bằng dấu câu mặc định
+                    text = beforeText + punctuationValue + afterText;
+                });
+
+                textarea.value = text;
+                detectedPunctuationIssues = [];
+
+                // Đóng modal
+                modal.style.display = 'none';
+                console.log('Modal closed');
+
+                // Trigger input event để cập nhật stats
+                textarea.dispatchEvent(new Event('input'));
+
+                // Hiển thị thông báo thành công
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Đã sửa dấu câu',
+                        text: `Đã tự động sửa ${sortedIssues.length} lỗi dấu câu`,
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true
+                    });
+                }
+            }
+
+            // Hàm bỏ qua tất cả lỗi dấu câu
+            function ignoreAllPunctuationIssues() {
+                console.log('ignoreAllPunctuationIssues called');
+
+                const modal = document.getElementById('punctuation-detection-modal');
+                console.log('Modal found:', !!modal);
+
+                detectedPunctuationIssues = [];
+
+                if (modal) {
+                    modal.style.display = 'none';
+                    console.log('Modal closed');
+                } else {
+                    console.error('Modal not found for closing');
+                }
+            }
+
+            // Thêm các hàm vào global scope để có thể gọi từ HTML
+            window.autoFixAllPunctuationIssues = autoFixAllPunctuationIssues;
+            window.ignoreAllPunctuationIssues = ignoreAllPunctuationIssues;
+
+            // Event listener cho textarea để phát hiện dấu câu
             const textarea = document.getElementById('gemini-main-textarea');
             if (textarea) {
-                let isProcessing = false; // Tránh vòng lặp vô hạn
-                
                 textarea.addEventListener('input', function() {
-                    if (isProcessing) return;
-                    
-                    const originalText = this.value;
-                    const newText = autoCapitalizeWords(originalText);
-                    
-                    // Nếu có thay đổi, cập nhật textarea
-                    if (newText !== originalText) {
-                        isProcessing = true;
-                        const cursorPos = this.selectionStart;
-                        this.value = newText;
-                        
-                        // Giữ nguyên vị trí con trỏ
-                        this.setSelectionRange(cursorPos, cursorPos);
-                        
-                        // Trigger input event để cập nhật stats (nhưng không gọi lại hàm này)
-                        setTimeout(() => {
-                            isProcessing = false;
-                            this.dispatchEvent(new Event('input', { bubbles: true }));
-                        }, 0);
+                    const text = this.value;
+                    detectedPunctuationIssues = detectPunctuationIssues(text);
+
+                    if (detectedPunctuationIssues.length > 0) {
+                        displayPunctuationIssues(detectedPunctuationIssues);
+                    }
+                });
+            }
+
+            // Event listener cho nút "Bắt đầu tạo âm thanh" để kiểm tra dấu câu
+            // LƯU Ý: Event listener này chỉ kiểm tra dấu câu, KHÔNG ngăn event listener chính
+            // Nếu có lỗi dấu câu, chỉ hiển thị cảnh báo nhưng VẪN CHO PHÉP job chạy
+            // (Người dùng có thể bỏ qua cảnh báo và tiếp tục)
+            const startBtnPunctuation = document.getElementById('gemini-start-queue-btn');
+            if (startBtnPunctuation) {
+                startBtnPunctuation.addEventListener('click', function(e) {
+                    const text = textarea ? textarea.value : '';
+                    detectedPunctuationIssues = detectPunctuationIssues(text);
+
+                    if (detectedPunctuationIssues.length > 0) {
+                        displayPunctuationIssues(detectedPunctuationIssues);
+                        // CHỈ hiển thị cảnh báo, KHÔNG ngăn event listener chính chạy
+                        // Event listener chính sẽ được gọi bình thường
+                    }
+                    // Nếu không có lỗi dấu câu hoặc có lỗi nhưng người dùng muốn tiếp tục,
+                    // event sẽ tiếp tục đến event listener chính
+                }, false); // Sử dụng bubbling phase để chạy SAU event listener chính (hoặc cùng lúc)
+            }
+
+            // Event listener cho modal
+            const modal = document.getElementById('punctuation-detection-modal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        ignoreAllPunctuationIssues();
                     }
                 });
             }
@@ -8260,12 +8589,6 @@ async function waitForVoiceModelReady() {
                     const hasPendingFiles = window.batchRenderQueue.items.some(item => item.status === 'pending');
                     
                     if (hasPendingFiles && window.batchRenderQueue.isRunning && !window.batchRenderQueue.isPaused) {
-                        // DELAY 3 GIÂY TRƯỚC KHI BẮT ĐẦU FILE TIẾP THEO
-                        if (typeof addLogEntry === 'function') {
-                            addLogEntry(`⏳ [BATCH] Đợi 3 giây trước khi render file tiếp theo...`, 'info');
-                        }
-                        await new Promise(resolve => setTimeout(resolve, 3000));
-                        
                         // Còn file chưa render → Tiếp tục với file tiếp theo
                         await processNextFile();
                     } else {
@@ -9426,17 +9749,32 @@ async function waitForVoiceModelReady() {
         // Mở modal lịch sử
         if (openHistoryBtn && historyModal) {
             openHistoryBtn.addEventListener('click', async () => {
-                // Đảm bảo modal hiển thị đúng cách và căn giữa từ cột 1 đến cột 3
-                historyModal.style.display = 'flex';
+                // QUAN TRỌNG: Di chuyển modal ra body level để đảm bảo tính từ viewport
+                if (historyModal.parentElement && historyModal.parentElement.tagName !== 'BODY') {
+                    const originalParent = historyModal.parentElement;
+                    document.body.appendChild(historyModal);
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry('🔄 Đã di chuyển modal lịch sử ra body level để hiển thị đầy đủ', 'info');
+                    }
+                }
+                
+                // Đảm bảo modal được hiển thị đúng cách và căn giữa từ viewport
                 historyModal.style.position = 'fixed';
                 historyModal.style.top = '0';
                 historyModal.style.left = '0';
+                historyModal.style.right = '0';
+                historyModal.style.bottom = '0';
                 historyModal.style.width = '100vw';
                 historyModal.style.height = '100vh';
-                historyModal.style.zIndex = '10000';
-                historyModal.style.justifyContent = 'center';
+                historyModal.style.margin = '0';
+                historyModal.style.padding = '0';
+                historyModal.style.display = 'flex';
+                historyModal.style.visibility = 'visible';
+                historyModal.style.opacity = '1';
+                historyModal.style.zIndex = '10001';
                 historyModal.style.alignItems = 'center';
-                historyModal.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+                historyModal.style.justifyContent = 'center';
+                
                 await renderHistory();
             });
         }
@@ -9464,9 +9802,6 @@ async function waitForVoiceModelReady() {
                     closeHistoryModal();
                 }
             });
-            
-            // Đảm bảo modal không hiển thị khi chưa bấm nút
-            historyModal.style.display = 'none';
         }
 
         // Xóa tất cả lịch sử
@@ -9497,107 +9832,12 @@ async function waitForVoiceModelReady() {
         }
     }
     
-    // =================================================================
-    // == KHỞI TẠO BATCH RENDER MODAL ==
-    // =================================================================
-    // Flag để tránh gắn event listener nhiều lần
-    let batchRenderModalInitialized = false;
-    
-    function initBatchRenderModal() {
-        // Nếu đã khởi tạo rồi thì không làm gì
-        if (batchRenderModalInitialized) {
-            return;
-        }
-        
-        const openBatchRenderBtn = document.getElementById('open-batch-render-modal-btn');
-        const closeBatchRenderBtn = document.getElementById('close-batch-render-modal-btn');
-        const batchRenderModal = document.getElementById('batch-render-modal');
-        
-        // Kiểm tra nếu các element chưa tồn tại
-        if (!openBatchRenderBtn || !batchRenderModal) {
-            console.warn('Batch render modal elements not found, retrying...', {
-                openBatchRenderBtn: !!openBatchRenderBtn,
-                batchRenderModal: !!batchRenderModal
-            });
-            setTimeout(initBatchRenderModal, 500);
-            return;
-        }
-        
-        // Đánh dấu đã khởi tạo
-        batchRenderModalInitialized = true;
-        console.log('✅ Batch render modal elements found');
-        
-        // Đảm bảo modal không hiển thị khi chưa bấm nút
-        if (batchRenderModal) {
-            batchRenderModal.style.display = 'none';
-        }
-        
-        // Mở modal batch render
-        if (openBatchRenderBtn && batchRenderModal) {
-            // Xóa event listener cũ nếu có (nếu được gọi lại)
-            const newOpenBtn = openBatchRenderBtn.cloneNode(true);
-            openBatchRenderBtn.parentNode.replaceChild(newOpenBtn, openBatchRenderBtn);
-            
-            newOpenBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🎯 Click vào nút Render hàng loạt file');
-                
-                // Đảm bảo modal hiển thị đúng cách
-                batchRenderModal.style.display = 'flex';
-                batchRenderModal.style.position = 'fixed';
-                batchRenderModal.style.top = '0';
-                batchRenderModal.style.left = '0';
-                batchRenderModal.style.width = '100vw';
-                batchRenderModal.style.height = '100vh';
-                batchRenderModal.style.zIndex = '10000';
-                batchRenderModal.style.justifyContent = 'center';
-                batchRenderModal.style.alignItems = 'center';
-                batchRenderModal.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
-                
-                console.log('✅ Modal đã được hiển thị');
-            });
-            
-            console.log('✅ Event listener đã được gắn vào nút');
-        }
-        
-        // Đóng modal batch render
-        const closeBatchRenderModal = () => {
-            if (batchRenderModal) {
-                batchRenderModal.style.display = 'none';
-            }
-        };
-        
-        if (closeBatchRenderBtn && batchRenderModal) {
-            closeBatchRenderBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                closeBatchRenderModal();
-            });
-        }
-        
-        // Đóng modal khi click vào background
-        if (batchRenderModal) {
-            batchRenderModal.addEventListener('click', (e) => {
-                if (e.target === batchRenderModal) {
-                    closeBatchRenderModal();
-                }
-            });
-        }
-    }
-    
     // Khởi tạo history modal sau khi DOM sẵn sàng
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            initHistoryModal();
-            initBatchRenderModal();
-        });
+        document.addEventListener('DOMContentLoaded', initHistoryModal);
     } else {
         // DOM đã sẵn sàng, nhưng có thể HTML chưa được inject
-        setTimeout(() => {
-            initHistoryModal();
-            initBatchRenderModal();
-        }, 100);
+        setTimeout(initHistoryModal, 100);
     }
 
     // Lắng nghe sự kiện beforeunload để dọn dẹp
