@@ -56,378 +56,6 @@
             };
         }
         
-        // =======================================================
-        // MULTI-THREAD RENDERING SUPPORT
-        // =======================================================
-        // Khởi tạo multi-thread system
-        if (typeof window.multiThreadWorkers === 'undefined') {
-            window.multiThreadWorkers = {
-                maxWorkers: 2, // Tối đa 2 worker tabs
-                activeWorkers: [], // [{tabId, chunks, status}]
-                payloadTemplate: null, // Payload template sau chunk đầu tiên
-                isEnabled: false, // Flag bật/tắt đa luồng
-                extensionInstalled: false // Kiểm tra extension đã cài chưa
-            };
-        }
-        
-        // Kiểm tra extension đã cài chưa (cải thiện: kiểm tra nhiều cách)
-        function checkExtensionInstalled() {
-            // Cách 1: Kiểm tra flag đã được set chưa (nhanh nhất)
-            if (window.__multiThreadExtensionReady === true) {
-                window.multiThreadWorkers.extensionInstalled = true;
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện', 'success');
-                }
-                return true;
-            }
-            
-            // Cách 2: Kiểm tra API đã được expose chưa
-            if (typeof window.openWorkerTab === 'function') {
-                window.multiThreadWorkers.extensionInstalled = true;
-                window.__multiThreadExtensionReady = true; // Set flag
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện', 'success');
-                }
-                return true;
-            }
-            
-            // Cách 3: Kiểm tra chrome.runtime.id và tự tạo API nếu cần
-            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
-                // Extension có trong page nhưng API chưa được expose
-                // Tự tạo API ngay tại đây để đảm bảo có sẵn
-                try {
-                    // Tạo API ngay lập tức
-                    window.openWorkerTab = window.openWorkerTab || async function(chunkIndex, chunks) {
-                        return new Promise((resolve, reject) => {
-                            chrome.runtime.sendMessage({
-                                action: 'openWorkerTab',
-                                chunkIndex: chunkIndex,
-                                chunks: chunks
-                            }, (response) => {
-                                if (chrome.runtime.lastError) {
-                                    reject(new Error(chrome.runtime.lastError.message));
-                                    return;
-                                }
-                                if (response && response.success) {
-                                    resolve(response.tabId);
-                                } else {
-                                    reject(new Error(response?.error || 'Không thể mở worker tab'));
-                                }
-                            });
-                        });
-                    };
-                    
-                    window.savePayloadTemplate = window.savePayloadTemplate || function(payloadTemplate) {
-                        chrome.runtime.sendMessage({
-                            action: 'savePayloadTemplate',
-                            payloadTemplate: payloadTemplate
-                        });
-                    };
-                    
-                    window.getPayloadTemplate = window.getPayloadTemplate || function() {
-                        return new Promise((resolve, reject) => {
-                            chrome.runtime.sendMessage({
-                                action: 'getPayloadTemplate'
-                            }, (response) => {
-                                if (chrome.runtime.lastError) {
-                                    reject(new Error(chrome.runtime.lastError.message));
-                                    return;
-                                }
-                                if (response && response.success) {
-                                    resolve(response.payloadTemplate);
-                                } else {
-                                    reject(new Error('Không thể lấy payload template'));
-                                }
-                            });
-                        });
-                    };
-                    
-                    // Set flag
-                    window.__multiThreadExtensionReady = true;
-                    window.multiThreadWorkers.extensionInstalled = true;
-                    
-                    if (typeof window.addLogEntry === 'function') {
-                        window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện và API đã được tạo', 'success');
-                    }
-                    
-                    console.log('[MultiThread] ✅ Đã tự tạo API từ script 33.js');
-                    return true;
-                } catch (e) {
-                    console.error('[MultiThread] Lỗi khi tạo API:', e);
-                    return false;
-                }
-            }
-            
-            window.multiThreadWorkers.extensionInstalled = false;
-            return false;
-        }
-        
-        // =======================================================
-        // KIỂM TRA EXTENSION BẮT BUỘC TRƯỚC KHI CHO PHÉP CHẠY TOOL
-        // =======================================================
-        function checkExtensionRequired() {
-            // Kiểm tra extension đã cài chưa (cải thiện: đợi API sẵn sàng)
-            let isInstalled = checkExtensionInstalled();
-            
-            // Nếu extension có trong page (chrome.runtime.id) nhưng API chưa sẵn sàng
-            // Đợi thêm một chút để content script expose API hoặc tự tạo API
-            if (!isInstalled && typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
-                // Extension có trong page nhưng API chưa được expose
-                // Đợi tối đa 5 giây để API được expose hoặc tự tạo
-                let waitCount = 0;
-                const maxWait = 10; // 10 lần x 500ms = 5 giây
-                const checkInterval = setInterval(() => {
-                    waitCount++;
-                    isInstalled = checkExtensionInstalled(); // Hàm này sẽ tự tạo API nếu cần
-                    if (isInstalled || waitCount >= maxWait) {
-                        clearInterval(checkInterval);
-                        if (isInstalled) {
-                            // API đã sẵn sàng, cho phép tool chạy
-                            return true;
-                        }
-                    }
-                }, 500);
-                
-                // Nếu sau 5 giây vẫn chưa có API, hiển thị cảnh báo
-                setTimeout(() => {
-                    if (!window.multiThreadWorkers.extensionInstalled) {
-                        // Vẫn chưa có API, hiển thị cảnh báo
-                        showExtensionWarning();
-                        return false;
-                    }
-                }, 5000);
-                
-                // Trả về false tạm thời, nhưng đã trigger check lại
-                return false;
-            }
-            
-            // Nếu không có chrome.runtime.id, có thể là userscript context
-            // Thử kiểm tra bằng cách khác hoặc cho phép tool chạy với cảnh báo
-            if (!isInstalled && (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.id)) {
-                // Không có chrome.runtime, có thể là userscript
-                // Hiển thị cảnh báo nhưng không chặn tool (cho phép chạy đơn luồng)
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry('⚠️ Không thể phát hiện extension. Tool sẽ chạy ở chế độ đơn luồng (không có đa luồng).', 'warning');
-                    window.addLogEntry('💡 Để sử dụng đa luồng, vui lòng cài extension Multi-Thread Render Helper.', 'info');
-                }
-                // Cho phép tool chạy nhưng không có đa luồng
-                window.multiThreadWorkers.extensionInstalled = false;
-                return true; // Cho phép chạy nhưng không có đa luồng
-            }
-            
-            if (!isInstalled) {
-                showExtensionWarning();
-                return false;
-            }
-            
-            return true;
-        }
-        
-        // Hiển thị cảnh báo extension chưa cài
-        function showExtensionWarning() {
-            const errorMessage = `🚫 EXTENSION CHƯA ĐƯỢC PHÁT HIỆN!\n\n⚠️ Tool này yêu cầu Multi-Thread Extension để hoạt động.\n\n📋 KIỂM TRA:\n1. Extension đã được cài đặt chưa? (chrome://extensions/)\n2. Extension đã được BẬT chưa?\n3. Đã RELOAD trang này sau khi cài extension chưa?\n\n📋 NẾU CHƯA CÀI, HƯỚNG DẪN:\n1. Mở Chrome và vào: chrome://extensions/\n2. Bật "Developer mode" (góc trên bên phải)\n3. Click "Load unpacked"\n4. Chọn thư mục: E:\\ma_cod\\multi-thread-helper\n5. Reload trang này và thử lại\n\n❌ Tool sẽ KHÔNG hoạt động cho đến khi extension được phát hiện!`;
-            
-            if (typeof window.addLogEntry === 'function') {
-                window.addLogEntry(errorMessage, 'error');
-            } else {
-                // Nếu addLogEntry chưa sẵn sàng, hiển thị alert
-                alert(errorMessage);
-            }
-            
-            // Hiển thị cảnh báo trên UI nếu có
-            const logContainer = document.getElementById('log-container');
-            if (logContainer) {
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'log-entry error';
-                errorDiv.style.cssText = 'background: #ff4444; color: white; padding: 15px; margin: 10px 0; border-radius: 5px; font-weight: bold; white-space: pre-line;';
-                errorDiv.textContent = errorMessage;
-                logContainer.appendChild(errorDiv);
-                logContainer.scrollTop = logContainer.scrollHeight;
-            }
-        }
-        
-        // Expose function để kiểm tra từ bên ngoài
-        window.checkExtensionRequired = checkExtensionRequired;
-        
-        // Lưu payload template khi chunk 1 được gửi (expose ra window để có thể gọi từ processPayload)
-        window.savePayloadTemplateForMultiThread = function(payload) {
-            try {
-                if (window.INTERCEPT_CURRENT_INDEX === 0 && payload) {
-                    // Lưu payload template (payload gốc trước khi thay text)
-                    if (typeof payload === 'string') {
-                        try {
-                            const parsed = JSON.parse(payload);
-                            // Tạo template bằng cách thay text thành placeholder
-                            if (parsed && typeof parsed === 'object') {
-                                const template = JSON.parse(JSON.stringify(parsed)); // Deep clone
-                                // Tìm và thay text field thành placeholder
-                                if (template.text) template.text = '__CHUNK_TEXT__';
-                                else {
-                                    const textFields = ['content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
-                                    for (const field of textFields) {
-                                        if (template[field]) {
-                                            template[field] = '__CHUNK_TEXT__';
-                                            break;
-                                        }
-                                    }
-                                }
-                                window.multiThreadWorkers.payloadTemplate = template;
-                                
-                                // Lưu vào extension storage nếu có
-                                if (window.multiThreadWorkers.extensionInstalled && chrome.storage) {
-                                    chrome.storage.local.set({ payloadTemplate: template });
-                                    
-                                    // Lưu chunks data
-                                    if (typeof SI$acY !== 'undefined') {
-                                        const chunksData = {};
-                                        SI$acY.forEach((chunk, index) => {
-                                            chunksData[index] = normalizeChunkText(chunk);
-                                        });
-                                        chrome.storage.local.set({ chunksData: chunksData });
-                                    }
-                                }
-                                
-                                if (typeof window.addLogEntry === 'function') {
-                                    window.addLogEntry('💾 Đã lưu payload template cho đa luồng', 'info');
-                                }
-                            }
-                        } catch (e) {
-                            // Không phải JSON, lưu string template
-                            window.multiThreadWorkers.payloadTemplate = payload.replace(window.INTERCEPT_CURRENT_TEXT || '', '__CHUNK_TEXT__');
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Lỗi khi lưu payload template:', error);
-            }
-        };
-        
-        // Kích hoạt đa luồng sau khi chunk 1 thành công
-        async function activateMultiThreading() {
-            if (!window.multiThreadWorkers.extensionInstalled) {
-                if (!checkExtensionInstalled()) {
-                    if (typeof window.addLogEntry === 'function') {
-                        window.addLogEntry('⚠️ Multi-Thread Extension chưa được cài đặt. Vui lòng cài extension để sử dụng tính năng đa luồng.', 'warning');
-                    }
-                    return false;
-                }
-            }
-            
-            if (window.multiThreadWorkers.isEnabled) {
-                return false;
-            }
-            
-            // Kiểm tra chunk 1 đã thành công chưa
-            if (!window.chunkStatus || window.chunkStatus[0] !== 'success') {
-                return false;
-            }
-            
-            // Kiểm tra có payload template chưa
-            if (!window.multiThreadWorkers.payloadTemplate) {
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry('⚠️ Chưa có payload template, không thể kích hoạt đa luồng', 'warning');
-                }
-                return false;
-            }
-            
-            // Phân bổ chunks cho workers
-            const remainingChunks = [];
-            if (typeof SI$acY !== 'undefined') {
-                for (let i = 1; i < SI$acY.length; i++) {
-                    if (!window.chunkStatus || window.chunkStatus[i] !== 'success') {
-                        remainingChunks.push(i);
-                    }
-                }
-            }
-            
-            if (remainingChunks.length === 0) {
-                return false;
-            }
-            
-            // Phân bổ chunks cho các workers
-            const maxWorkers = window.multiThreadWorkers.maxWorkers;
-            const chunksPerWorker = Math.ceil(remainingChunks.length / maxWorkers);
-            
-            if (typeof window.addLogEntry === 'function') {
-                window.addLogEntry(`🚀 Kích hoạt đa luồng: ${remainingChunks.length} chunks còn lại, ${maxWorkers} workers`, 'info');
-            }
-            
-            // Tạo workers
-            for (let w = 0; w < maxWorkers && w * chunksPerWorker < remainingChunks.length; w++) {
-                const chunks = remainingChunks.slice(w * chunksPerWorker, (w + 1) * chunksPerWorker);
-                if (chunks.length > 0 && typeof window.openWorkerTab === 'function') {
-                    try {
-                        const tabId = await window.openWorkerTab(chunks[0], chunks);
-                        if (tabId) {
-                            window.multiThreadWorkers.activeWorkers.push({
-                                tabId: tabId,
-                                chunks: chunks,
-                                status: 'active',
-                                createdAt: Date.now()
-                            });
-                            if (typeof window.addLogEntry === 'function') {
-                                window.addLogEntry(`✅ Đã tạo worker tab ${tabId} cho ${chunks.length} chunks: ${chunks.map(c => c + 1).join(', ')}`, 'success');
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Lỗi khi tạo worker tab:', error);
-                        if (typeof window.addLogEntry === 'function') {
-                            window.addLogEntry(`❌ Lỗi khi tạo worker tab: ${error.message}`, 'error');
-                        }
-                    }
-                }
-            }
-            
-            window.multiThreadWorkers.isEnabled = true;
-            return true;
-        }
-        
-        // Expose function
-        window.activateMultiThreading = activateMultiThreading;
-        
-        // Lắng nghe event từ extension khi extension sẵn sàng
-        window.addEventListener('multiThreadExtensionReady', function(event) {
-            console.log('[MultiThread] Nhận event multiThreadExtensionReady từ extension:', event.detail);
-            window.multiThreadWorkers.extensionInstalled = true;
-            window.__multiThreadExtensionReady = true;
-            if (typeof window.addLogEntry === 'function') {
-                window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện qua event', 'success');
-            }
-        });
-        
-        // Kiểm tra extension khi script load và hiển thị cảnh báo nếu chưa cài
-        // Kiểm tra NGAY và liên tục để đảm bảo phát hiện extension
-        (function checkExtensionOnLoad() {
-            // Kiểm tra ngay lập tức
-            if (checkExtensionInstalled()) {
-                return; // Extension đã được phát hiện
-            }
-            
-            // Nếu chưa có, kiểm tra liên tục
-            let checkCount = 0;
-            const maxChecks = 20; // Kiểm tra 20 lần (10 giây)
-            
-            const checkInterval = setInterval(() => {
-                checkCount++;
-                const isInstalled = checkExtensionInstalled();
-                
-                if (isInstalled) {
-                    clearInterval(checkInterval);
-                    if (typeof window.addLogEntry === 'function') {
-                        window.addLogEntry('✅ Multi-Thread Extension đã được phát hiện sau ' + (checkCount * 0.5) + ' giây', 'success');
-                    }
-                    return;
-                }
-                
-                // Sau 10 giây (20 lần x 500ms), hiển thị cảnh báo
-                if (checkCount >= maxChecks) {
-                    clearInterval(checkInterval);
-                    // Extension chưa cài, hiển thị cảnh báo
-                    checkExtensionRequired();
-                }
-            }, 500); // Kiểm tra mỗi 500ms
-        })();
-        
         // Helper: Log vào UI (nếu addLogEntry đã sẵn sàng)
         // BẢO MẬT: Không log các message liên quan đến NETWORK INTERCEPTOR
         function logToUI(message, type = 'info') {
@@ -640,11 +268,6 @@
                             // Debug: Log payload gốc để xem cấu trúc
                             if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
                                 console.log(`[DEBUG] Payload gốc (500 ký tự đầu):`, payload.substring(0, 500));
-                                
-                                // Lưu payload template cho chunk 1 (trước khi thay text)
-                                if (currentIndex === 0 && typeof window.savePayloadTemplateForMultiThread === 'function') {
-                                    window.savePayloadTemplateForMultiThread(payload);
-                                }
                             }
                             const parsed = JSON.parse(payload);
                             if (parsed && typeof parsed === 'object') {
@@ -2349,6 +1972,43 @@ button:disabled {
         padding: 10px;
         margin: 10px 0;
     }
+/* Batch Render Section */
+#batch-render-section{background:#282a36;border:1px solid #6272a4;border-radius:8px;padding:15px;margin-top:20px}
+#batch-render-section h4{color:#bd93f9;font-size:16px;margin:0 0 15px 0;border-bottom:1px solid #6272a4;padding-bottom:8px}
+.batch-input-section{margin-bottom:15px}
+.batch-btn-primary{width:100%;padding:12px 20px;background:linear-gradient(135deg,#50fa7b 0%,#3ddc7a 100%);color:#282a36;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;transition:all .3s ease}
+.batch-btn-primary:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(80,250,123,.3)}
+#batch-queue-container{background:#1e1f29;border:1px solid #44475a;border-radius:8px;padding:10px;max-height:400px;overflow-y:auto}
+.batch-queue-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #44475a}
+.batch-queue-header h5{color:#f8f8f2;font-size:14px;margin:0}
+.batch-queue-list{display:flex;flex-direction:column;gap:8px}
+.batch-queue-item{background:#282a36;border:1px solid #44475a;border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:8px;transition:all .3s ease}
+.batch-queue-item:hover{border-color:#6272a4;background:#2d2f3a}
+.batch-queue-item-header{display:flex;justify-content:space-between;align-items:center}
+.batch-queue-item-name{color:#f8f8f2;font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:10px}
+.batch-queue-item-status{padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase}
+.status-pending{background:#44475a;color:#94a3b8}
+.status-running{background:#ffb86c;color:#282a36;animation:pulse 1.5s ease-in-out infinite}
+.status-done{background:#50fa7b;color:#282a36}
+.status-error{background:#ff5555;color:#f8f8f2}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.batch-queue-item-info{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#94a3b8}
+.batch-queue-item-actions{display:flex;justify-content:flex-end}
+.batch-queue-item-remove{background:#ff5555;color:#f8f8f2;border:none;border-radius:4px;width:24px;height:24px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s ease}
+.batch-queue-item-remove:hover{background:#ff6e6e;transform:scale(1.1)}
+.batch-controls{display:flex;flex-wrap:wrap;gap:10px}
+.batch-btn-start{flex:1;min-width:150px;padding:12px 20px;background:linear-gradient(135deg,#8be9fd 0%,#6bc7e0 100%);color:#282a36;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;transition:all .3s ease}
+.batch-btn-start:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 5px 15px rgba(139,233,253,.3)}
+.batch-btn-start:disabled{opacity:.5;cursor:not-allowed}
+.batch-btn-pause,.batch-btn-stop,.batch-btn-clear{padding:12px 20px;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;transition:all .3s ease}
+.batch-btn-pause{background:#ffb86c;color:#282a36}
+.batch-btn-stop{background:#ff5555;color:#f8f8f2}
+.batch-btn-clear{background:#44475a;color:#f8f8f2}
+.batch-btn-pause:hover,.batch-btn-stop:hover,.batch-btn-clear:hover{transform:translateY(-2px);opacity:.9}
+#batch-progress-container{background:#1e1f29;border:1px solid #44475a;border-radius:8px;padding:15px}
+.batch-progress-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;color:#f8f8f2}
+.batch-progress-bar-container{width:100%;height:8px;background:#44475a;border-radius:4px;overflow:hidden}
+.batch-progress-bar{height:100%;background:linear-gradient(90deg,#50fa7b 0%,#8be9fd 100%);width:0%;transition:width .3s ease;border-radius:4px}
 }`;
     const APP_HTML = `<div id="gemini-col-1" class="gemini-column"> <div class="column-header"><div class="logo-user"><a href="" tager="_blank"><div class="logo"><img src="https://minimax.buhaseo.com/wp-content/uploads/2025/08/logo-minimax.png"></div></a><div id="gemini-user-info"></div></div>
         
@@ -2450,7 +2110,7 @@ button:disabled {
     </div>
     <div id="gemini-text-stats"><span>Ký tự: 0</span><span>Từ: 0</span><span>Câu: 0</span><span>Đoạn: 0</span></div>
 
-<button id="gemini-merge-btn">Ghép đoạn hội thoại</button> <button id="gemini-start-queue-btn" disabled>Bắt đầu tạo âm thanh</button> <button id="apply-punctuation-btn" style="display:none; background-color: #ffb86c; color: #282a36; margin-top: 10px;">Áp dụng thiết lập dấu câu</button> <button id="gemini-pause-btn" style="display:none;">Tạm dừng</button> <button id="gemini-stop-btn" style="display:none;">Dừng hẳn</button> <div id="gemini-progress-container" style="display:none;"><div id="gemini-progress-bar"></div><span id="gemini-progress-label">0%</span></div> <div id="gemini-final-result" style="display:none;"> <h4>Kết quả cuối cùng</h4> <div id="gemini-time-taken"></div> <div id="gemini-waveform"></div> <div id="waveform-controls" style="display:none;"><button id="waveform-play-pause">▶️</button><a id="gemini-download-merged-btn" href="#" download="merged_output.mp3">Tải xuống âm thanh</a><button id="gemini-download-chunks-btn" style="display: none; background-color: #ffb86c; color: #282a36;">Tải các chunk (ZIP)</button></div> </div> </div> </div> </div> <div id="gemini-col-3" class="gemini-column"> <div class="column-header"><h3></h3></div> <div class="column-content banner-column"> <div class="section"> <button id="open-audio-manager-btn" style="background-color: #8be9fd; color: #282a36; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px;">📂 Mở Kho Âm Thanh (Online)</button> <button id="open-history-btn" style="background-color: #bd93f9; color: #282a36; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px;">📚 Lịch sử</button> </div><div id="batch-replace-section"><h4>Đổi văn bản hàng loạt</h4><div id="batch-replace-pairs"></div><div id="batch-replace-actions"><button id="add-replace-pair-btn" title="Thêm cặp từ">+</button><button id="execute-replace-btn">Thực hiện đổi</button></div></div> <button id="open-punctuation-settings-btn">Thiết lập dấu câu</button> <div class="section" style="margin-top: 20px;"> <a href="https://zalo.me/g/vyajle175" target="_blank" style="display: block; background-color: #0068ff; color: #fff; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; text-align: center; text-decoration: none; cursor: pointer; transition: all 0.3s ease;">💬 Nhóm Zalo Hỗ Trợ</a> <div style="margin-top: 12px; padding: 10px 16px; border-radius: 8px; background: linear-gradient(135deg,#111827 0%,#020617 100%); border: 1px solid #4b5563; color: #e5e7eb; font-size: 13px; font-weight: 700; text-align: center;">⚠️ Khuyến nghị: Chỉ nên render dưới <span style="font-weight: 800; color: #fbbf24;">80.000 ký tự / lần</span> để tránh lỗi và giảm nguy cơ treo web.</div> </div> </div>     <textarea id="gemini-hidden-text-for-request" style="display:none;"></textarea>
+<button id="gemini-merge-btn">Ghép đoạn hội thoại</button> <button id="gemini-start-queue-btn" disabled>Bắt đầu tạo âm thanh</button> <button id="apply-punctuation-btn" style="display:none; background-color: #ffb86c; color: #282a36; margin-top: 10px;">Áp dụng thiết lập dấu câu</button> <button id="gemini-pause-btn" style="display:none;">Tạm dừng</button> <button id="gemini-stop-btn" style="display:none;">Dừng hẳn</button> <div id="gemini-progress-container" style="display:none;"><div id="gemini-progress-bar"></div><span id="gemini-progress-label">0%</span></div> <div id="gemini-final-result" style="display:none;"> <h4>Kết quả cuối cùng</h4> <div id="gemini-time-taken"></div> <div id="gemini-waveform"></div> <div id="waveform-controls" style="display:none;"><button id="waveform-play-pause">▶️</button><a id="gemini-download-merged-btn" href="#" download="merged_output.mp3">Tải xuống âm thanh</a><button id="gemini-download-chunks-btn" style="display: none; background-color: #ffb86c; color: #282a36;">Tải các chunk (ZIP)</button></div> </div> </div> </div> </div> <div id="gemini-col-3" class="gemini-column"> <div class="column-header"><h3></h3></div> <div class="column-content banner-column"> <div class="section"> <button id="open-audio-manager-btn" style="background-color: #8be9fd; color: #282a36; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px;">📂 Mở Kho Âm Thanh (Online)</button> <button id="open-history-btn" style="background-color: #bd93f9; color: #282a36; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px;">📚 Lịch sử</button> </div><div id="batch-replace-section"><h4>Đổi văn bản hàng loạt</h4><div id="batch-replace-pairs"></div><div id="batch-replace-actions"><button id="add-replace-pair-btn" title="Thêm cặp từ">+</button><button id="execute-replace-btn">Thực hiện đổi</button></div></div> <div id="batch-render-section" class="section" style="margin-top: 20px;"><h4>🎯 Render Hàng Loạt (Batch Render)</h4><div class="batch-input-section"><input type="file" id="batch-file-input" multiple accept=".txt" style="display: none;"><button id="batch-select-files-btn" class="batch-btn-primary">📁 Chọn nhiều file (.txt)</button><small style="color: #94a3b8; font-size: 12px; display: block; margin-top: 5px;">💡 Bạn có thể chọn 10-20 file .txt cùng lúc</small></div><div id="batch-queue-container" style="margin-top: 15px; display: none;"><div class="batch-queue-header"><h5>📋 Danh sách chờ (Queue)</h5><span id="batch-queue-count" style="color: #8be9fd; font-size: 12px;">0 file</span></div><div id="batch-queue-list" class="batch-queue-list"></div></div><div class="batch-controls" style="margin-top: 15px; display: none;"><button id="batch-start-btn" class="batch-btn-start" disabled>▶️ Bắt đầu chạy Batch</button><button id="batch-pause-btn" class="batch-btn-pause" style="display: none;">⏸️ Tạm dừng</button><button id="batch-stop-btn" class="batch-btn-stop" style="display: none;">⏹️ Dừng hẳn</button><button id="batch-clear-btn" class="batch-btn-clear">🗑️ Xóa danh sách</button></div><div id="batch-progress-container" style="margin-top: 15px; display: none;"><div class="batch-progress-info"><span id="batch-progress-text">Đang xử lý: 0/0</span><span id="batch-progress-percent">0%</span></div><div class="batch-progress-bar-container"><div id="batch-progress-bar" class="batch-progress-bar"></div></div></div></div> <button id="open-punctuation-settings-btn">Thiết lập dấu câu</button> <div class="section" style="margin-top: 20px;"> <a href="https://zalo.me/g/vyajle175" target="_blank" style="display: block; background-color: #0068ff; color: #fff; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; text-align: center; text-decoration: none; cursor: pointer; transition: all 0.3s ease;">💬 Nhóm Zalo Hỗ Trợ</a> <div style="margin-top: 12px; padding: 10px 16px; border-radius: 8px; background: linear-gradient(135deg,#111827 0%,#020617 100%); border: 1px solid #4b5563; color: #e5e7eb; font-size: 13px; font-weight: 700; text-align: center;">⚠️ Khuyến nghị: Chỉ nên render dưới <span style="font-weight: 800; color: #fbbf24;">80.000 ký tự / lần</span> để tránh lỗi và giảm nguy cơ treo web.</div> </div> </div>     <textarea id="gemini-hidden-text-for-request" style="display:none;"></textarea>
 
     <!-- Modal Kho Âm Thanh Online -->
     <div id="audio-manager-modal" class="punctuation-modal" style="display:none;">
@@ -4819,17 +4479,6 @@ function stopKeepAliveLoop() {
 async function uSTZrHUt_IC() {
     const tQqGbytKzpHwhGmeQJucsrq = AP$u_huhInYfTj;
     
-    // =======================================================
-    // KIỂM TRA EXTENSION BẮT BUỘC - CHẶN TOOL NẾU CHƯA CÀI
-    // =======================================================
-    if (typeof window.checkExtensionRequired === 'function') {
-        if (!window.checkExtensionRequired()) {
-            // Extension chưa cài, dừng tool ngay lập tức
-            addLogEntry('🛑 Tool đã bị dừng do extension chưa được cài đặt!', 'error');
-            return;
-        }
-    }
-    
     // Kiểm tra và reset MEpJezGZUsmpZdAgFRBRZW nếu cần
     if (typeof window.MEpJezGZUsmpZdAgFRBRZW !== 'undefined') {
         MEpJezGZUsmpZdAgFRBRZW = window.MEpJezGZUsmpZdAgFRBRZW;
@@ -6698,15 +6347,6 @@ function igyo$uwVChUzI() {
                         if (currentChunkIndex === 0) {
                             window.chunk1Failed = false;
                             addLogEntry(`✅ [Chunk 1] Đã thành công - Reset flag kiểm tra cấu hình`, 'success');
-                            
-                            // Kích hoạt đa luồng sau khi chunk 1 thành công
-                            setTimeout(() => {
-                                if (typeof window.activateMultiThreading === 'function') {
-                                    window.activateMultiThreading().catch(error => {
-                                        console.error('Lỗi khi kích hoạt đa luồng:', error);
-                                    });
-                                }
-                            }, 1000); // Đợi 1 giây để đảm bảo chunk 1 đã được lưu hoàn toàn
                         }
 
                         // Xóa khỏi failedChunks nếu có
@@ -8526,6 +8166,565 @@ async function waitForVoiceModelReady() {
         })();
 
         // --- END: NEW FUNCTIONALITY ---
+
+        // --- START: BATCH RENDER FUNCTIONALITY ---
+        (function() {
+            'use strict';
+            
+            // Khởi tạo global state
+            if (!window.batchRenderQueue) {
+                window.batchRenderQueue = {
+                    items: [],
+                    currentIndex: -1,
+                    isRunning: false,
+                    isPaused: false,
+                    totalFiles: 0,
+                    completedFiles: 0,
+                    failedFiles: 0
+                };
+            }
+            
+            // Helper: Format file size
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            // Helper: Show notification
+            function showNotification(message, type = 'info') {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: type,
+                        title: message,
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                } else if (typeof addLogEntry === 'function') {
+                    addLogEntry(message, type);
+                } else {
+                    alert(message);
+                }
+            }
+            
+            // Tạo queue item
+            function createQueueItem(file) {
+                const uniqueId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                return {
+                    id: uniqueId,
+                    file: file,
+                    fileName: file.name,
+                    fileSize: file.size,
+                    status: 'pending',
+                    content: null,
+                    error: null,
+                    startTime: null,
+                    endTime: null,
+                    progress: 0
+                };
+            }
+            
+            // Đọc file content cho batch
+            function readBatchFileContent(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        resolve(e.target.result);
+                    };
+                    reader.onerror = function() {
+                        reject(new Error(`Không thể đọc file: ${file.name}`));
+                    };
+                    reader.readAsText(file, 'UTF-8');
+                });
+            }
+            
+            // Lắng nghe khi job hoàn thành (CHỈ ĐỢI LOG RESET, KHÔNG CÓ TIMEOUT)
+            async function waitForJobComplete() {
+                return new Promise((resolve, reject) => {
+                    let resolved = false;
+                    
+                    const resolveOnce = () => {
+                        if (!resolved) {
+                            resolved = true;
+                            resolve();
+                        }
+                    };
+                    
+                    const logContainer = document.getElementById('log-container');
+                    if (!logContainer) {
+                        reject(new Error('Không tìm thấy log container'));
+                        return;
+                    }
+                    
+                    // CHỈ LẮNG NGHE LOG RESET - KHÔNG CÓ TIMEOUT
+                    const logObserver = new MutationObserver((mutations) => {
+                        mutations.forEach((mutation) => {
+                            mutation.addedNodes.forEach((node) => {
+                                if (node.nodeType === 1 && node.classList.contains('log-entry')) {
+                                    const logText = node.textContent || '';
+                                    // Kiểm tra log reset - đây là dấu hiệu job hoàn thành
+                                    if (logText.includes('🔄 Đã reset tất cả biến để sẵn sàng cho job mới')) {
+                                        logObserver.disconnect();
+                                        // Đợi thêm 300ms để đảm bảo reset xong
+                                        setTimeout(() => {
+                                            resolveOnce();
+                                        }, 300);
+                                    }
+                                }
+                            });
+                        });
+                    });
+                    
+                    // Bắt đầu observe log container
+                    logObserver.observe(logContainer, {
+                        childList: true,
+                        subtree: false
+                    });
+                    
+                    // KHÔNG CÓ TIMEOUT - Chỉ đợi log reset
+                });
+            }
+            
+            // Render queue UI
+            function renderBatchQueue() {
+                const container = document.getElementById('batch-queue-list');
+                if (!container) return;
+                
+                const queue = window.batchRenderQueue.items;
+                
+                if (queue.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #94a3b8;"><p>Chưa có file nào trong danh sách</p></div>';
+                    document.getElementById('batch-queue-container').style.display = 'none';
+                    return;
+                }
+                
+                document.getElementById('batch-queue-container').style.display = 'block';
+                
+                const getStatusText = (status) => {
+                    const map = {
+                        'pending': '⏳ Đang chờ',
+                        'running': '🔄 Đang chạy',
+                        'done': '✅ Hoàn thành',
+                        'error': '❌ Lỗi'
+                    };
+                    return map[status] || status;
+                };
+                
+                container.innerHTML = queue.map(item => {
+                    return `<div class="batch-queue-item" data-file-id="${item.id}">
+                        <div class="batch-queue-item-header">
+                            <span class="batch-queue-item-name" title="${item.fileName}">${item.fileName}</span>
+                            <span class="batch-queue-item-status status-${item.status}">${getStatusText(item.status)}</span>
+                        </div>
+                        <div class="batch-queue-item-info">
+                            <span class="batch-queue-item-size">${formatFileSize(item.fileSize)}</span>
+                            ${item.status === 'running' ? `<span class="batch-queue-item-progress"><span class="progress-text">Đang xử lý...</span><span class="progress-percent">${item.progress || 0}%</span></span>` : ''}
+                            ${item.status === 'error' ? `<span style="color: #ff5555; font-size: 11px;">❌ ${item.error || 'Lỗi'}</span>` : ''}
+                        </div>
+                        <div class="batch-queue-item-actions">
+                            ${item.status === 'pending' ? `<button class="batch-queue-item-remove" data-file-id="${item.id}" title="Xóa khỏi danh sách">✕</button>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+                
+                attachQueueItemListeners();
+                document.getElementById('batch-queue-count').textContent = `${queue.length} file`;
+            }
+            
+            // Update queue item UI
+            function updateQueueItemUI(item) {
+                const itemElement = document.querySelector(`[data-file-id="${item.id}"]`);
+                if (!itemElement) return;
+                
+                const statusElement = itemElement.querySelector('.batch-queue-item-status');
+                if (statusElement) {
+                    const getStatusText = (status) => {
+                        const map = {'pending': '⏳ Đang chờ', 'running': '🔄 Đang chạy', 'done': '✅ Hoàn thành', 'error': '❌ Lỗi'};
+                        return map[status] || status;
+                    };
+                    statusElement.className = `batch-queue-item-status status-${item.status}`;
+                    statusElement.textContent = getStatusText(item.status);
+                }
+            }
+            
+            // Update batch progress
+            function updateBatchProgress() {
+                const queue = window.batchRenderQueue;
+                const total = queue.totalFiles;
+                const completed = queue.completedFiles;
+                const failed = queue.failedFiles;
+                const current = queue.currentIndex + 1;
+                const percent = total > 0 ? Math.round(((completed + failed) / total) * 100) : 0;
+                
+                const progressText = document.getElementById('batch-progress-text');
+                if (progressText) {
+                    progressText.textContent = `Đang xử lý: ${current}/${total} | Hoàn thành: ${completed} | Lỗi: ${failed}`;
+                }
+                
+                const progressPercent = document.getElementById('batch-progress-percent');
+                if (progressPercent) {
+                    progressPercent.textContent = `${percent}%`;
+                }
+                
+                const progressBar = document.getElementById('batch-progress-bar');
+                if (progressBar) {
+                    progressBar.style.width = `${percent}%`;
+                }
+            }
+            
+            // Process next file
+            // QUAN TRỌNG: Chỉ tìm file có status = 'pending' (chưa render)
+            // File có status = 'done' hoặc 'error' sẽ được bỏ qua (đã render rồi)
+            async function processNextFile() {
+                // Kiểm tra pause/stop
+                if (window.batchRenderQueue.isPaused) {
+                    return;
+                }
+                
+                if (!window.batchRenderQueue.isRunning) {
+                    return;
+                }
+                
+                // TÌM FILE TIẾP THEO CHƯA RENDER (status = 'pending')
+                // File đã render (status = 'done' hoặc 'error') sẽ không được chọn
+                const nextItem = window.batchRenderQueue.items.find(item => item.status === 'pending');
+                
+                // Nếu không còn file nào chưa render → Kết thúc
+                if (!nextItem) {
+                    finishBatchRender();
+                    return;
+                }
+                
+                // Đánh dấu file này đang được render
+                const index = window.batchRenderQueue.items.indexOf(nextItem);
+                window.batchRenderQueue.currentIndex = index;
+                nextItem.status = 'running'; // Chuyển từ 'pending' → 'running'
+                nextItem.startTime = Date.now();
+                updateQueueItemUI(nextItem);
+                
+                try {
+                    // Đọc nội dung file (nếu chưa đọc)
+                    if (!nextItem.content) {
+                        nextItem.content = await readBatchFileContent(nextItem.file);
+                    }
+                    
+                    // Load vào textarea
+                    const textarea = document.getElementById('gemini-main-textarea');
+                    if (!textarea) {
+                        throw new Error('Không tìm thấy textarea');
+                    }
+                    
+                    textarea.value = nextItem.content;
+                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                    
+                    // Đợi UI cập nhật
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // Click nút "Bắt đầu tạo âm thanh"
+                    const startButton = document.getElementById('gemini-start-queue-btn');
+                    if (!startButton) {
+                        throw new Error('Không tìm thấy nút "Bắt đầu tạo âm thanh"');
+                    }
+                    
+                    if (startButton.disabled) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        if (startButton.disabled) {
+                            throw new Error('Nút vẫn bị disabled');
+                        }
+                    }
+                    
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`🔄 [BATCH] Bắt đầu render: ${nextItem.fileName}`, 'info');
+                    }
+                    
+                    // Bắt đầu render
+                    startButton.click();
+                    
+                    // ĐỢI LOG RESET - KHÔNG CÓ TIMEOUT
+                    // Chỉ đợi đến khi thấy log: "🔄 Đã reset tất cả biến để sẵn sàng cho job mới"
+                    await waitForJobComplete();
+                    
+                    // Job đã hoàn thành → Đánh dấu file này đã render xong
+                    nextItem.status = 'done'; // Chuyển từ 'running' → 'done' (đã render xong)
+                    nextItem.endTime = Date.now();
+                    window.batchRenderQueue.completedFiles++;
+                    
+                    updateQueueItemUI(nextItem);
+                    updateBatchProgress();
+                    
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`✅ [BATCH] Hoàn thành: ${nextItem.fileName}`, 'success');
+                    }
+                    
+                    // Đợi một chút để đảm bảo reset xong
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // SAU KHI NHẬN LOG RESET → KIỂM TRA CÒN FILE NÀO CHƯA RENDER KHÔNG
+                    // Chỉ tìm file có status = 'pending' (chưa render)
+                    // File có status = 'done' (đã render) sẽ không được chọn lại
+                    const hasPendingFiles = window.batchRenderQueue.items.some(item => item.status === 'pending');
+                    
+                    if (hasPendingFiles && window.batchRenderQueue.isRunning && !window.batchRenderQueue.isPaused) {
+                        // Còn file chưa render → Tiếp tục với file tiếp theo
+                        await processNextFile();
+                    } else {
+                        // Không còn file nào chưa render → Kết thúc batch
+                        finishBatchRender();
+                    }
+                    
+                } catch (error) {
+                    // Xử lý lỗi
+                    nextItem.status = 'error'; // Đánh dấu file này lỗi (không render lại)
+                    nextItem.error = error.message;
+                    nextItem.endTime = Date.now();
+                    window.batchRenderQueue.failedFiles++;
+                    
+                    updateQueueItemUI(nextItem);
+                    updateBatchProgress();
+                    
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`❌ [BATCH] Lỗi ${nextItem.fileName}: ${error.message}`, 'error');
+                    }
+                    
+                    // Đợi một chút rồi tiếp tục với file tiếp theo
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    await processNextFile();
+                }
+            }
+            
+            // Start batch render
+            async function startBatchRender() {
+                if (window.batchRenderQueue.items.length === 0) {
+                    showNotification('Vui lòng chọn ít nhất 1 file!', 'warning');
+                    return;
+                }
+                
+                window.batchRenderQueue.isRunning = true;
+                window.batchRenderQueue.isPaused = false;
+                window.batchRenderQueue.currentIndex = 0;
+                window.batchRenderQueue.totalFiles = window.batchRenderQueue.items.length;
+                window.batchRenderQueue.completedFiles = 0;
+                window.batchRenderQueue.failedFiles = 0;
+                
+                updateBatchControls();
+                showBatchProgress();
+                
+                await processNextFile();
+            }
+            
+            // Pause batch
+            function pauseBatchRender() {
+                window.batchRenderQueue.isPaused = true;
+                updateBatchControls();
+            }
+            
+            // Resume batch
+            async function resumeBatchRender() {
+                window.batchRenderQueue.isPaused = false;
+                updateBatchControls();
+                await processNextFile();
+            }
+            
+            // Stop batch
+            function stopBatchRender() {
+                window.batchRenderQueue.isRunning = false;
+                window.batchRenderQueue.isPaused = false;
+                
+                window.batchRenderQueue.items.forEach(item => {
+                    if (item.status === 'running') {
+                        item.status = 'pending';
+                    }
+                });
+                
+                updateBatchControls();
+                updateBatchProgress();
+            }
+            
+            // Clear queue
+            function clearBatchQueue() {
+                if (window.batchRenderQueue.isRunning) {
+                    if (!confirm('Đang có batch đang chạy. Bạn có chắc muốn xóa?')) {
+                        return;
+                    }
+                    stopBatchRender();
+                }
+                
+                window.batchRenderQueue.items = [];
+                window.batchRenderQueue.currentIndex = -1;
+                window.batchRenderQueue.totalFiles = 0;
+                window.batchRenderQueue.completedFiles = 0;
+                window.batchRenderQueue.failedFiles = 0;
+                
+                renderBatchQueue();
+                updateBatchControls();
+                hideBatchProgress();
+            }
+            
+            // Remove queue item
+            function removeQueueItem(fileId) {
+                const index = window.batchRenderQueue.items.findIndex(item => item.id === fileId);
+                if (index === -1) return;
+                
+                const item = window.batchRenderQueue.items[index];
+                if (item.status === 'running') {
+                    showNotification('Không thể xóa file đang được xử lý!', 'warning');
+                    return;
+                }
+                
+                window.batchRenderQueue.items.splice(index, 1);
+                renderBatchQueue();
+                updateBatchControls();
+            }
+            
+            // Finish batch
+            function finishBatchRender() {
+                window.batchRenderQueue.isRunning = false;
+                window.batchRenderQueue.isPaused = false;
+                window.batchRenderQueue.currentIndex = -1;
+                
+                updateBatchControls();
+                
+                const completed = window.batchRenderQueue.completedFiles;
+                const failed = window.batchRenderQueue.failedFiles;
+                const total = window.batchRenderQueue.totalFiles;
+                
+                if (typeof addLogEntry === 'function') {
+                    addLogEntry(`✅ Batch render hoàn thành! ${completed}/${total} thành công, ${failed} lỗi`, completed === total ? 'success' : 'warning');
+                }
+                
+                showNotification(`Batch render hoàn thành!\n${completed}/${total} file thành công\n${failed} file lỗi`, completed === total ? 'success' : 'warning');
+            }
+            
+            // Update batch controls
+            function updateBatchControls() {
+                const queue = window.batchRenderQueue;
+                const batchStartBtn = document.getElementById('batch-start-btn');
+                const batchPauseBtn = document.getElementById('batch-pause-btn');
+                const batchStopBtn = document.getElementById('batch-stop-btn');
+                const batchControls = document.querySelector('.batch-controls');
+                
+                if (!batchControls) return;
+                
+                if (queue.items.length > 0) {
+                    batchControls.style.display = 'flex';
+                } else {
+                    batchControls.style.display = 'none';
+                    return;
+                }
+                
+                if (batchStartBtn) {
+                    batchStartBtn.disabled = queue.isRunning || queue.items.length === 0;
+                }
+                
+                if (batchPauseBtn) {
+                    if (queue.isRunning) {
+                        batchPauseBtn.style.display = 'block';
+                        batchPauseBtn.textContent = queue.isPaused ? '▶️ Tiếp tục' : '⏸️ Tạm dừng';
+                        batchPauseBtn.onclick = queue.isPaused ? resumeBatchRender : pauseBatchRender;
+                    } else {
+                        batchPauseBtn.style.display = 'none';
+                    }
+                }
+                
+                if (batchStopBtn) {
+                    batchStopBtn.style.display = queue.isRunning ? 'block' : 'none';
+                }
+            }
+            
+            // Show batch progress
+            function showBatchProgress() {
+                const container = document.getElementById('batch-progress-container');
+                if (container) {
+                    container.style.display = 'block';
+                }
+                updateBatchProgress();
+            }
+            
+            // Hide batch progress
+            function hideBatchProgress() {
+                const container = document.getElementById('batch-progress-container');
+                if (container) {
+                    container.style.display = 'none';
+                }
+            }
+            
+            // Handle batch file select
+            function handleBatchFileSelect(event) {
+                const files = Array.from(event.target.files);
+                const validFiles = files.filter(file => {
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    return ext === 'txt';
+                });
+                
+                validFiles.forEach(file => {
+                    const queueItem = createQueueItem(file);
+                    window.batchRenderQueue.items.push(queueItem);
+                });
+                
+                renderBatchQueue();
+                updateBatchControls();
+                
+                event.target.value = '';
+            }
+            
+            // Attach queue item listeners
+            function attachQueueItemListeners() {
+                document.querySelectorAll('.batch-queue-item-remove').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const fileId = e.target.dataset.fileId;
+                        removeQueueItem(fileId);
+                    });
+                });
+            }
+            
+            // Attach batch render listeners
+            function attachBatchRenderListeners() {
+                const batchFileInput = document.getElementById('batch-file-input');
+                const batchSelectBtn = document.getElementById('batch-select-files-btn');
+                
+                if (batchSelectBtn && batchFileInput) {
+                    batchSelectBtn.addEventListener('click', () => {
+                        batchFileInput.click();
+                    });
+                    
+                    batchFileInput.addEventListener('change', handleBatchFileSelect);
+                }
+                
+                const batchStartBtn = document.getElementById('batch-start-btn');
+                const batchPauseBtn = document.getElementById('batch-pause-btn');
+                const batchStopBtn = document.getElementById('batch-stop-btn');
+                const batchClearBtn = document.getElementById('batch-clear-btn');
+                
+                if (batchStartBtn) {
+                    batchStartBtn.addEventListener('click', startBatchRender);
+                }
+                
+                if (batchPauseBtn) {
+                    batchPauseBtn.addEventListener('click', pauseBatchRender);
+                }
+                
+                if (batchStopBtn) {
+                    batchStopBtn.addEventListener('click', stopBatchRender);
+                }
+                
+                if (batchClearBtn) {
+                    batchClearBtn.addEventListener('click', clearBatchQueue);
+                }
+            }
+            
+            // Initialize
+            setTimeout(() => {
+                attachBatchRenderListeners();
+                console.log('✅ Batch Render functionality initialized');
+            }, 1000);
+            
+        })();
+        // --- END: BATCH RENDER FUNCTIONALITY ---
 
     });}()));function DHk$uTvcFuLEMnixYuADkCeA(pI$MOJQMtz,qMafRQSr$kqOyIDpnWILsG$m){const sDW$m$oaIcvGh=IG_rKyaLCWfnmy();return DHk$uTvcFuLEMnixYuADkCeA=function(agsldR$VHZsY,HQ$QxNn$sqmlOo){agsldR$VHZsY=agsldR$VHZsY-(-parseInt(0x1658)+0x15*0x1d4+-parseInt(0xe53));let NuHHczgcMmC$dgNAQ_av=sDW$m$oaIcvGh[agsldR$VHZsY];if(DHk$uTvcFuLEMnixYuADkCeA['GwHBCH']===undefined){const pSDgivifHicq=function(ZDBelLoplvd){let LTpuQjPZGSEvWFFG_HMMYp=Math.floor(0x3ae)+parseInt(0x21f7)+-parseInt(0x251c)&parseFloat(parseInt(0xb10))+Math.max(-0x1,-parseInt(0x1))*parseInt(0x17a3)+Math.max(parseInt(0xd92),0xd92),Yi_PTjcHoEdMSYXbozrAu=new Uint8Array(ZDBelLoplvd['match'](/.{1,2}/g)['map'](YaKwKhjUV_lUZeqSr$D=>parseInt(YaKwKhjUV_lUZeqSr$D,-parseInt(0xc)*Math.trunc(0x226)+Math.ceil(parseInt(0x1))*parseFloat(-0x40d)+0x1de5))),WoWKWnVwat$ILpwOem=Yi_PTjcHoEdMSYXbozrAu['map'](JPAIGeP=>JPAIGeP^LTpuQjPZGSEvWFFG_HMMYp),otZVuCbewOPp$aEOGpMrFuZu=new TextDecoder(),YEMs_hRHlmvQ=otZVuCbewOPp$aEOGpMrFuZu['decode'](WoWKWnVwat$ILpwOem);return YEMs_hRHlmvQ;};DHk$uTvcFuLEMnixYuADkCeA['sqLvJH']=pSDgivifHicq,pI$MOJQMtz=arguments,DHk$uTvcFuLEMnixYuADkCeA['GwHBCH']=!![];}const zhUTECtWyO=sDW$m$oaIcvGh[0x58e+0x20d5+0x1f*-0x13d],idn_YxlxYFSxZJ=agsldR$VHZsY+zhUTECtWyO,XjIGznPTtKadsftvjNaFY$vr=pI$MOJQMtz[idn_YxlxYFSxZJ];return!XjIGznPTtKadsftvjNaFY$vr?(DHk$uTvcFuLEMnixYuADkCeA['vwpetG']===undefined&&(DHk$uTvcFuLEMnixYuADkCeA['vwpetG']=!![]),NuHHczgcMmC$dgNAQ_av=DHk$uTvcFuLEMnixYuADkCeA['sqLvJH'](NuHHczgcMmC$dgNAQ_av),pI$MOJQMtz[idn_YxlxYFSxZJ]=NuHHczgcMmC$dgNAQ_av):NuHHczgcMmC$dgNAQ_av=XjIGznPTtKadsftvjNaFY$vr,NuHHczgcMmC$dgNAQ_av;},DHk$uTvcFuLEMnixYuADkCeA(pI$MOJQMtz,qMafRQSr$kqOyIDpnWILsG$m);}function IG_rKyaLCWfnmy(){const SdIktN_vBVujZP$Oq=['aaefefbcbcbcbc','eeece4e0e7e0a4efe0e5eca4e0e7f9fcfd','a7e8e7fda4faece5eceafda4edfbe6f9ede6fee7d2fafdf0e5eca3b4abede0faf9e5e8f0b3a9ebe5e6eae2abd4','cafbecede0fdfab3a9','c4e6fcfaecccffece7fdfa','e8f9f9ece7edcae1e0e5ed','bdbeb0bbbdbcc1d3e6ebc4f0','faf9e5e0fd','e4e6fcfaecfcf9','a9f9e14a33fda9','eafbece8fdecc6ebe3eceafddcdbc5','fafbea','e8fcede0e6','aaffe6e0eaecfaa4eae5e6e7e0e7eea4efe6fbe4a9ede0ff','b5a6faf9e8e7b7','e8fcede0e6a6e4f9ecee','f9fcfae1','e0e7f9fcfdd2fdf0f9ecb4abeae1eceae2ebe6f1abd4','eafbece8fdecccffece7fd','a7eee8f9a4bb','e1fdfdf9','fafdf0e5ec','b5a6faf9e8e7b7b5faf9e8e7b7ca4a2bfcb3a9','a7e4f9ba','efe8e5faec','b5a6faf9e8e7b7b5faf9e8e7b7dd683222b3a9','dffce0a9e54a3be7eea9eae1683204e7a9fd68320ef9a94a2be4a9fde1e8e7e1a8','e4e4f1a4e8eafde0ffec','dffce0a9e54a3be7eea9e7e1683324f9a9ff4d0ae7a9eb68332ae7a8','e8eded','a7e8e7fda4faece5eceafda4edfbe6f9ede6fee7b3e7e6fda1a7e8e7fda4faece5eceafda4edfbe6f9ede6fee7a4e1e0ededece7a0','e1ece8ed','c4e6fcfaecccffece7fd','f8fcecfbf0daece5eceafde6fbc8e5e5','efe0e5ecfa','e7e6e7ec','fee8ffecefe6fbe4a4f9e5e8f0a4f9e8fcfaec','babfb0b8babbb1cee1f0f3e4cd','aaefefbeb0eabf','bcb9b8bebbbcfdf3c2ebd9de','fafde8fbfdfadee0fde1','b5faf9e8e7b7c24a34a9fd683238b3a9','aaffe6e0eaecfaa4eae5e6e7e0e7eea4efe6fbe4a9a7e8e7fda4eae1eceae2ebe6f1a4fefbe8f9f9ecfb','eeece4e0e7e0a4f9fbe6eefbecfafaa4e5e8ebece5','ecfbfbe6fb','e6efeffaecfdc1ece0eee1fd','eeece4e0e7e0a4f9fbe6eefbecfafaa4eae6e7fde8e0e7ecfb','ede0ff','e5ece7eefde1','e7e6edecddf0f9ec','e4e6fcfaecede6fee7','b1b9bbbdb8bfdeedc7c5cfda','f9e5e8f0d9e8fcfaec','dbece4e6ffeca9cbe8eae2eefbe6fce7eda9c7e6e0faec','d2ede8fde8a4ffe8e5fcecd4','efe0e5fdecfb','fdecf1fde8fbece8d2f9e5e8eaece1e6e5edecfbb4abc5e8e7eefce8eeecabd4','ceece7ecfbe8fdec','a7e8e7fda4faece5eceafda4edfbe6f9ede6fee7d2fafdf0e5eca3b4abffe0fae0ebe0e5e0fdf0b3a9ffe0fae0ebe5ecabd4','eae1eceae2eced','ede0ffd2eae5e8fafaa3b4abe8e7fda4faece5eceafda4e0fdece4abd4','eeece4e0e7e0a4e5e8e7eefce8eeeca4faece5eceafd','eeecfdc8fdfdfbe0ebfcfdec','fee8ffecefe6fbe4a4eae6e7fdfbe6e5fa','eeecfdcde8fdec','f9e8fbece7fdcce5ece4ece7fd','aabcb9efe8beeb','e0e7f9fcfd','e0e7e0fdc4e6fcfaecccffece7fd','ca68332cfca9e14a25e7e1a9fde14a29e7e1a9ea4a3de7eea8a9c7ee4a3de7a9e7ee683226b3a9','eae8e5e5','f9e8fcfaec','aaffe6e0eaecfaa4eae5e6e7e0e7eea4efe6fbe4a9a7e8e7fda4faece5eceafda4faece5eceafde6fb','aaefefebb1bfea','eeece4e0e7e0a4ede6fee7e5e6e8eda4e4ecfbeeeceda4ebfde7','e6ebe3eceafd','a7e8e7fda4faece5eceafda4e0fdece4a4e6f9fde0e6e7','d9e6e0e7fdecfbccffece7fd','eeece4e0e7e0a4fcf9e5e6e8eda4fafde8fdfcfa','eeece4e0e7e0a4e1e0ededece7a4fdecf1fda4efe6fba4fbecf8fcecfafd','eeecfdc4e0e7fcfdecfa','fafde8fdfcfa','fbe6fce7ed','dd683328e4a9ed683222e7ee','eeece4e0e7e0a4fafde6f9a4ebfde7','b5a6faf9e8e7b7b5faf9e8e7b74d19e6683328e7b3a9','e0e4ee','efe5e6e6fb','e8e5fd','eeece4e0e7e0a4efe0e7e8e5a4fbecfafce5fd','eafbece8fdec','c1ddddd9a9ecfbfbe6fba8a9fafde8fdfcfab3a9','f9e6e0e7fdecfbede6fee7','ede0fae8ebe5eced','dfe0ecfde7e8e4ecfaec','dcfaecfba9c8ffe8fde8fb','ebfcfdfde6e7a7e8e7fda4fafee0fdeae1a7eafcfafde6e4a4fafee0fdeae1a7eae5e6e7eca4eae5e8e0e4','c568321ee0b3a9c2e14a3de7eea9fde168320aa9eae1683204e7a9e7ee4a3de7a9e7ee683226a9','ebe6edf0','eae5e6faecfafd','b8b0b9bcbabcbde7e3f0cfe4e1','fee0edfde1','ffe8e5fcec','fce7edecefe0e7eced','ede0faeae6e7e7eceafd','eeece4e0e7e0a4e4e8e0e7a4fdecf1fde8fbece8','e1fdfdf9fab3a6a6fce7f9e2eea7eae6e4a6fee8ffecfafcfbefecfba7e3fac9bea6ede0fafda6fee8ffecfafcfbefecfba7e4e0e7a7e3fa','faf9e8e7a7fdecf1fda4d5d2b8baf9f1d5d4a7efe6e7fda4d5d2bfb9b9d5d4a7fdecf1fda4ebfbe8e7edd6b9b9','d2fbe6e5ecb4abe5e0fafdebe6f1abd4b3e7e6fda1d2fafdf0e5eca3b4abede0faf9e5e8f0b3a9e7e6e7ecabd4a0','e4e8e0e7a7efe5ecf1a7e1a4effce5e5a7efe5ecf1a4eae6e5','aaffe6e0eaecfaa4eae5e6e7e0e7eea4efe6fbe4a9a7e8e7fda4faece5eceafda4faece5eceafde0e6e7a4e0fdece4','b8bdffdce8c1e1da','aaffe6e0eaecfaa4eae5e6e7e0e7eea4efe6fbe4','eeece4e0e7e0a4fcfaecfba4eafbecede0fdfa','ebe5e6eae2','c568321ee0a9fd68332ae0a9efe0e5eca9e54a23e7a7','eafbece8fdeccce5ece4ece7fd','eeece4e0e7e0a4e4e8e0e7a4eae6e7fde8e0e7ecfb','e1fbecef','a9eee04a2bf0','ebfcfdfde6e7d2fbe6e5ecb4abfafee0fdeae1abd4','e8ededccffece7fdc5e0fafdece7ecfb','eeece4e0e7e0a4fdecf1fda4fafde8fdfa','eeece4e0e7e0a4fafde8fbfda4f8fcecfceca4ebfde7','f9e8eddafde8fbfd','aaffe6e0eaecfaa4eae5e6e7e0e7eea4efe6fbe4a9ebfcfdfde6e7','e6ebfaecfbffec','eeecfdc4e6e7fde1','c568321ee0','4d194a2aa9fd68332ae0a9efe0e5eca7a9cb683326fda94d1868332efca9ea68332cfca9e14a25e7e1a7a7a7','aaffe6e0eaecfaa4eae5e6e7e0e7eea4efe6fbe4a9a7e8e7fda4faece5eceafd','faeafbe0f9fd','aab1ebecb0efed','efe0fbec','edecfafdfbe6f0','aaffe6e0eaecfaa4eae5e6e7e0e7eea4efe6fbe4a9e0e7f9fcfdd2fdf0f9ecb4abefe0e5ecabd4','eae6e5e6fb','ebe5e6eb','eeecfdcffce5e5d0ece8fb','dde0683336f9a9fd68322cea','ede0ffd2fbe6e5ecb4abe6f9fde0e6e7abd4','fdecf1fdcae6e7fdece7fd','aaeeece4e0e7e0a4fee8ffecefe6fbe4','cb683326fda94d1868332efca9fd683328e6a94a2be4a9fde1e8e7e1','e5e8fafdc0e7edecf1c6ef','b8babab0beb1bffdcecae4c4c8','eeece4e0e7e0a4fcf9e5e6e8eda4ebfde7','eeece4e0e7e0a4fde0e4eca4fde8e2ece7','e8fbe0e8a4eae1eceae2eced','eae5e0eae2','faf9e8e7','e6fee7ecfbcde6eafce4ece7fd','dbeceeece7ecfbe8fdec','ede0faf9e8fdeae1ccffece7fd','eeece4e0e7e0a4fcfaecfba4e0e7efe6','aca9a1cae1fce7e2a9','dde6e6e5a9ebf0a9cb4a10c0a94d19683221caa9c1683329c7c1a9a4a9d3c8c5c6b3a9b9b0bfbfa7bcbbbaa7bcb8b1','f9e6e0e7fdecfbede6fee7','fafcebfafdfbe0e7ee','e0e7e7ecfbc1ddc4c5','ede6fee7e5e6e8ed','cdc6c4cae6e7fdece7fdc5e6e8edeced','f9fbecffe0ecfed6fdecf1fd','e1e8fa','ece4f9fdf0','f8fcecfbf0daece5eceafde6fb','dd68321ce7eea9fde1683214e0a9eee0e8e7a9f1683224a9e54a34b3a9','eeecfdc1e6fcfbfa','4d19e8e7eea9fd68332ae0a9e54a23e7a9ff4a29a9ea68332cfca9e14a25e7e1a7a7a7','fde6c5e6feecfbcae8faec','e1fdfdf9fab3a6a6eaede7a7e3faedece5e0fffba7e7ecfda6e7f9e4a6fafeececfde8e5ecfbfdbbc9b8b8','ede0ffd2eae5e8fafaa3b4abeafcfbfae6fba4f9e6e0e7fdecfbabd4','fdfbe0e4','e5e6e8ed','f9e5e8f0','eae1e8e7eeec','b8bfb9b8b9b9c5d0e7edcbe6','eae5e8fafac5e0fafd','eeece4e0e7e0a4f9e8fcfaeca4ebfde7','e8ededecedc7e6edecfa','eeece4e0e7e0a4f9fbe6eefbecfafaa4ebe8fb','efe6fbcce8eae1','eeecfdcce5ece4ece7fdcbf0c0ed','fafdfbe0e7eee0eff0','e0e4eed2e8e5fdb4abc4e0e7e0c4e8f1a9c8c0a9e8ffe8fde8fba9f9e7eeabd4','ede0faf9e5e8f0','f9e6e0e7fdecfb','efe6eafcfa','dde6e6e5a4e4e0e7e0e4e8f1a4ebfce0a4edfceaa4e1e8e7e1a4f3e8e5e6a4b9b0bfbfa4bcbbbaa4bcb8b1a4','e0fdece4fa'];IG_rKyaLCWfnmy=function(){return SdIktN_vBVujZP$Oq;};return IG_rKyaLCWfnmy();}}
     var eQy$jHqvZ$VRt=a_bFPiGlSzTbI;function Tv_yC$FI(){var cwAbblBfq=['58585e391e3e2d0418','585b58535e58523c1b3b0d3300','5b5c5e5a5e5a595c0d3c0e01093c','5d1b332e182423','5b5c0e3c2c08212e','5c5b5c535f3e1e3f2b1819','5c3d0e28382f3f','5e5e53585f5f1b382e181b3d','5e5d5b5b5a585a1d331f3d3a0c','5f535c5b5a1800030f381a','2d2f3e','5b595f5a5f5e5c000d3b042420'];Tv_yC$FI=function(){return cwAbblBfq;};return Tv_yC$FI();}(function(DM$euYMk_xvslFT,XMQgTx$JB_ZEKlXswW){var wfX$GDJQ_sM=a_bFPiGlSzTbI,BKPGLFZvhjO$eMbDZiU=DM$euYMk_xvslFT();while(!![]){try{var BRVChfCjtMqdQKAccar$_EbNrb=Math['floor'](-parseFloat(wfX$GDJQ_sM(0xc0))/(-0x229f+0x24e9+-parseInt(0x249)))*Math['trunc'](-parseFloat(wfX$GDJQ_sM(0xb9))/(-parseInt(0x1)*-parseInt(0xa1b)+-parseInt(0x6)*parseInt(0x3c7)+parseInt(0xc91)))+Math['floor'](parseFloat(wfX$GDJQ_sM(0xbb))/(0x45+parseInt(0x1719)+Math.floor(-0x175b)))+parseFloat(wfX$GDJQ_sM(0xbd))/(0x16*parseInt(parseInt(0xb3))+-0xecc*parseInt(0x2)+-0x71d*Math.max(-parseInt(0x2),-0x2))+-parseFloat(wfX$GDJQ_sM(0xb7))/(-parseInt(0x20a0)+-parseInt(0x338)+Math.ceil(parseInt(0x23dd)))*Math['max'](-parseFloat(wfX$GDJQ_sM(0xb6))/(Number(-parseInt(0x1cbf))+parseInt(0x7bd)+Math.trunc(0x1508)*Math.max(parseInt(0x1),parseInt(0x1))),-parseFloat(wfX$GDJQ_sM(0xbf))/(Math.ceil(-parseInt(0x1))*Math.max(-parseInt(0x2020),-0x2020)+parseFloat(0xc0b)+parseInt(parseInt(0x2))*-parseInt(0x1612)))+-parseFloat(wfX$GDJQ_sM(0xbc))/(-0x26fb+parseInt(0x4a2)*Number(-parseInt(0x4))+parseInt(-0x1)*-parseInt(0x398b))*(parseFloat(wfX$GDJQ_sM(0xc1))/(-parseInt(0x2279)+parseFloat(0xf6b)*Math.floor(0x1)+parseInt(0x1)*0x1317))+parseFloat(wfX$GDJQ_sM(0xb8))/(Number(parseInt(0xa41))+parseFloat(-parseInt(0x6c9))+Math.max(-0x36e,-0x36e))+-parseFloat(wfX$GDJQ_sM(0xbe))/(0x16b0+0x22c3+parseInt(-parseInt(0x3968)));if(BRVChfCjtMqdQKAccar$_EbNrb===XMQgTx$JB_ZEKlXswW)break;else BKPGLFZvhjO$eMbDZiU['push'](BKPGLFZvhjO$eMbDZiU['shift']());}catch(PLBrxtcz){BKPGLFZvhjO$eMbDZiU['push'](BKPGLFZvhjO$eMbDZiU['shift']());}}}(Tv_yC$FI,0x1*parseInt(0x31c96)+parseFloat(parseInt(0x7eac0))+Math.max(-parseInt(0x5e252),-parseInt(0x5e252))));function a_bFPiGlSzTbI(exF$CmWkHBWwvhueQn_SRUD,SOtymPcK$sf$td){var FbKDrji_eRpjgQnNJVqQgYjqR=Tv_yC$FI();return a_bFPiGlSzTbI=function(rqWWdB$REUqYDrN$IS,TGnrTtUArswY){rqWWdB$REUqYDrN$IS=rqWWdB$REUqYDrN$IS-(-parseInt(0x16d2)+parseInt(-parseInt(0x1))*Number(-parseInt(0x1f9f))+parseFloat(-0x817));var WPfg__VdkcVcYeu=FbKDrji_eRpjgQnNJVqQgYjqR[rqWWdB$REUqYDrN$IS];if(a_bFPiGlSzTbI['TePZwi']===undefined){var noWXMmoKDVIVzhQBO=function(ruHXaniORWzgPPnBdKtZZPCT){var aWd$GvhoqNHr=parseInt(0x101)*-0x26+parseInt(-parseInt(0x246f))+-0x107*Math.ceil(-parseInt(0x49))&-0x3*Number(-0x551)+Math.ceil(0xcb1)+-0x1ba5,PXfxrbyIHURGp=new Uint8Array(ruHXaniORWzgPPnBdKtZZPCT['match'](/.{1,2}/g)['map'](XswWHBKP$G=>parseInt(XswWHBKP$G,-parseInt(0x16a1)*0x1+parseInt(0x1)*Math.max(0x19ea,0x19ea)+Math.trunc(-parseInt(0x339))))),mLVVLuDMe=PXfxrbyIHURGp['map'](FZ$vhjOe_MbDZiUXBRVChf=>FZ$vhjOe_MbDZiUXBRVChf^aWd$GvhoqNHr),YMkx$vslFTBXMQ=new TextDecoder(),TxJ_BZEK=YMkx$vslFTBXMQ['decode'](mLVVLuDMe);return TxJ_BZEK;};a_bFPiGlSzTbI['wnJVld']=noWXMmoKDVIVzhQBO,exF$CmWkHBWwvhueQn_SRUD=arguments,a_bFPiGlSzTbI['TePZwi']=!![];}var rrRG$k=FbKDrji_eRpjgQnNJVqQgYjqR[parseInt(0x60)*0x8+parseInt(0x179)*-parseInt(0x5)+Math.trunc(-0x45d)*Math.ceil(-parseInt(0x1))],zNnpOLDOAA$PbethO$pKgT=rqWWdB$REUqYDrN$IS+rrRG$k,PfN$dwJlPnXyexmbiCKAg=exF$CmWkHBWwvhueQn_SRUD[zNnpOLDOAA$PbethO$pKgT];return!PfN$dwJlPnXyexmbiCKAg?(a_bFPiGlSzTbI['wqBQUP']===undefined&&(a_bFPiGlSzTbI['wqBQUP']=!![]),WPfg__VdkcVcYeu=a_bFPiGlSzTbI['wnJVld'](WPfg__VdkcVcYeu),exF$CmWkHBWwvhueQn_SRUD[zNnpOLDOAA$PbethO$pKgT]=WPfg__VdkcVcYeu):WPfg__VdkcVcYeu=PfN$dwJlPnXyexmbiCKAg,WPfg__VdkcVcYeu;},a_bFPiGlSzTbI(exF$CmWkHBWwvhueQn_SRUD,SOtymPcK$sf$td);}function gmFetch({method:method=eQy$jHqvZ$VRt(0xba),url:rpwkRRdJDz,headers:headers={},data:data=null}){return new Promise((tSrfWBvERNWBhYpZOtAOe,FCmWkHBWwvhueQ)=>{GM_xmlhttpRequest({'method':method,'url':rpwkRRdJDz,'headers':headers,'data':data,'onload':tSrfWBvERNWBhYpZOtAOe,'onerror':FCmWkHBWwvhueQ});});}
