@@ -1989,7 +1989,7 @@ button:disabled {
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Đang tải quota...</div>
         </div> 
     <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <button id="toggle-log-btn" class="clear-log-btn" style="margin-bottom:10px;background-color:#4b5563;cursor:pointer;pointer-events:auto;opacity:1;" onclick="(function(btn){var panel=document.getElementById('log-panel');if(!panel)return;var hidden=panel.style.display==='none'||!panel.style.display;panel.style.display=hidden?'block':'none';btn.textContent=hidden?'📜 Ẩn log hoạt động':'📜 Xem / Ẩn log hoạt động';})(this);">📜 Xem / Ẩn log hoạt động</button> <div id="log-panel" style="display:none;"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 35.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
-    <button id="open-batch-render-modal-btn" style="background-color: #50fa7b; color: #282a36; width: 100%; padding: 10px 15px; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 10px;">🎯 Render hàng loạt file</button>
+    <button id="open-batch-render-modal-btn" style="background-color: #50fa7b; color: #282a36; width: 100%; padding: 10px 15px; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 10px; position: relative; z-index: 1; pointer-events: auto !important;">🎯 Render hàng loạt file</button>
     <div class="text-input-options">
         <div class="input-tabs">
             <button id="text-tab" class="tab-btn active">Nhập trực tiếp</button>
@@ -2101,8 +2101,8 @@ button:disabled {
     </div>
 
     <!-- Modal Lịch sử -->
-    <div id="history-modal" class="punctuation-modal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; justify-content: center; align-items: center;">
-        <div class="punctuation-modal-card" style="width: 90vw; max-width: 1200px; max-height: 85vh; position: relative;">
+    <div id="history-modal" class="punctuation-modal" style="display:none;">
+        <div class="punctuation-modal-card" style="width: 90vw; max-width: 1200px; max-height: 85vh;">
             <div class="punctuation-modal-header">
                 <h3>📚 Lịch sử</h3>
                 <button id="close-history-btn" class="punctuation-modal-close-btn">&times;</button>
@@ -2121,8 +2121,8 @@ button:disabled {
     </div>
 
     <!-- Modal Render Hàng Loạt -->
-    <div id="batch-render-modal" class="punctuation-modal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; justify-content: center; align-items: center;">
-        <div class="punctuation-modal-card" style="width: 90vw; max-width: 1000px; max-height: 90vh; position: relative;">
+    <div id="batch-render-modal" class="punctuation-modal" style="display:none;">
+        <div class="punctuation-modal-card" style="width: 90vw; max-width: 1000px; max-height: 90vh;">
             <div class="punctuation-modal-header">
                 <h3>🎯 Render Hàng Loạt (Batch Render)</h3>
                 <button id="close-batch-render-modal-btn" class="punctuation-modal-close-btn">&times;</button>
@@ -8260,6 +8260,12 @@ async function waitForVoiceModelReady() {
                     const hasPendingFiles = window.batchRenderQueue.items.some(item => item.status === 'pending');
                     
                     if (hasPendingFiles && window.batchRenderQueue.isRunning && !window.batchRenderQueue.isPaused) {
+                        // DELAY 3 GIÂY TRƯỚC KHI BẮT ĐẦU FILE TIẾP THEO
+                        if (typeof addLogEntry === 'function') {
+                            addLogEntry(`⏳ [BATCH] Đợi 3 giây trước khi render file tiếp theo...`, 'info');
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+                        
                         // Còn file chưa render → Tiếp tục với file tiếp theo
                         await processNextFile();
                     } else {
@@ -9420,7 +9426,17 @@ async function waitForVoiceModelReady() {
         // Mở modal lịch sử
         if (openHistoryBtn && historyModal) {
             openHistoryBtn.addEventListener('click', async () => {
+                // Đảm bảo modal hiển thị đúng cách và căn giữa từ cột 1 đến cột 3
                 historyModal.style.display = 'flex';
+                historyModal.style.position = 'fixed';
+                historyModal.style.top = '0';
+                historyModal.style.left = '0';
+                historyModal.style.width = '100vw';
+                historyModal.style.height = '100vh';
+                historyModal.style.zIndex = '10000';
+                historyModal.style.justifyContent = 'center';
+                historyModal.style.alignItems = 'center';
+                historyModal.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
                 await renderHistory();
             });
         }
@@ -9448,6 +9464,9 @@ async function waitForVoiceModelReady() {
                     closeHistoryModal();
                 }
             });
+            
+            // Đảm bảo modal không hiển thị khi chưa bấm nút
+            historyModal.style.display = 'none';
         }
 
         // Xóa tất cả lịch sử
@@ -9481,23 +9500,65 @@ async function waitForVoiceModelReady() {
     // =================================================================
     // == KHỞI TẠO BATCH RENDER MODAL ==
     // =================================================================
+    // Flag để tránh gắn event listener nhiều lần
+    let batchRenderModalInitialized = false;
+    
     function initBatchRenderModal() {
+        // Nếu đã khởi tạo rồi thì không làm gì
+        if (batchRenderModalInitialized) {
+            return;
+        }
+        
         const openBatchRenderBtn = document.getElementById('open-batch-render-modal-btn');
         const closeBatchRenderBtn = document.getElementById('close-batch-render-modal-btn');
         const batchRenderModal = document.getElementById('batch-render-modal');
         
         // Kiểm tra nếu các element chưa tồn tại
         if (!openBatchRenderBtn || !batchRenderModal) {
-            console.warn('Batch render modal elements not found, retrying...');
+            console.warn('Batch render modal elements not found, retrying...', {
+                openBatchRenderBtn: !!openBatchRenderBtn,
+                batchRenderModal: !!batchRenderModal
+            });
             setTimeout(initBatchRenderModal, 500);
             return;
         }
         
+        // Đánh dấu đã khởi tạo
+        batchRenderModalInitialized = true;
+        console.log('✅ Batch render modal elements found');
+        
+        // Đảm bảo modal không hiển thị khi chưa bấm nút
+        if (batchRenderModal) {
+            batchRenderModal.style.display = 'none';
+        }
+        
         // Mở modal batch render
         if (openBatchRenderBtn && batchRenderModal) {
-            openBatchRenderBtn.addEventListener('click', () => {
+            // Xóa event listener cũ nếu có (nếu được gọi lại)
+            const newOpenBtn = openBatchRenderBtn.cloneNode(true);
+            openBatchRenderBtn.parentNode.replaceChild(newOpenBtn, openBatchRenderBtn);
+            
+            newOpenBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🎯 Click vào nút Render hàng loạt file');
+                
+                // Đảm bảo modal hiển thị đúng cách
                 batchRenderModal.style.display = 'flex';
+                batchRenderModal.style.position = 'fixed';
+                batchRenderModal.style.top = '0';
+                batchRenderModal.style.left = '0';
+                batchRenderModal.style.width = '100vw';
+                batchRenderModal.style.height = '100vh';
+                batchRenderModal.style.zIndex = '10000';
+                batchRenderModal.style.justifyContent = 'center';
+                batchRenderModal.style.alignItems = 'center';
+                batchRenderModal.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+                
+                console.log('✅ Modal đã được hiển thị');
             });
+            
+            console.log('✅ Event listener đã được gắn vào nút');
         }
         
         // Đóng modal batch render
@@ -9508,7 +9569,11 @@ async function waitForVoiceModelReady() {
         };
         
         if (closeBatchRenderBtn && batchRenderModal) {
-            closeBatchRenderBtn.addEventListener('click', closeBatchRenderModal);
+            closeBatchRenderBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeBatchRenderModal();
+            });
         }
         
         // Đóng modal khi click vào background
