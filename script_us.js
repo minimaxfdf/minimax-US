@@ -706,6 +706,17 @@
     box-shadow: 0 6px 16px rgba(189, 147, 249, 0.4) !important;
 }
 
+#open-batch-render-modal-btn {
+    background: linear-gradient(135deg, #ffb86c 0%, #ffa94d 100%) !important;
+    box-shadow: 0 4px 12px rgba(255, 184, 108, 0.3) !important;
+}
+
+#open-batch-render-modal-btn:hover {
+    background: linear-gradient(135deg, #ffa94d 0%, #ff9a3c 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(255, 184, 108, 0.4) !important;
+}
+
 .history-item {
     background: #44475a;
     border: 1px solid #6272a4;
@@ -1036,6 +1047,125 @@ html #history-modal {
     z-index: -1 !important;
 }
 /* END: Styles for History Modal */
+
+/* START: Styles for Batch Render Modal - Đảm bảo hiển thị đầy đủ */
+#batch-render-modal {
+    z-index: 10001 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    display: none !important; /* Mặc định ẩn */
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+}
+
+/* Khi modal được hiển thị */
+#batch-render-modal[style*="display: flex"],
+#batch-render-modal[style*="display:flex"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-direction: row !important;
+}
+
+/* Đảm bảo modal card được căn giữa và có thể co giãn */
+#batch-render-modal .punctuation-modal-card,
+#batch-render-modal.punctuation-modal .punctuation-modal-card,
+.punctuation-modal#batch-render-modal .punctuation-modal-card {
+    margin: 0 auto !important;
+    position: relative !important;
+    transform: none !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    float: none !important;
+    clear: both !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-self: center !important;
+    justify-self: center !important;
+    width: 80vw !important;
+    max-width: 900px !important;
+    max-height: 90vh !important;
+    height: auto !important;
+    min-height: 300px !important;
+    overflow: visible !important;
+    border-radius: 8px !important;
+}
+
+/* Đảm bảo modal container căn giữa card */
+#batch-render-modal.punctuation-modal,
+#batch-render-modal[class*="punctuation-modal"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-direction: row !important;
+    text-align: center !important;
+}
+
+/* Đảm bảo modal không bị giới hạn bởi container cha - Tính từ viewport */
+#gemini-col-2 #batch-render-modal,
+#gemini-col-3 #batch-render-modal,
+#gemini-col-1 #batch-render-modal,
+#gemini-main-container #batch-render-modal,
+body #batch-render-modal,
+html #batch-render-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    z-index: 10001 !important;
+    overflow: visible !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+    inset: 0 !important;
+}
+
+/* Đảm bảo modal body có thể scroll và hiển thị đầy đủ */
+#batch-render-modal .punctuation-modal-body {
+    overflow-y: auto !important;
+    overflow-x: visible !important;
+    max-height: calc(90vh - 120px) !important;
+    min-height: 200px !important;
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Đảm bảo modal chỉ che phủ khi đang hiển thị */
+#batch-render-modal[style*="display: none"],
+#batch-render-modal[style*="display:none"],
+#batch-render-modal:not([style*="display: flex"]):not([style*="display:flex"]) {
+    display: none !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    z-index: -1 !important;
+}
+/* END: Styles for Batch Render Modal */
 
 /* Đảm bảo các modal khác cũng không che phủ cột 3 khi đóng */
 .punctuation-modal[style*="display: none"],
@@ -2229,6 +2359,8 @@ button:disabled {
     </div>
     <div id="gemini-text-stats"><span>Ký tự: 0</span><span>Từ: 0</span><span>Câu: 0</span><span>Đoạn: 0</span></div>
 
+<button id="open-batch-render-modal-btn" style="background-color: #ffb86c; color: #282a36; width: 100%; padding: 12px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px; margin-top: 15px;">🎯 Render hàng loạt file</button>
+
 <button id="gemini-merge-btn">Ghép đoạn hội thoại</button> <button id="gemini-start-queue-btn" disabled>Bắt đầu tạo âm thanh</button> <button id="apply-punctuation-btn" style="display:none; background-color: #ffb86c; color: #282a36; margin-top: 10px;">Áp dụng thiết lập dấu câu</button> <button id="gemini-pause-btn" style="display:none;">Tạm dừng</button> <button id="gemini-stop-btn" style="display:none;">Dừng hẳn</button> <div id="gemini-progress-container" style="display:none;"><div id="gemini-progress-bar"></div><span id="gemini-progress-label">0%</span></div> <div id="gemini-final-result" style="display:none;"> <h4>Kết quả cuối cùng</h4> <div id="gemini-time-taken"></div> <div id="gemini-waveform"></div> <div id="waveform-controls" style="display:none;"><button id="waveform-play-pause">▶️</button><a id="gemini-download-merged-btn" href="#" download="merged_output.mp3">Tải xuống âm thanh</a><button id="gemini-download-chunks-btn" style="display: none; background-color: #ffb86c; color: #282a36;">Tải các chunk (ZIP)</button></div> </div> </div> </div> </div> <div id="gemini-col-3" class="gemini-column"> <div class="column-header"><h3></h3></div> <div class="column-content banner-column"> <div class="section"> <button id="open-audio-manager-btn" style="background-color: #8be9fd; color: #282a36; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px;">📂 Mở Kho Âm Thanh (Online)</button> <button id="open-history-btn" style="background-color: #bd93f9; color: #282a36; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px;">📚 Lịch sử</button> </div><div id="batch-replace-section"><h4>Đổi văn bản hàng loạt</h4><div id="batch-replace-pairs"></div><div id="batch-replace-actions"><button id="add-replace-pair-btn" title="Thêm cặp từ">+</button><button id="execute-replace-btn">Thực hiện đổi</button></div></div> <button id="open-punctuation-settings-btn">Thiết lập dấu câu</button> <div class="section" style="margin-top: 20px;"> <a href="https://zalo.me/g/vyajle175" target="_blank" style="display: block; background-color: #0068ff; color: #fff; width: 100%; padding: 14px 20px; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; text-align: center; text-decoration: none; cursor: pointer; transition: all 0.3s ease;">💬 Nhóm Zalo Hỗ Trợ</a> <div style="margin-top: 12px; padding: 10px 16px; border-radius: 8px; background: linear-gradient(135deg,#111827 0%,#020617 100%); border: 1px solid #4b5563; color: #e5e7eb; font-size: 13px; font-weight: 700; text-align: center;">⚠️ Khuyến nghị: Chỉ nên render dưới <span style="font-weight: 800; color: #fbbf24;">80.000 ký tự / lần</span> để tránh lỗi và giảm nguy cơ treo web.</div> </div> </div>     <textarea id="gemini-hidden-text-for-request" style="display:none;"></textarea>
 
     <!-- Modal Kho Âm Thanh Online -->
@@ -2293,14 +2425,14 @@ button:disabled {
         </div>
     </div>
 
-    <!-- Modal thiết lập dấu câu -->
-    <div id="punctuation-settings-modal" class="punctuation-modal" style="display:none;">
-        <div class="punctuation-modal-card">
+    <!-- Modal Render hàng loạt file -->
+    <div id="batch-render-modal" class="punctuation-modal" style="display:none;">
+        <div class="punctuation-modal-card" style="width: 80vw; max-width: 900px; max-height: 90vh; height: auto; min-height: 300px; overflow: visible;">
             <div class="punctuation-modal-header">
-                <h3>Thiết lập dấu câu</h3>
-                <button class="punctuation-modal-close-btn">&times;</button>
+                <h3>🎯 Render hàng loạt file</h3>
+                <button id="close-batch-render-modal-btn" class="punctuation-modal-close-btn">&times;</button>
             </div>
-            <div class="punctuation-modal-body">
+            <div class="punctuation-modal-body" style="max-height: calc(90vh - 120px); overflow-y: auto; overflow-x: visible; min-height: 200px; flex: 1 1 auto;">
                 <div id="batch-render-section" class="section" style="margin-bottom: 20px; background: #282a36; border: 1px solid #6272a4; border-radius: 8px; padding: 15px;">
                     <h4 style="color: #bd93f9; font-size: 16px; margin: 0 0 15px 0; border-bottom: 1px solid #6272a4; padding-bottom: 8px;">🎯 Render Hàng Loạt (Batch Render)</h4>
                     <div class="batch-input-section">
@@ -2331,6 +2463,18 @@ button:disabled {
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal thiết lập dấu câu -->
+    <div id="punctuation-settings-modal" class="punctuation-modal" style="display:none;">
+        <div class="punctuation-modal-card">
+            <div class="punctuation-modal-header">
+                <h3>Thiết lập dấu câu</h3>
+                <button class="punctuation-modal-close-btn">&times;</button>
+            </div>
+            <div class="punctuation-modal-body">
                 <div class="punctuation-setting-row">
                     <label for="pause-period">Dấu chấm [.]</label>
                     <div style="display: flex; align-items: center; gap: 8px; margin-left: -10px;">
@@ -7298,6 +7442,68 @@ async function waitForVoiceModelReady() {
 
         // Gọi hàm thiết lập dấu câu sau khi các element khác đã sẵn sàng
         initializePunctuationSettings();
+
+        // --- Batch Render Modal Functionality ---
+        function initializeBatchRenderModal() {
+            const modal = document.getElementById('batch-render-modal');
+            const openBtn = document.getElementById('open-batch-render-modal-btn');
+            const closeBtn = document.getElementById('close-batch-render-modal-btn');
+            
+            if (!modal || !openBtn) return;
+
+            // Mở modal
+            openBtn.addEventListener('click', () => {
+                // QUAN TRỌNG: Di chuyển modal ra body level để đảm bảo tính từ viewport
+                if (modal.parentElement && modal.parentElement.tagName !== 'BODY') {
+                    const originalParent = modal.parentElement;
+                    document.body.appendChild(modal);
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry('🔄 Đã di chuyển modal batch render ra body level để hiển thị đầy đủ', 'info');
+                    }
+                }
+                
+                // Đảm bảo modal được hiển thị đúng cách và căn giữa từ viewport
+                modal.style.position = 'fixed';
+                modal.style.top = '0';
+                modal.style.left = '0';
+                modal.style.right = '0';
+                modal.style.bottom = '0';
+                modal.style.width = '100vw';
+                modal.style.height = '100vh';
+                modal.style.margin = '0';
+                modal.style.padding = '0';
+                modal.style.display = 'flex';
+                modal.style.visibility = 'visible';
+                modal.style.opacity = '1';
+                modal.style.zIndex = '10001';
+                modal.style.alignItems = 'center';
+                modal.style.justifyContent = 'center';
+            });
+
+            // Đóng modal
+            const closeModal = () => {
+                if (modal) {
+                    modal.style.display = 'none';
+                    modal.style.visibility = 'hidden';
+                    modal.style.opacity = '0';
+                }
+            };
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeModal);
+            }
+
+            // Đóng modal khi click vào background
+            if (modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        closeModal();
+                    }
+                });
+            }
+        }
+
+        initializeBatchRenderModal();
 
         // --- 4. Audio Manager Modal (Kho Âm Thanh Online) ---
         (function() {
