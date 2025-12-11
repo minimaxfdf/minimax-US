@@ -3195,8 +3195,8 @@ const aZpcvyD_mnWYN_qgEq=DHk$uTvcFuLEMnixYuADkCeA;let SI$acY=[],ZTQj$LF$o=[],ttu
     let fileName = 'audio_da_tao'; // Tên mặc định
     if (window.currentBatchFileName) {
         fileName = window.currentBatchFileName;
-        // Xóa biến sau khi sử dụng để không ảnh hưởng đến các file tiếp theo
-        delete window.currentBatchFileName;
+        // KHÔNG xóa biến ở đây vì còn cần dùng cho lưu lịch sử
+        // Biến sẽ được xóa sau khi đã lưu vào lịch sử
     }
     
     // ƯU TIÊN 1: Kiểm tra tên file do người dùng nhập tùy chỉnh
@@ -3778,13 +3778,27 @@ const BBNDYjhHoGkj_qbbbJu=URL[VCAHyXsrERcpXVhFPxmgdBjjh(0x1f0)](InRdxToeqTDyPgDG
 // == LƯU FILE VÀO LỊCH SỬ ==
 // =======================================================
             try {
-                const fileName = i_B_kZYD() || 'merged_output.mp3';
+                // ƯU TIÊN: Sử dụng tên file batch nếu có (đang render batch)
+                let fileName = 'merged_output.mp3';
+                if (window.currentBatchFileName) {
+                    fileName = window.currentBatchFileName;
+                    // Không xóa biến ở đây vì có thể cần dùng cho download
+                } else {
+                    // Nếu không có tên file batch, sử dụng logic thông thường
+                    fileName = i_B_kZYD() || 'merged_output.mp3';
+                }
+                
                 const db = window.historyDB || historyDB;
                 if (db && typeof db.saveMergedFile === 'function') {
                     await db.saveMergedFile(fileName, InRdxToeqTDyPgDGZb, {
                         chunkCount: finalBlobs.length
                     });
                     addLogEntry(`📚 Đã lưu file "${fileName}" vào lịch sử`, 'success');
+                    
+                    // Xóa biến batch file name sau khi đã lưu vào lịch sử
+                    if (window.currentBatchFileName) {
+                        delete window.currentBatchFileName;
+                    }
                 } else {
                     console.warn('⚠️ HistoryDB chưa sẵn sàng, bỏ qua lưu lịch sử');
                 }
