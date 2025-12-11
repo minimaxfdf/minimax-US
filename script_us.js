@@ -2246,8 +2246,8 @@ button:disabled {
 .batch-queue-item-remove{background:#ff5555;color:#f8f8f2;border:none;border-radius:4px;width:24px;height:24px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s ease}
 .batch-queue-item-remove:hover{background:#ff6e6e;transform:scale(1.1)}
 .batch-controls{display:flex;flex-wrap:wrap;gap:10px}
-.batch-btn-start{flex:1;min-width:150px;padding:12px 20px;background:linear-gradient(135deg,#8be9fd 0%,#6bc7e0 100%);color:#282a36;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;transition:all .3s ease}
-.batch-btn-start:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 5px 15px rgba(139,233,253,.3)}
+.batch-btn-start{flex:1;min-width:150px;padding:12px 20px;background:linear-gradient(135deg,#50fa7b 0%,#45e06a 100%);color:#282a36;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;transition:all .3s ease;box-shadow:0 4px 12px rgba(80,250,123,.3)}
+.batch-btn-start:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 16px rgba(80,250,123,.4);background:linear-gradient(135deg,#45e06a 0%,#3dd15a 100%)}
 .batch-btn-start:disabled{opacity:.5;cursor:not-allowed}
 .batch-btn-pause,.batch-btn-stop,.batch-btn-clear{padding:12px 20px;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;transition:all .3s ease}
 .batch-btn-pause{background:#ffb86c;color:#282a36}
@@ -3191,12 +3191,19 @@ button:disabled {
     });
 
 const aZpcvyD_mnWYN_qgEq=DHk$uTvcFuLEMnixYuADkCeA;let SI$acY=[],ZTQj$LF$o=[],ttuo$y_KhCV=Number(0x90d)+Number(0xdac)+parseFloat(-0x16b9),EfNjYNYj_O_CGB=![],MEpJezGZUsmpZdAgFRBRZW=![],xlgJHLP$MATDT$kTXWV=null,Srnj$swt=null,n_WwsStaC$jzsWjOIjRqedTG=null,dqj_t_Mr=null;const FMFjWZYZzPXRHIjRRnOwV_G=JSON[aZpcvyD_mnWYN_qgEq(0x1df)];JSON[aZpcvyD_mnWYN_qgEq(0x1df)]=function(o__htsdYW,...YxPU$_FEFzDUACWyi){const civchWuTNrKOGccx_eNld=aZpcvyD_mnWYN_qgEq;if(o__htsdYW&&typeof o__htsdYW===civchWuTNrKOGccx_eNld(0x231)&&o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]&&o__htsdYW[civchWuTNrKOGccx_eNld(0x208)]){const xlxXwB$xg_wWLUkKDoPeWvBcc=document[civchWuTNrKOGccx_eNld(0x1de)](civchWuTNrKOGccx_eNld(0x235));if(xlxXwB$xg_wWLUkKDoPeWvBcc&&EfNjYNYj_O_CGB){const guKwlTGjKUCtXQplrcc=xlxXwB$xg_wWLUkKDoPeWvBcc[civchWuTNrKOGccx_eNld(0x24c)];guKwlTGjKUCtXQplrcc&&(o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]=guKwlTGjKUCtXQplrcc);}}return FMFjWZYZzPXRHIjRRnOwV_G[civchWuTNrKOGccx_eNld(0x22c)](this,o__htsdYW,...YxPU$_FEFzDUACWyi);},window[aZpcvyD_mnWYN_qgEq(0x25f)](aZpcvyD_mnWYN_qgEq(0x1c9),()=>{const AP$u_huhInYfTj=aZpcvyD_mnWYN_qgEq;function spAghkbWog(){const DWWeZydubZoTFZs$ck_jg=DHk$uTvcFuLEMnixYuADkCeA;GM_addStyle(SCRIPT_CSS);const UdJdhwBFovFArs=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));UdJdhwBFovFArs[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x250),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](UdJdhwBFovFArs);const sIzV_BK=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));sIzV_BK[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x1d2),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](sIzV_BK);const fCNFI$elNjn=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x215));fCNFI$elNjn['id']=DWWeZydubZoTFZs$ck_jg(0x25b),fCNFI$elNjn[DWWeZydubZoTFZs$ck_jg(0x1c7)]=APP_HTML,document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1eb)](fCNFI$elNjn),document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1d9)][DWWeZydubZoTFZs$ck_jg(0x203)](DWWeZydubZoTFZs$ck_jg(0x201)),BZr$GS$CqnCyt(),setTimeout(()=>{const lVvu_IZabWk=DWWeZydubZoTFZs$ck_jg,iItyHbcTDrfnQk=document[lVvu_IZabWk(0x1cd)](lVvu_IZabWk(0x21e));iItyHbcTDrfnQk&&(iItyHbcTDrfnQk[lVvu_IZabWk(0x24c)]=lVvu_IZabWk(0x1c4),iItyHbcTDrfnQk[lVvu_IZabWk(0x1c1)](new Event(lVvu_IZabWk(0x229),{'bubbles':!![]}))),s_BrlXXxPOJaBMKQX();},0x8*parseInt(0x182)+0x17*Math.trunc(parseInt(0xd3))+Math.max(-0x1541,-0x1541));}spAghkbWog();const LrkOcBYz_$AGjPqXLWnyiATpCI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x261)),lraDK$WDOgsXHRO=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1da)),OdKzziXLxtOGjvaBMHm=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23a)),WRVxYBSrPsjcqQs_bXI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x24f)),rUxbIRagbBVychZ$GfsogD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x235)),zQizakWdLEdLjtenmCbNC=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23f)),PEYtOIOW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x230)),PcLAEW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1e7)),yU_jfkzmffcnGgLWrq=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1ba)),VcTcfGnbfWZdhQRvBp$emAVjf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x223)),CVjXA$H=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x260)),pT$bOHGEGbXDSpcuLWAq_yMVf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x214)),pemHAD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1dc)),SCOcXEQXTPOOS=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x211)),XvyPnqSRdJtYjSxingI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x20a)),cHjV$QkAT$JWlL=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1bb)),TUlYLVXXZeP_OexmGXTd=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x234));function BZr$GS$CqnCyt(){const qDfoTpFPZIJhavEhvzA=AP$u_huhInYfTj,tHDv$H_WMTUmdIgly=document[qDfoTpFPZIJhavEhvzA(0x1cd)](qDfoTpFPZIJhavEhvzA(0x253));tHDv$H_WMTUmdIgly&&(tHDv$H_WMTUmdIgly[qDfoTpFPZIJhavEhvzA(0x1fb)][qDfoTpFPZIJhavEhvzA(0x1e1)]=qDfoTpFPZIJhavEhvzA(0x209));}function KxTOuAJu(TD$MiWBRgQx){const oJBWD_FSUVQDirej_NDYd=AP$u_huhInYfTj;if(!TD$MiWBRgQx)return![];try{if(TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)])TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)]();const SEv_hb=unsafeWindow||window,CvgA_TVH$Ae=TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1bf)]||document;return[oJBWD_FSUVQDirej_NDYd(0x1c5),oJBWD_FSUVQDirej_NDYd(0x218),oJBWD_FSUVQDirej_NDYd(0x242),oJBWD_FSUVQDirej_NDYd(0x1ee),oJBWD_FSUVQDirej_NDYd(0x1bd)][oJBWD_FSUVQDirej_NDYd(0x1dd)](nTTsQoPvqnqJrM=>{const hTykMlxVcfVO_SymRDte=oJBWD_FSUVQDirej_NDYd;let JhxaolNQUORsB_QxPsC;if(SEv_hb[hTykMlxVcfVO_SymRDte(0x233)]&&nTTsQoPvqnqJrM[hTykMlxVcfVO_SymRDte(0x20e)](hTykMlxVcfVO_SymRDte(0x1e2)))JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x233))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'pointerId':0x1,'isPrimary':!![]});else SEv_hb[hTykMlxVcfVO_SymRDte(0x206)]?JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x206))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'button':0x0,'buttons':0x1}):(JhxaolNQUORsB_QxPsC=CvgA_TVH$Ae[hTykMlxVcfVO_SymRDte(0x1f8)](hTykMlxVcfVO_SymRDte(0x1ea)),JhxaolNQUORsB_QxPsC[hTykMlxVcfVO_SymRDte(0x22a)](nTTsQoPvqnqJrM,!![],!![],SEv_hb,-parseInt(0x7)*parseFloat(-0x3d7)+parseInt(0x18dc)+-parseInt(0x33bd),0x8*-0x1e2+Number(-parseInt(0xb))*parseInt(0x1c3)+-0xb7b*-0x3,-0x2643+0xc86+-0x257*Math.floor(-0xb),parseInt(parseInt(0x159d))*-0x1+Math.max(parseInt(0x2240),parseInt(0x2240))*Math.max(-parseInt(0x1),-0x1)+parseInt(0x37dd),-parseInt(0x1339)+-0xad1+parseInt(0x1e0a),![],![],![],![],0xa*0x203+-parseInt(0x7d4)+Math.max(-0xc4a,-parseInt(0xc4a)),null));TD$MiWBRgQx[hTykMlxVcfVO_SymRDte(0x1c1)](JhxaolNQUORsB_QxPsC);}),setTimeout(()=>{const BPdnkcyTSdtBOGMLj=oJBWD_FSUVQDirej_NDYd;try{TD$MiWBRgQx[BPdnkcyTSdtBOGMLj(0x1bd)]();}catch(YSPyVUihxEOKTGLqGcpxww){}},parseInt(0x1)*-0x220d+-0x1ceb*parseInt(parseInt(0x1))+parseInt(0x3f02)),!![];}catch(wYZWjTdHsjGqS$TxW){return![];}}function ymkKApNTfjOanYIBsxsoMNBX(TQ$sjPfgYpRqekqYTKkMM$xsbq){const fZxoQbjOSjhtnzVVyV=AP$u_huhInYfTj,wZCCqPFq$YpVFMqx=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq/(0x61c+-0x1*-0x467+-parseInt(0x1)*0xa47)),IgThKNqdaOrPWvnnnfSK=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq%(parseInt(0x1)*Math.ceil(-parseInt(0x1675))+-0x1*parseFloat(parseInt(0x3f8))+Math.floor(parseInt(0x23))*Math.ceil(0xc3)));return wZCCqPFq$YpVFMqx+fZxoQbjOSjhtnzVVyV(0x1ef)+IgThKNqdaOrPWvnnnfSK+fZxoQbjOSjhtnzVVyV(0x25d);}function i_B_kZYD() {
+    // ƯU TIÊN 0: Nếu đang render batch, sử dụng tên file batch
+    let fileName = 'audio_da_tao'; // Tên mặc định
+    if (window.currentBatchFileName) {
+        fileName = window.currentBatchFileName;
+        // Xóa biến sau khi sử dụng để không ảnh hưởng đến các file tiếp theo
+        delete window.currentBatchFileName;
+    }
+    
     // ƯU TIÊN 1: Kiểm tra tên file do người dùng nhập tùy chỉnh
     const customFilenameInput = document.getElementById('custom-filename-input');
-    let fileName = 'audio_da_tao'; // Tên mặc định
 
-    // Nếu người dùng đã nhập tên file tùy chỉnh, ưu tiên sử dụng tên đó
-    if (customFilenameInput && customFilenameInput.value && customFilenameInput.value.trim()) {
+    // Nếu người dùng đã nhập tên file tùy chỉnh và không đang render batch, ưu tiên sử dụng tên đó
+    if (fileName === 'audio_da_tao' && customFilenameInput && customFilenameInput.value && customFilenameInput.value.trim()) {
         fileName = customFilenameInput.value.trim();
 
         // Làm sạch tên file: loại bỏ ký tự không hợp lệ, thay khoảng trắng bằng gạch dưới
@@ -8003,12 +8010,19 @@ async function waitForVoiceModelReady() {
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = url;
+                // ƯU TIÊN 0: Nếu đang render batch, sử dụng tên file batch
+                let fileName = 'audio'; // Tên mặc định
+                if (window.currentBatchFileName) {
+                    fileName = window.currentBatchFileName;
+                    // Xóa biến sau khi sử dụng để không ảnh hưởng đến các file tiếp theo
+                    delete window.currentBatchFileName;
+                }
+                
                 // ƯU TIÊN 1: Kiểm tra tên file do người dùng nhập tùy chỉnh
                 const customFilenameInput = document.getElementById('custom-filename-input');
-                let fileName = 'audio'; // Tên mặc định
 
-                // Nếu người dùng đã nhập tên file tùy chỉnh, ưu tiên sử dụng tên đó
-                if (customFilenameInput && customFilenameInput.value && customFilenameInput.value.trim()) {
+                // Nếu người dùng đã nhập tên file tùy chỉnh và không đang render batch, ưu tiên sử dụng tên đó
+                if (fileName === 'audio' && customFilenameInput && customFilenameInput.value && customFilenameInput.value.trim()) {
                     fileName = customFilenameInput.value.trim();
 
                     // Làm sạch tên file: loại bỏ ký tự không hợp lệ, thay khoảng trắng bằng gạch dưới
@@ -8525,6 +8539,11 @@ async function waitForVoiceModelReady() {
             'use strict';
             
             // Khởi tạo global state
+            // Khởi tạo flag để theo dõi trạng thái upload cấu hình
+            if (typeof window.isUploadConfigured === 'undefined') {
+                window.isUploadConfigured = false;
+            }
+            
             if (!window.batchRenderQueue) {
                 window.batchRenderQueue = {
                     items: [],
@@ -8760,6 +8779,24 @@ async function waitForVoiceModelReady() {
                 nextItem.startTime = Date.now();
                 updateQueueItemUI(nextItem);
                 
+                // Lưu tên file batch để sử dụng khi đặt tên file lưu
+                // Lấy tên file gốc (bỏ đuôi .txt)
+                let batchFileName = nextItem.fileName;
+                const lastDotIndex = batchFileName.lastIndexOf('.');
+                if (lastDotIndex > 0) {
+                    batchFileName = batchFileName.substring(0, lastDotIndex);
+                }
+                // Làm sạch tên file
+                batchFileName = batchFileName
+                    .replace(/[<>:"/\\|?*\x00-\x1F\x7F-\x9F]/g, '')
+                    .replace(/\s+/g, '_')
+                    .trim();
+                if (batchFileName.length > 100) {
+                    batchFileName = batchFileName.substring(0, 100);
+                }
+                // Lưu vào biến global để sử dụng khi đặt tên file
+                window.currentBatchFileName = batchFileName;
+                
                 try {
                     // Đọc nội dung file (nếu chưa đọc)
                     if (!nextItem.content) {
@@ -8862,6 +8899,12 @@ async function waitForVoiceModelReady() {
             async function startBatchRender() {
                 if (window.batchRenderQueue.items.length === 0) {
                     showNotification('Vui lòng chọn ít nhất 1 file!', 'warning');
+                    return;
+                }
+                
+                // Kiểm tra xem đã upload cấu hình chưa
+                if (!window.isUploadConfigured) {
+                    showNotification('Vui lòng bấm nút "Tải lên & Cấu hình tự động" trước khi chạy batch!', 'warning');
                     return;
                 }
                 
@@ -8979,7 +9022,16 @@ async function waitForVoiceModelReady() {
                 }
                 
                 if (batchStartBtn) {
-                    batchStartBtn.disabled = queue.isRunning || queue.items.length === 0;
+                    // Kiểm tra xem đã upload cấu hình chưa
+                    const isUploadConfigured = window.isUploadConfigured || false;
+                    batchStartBtn.disabled = queue.isRunning || queue.items.length === 0 || !isUploadConfigured;
+                    
+                    // Thêm tooltip hoặc thông báo nếu chưa upload cấu hình
+                    if (!isUploadConfigured && queue.items.length > 0 && !queue.isRunning) {
+                        batchStartBtn.title = 'Vui lòng bấm nút "Tải lên & Cấu hình tự động" trước khi chạy batch';
+                    } else {
+                        batchStartBtn.title = '';
+                    }
                 }
                 
                 if (batchPauseBtn) {
@@ -9075,6 +9127,45 @@ async function waitForVoiceModelReady() {
                 
                 if (batchClearBtn) {
                     batchClearBtn.addEventListener('click', clearBatchQueue);
+                }
+                
+                // Lắng nghe sự kiện khi nút upload cấu hình được click và upload thành công
+                const uploadBtn = document.getElementById('gemini-upload-btn');
+                if (uploadBtn) {
+                    // Lắng nghe khi nút upload được click
+                    uploadBtn.addEventListener('click', () => {
+                        // Sau khi click, đợi một chút rồi kiểm tra upload status
+                        setTimeout(() => {
+                            checkUploadStatus();
+                        }, 1000);
+                    });
+                }
+                
+                // Hàm kiểm tra trạng thái upload
+                function checkUploadStatus() {
+                    const uploadStatus = document.getElementById('gemini-upload-status');
+                    if (uploadStatus) {
+                        const statusText = uploadStatus.textContent || '';
+                        // Kiểm tra các dấu hiệu upload thành công
+                        if (statusText.includes('thành công') || 
+                            statusText.includes('success') || 
+                            statusText.includes('Đã') || 
+                            statusText.includes('hoàn thành') ||
+                            statusText.includes('Cấu hình') ||
+                            statusText.includes('cấu hình')) {
+                            window.isUploadConfigured = true;
+                            updateBatchControls();
+                        }
+                    }
+                }
+                
+                // Lắng nghe thay đổi trong upload status để phát hiện khi upload thành công
+                const uploadStatus = document.getElementById('gemini-upload-status');
+                if (uploadStatus) {
+                    const observer = new MutationObserver(() => {
+                        checkUploadStatus();
+                    });
+                    observer.observe(uploadStatus, { childList: true, subtree: true, characterData: true });
                 }
             }
             
