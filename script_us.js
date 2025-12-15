@@ -4874,49 +4874,42 @@ function stopKeepAliveLoop() {
         window.location.reload(true);
     }
 
-    // PHƯƠNG PHÁP PHÁT HIỆN DEVTOOLS (CHỈ PHÁT HIỆN KHI CHẮC CHẮN)
+    // PHƯƠNG PHÁP PHÁT HIỆN DEVTOOLS - CHỈ KIỂM TRA CỬA SỔ DEVTOOLS THỰC SỰ
     function detectDevTools() {
         let detected = false;
         let detectionMethod = '';
 
-        // PHƯƠNG PHÁP 1: Debugger statement với timing (PHƯƠNG PHÁP CHÍNH - ĐÁNG TIN CẬY NHẤT)
-        // Chỉ dùng phương pháp này vì nó đáng tin cậy nhất và ít false positive nhất
+        // CHỈ DÙNG WINDOW SIZE DETECTION - PHƯƠNG PHÁP ĐÁNG TIN CẬY NHẤT
+        // Khi DevTools mở, cửa sổ sẽ có sự khác biệt rõ ràng về kích thước
         try {
-            const start = performance.now();
-            (function() {
-                'use strict';
-                debugger;
-            })();
-            const end = performance.now();
-            const elapsed = end - start;
-            // Tăng threshold lên 100ms để tránh false positive
-            // Khi DevTools mở và pause tại debugger, elapsed sẽ > 100ms
-            // Khi DevTools đóng, elapsed sẽ < 10ms
-            if (elapsed > 100) {
+            const widthDiff = Math.abs(window.outerWidth - window.innerWidth);
+            const heightDiff = Math.abs(window.outerHeight - window.innerHeight);
+            
+            // DevTools thường mở ở bên phải hoặc dưới cùng
+            // Threshold cao để chỉ phát hiện khi chắc chắn có DevTools
+            // Kiểm tra: widthDiff > 300px HOẶC heightDiff > 300px
+            // Và phải có sự khác biệt đáng kể (ít nhất 150px cho một trong hai)
+            const widthThreshold = 300;
+            const heightThreshold = 300;
+            const minDiff = 150; // Đảm bảo có sự khác biệt tối thiểu
+            
+            // Chỉ phát hiện khi:
+            // 1. Width diff > 300px VÀ height diff > 150px (DevTools ở bên phải)
+            // HOẶC
+            // 2. Height diff > 300px VÀ width diff > 150px (DevTools ở dưới)
+            // Điều này đảm bảo chỉ phát hiện khi thực sự có cửa sổ DevTools mở
+            if ((widthDiff > widthThreshold && heightDiff > minDiff) || 
+                (heightDiff > heightThreshold && widthDiff > minDiff)) {
                 detected = true;
-                detectionMethod = 'debugger-timing';
+                detectionMethod = 'window-size-detection';
             }
         } catch(e) {
             // Ignore
         }
 
-        // PHƯƠNG PHÁP 2: Window size detection (CHỈ DÙNG KHI DEBUGGER KHÔNG PHÁT HIỆN)
-        // Tăng threshold cao hơn và chỉ dùng như phương pháp bổ sung
-        if (!detected) {
-            const widthThreshold = 200; // Tăng từ 100 lên 200 để tránh false positive
-            const heightThreshold = 200; // Tăng từ 100 lên 200 để tránh false positive
-            const widthDiff = Math.abs(window.outerWidth - window.innerWidth);
-            const heightDiff = Math.abs(window.outerHeight - window.innerHeight);
-            
-            // Chỉ phát hiện khi cả width và height đều vượt threshold (chắc chắn hơn)
-            if (widthDiff > widthThreshold && heightDiff > heightThreshold) {
-                detected = true;
-                detectionMethod = 'window-size';
-            }
-        }
-
-        // BỎ CÁC PHƯƠNG PHÁP CONSOLE DETECTION VÌ DỄ FALSE POSITIVE
-        // Console detection có thể trigger ngay cả khi DevTools không mở
+        // LOẠI BỎ TẤT CẢ CÁC PHƯƠNG PHÁP KHÁC VÌ DỄ FALSE POSITIVE
+        // - Debugger timing: Có thể bị ảnh hưởng bởi performance của máy
+        // - Console detection: Luôn trigger false positive
 
         return {
             detected: detected,
