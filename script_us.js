@@ -4804,45 +4804,132 @@ function stopKeepAliveLoop() {
     let lastDetection = false;
     let checkCount = 0;
     
-    // CHỐNG F12 VÀ CÁC PHÍM TẮT DEVTOOLS
+    // CHỐNG F12 VÀ TẤT CẢ CÁC PHÍM TẮT DEVTOOLS
     document.addEventListener('keydown', function(e) {
-        // F12
+        // F12 (Mở DevTools)
         if (e.keyCode === 123) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('[Anti-DevTools] F12 detected! Resetting...');
             resetPage();
             return false;
         }
-        // Ctrl+Shift+I (DevTools)
+        
+        // Ctrl+Shift+I (Mở DevTools)
         if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('[Anti-DevTools] Ctrl+Shift+I detected! Resetting...');
             resetPage();
             return false;
         }
-        // Ctrl+Shift+J (Console)
+        
+        // Ctrl+Shift+J (Mở Console)
         if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('[Anti-DevTools] Ctrl+Shift+J detected! Resetting...');
             resetPage();
             return false;
         }
+        
         // Ctrl+Shift+C (Inspect Element)
         if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('[Anti-DevTools] Ctrl+Shift+C detected! Resetting...');
             resetPage();
             return false;
         }
+        
+        // Ctrl+Shift+K (Console - Firefox hoặc Network)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 75) {
+            e.preventDefault();
+            e.stopPropagation();
+            resetPage();
+            return false;
+        }
+        
+        // Ctrl+Shift+E (Elements panel)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 69) {
+            e.preventDefault();
+            e.stopPropagation();
+            resetPage();
+            return false;
+        }
+        
+        // Ctrl+Shift+P (Command Palette)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 80) {
+            e.preventDefault();
+            e.stopPropagation();
+            resetPage();
+            return false;
+        }
+        
+        // Ctrl+Shift+M (Device Mode)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 77) {
+            e.preventDefault();
+            e.stopPropagation();
+            resetPage();
+            return false;
+        }
+        
+        // Ctrl+Shift+O (Sources panel)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 79) {
+            e.preventDefault();
+            e.stopPropagation();
+            resetPage();
+            return false;
+        }
+        
+        // Ctrl+Shift+F (Search in all files)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 70) {
+            e.preventDefault();
+            e.stopPropagation();
+            resetPage();
+            return false;
+        }
+        
+        // Ctrl+Shift+S (Screenshot)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 83) {
+            e.preventDefault();
+            e.stopPropagation();
+            resetPage();
+            return false;
+        }
+        
+        // Ctrl+\ (Toggle sidebar)
+        if (e.ctrlKey && e.keyCode === 220) {
+            e.preventDefault();
+            e.stopPropagation();
+            resetPage();
+            return false;
+        }
+        
         // Ctrl+U (View Source)
         if (e.ctrlKey && e.keyCode === 85) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('[Anti-DevTools] Ctrl+U detected! Resetting...');
+            resetPage();
+            return false;
+        }
+        
+        // Ctrl+Shift+Delete (Clear browsing data - có thể mở DevTools)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 46) {
+            e.preventDefault();
+            e.stopPropagation();
+            resetPage();
+            return false;
+        }
+        
+        // Ctrl+Shift+N (Incognito - có thể mở DevTools)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 78) {
+            e.preventDefault();
+            e.stopPropagation();
+            resetPage();
+            return false;
+        }
+        
+        // Ctrl+Shift+T (Reopen closed tab - có thể mở DevTools)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 84) {
+            e.preventDefault();
+            e.stopPropagation();
             resetPage();
             return false;
         }
