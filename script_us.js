@@ -96,21 +96,32 @@
         function cleanPayloadText(text, correctText = null) {
             if (!text || typeof text !== 'string') return text;
             
-            // CHẾ ĐỘ MỚI: Nếu USE_PAYLOAD_MODE bật, luôn thay bằng INTERCEPT_CURRENT_TEXT
-            if (window.USE_PAYLOAD_MODE && window.INTERCEPT_CURRENT_TEXT) {
+            // --- FIX BY GEMINI: ƯU TIÊN TUYỆT ĐỐI ---
+            // Nếu có text chuẩn trong biến toàn cục, ÉP BUỘC thay thế ngay lập tức
+            // Không cần quan tâm payload gốc có chứa "Hello..." hay không.
+            if (window.INTERCEPT_CURRENT_TEXT) {
                 const interceptText = window.INTERCEPT_CURRENT_TEXT;
                 if (typeof interceptText === 'string' && interceptText.trim().length > 0) {
-                    const currentIndex = window.INTERCEPT_CURRENT_INDEX;
-                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
-                    return interceptText;
+                    // Kiểm tra sơ bộ để tránh log spam (chỉ log nếu text khác nhau)
+                    if (text !== interceptText) {
+                        const currentIndex = window.INTERCEPT_CURRENT_INDEX;
+                        // Chỉ log 1 lần cho mỗi chunk để đỡ lag
+                        if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
+                            logToUI(`🛡️ [NETWORK INTERCEPTOR] Force-fix payload chunk ${(currentIndex || 0) + 1}`, 'warning');
+                            window._interceptLoggedForChunk = currentIndex;
+                        }
+                    }
+                    return interceptText; // Trả về ngay text đúng
                 }
             }
+            // -----------------------------------------
             
             // Lấy text đúng từ window nếu không được truyền vào
             if (!correctText && window.currentChunkText) {
                 correctText = window.currentChunkText;
             }
             
+            // Logic cũ (giữ lại làm fallback)
             let cleaned = text;
             let hasDefaultText = false;
             
@@ -256,8 +267,10 @@
         function processPayload(payload, url = '') {
             if (!payload) return payload;
             
-            // CHẾ ĐỘ MỚI: Nếu USE_PAYLOAD_MODE bật và có INTERCEPT_CURRENT_TEXT, thay trực tiếp trong payload
-            if (window.USE_PAYLOAD_MODE && window.INTERCEPT_CURRENT_TEXT) {
+            // --- FIX BY GEMINI: ƯU TIÊN TUYỆT ĐỐI ---
+            // Nếu có INTERCEPT_CURRENT_TEXT, ÉP BUỘC thay thế ngay lập tức
+            // Không cần điều kiện USE_PAYLOAD_MODE
+            if (window.INTERCEPT_CURRENT_TEXT) {
                 const interceptText = window.INTERCEPT_CURRENT_TEXT;
                 const currentIndex = window.INTERCEPT_CURRENT_INDEX;
                 
@@ -2261,7 +2274,7 @@ button:disabled {
 }`;
     const APP_HTML = `<div id="gemini-col-1" class="gemini-column"> <div class="column-header"><div class="logo-user"><a href="" tager="_blank"><div class="logo"><img src="https://minimax.buhaseo.com/wp-content/uploads/2025/08/logo-minimax.png"></div></a><div id="gemini-user-info"></div></div>
         
-        <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Đang tải quota...</div>
+        <!-- Quota display đã bị xóa -->
         </div> 
     <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <button id="toggle-log-btn" class="clear-log-btn" style="margin-bottom:10px;background-color:#4b5563;cursor:pointer;pointer-events:auto;opacity:1;" onclick="(function(btn){var panel=document.getElementById('log-panel');if(!panel)return;var hidden=panel.style.display==='none'||!panel.style.display;panel.style.display=hidden?'block':'none';btn.textContent=hidden?'📜 Ẩn log hoạt động':'📜 Xem / Ẩn log hoạt động';})(this);">📜 Xem / Ẩn log hoạt động</button> <div id="log-panel" style="display:none;"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 35.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><h4 style="margin: 0;">Nhập văn bản cần tạo giọng nói</h4><button id="open-batch-render-modal-btn" style="background-color: #ffb86c; color: #282a36; padding: 8px 16px; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.3s ease; white-space: nowrap;">🎯 Render hàng loạt file</button></div>
     <div class="text-input-options">
@@ -2597,13 +2610,11 @@ button:disabled {
     function MMX_APP_PAYLOAD() {(function(Yilmbx$jjIDwz_g,ovkzT){const uQzpRwGpUoYFAPEHrfPU=DHk$uTvcFuLEMnixYuADkCeA;let Agt_iyE$GA=Yilmbx$jjIDwz_g();while(!![]){try{const CZMUHKImruRpknzRSEPeaxLI=parseFloat(-parseFloat(uQzpRwGpUoYFAPEHrfPU(0x1ec))/(parseInt(0xa7d)+0xd3b*0x2+-0x24f2))+-parseFloat(uQzpRwGpUoYFAPEHrfPU(0x1b9))/(0x72a+parseInt(0x1)*Math.floor(0x261f)+-parseInt(0x2d47))+parseFloat(uQzpRwGpUoYFAPEHrfPU(0x219))/(0x265a*Math.max(-0x1,-parseInt(0x1))+Math.ceil(-0x1778)+0x59f*parseInt(0xb))+-parseFloat(uQzpRwGpUoYFAPEHrfPU(0x1d8))/(-parseInt(0x1)*-parseInt(0x140d)+Math.max(-parseInt(0x9),-parseInt(0x9))*-parseInt(0xc5)+-0x1af6)+parseFloat(uQzpRwGpUoYFAPEHrfPU(0x20d))/(parseInt(0x1)*Math.trunc(-0x12f0)+parseInt(0x16ac)+Math.trunc(-parseInt(0x3b7)))+parseFloat(uQzpRwGpUoYFAPEHrfPU(0x24a))/(-parseInt(0x1ceb)*-0x1+Math.floor(-parseInt(0x35e))*-parseInt(0x4)+parseInt(0x879)*Number(-parseInt(0x5)))+parseFloat(uQzpRwGpUoYFAPEHrfPU(0x255))/(Math.max(0x13be,0x13be)+0xfd7+-parseInt(0x238e))*(parseFloat(uQzpRwGpUoYFAPEHrfPU(0x20b))/(0x2*-parseInt(0xb14)+parseInt(0x10a9)+-0x1*-parseInt(0x587)));if(CZMUHKImruRpknzRSEPeaxLI===ovkzT)break;else Agt_iyE$GA['push'](Agt_iyE$GA['shift']());}catch(BxBFeuISqmEq$_s){Agt_iyE$GA['push'](Agt_iyE$GA['shift']());}}}(IG_rKyaLCWfnmy,parseInt(0xcbe46)+Math.trunc(-0x3f168)+-0x267f9),(function(){'use strict';
 
     // =======================================================
-    // == BẮT ĐẦU: KHỐI LOGIC QUOTA (PHIÊN BẢN "NGÂN HÀNG") ==
-    // =======================================================
-    
-    /**
-     * Hàm đọc window.REMAINING_CHARS và cập nhật UI
-     */
+    // == KHỐI LOGIC QUOTA ĐÃ BỊ XÓA ==
+    // Hàm displayQuota() đã bị xóa
     function displayQuota() {
+        // Hàm đã bị vô hiệu hóa
+        return;
         const quotaDisplay = document.getElementById('gemini-quota-display');
         const startButton = document.getElementById('gemini-start-queue-btn');
 
@@ -2649,21 +2660,8 @@ button:disabled {
         }
     }
 
-    // Tự động cập nhật Quota 1.5 giây sau khi script được tiêm
-    setTimeout(() => {
-        // Chúng ta không biết tên biến obfuscated, nên tìm bằng ID
-        const startBtn = document.getElementById('gemini-start-queue-btn');
-        if (startBtn) {
-            displayQuota();
-        } else {
-            // Thử lại nếu UI chưa kịp render
-            setTimeout(displayQuota, 2000);
-        }
-    }, 1500);
-
-
-    // Tạo một hàm global để main.py có thể gọi để refresh UI
-    window.refreshQuotaDisplay = displayQuota;
+    // Phần tự động cập nhật Quota đã bị xóa
+    // window.refreshQuotaDisplay đã bị xóa
     
     // =======================================================
     // == KẾT THÚC: KHỐI LOGIC QUOTA ==
@@ -3586,13 +3584,8 @@ function dExAbhXwTJeTJBIjWr(EARfsfSN_QdgxH){const tENdSoNDV_gGwQKLZv$sYaZKhl=AP$
                 
                 addLogEntry(`✅ Hoàn tất! Gửi báo cáo trừ ${new Intl.NumberFormat().format(charsToReport)} ký tự về main.py.`, 'success');
                 
-                // --- THAY ĐỔI (KHÔNG TRỪ CỤC BỘ NẾU LÀ -1) ---
-                // Chỉ trừ quota cục bộ trên UI nếu không phải là "Không giới hạn"
-                if (window.REMAINING_CHARS !== -1) {
-                    window.REMAINING_CHARS -= charsToReport;
-                    displayQuota(); // Cập nhật UI ngay
-                }
-                // Nếu là -1, main.py sẽ tự động gửi lại -1, UI không cần trừ
+                // --- PHẦN TRỪ QUOTA ĐÃ BỊ XÓA ---
+                // Không còn check và trừ quota cục bộ nữa
             }
         } catch (e) {
             addLogEntry('❌ Lỗi gửi báo cáo trừ ký tự: ' + e.message, 'error');
@@ -5288,11 +5281,11 @@ async function uSTZrHUt_IC() {
             window.currentChunkText = chunkText;
             window.currentChunkIndex = ttuo$y_KhCV;
             
-            // CHẾ ĐỘ MỚI: Set INTERCEPT_CURRENT_TEXT để interceptor thay text trong payload
-            if (window.USE_PAYLOAD_MODE) {
-                window.INTERCEPT_CURRENT_TEXT = chunkText;
-                window.INTERCEPT_CURRENT_INDEX = ttuo$y_KhCV;
-            }
+            // --- FIX BY GEMINI: LUÔN SET INTERCEPT_CURRENT_TEXT ---
+            // Bỏ điều kiện USE_PAYLOAD_MODE để đảm bảo 100% không có chunk nào bị bỏ qua
+            // Interceptor sẽ luôn có dữ liệu để thay thế, không phụ thuộc vào cài đặt
+            window.INTERCEPT_CURRENT_TEXT = chunkText;
+            window.INTERCEPT_CURRENT_INDEX = ttuo$y_KhCV;
         } catch (e) {
             console.warn('Không thể lưu currentChunkText:', e);
         }
@@ -5823,7 +5816,7 @@ async function uSTZrHUt_IC() {
             console.warn('Không thể thiết lập vòng xác minh độ dài sau khi gửi chunk:', e);
         }
         
-        // Cleanup: Dừng MutationObserver sau khi click (chờ 1 giây để đảm bảo click đã được xử lý)
+        // Cleanup: Dừng MutationObserver sau khi click
         setTimeout(() => {
             if (textObserver) {
                 textObserver.disconnect();
@@ -5831,19 +5824,16 @@ async function uSTZrHUt_IC() {
                 addLogEntry(`🧹 [Chunk ${ttuo$y_KhCV + 1}] Đã dừng MutationObserver`, 'info');
             }
             
-            // CHẾ ĐỘ MỚI: Clear INTERCEPT_CURRENT_TEXT sau khi request đã được gửi
+            // --- FIX BY GEMINI: KHÔNG ĐƯỢC XÓA INTERCEPT_TEXT Ở ĐÂY ---
+            // Nếu mạng lag > 3s, việc xóa biến này sẽ khiến Interceptor không hoạt động
+            // Biến window.INTERCEPT_CURRENT_TEXT sẽ được cập nhật tự động ở vòng lặp chunk tiếp theo.
+            /*
             if (window.USE_PAYLOAD_MODE) {
-                // Chờ thêm một chút để đảm bảo request đã được intercept và xử lý
                 setTimeout(() => {
-                    if (window.INTERCEPT_CURRENT_TEXT && window.INTERCEPT_CURRENT_INDEX === ttuo$y_KhCV) {
-                        window.INTERCEPT_CURRENT_TEXT = null;
-                        window.INTERCEPT_CURRENT_INDEX = null;
-                        // Clear flag log để chunk tiếp theo có thể log lại
-                        window._interceptLoggedForChunk = null;
-                        addLogEntry(`🧹 [Chunk ${ttuo$y_KhCV + 1}] Đã clear ...`, 'info');
-                    }
-                }, 2000); // Chờ 2 giây để đảm bảo request đã được gửi
+                   // ĐÃ TẮT CLEANUP ĐỂ BẢO VỆ CHUNK KHỎI BỊ GHI ĐÈ TEXT MẶC ĐỊNH KHI MẠNG LAG
+                }, 2000);
             }
+            */
         }, 1000);
         
         // Khởi tạo biến lưu timeout ID nếu chưa có
