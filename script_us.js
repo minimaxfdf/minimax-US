@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DUC LOI - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
-// @version      35.0
+// @version      40.0
 // @description  Tạo audio giọng nói clone theo ý của bạn. Không giới hạn. Thêm chức năng Ghép hội thoại, Đổi văn bản hàng loạt & Thiết lập dấu câu (bao gồm dấu xuống dòng).
 // @author       HUỲNH ĐỨC LỢI ( Zalo: 0835795597) - Đã chỉnh sửa
 // @match        https://www.minimax.io/audio*
@@ -2276,7 +2276,7 @@ button:disabled {
         
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Đang tải quota...</div>
         </div> 
-    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <button id="toggle-log-btn" class="clear-log-btn" style="margin-bottom:10px;background-color:#4b5563;cursor:pointer;pointer-events:auto;opacity:1;" onclick="(function(btn){var panel=document.getElementById('log-panel');if(!panel)return;var hidden=panel.style.display==='none'||!panel.style.display;panel.style.display=hidden?'block':'none';btn.textContent=hidden?'📜 Ẩn log hoạt động':'📜 Xem / Ẩn log hoạt động';})(this);">📜 Xem / Ẩn log hoạt động</button> <div id="log-panel" style="display:none;"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 35.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><h4 style="margin: 0;">Nhập văn bản cần tạo giọng nói</h4><button id="open-batch-render-modal-btn" style="background-color: #ffb86c; color: #282a36; padding: 8px 16px; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.3s ease; white-space: nowrap;">🎯 Render hàng loạt file</button></div>
+    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <button id="toggle-log-btn" class="clear-log-btn" style="margin-bottom:10px;background-color:#4b5563;cursor:pointer;pointer-events:auto;opacity:1;" onclick="(function(btn){var panel=document.getElementById('log-panel');if(!panel)return;var hidden=panel.style.display==='none'||!panel.style.display;panel.style.display=hidden?'block':'none';btn.textContent=hidden?'📜 Ẩn log hoạt động':'📜 Xem / Ẩn log hoạt động';})(this);">📜 Xem / Ẩn log hoạt động</button> <div id="log-panel" style="display:none;"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 40.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><h4 style="margin: 0;">Nhập văn bản cần tạo giọng nói</h4><button id="open-batch-render-modal-btn" style="background-color: #ffb86c; color: #282a36; padding: 8px 16px; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.3s ease; white-space: nowrap;">🎯 Render hàng loạt file</button></div>
     <div class="text-input-options">
         <div class="input-tabs">
             <button id="text-tab" class="tab-btn active">Nhập trực tiếp</button>
@@ -3226,11 +3226,179 @@ button:disabled {
         document.head.appendChild(logPanelStyle);
         console.log('[33.js] ✅ Đã thêm CSS cho phép copy trong log-panel');
         
+        // =================================================================
+        // KIỂM TRA LICENSE TỪ GOOGLE SHEET - LUÔN LẤY DỮ LIỆU MỚI NHẤT
+        // =================================================================
+        // QUAN TRỌNG: Mỗi lần chạy script phải lấy dữ liệu mới nhất từ Google Sheet
+        // Nếu status là BANNED hoặc EXPIRED → Khóa nút "Bắt đầu tạo âm thanh"
+        const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTez3RWQOZaphnAKTr7pLyVz5yXd5vqtzfXz1WAPKcKHOIddvBlPqyCb31NMJ1_2wI7c7cuO58j-c6M/pub?output=tsv";
+        
+        async function checkLicenseFromGoogleSheet() {
+            try {
+                // Lấy machine ID từ window (được inject bởi extension)
+                const machineId = window.MY_UNIQUE_MACHINE_ID || window['MY_UNIQUE_MACHINE_ID'];
+                if (!machineId) {
+                    console.warn('[33.js] ⚠️ Không tìm thấy Machine ID - Bỏ qua check license');
+                    return;
+                }
+                
+                // BẮT BUỘC LẤY DỮ LIỆU MỚI NHẤT - KHÔNG CACHE
+                const cacheBuster = "&t=" + Date.now() + "&_nocache=" + Math.random();
+                const sheetUrl = GOOGLE_SHEET_URL + cacheBuster;
+                
+                console.log('[33.js] 🔍 Đang kiểm tra license từ Google Sheet...');
+                if (typeof addLogEntry === 'function') {
+                    addLogEntry('🔍 Đang kiểm tra license từ Google Sheet...', 'info');
+                }
+                
+                // Fetch dữ liệu từ Google Sheet
+                const response = await fetch(sheetUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    },
+                    cache: 'no-store'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const textData = await response.text();
+                const rows = textData.split("\n");
+                
+                // Tìm machine ID trong Google Sheet
+                let foundUser = null;
+                for (let i = 1; i < rows.length; i++) {
+                    const cols = rows[i].split("\t");
+                    if (cols.length < 2) continue;
+                    
+                    // So sánh ID (trim để xóa khoảng trắng thừa)
+                    if (cols[0].trim() === machineId.trim()) {
+                        foundUser = {
+                            id: cols[0].trim(),
+                            expiry_date: cols[1] ? cols[1].trim() : "",
+                            status: cols[2] ? cols[2].trim().toUpperCase() : "BANNED",
+                            remaining_chars: !isNaN(parseInt(cols[4])) ? parseInt(cols[4]) : 0
+                        };
+                        break;
+                    }
+                }
+                
+                if (!foundUser) {
+                    console.error('[33.js] ❌ Không tìm thấy Machine ID trong Google Sheet');
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry('❌ Không tìm thấy Machine ID trong Google Sheet - License không hợp lệ', 'error');
+                    }
+                    disableStartButton('❌ License không hợp lệ');
+                    return;
+                }
+                
+                // Xử lý ngày tháng
+                let daysLeft = 0;
+                try {
+                    let dateStr = foundUser.expiry_date;
+                    let expiryDate = new Date(dateStr);
+                    
+                    if (isNaN(expiryDate.getTime())) {
+                        throw new Error("Invalid Date Format");
+                    }
+                    
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    expiryDate.setHours(0,0,0,0);
+                    
+                    const diffTime = expiryDate - today;
+                    daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                } catch (e) {
+                    daysLeft = 0;
+                }
+                
+                // Kiểm tra status và expiry
+                const startQueueBtn = document.getElementById('gemini-start-queue-btn');
+                
+                if (foundUser.status !== "ACTIVE") {
+                    console.error(`[33.js] ❌ License bị khóa: ${foundUser.status}`);
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`❌ License bị khóa: ${foundUser.status}`, 'error');
+                    }
+                    disableStartButton(`❌ License bị khóa: ${foundUser.status}`);
+                    return;
+                }
+                
+                if (daysLeft < 0) {
+                    console.error(`[33.js] ❌ License đã hết hạn: ${Math.abs(daysLeft)} ngày`);
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`❌ License đã hết hạn: ${Math.abs(daysLeft)} ngày`, 'error');
+                    }
+                    disableStartButton(`❌ License đã hết hạn`);
+                    return;
+                }
+                
+                // License hợp lệ
+                console.log(`[33.js] ✅ License hợp lệ: ACTIVE, còn ${daysLeft} ngày`);
+                if (typeof addLogEntry === 'function') {
+                    addLogEntry(`✅ License hợp lệ: ACTIVE, còn ${daysLeft} ngày`, 'success');
+                }
+                
+                // Bật nút nếu đã bị disable
+                if (startQueueBtn) {
+                    startQueueBtn.disabled = false;
+                    startQueueBtn.style.opacity = '1';
+                    startQueueBtn.style.cursor = 'pointer';
+                    startQueueBtn.title = '';
+                }
+                
+            } catch (error) {
+                console.error('[33.js] ❌ Lỗi khi kiểm tra license:', error);
+                if (typeof addLogEntry === 'function') {
+                    addLogEntry(`❌ Lỗi khi kiểm tra license: ${error.message}`, 'error');
+                }
+                // Nếu lỗi, vẫn disable nút để an toàn
+                disableStartButton('❌ Lỗi kiểm tra license');
+            }
+        }
+        
+        // Hàm disable nút "Bắt đầu tạo âm thanh"
+        function disableStartButton(reason = '') {
+            const startQueueBtn = document.getElementById('gemini-start-queue-btn');
+            if (startQueueBtn) {
+                startQueueBtn.disabled = true;
+                startQueueBtn.style.opacity = '0.5';
+                startQueueBtn.style.cursor = 'not-allowed';
+                startQueueBtn.title = reason || 'License không hợp lệ';
+                
+                // Thay đổi text nút nếu có
+                const originalText = startQueueBtn.textContent || startQueueBtn.innerText;
+                if (!startQueueBtn.dataset.originalText) {
+                    startQueueBtn.dataset.originalText = originalText;
+                }
+                startQueueBtn.textContent = reason || 'License không hợp lệ';
+            }
+        }
+        
+        // =================================================================
+        // CHỈ KIỂM TRA LICENSE 1 LẦN KHI SCRIPT ĐƯỢC INJECT
+        // =================================================================
+        // QUAN TRỌNG: Chỉ check license 1 lần khi script được inject (DOMContentLoaded)
+        // Không check lại định kỳ hoặc trước khi render để tránh tốn tài nguyên
+        checkLicenseFromGoogleSheet();
+        
         // Validation khi bấm nút "Bắt đầu tạo âm thanh"
         const startQueueBtn = document.getElementById('gemini-start-queue-btn');
         if (startQueueBtn) {
             const originalClickHandler = startQueueBtn.onclick;
             startQueueBtn.addEventListener('click', function(e) {
+                // Kiểm tra nút có bị disable không (đã được check khi inject)
+                if (startQueueBtn.disabled) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    alert('❌ License không hợp lệ hoặc đã hết hạn. Vui lòng liên hệ admin.');
+                    return false;
+                }
+                
                 const textarea = document.getElementById('gemini-main-textarea');
                 if (textarea && textarea.value.length > MAX_TEXT_LENGTH) {
                     e.preventDefault();
