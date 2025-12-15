@@ -14,6 +14,7 @@
 // @connect      unpkg.com
 // @connect      cdn.jsdelivr.net
 // @connect      cloud.appwrite.io
+// @connect      docs.google.com
 // ==/UserScript==
 
 
@@ -3251,22 +3252,55 @@ button:disabled {
                     addLogEntry('🔍 Đang kiểm tra license từ Google Sheet...', 'info');
                 }
                 
-                // Fetch dữ liệu từ Google Sheet
-                const response = await fetch(sheetUrl, {
-                    method: 'GET',
-                    headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache',
-                        'Expires': '0'
-                    },
-                    cache: 'no-store'
+                // Sử dụng GM_xmlhttpRequest để tránh CORS (thay vì fetch)
+                const textData = await new Promise((resolve, reject) => {
+                    if (typeof GM_xmlhttpRequest !== 'undefined') {
+                        // Dùng GM_xmlhttpRequest (userscript)
+                        GM_xmlhttpRequest({
+                            method: 'GET',
+                            url: sheetUrl,
+                            headers: {
+                                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                                'Pragma': 'no-cache',
+                                'Expires': '0'
+                            },
+                            timeout: 15000, // 15 giây timeout
+                            onload: function(response) {
+                                if (response.status >= 200 && response.status < 300) {
+                                    resolve(response.responseText);
+                                } else {
+                                    reject(new Error(`HTTP ${response.status}: ${response.statusText}`));
+                                }
+                            },
+                            onerror: function(error) {
+                                reject(new Error(`Network error: ${error.message || 'Failed to fetch'}`));
+                            },
+                            ontimeout: function() {
+                                reject(new Error('Request timeout after 15 seconds'));
+                            }
+                        });
+                    } else {
+                        // Fallback: Dùng fetch nếu không có GM_xmlhttpRequest (extension context)
+                        fetch(sheetUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                                'Pragma': 'no-cache',
+                                'Expires': '0'
+                            },
+                            cache: 'no-store'
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                            }
+                            return response.text();
+                        })
+                        .then(resolve)
+                        .catch(reject);
+                    }
                 });
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const textData = await response.text();
                 const rows = textData.split("\n");
                 
                 // Tìm machine ID trong Google Sheet
