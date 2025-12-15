@@ -10245,3 +10245,363 @@ async function waitForVoiceModelReady() {
             errorObserver.disconnect();
         }
     });
+
+    // =================================================================
+    // MULTITHREAD RENDERING SYSTEM - Tích hợp vào 33.js
+    // =================================================================
+    (function() {
+        'use strict';
+
+        const MULTITHREAD_CONFIG = {
+            BROADCAST_CHANNEL_NAME: 'minimax_multithread_channel',
+            MAX_WORKERS: 3,
+            STAGGERED_DELAY: 2000,
+            WORKER_READY_TIMEOUT: 10000,
+        };
+
+        function detectMode() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isWorker = urlParams.get('worker') === 'true' || sessionStorage.getItem('multithread_worker') === 'true';
+            return isWorker ? 'WORKER' : 'MASTER';
+        }
+
+        const CURRENT_MODE = detectMode();
+        let broadcastChannel = null;
+
+        function initBroadcastChannel() {
+            if (!broadcastChannel) {
+                broadcastChannel = new BroadcastChannel(MULTITHREAD_CONFIG.BROADCAST_CHANNEL_NAME);
+                console.log(`[Multithread] Mode: ${CURRENT_MODE}, BroadcastChannel initialized`);
+            }
+            return broadcastChannel;
+        }
+
+        // =================================================================
+        // MASTER MODE
+        // =================================================================
+        if (CURRENT_MODE === 'MASTER') {
+            window.MULTITHREAD_MASTER = {
+                payloadTemplate: null,
+                workerTabIds: [],
+                chunks: [],
+                chunkBlobs: [],
+                currentChunkIndex: 0,
+                workersReady: [],
+                workersBusy: {},
+                isMultithreadEnabled: false,
+                workerCount: 1,
+                chunk1Completed: false,
+            };
+
+            // Capture Payload sau Chunk 1 thành công
+            function captureMasterPayload() {
+                const checkPayload = setInterval(() => {
+                    // Tìm payload từ network interceptor (33.js đã có sẵn)
+                    if (window.lastCapturedPayload || window.INTERCEPT_PAYLOAD) {
+                        const payload = window.lastCapturedPayload || window.INTERCEPT_PAYLOAD;
+                        if (payload && typeof payload === 'object') {
+                            window.MULTITHREAD_MASTER.payloadTemplate = JSON.parse(JSON.stringify(payload));
+                            console.log('[Multithread Master] ✅ Đã capture Payload mẫu');
+                            clearInterval(checkPayload);
+                            if (window.MULTITHREAD_MASTER.isMultithreadEnabled) {
+                                spawnWorkers();
+                            }
+                        }
+                    }
+                }, 500);
+
+                setTimeout(() => clearInterval(checkPayload), 30000);
+            }
+
+            async function spawnWorkers() {
+                const workerCount = window.MULTITHREAD_MASTER.workerCount || 1;
+                if (workerCount <= 1) return;
+
+                console.log(`[Multithread Master] Đang spawn ${workerCount} worker tabs...`);
+
+                if (typeof chrome !== 'undefined' && chrome.runtime) {
+                    chrome.runtime.sendMessage({
+                        action: 'spawn_worker_tabs',
+                        count: workerCount
+                    }, (response) => {
+                        if (response && response.success) {
+                            window.MULTITHREAD_MASTER.workerTabIds = response.tabIds || [];
+                            console.log('[Multithread Master] ✅ Đã spawn workers:', window.MULTITHREAD_MASTER.workerTabIds);
+                            waitForWorkersReady();
+                        }
+                    });
+                }
+            }
+
+            function waitForWorkersReady() {
+                const expectedWorkers = window.MULTITHREAD_MASTER.workerTabIds.length;
+                let readyCount = 0;
+                const timeout = setTimeout(() => {
+                    if (readyCount > 0) startDistributingTasks();
+                }, MULTITHREAD_CONFIG.WORKER_READY_TIMEOUT);
+
+                initBroadcastChannel().addEventListener('message', function onWorkerReady(event) {
+                    if (event.data.type === 'WORKER_READY') {
+                        readyCount++;
+                        if (readyCount >= expectedWorkers) {
+                            clearTimeout(timeout);
+                            broadcastChannel.removeEventListener('message', onWorkerReady);
+                            startDistributingTasks();
+                        }
+                    }
+                });
+            }
+
+            function startDistributingTasks() {
+                if (!window.MULTITHREAD_MASTER.payloadTemplate) {
+                    console.error('[Multithread Master] ❌ Chưa có Payload mẫu!');
+                    return;
+                }
+                distributeChunksToWorkers(1); // Bắt đầu từ chunk index 1
+            }
+
+            function distributeChunksToWorkers(startIndex) {
+                const chunks = window.MULTITHREAD_MASTER.chunks || window.SI$acY || [];
+                const workers = window.MULTITHREAD_MASTER.workerTabIds || [];
+                
+                if (chunks.length <= startIndex) return;
+
+                for (let i = startIndex; i < chunks.length; i++) {
+                    const workerIndex = findAvailableWorker();
+                    if (workerIndex === -1) break;
+
+                    const workerId = workers[workerIndex];
+                    const chunkText = chunks[i];
+                    sendTaskToWorker(workerId, i, chunkText);
+                }
+            }
+
+            function findAvailableWorker() {
+                const workers = window.MULTITHREAD_MASTER.workerTabIds || [];
+                const busy = window.MULTITHREAD_MASTER.workersBusy || {};
+                for (let i = 0; i < workers.length; i++) {
+                    if (!busy[workers[i]]) return i;
+                }
+                return -1;
+            }
+
+            function sendTaskToWorker(workerId, chunkIndex, chunkText) {
+                const payload = JSON.parse(JSON.stringify(window.MULTITHREAD_MASTER.payloadTemplate));
+                
+                // Thay text trong payload
+                if (payload.text) payload.text = chunkText;
+                else if (payload.content) payload.content = chunkText;
+                else if (payload.data && payload.data.text) payload.data.text = chunkText;
+
+                window.MULTITHREAD_MASTER.workersBusy[workerId] = chunkIndex;
+
+                initBroadcastChannel().postMessage({
+                    type: 'TASK_ASSIGN',
+                    targetWorker: workerId,
+                    chunkIndex: chunkIndex,
+                    chunkText: chunkText,
+                    payload: payload
+                });
+
+                console.log(`[Multithread Master] 📤 Đã gửi Chunk ${chunkIndex + 1} cho Worker ${workerId}`);
+            }
+
+            function setupMasterListener() {
+                initBroadcastChannel().addEventListener('message', (event) => {
+                    const data = event.data;
+                    if (data.type === 'TASK_RESULT') {
+                        const { workerId, chunkIndex, blobData, success, error } = data;
+                        delete window.MULTITHREAD_MASTER.workersBusy[workerId];
+                        
+                        if (success && blobData) {
+                            const blob = base64ToBlob(blobData);
+                            window.MULTITHREAD_MASTER.chunkBlobs[chunkIndex] = blob;
+                            // Cũng lưu vào window.chunkBlobs để tương thích với code hiện tại
+                            if (!window.chunkBlobs) window.chunkBlobs = [];
+                            window.chunkBlobs[chunkIndex] = blob;
+                            
+                            console.log(`[Multithread Master] ✅ Nhận được Chunk ${chunkIndex + 1} từ Worker ${workerId}`);
+                            checkAllChunksComplete();
+                            distributeChunksToWorkers(window.MULTITHREAD_MASTER.currentChunkIndex + 1);
+                        }
+                    }
+                });
+            }
+
+            function checkAllChunksComplete() {
+                const chunks = window.MULTITHREAD_MASTER.chunks || window.SI$acY || [];
+                const chunkBlobs = window.chunkBlobs || [];
+                
+                let completedCount = 0;
+                for (let i = 0; i < chunks.length; i++) {
+                    if (chunkBlobs[i] !== null && chunkBlobs[i] !== undefined) completedCount++;
+                }
+
+                if (completedCount >= chunks.length) {
+                    console.log('[Multithread Master] ✅ Tất cả chunks đã hoàn thành!');
+                    closeWorkerTabs();
+                }
+            }
+
+            function closeWorkerTabs() {
+                const tabIds = window.MULTITHREAD_MASTER.workerTabIds || [];
+                if (typeof chrome !== 'undefined' && chrome.runtime && tabIds.length > 0) {
+                    chrome.runtime.sendMessage({
+                        action: 'close_worker_tabs',
+                        tabIds: tabIds
+                    });
+                }
+            }
+
+            function base64ToBlob(base64, mimeType = 'audio/mpeg') {
+                const byteCharacters = atob(base64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                return new Blob([new Uint8Array(byteNumbers)], { type: mimeType });
+            }
+
+            window.MULTITHREAD_MASTER.capturePayload = captureMasterPayload;
+            window.MULTITHREAD_MASTER.setupListener = setupMasterListener;
+            window.MULTITHREAD_MASTER.distributeChunks = distributeChunksToWorkers;
+
+            setupMasterListener();
+
+            // Hook vào khi Chunk 1 hoàn thành
+            const originalCheckComplete = window.checkChunkComplete || function() {};
+            window.checkChunkComplete = function(chunkIndex) {
+                originalCheckComplete(chunkIndex);
+                if (chunkIndex === 0 && !window.MULTITHREAD_MASTER.chunk1Completed) {
+                    window.MULTITHREAD_MASTER.chunk1Completed = true;
+                    setTimeout(() => {
+                        captureMasterPayload();
+                    }, 1000);
+                }
+            };
+        }
+
+        // =================================================================
+        // WORKER MODE
+        // =================================================================
+        if (CURRENT_MODE === 'WORKER') {
+            sessionStorage.setItem('multithread_worker', 'true');
+            
+            function hideWorkerUI() {
+                const style = document.createElement('style');
+                style.textContent = `
+                    body > div:not(.multithread-worker-status) { opacity: 0.1; pointer-events: none; }
+                    .multithread-worker-status {
+                        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                        z-index: 999999; background: rgba(0,0,0,0.9); color: white;
+                        padding: 20px; border-radius: 8px; font-family: monospace;
+                    }
+                `;
+                document.head.appendChild(style);
+                const statusDiv = document.createElement('div');
+                statusDiv.className = 'multithread-worker-status';
+                statusDiv.innerHTML = '<div>🔄 Worker Mode - Đang chờ lệnh từ Master...</div>';
+                document.body.appendChild(statusDiv);
+            }
+
+            function sendWorkerReady() {
+                const workerId = new URLSearchParams(window.location.search).get('workerId') || 'unknown';
+                sessionStorage.setItem('multithread_worker_id', workerId);
+                initBroadcastChannel().postMessage({ type: 'WORKER_READY', workerId: workerId });
+            }
+
+            function executeRenderTask(chunkIndex, chunkText, payload) {
+                console.log(`[Multithread Worker] 📥 Nhận task: Chunk ${chunkIndex + 1}`);
+                window.INTERCEPT_CURRENT_TEXT = chunkText;
+                window.INTERCEPT_CURRENT_INDEX = chunkIndex;
+                window.lastCapturedPayload = payload;
+                triggerRenderRequest(chunkIndex, chunkText);
+            }
+
+            function triggerRenderRequest(chunkIndex, chunkText) {
+                const textarea = document.querySelector('textarea[id*="text"], textarea[class*="text"]');
+                const generateButton = document.querySelector('button:contains("Generate"), button:contains("Tạo"), button[id*="start"]');
+                
+                if (textarea && generateButton) {
+                    textarea.value = chunkText;
+                    generateButton.click();
+                    waitForRenderResult(chunkIndex);
+                } else {
+                    sendTaskResult(chunkIndex, null, false, 'Không tìm thấy UI elements');
+                }
+            }
+
+            function waitForRenderResult(chunkIndex) {
+                const checkInterval = setInterval(() => {
+                    let blob = null;
+                    if (window.lastAudioBlob) blob = window.lastAudioBlob;
+                    else if (window.chunkBlobs && window.chunkBlobs[chunkIndex]) blob = window.chunkBlobs[chunkIndex];
+                    
+                    if (blob) {
+                        clearInterval(checkInterval);
+                        blobToBase64(blob).then(base64 => {
+                            sendTaskResult(chunkIndex, base64, true, null);
+                        });
+                    }
+                }, 500);
+
+                setTimeout(() => {
+                    clearInterval(checkInterval);
+                    sendTaskResult(chunkIndex, null, false, 'Timeout');
+                }, 60000);
+            }
+
+            function sendTaskResult(chunkIndex, blobData, success, error) {
+                const workerId = sessionStorage.getItem('multithread_worker_id') || 'unknown';
+                initBroadcastChannel().postMessage({
+                    type: 'TASK_RESULT',
+                    workerId: workerId,
+                    chunkIndex: chunkIndex,
+                    blobData: blobData,
+                    success: success,
+                    error: error
+                });
+            }
+
+            function blobToBase64(blob) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            }
+
+            function setupWorkerListener() {
+                initBroadcastChannel().addEventListener('message', (event) => {
+                    const data = event.data;
+                    if (data.type === 'TASK_ASSIGN') {
+                        const workerId = sessionStorage.getItem('multithread_worker_id') || 'unknown';
+                        if (data.targetWorker === workerId || !data.targetWorker) {
+                            executeRenderTask(data.chunkIndex, data.chunkText, data.payload);
+                        }
+                    }
+                });
+            }
+
+            hideWorkerUI();
+            setupWorkerListener();
+            setTimeout(sendWorkerReady, 2000);
+        }
+
+        window.initMultithreadSystem = function(workerCount = 1) {
+            if (CURRENT_MODE === 'MASTER') {
+                window.MULTITHREAD_MASTER.workerCount = workerCount;
+                window.MULTITHREAD_MASTER.isMultithreadEnabled = workerCount > 1;
+                if (window.MULTITHREAD_MASTER.chunks && window.MULTITHREAD_MASTER.chunks.length > 0) {
+                    window.MULTITHREAD_MASTER.chunkBlobs = new Array(window.MULTITHREAD_MASTER.chunks.length).fill(null);
+                }
+            }
+        };
+
+        if (CURRENT_MODE === 'MASTER') {
+            console.log('[Multithread] Master mode detected');
+        } else {
+            console.log('[Multithread] Worker mode detected');
+        }
+    })();
