@@ -4874,108 +4874,49 @@ function stopKeepAliveLoop() {
         window.location.reload(true);
     }
 
-    // PHƯƠNG PHÁP PHÁT HIỆN DEVTOOLS
+    // PHƯƠNG PHÁP PHÁT HIỆN DEVTOOLS (CHỈ PHÁT HIỆN KHI CHẮC CHẮN)
     function detectDevTools() {
         let detected = false;
         let detectionMethod = '';
 
-        // PHƯƠNG PHÁP 1: Console detection với Object.defineProperty
+        // PHƯƠNG PHÁP 1: Debugger statement với timing (PHƯƠNG PHÁP CHÍNH - ĐÁNG TIN CẬY NHẤT)
+        // Chỉ dùng phương pháp này vì nó đáng tin cậy nhất và ít false positive nhất
         try {
-            let devtoolsOpen = false;
-            const element = new Image();
-            Object.defineProperty(element, 'id', {
-                get: function() {
-                    devtoolsOpen = true;
-                }
-            });
-            console.log(element);
-            console.clear();
-            if (devtoolsOpen) {
+            const start = performance.now();
+            (function() {
+                'use strict';
+                debugger;
+            })();
+            const end = performance.now();
+            const elapsed = end - start;
+            // Tăng threshold lên 100ms để tránh false positive
+            // Khi DevTools mở và pause tại debugger, elapsed sẽ > 100ms
+            // Khi DevTools đóng, elapsed sẽ < 10ms
+            if (elapsed > 100) {
                 detected = true;
-                detectionMethod = 'console-defineProperty';
+                detectionMethod = 'debugger-timing';
             }
         } catch(e) {
             // Ignore
         }
 
-        // PHƯƠNG PHÁP 2: Debugger statement với timing (hiệu quả nhất)
+        // PHƯƠNG PHÁP 2: Window size detection (CHỈ DÙNG KHI DEBUGGER KHÔNG PHÁT HIỆN)
+        // Tăng threshold cao hơn và chỉ dùng như phương pháp bổ sung
         if (!detected) {
-            try {
-                const start = performance.now();
-                (function() {
-                    'use strict';
-                    debugger;
-                })();
-                const end = performance.now();
-                const elapsed = end - start;
-                // Giảm threshold xuống 20ms để phát hiện nhanh hơn
-                if (elapsed > 20) {
-                    detected = true;
-                    detectionMethod = 'debugger-timing';
-                }
-            } catch(e) {
-                // Ignore
-            }
-        }
-
-        // PHƯƠNG PHÁP 3: Console object detection
-        if (!detected) {
-            try {
-                let detectedViaConsole = false;
-                const img = new Image();
-                Object.defineProperty(img, 'id', {
-                    get: function() {
-                        detectedViaConsole = true;
-                    }
-                });
-                console.log(img);
-                console.clear();
-                if (detectedViaConsole) {
-                    detected = true;
-                    detectionMethod = 'console-object';
-                }
-            } catch(e) {
-                // Ignore
-            }
-        }
-
-        // PHƯƠNG PHÁP 4: Window size detection
-        if (!detected) {
-            const widthThreshold = 100;
-            const heightThreshold = 100;
-            const widthDiff = window.outerWidth - window.innerWidth;
-            const heightDiff = window.outerHeight - window.innerHeight;
+            const widthThreshold = 200; // Tăng từ 100 lên 200 để tránh false positive
+            const heightThreshold = 200; // Tăng từ 100 lên 200 để tránh false positive
+            const widthDiff = Math.abs(window.outerWidth - window.innerWidth);
+            const heightDiff = Math.abs(window.outerHeight - window.innerHeight);
             
-            if ((widthDiff > widthThreshold) || (heightDiff > heightThreshold)) {
+            // Chỉ phát hiện khi cả width và height đều vượt threshold (chắc chắn hơn)
+            if (widthDiff > widthThreshold && heightDiff > heightThreshold) {
                 detected = true;
                 detectionMethod = 'window-size';
             }
         }
-        
-        // PHƯƠNG PHÁP 5: Console fire detection
-        if (!detected) {
-            try {
-                let consoleFired = false;
-                const originalLog = console.log;
-                console.log = function() {
-                    consoleFired = true;
-                    originalLog.apply(console, arguments);
-                };
-                console.log('%c', 'color: transparent');
-                console.log = originalLog;
-                if (consoleFired) {
-                    const start = Date.now();
-                    console.log('%c', 'color: transparent');
-                    const end = Date.now();
-                    if (end - start > 10) {
-                        detected = true;
-                        detectionMethod = 'console-fire';
-                    }
-                }
-            } catch(e) {
-                // Ignore
-            }
-        }
+
+        // BỎ CÁC PHƯƠNG PHÁP CONSOLE DETECTION VÌ DỄ FALSE POSITIVE
+        // Console detection có thể trigger ngay cả khi DevTools không mở
 
         return {
             detected: detected,
