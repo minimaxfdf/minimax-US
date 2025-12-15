@@ -3161,6 +3161,48 @@ button:disabled {
             });
         }
         
+        // =================================================================
+        // KHỞI TẠO MULTITHREAD SYSTEM
+        // =================================================================
+        // Đọc số worker từ localStorage hoặc dùng mặc định (3 workers)
+        const savedWorkerCount = localStorage.getItem('multithread_worker_count');
+        const workerCount = savedWorkerCount ? parseInt(savedWorkerCount) : 3; // Mặc định 3 workers
+        
+        // Khởi tạo multithread system
+        if (typeof window.initMultithreadSystem === 'function') {
+            window.initMultithreadSystem(workerCount);
+            console.log(`[33.js] ✅ Multithread system đã được khởi tạo với ${workerCount} workers`);
+            if (typeof addLogEntry === 'function') {
+                addLogEntry(`🚀 Multithread system đã được khởi tạo với ${workerCount} workers`, 'info');
+            }
+        } else {
+            console.warn('[33.js] ⚠️ initMultithreadSystem không tồn tại - Multithread system chưa được load');
+        }
+        
+        // =================================================================
+        // CHO PHÉP COPY TRONG LOG PANEL
+        // =================================================================
+        // Thêm CSS để cho phép select và copy trong log-panel
+        const logPanelStyle = document.createElement('style');
+        logPanelStyle.textContent = `
+            #log-panel, #log-panel *, #log-container, #log-container * {
+                user-select: text !important;
+                -webkit-user-select: text !important;
+                -moz-user-select: text !important;
+                -ms-user-select: text !important;
+                cursor: text !important;
+            }
+            .log-entry {
+                user-select: text !important;
+                -webkit-user-select: text !important;
+                -moz-user-select: text !important;
+                -ms-user-select: text !important;
+                cursor: text !important;
+            }
+        `;
+        document.head.appendChild(logPanelStyle);
+        console.log('[33.js] ✅ Đã thêm CSS cho phép copy trong log-panel');
+        
         // Validation khi bấm nút "Bắt đầu tạo âm thanh"
         const startQueueBtn = document.getElementById('gemini-start-queue-btn');
         if (startQueueBtn) {
@@ -4943,7 +4985,20 @@ function stopKeepAliveLoop() {
     }, true);
     
     // CHỐNG SELECT TEXT (có thể dùng để inspect)
+    // NHƯNG: Cho phép select trong log-panel để có thể copy log
     document.addEventListener('selectstart', function(e) {
+        // Cho phép select trong log-panel và các phần tử con của nó
+        const target = e.target;
+        const logPanel = document.getElementById('log-panel');
+        const logContainer = document.getElementById('log-container');
+        
+        // Kiểm tra xem target có phải là phần tử trong log-panel không
+        if (logPanel && (logPanel.contains(target) || logContainer && logContainer.contains(target))) {
+            // Cho phép select trong log-panel
+            return true;
+        }
+        
+        // Chặn select ở các phần tử khác
         e.preventDefault();
         return false;
     }, true);
