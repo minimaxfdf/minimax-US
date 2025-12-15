@@ -4781,6 +4781,339 @@ function stopKeepAliveLoop() {
 }
 
 // =======================================================
+// == SCRIPT CHỐNG F12 VÀ DEVTOOLS ==
+// == Phát hiện và reset ngay khi DevTools được mở ==
+// =======================================================
+(function initAntiDevTools() {
+    'use strict';
+    
+    // Tránh chạy nhiều lần
+    if (window.devToolsDetectorStarted && window.devToolsDetectorLoopId) {
+        return;
+    }
+    
+    // Dọn dẹp loop cũ nếu có
+    if (window.devToolsDetectorLoopId) {
+        clearTimeout(window.devToolsDetectorLoopId);
+        window.devToolsDetectorLoopId = null;
+    }
+    
+    window.devToolsDetectorStarted = true;
+
+    const signal = '!!!---DEVTOOLS-DETECTED---!!!';
+    let lastDetection = false;
+    let checkCount = 0;
+    
+    // CHỐNG F12 VÀ CÁC PHÍM TẮT DEVTOOLS
+    document.addEventListener('keydown', function(e) {
+        // F12
+        if (e.keyCode === 123) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[Anti-DevTools] F12 detected! Resetting...');
+            resetPage();
+            return false;
+        }
+        // Ctrl+Shift+I (DevTools)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[Anti-DevTools] Ctrl+Shift+I detected! Resetting...');
+            resetPage();
+            return false;
+        }
+        // Ctrl+Shift+J (Console)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[Anti-DevTools] Ctrl+Shift+J detected! Resetting...');
+            resetPage();
+            return false;
+        }
+        // Ctrl+Shift+C (Inspect Element)
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[Anti-DevTools] Ctrl+Shift+C detected! Resetting...');
+            resetPage();
+            return false;
+        }
+        // Ctrl+U (View Source)
+        if (e.ctrlKey && e.keyCode === 85) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[Anti-DevTools] Ctrl+U detected! Resetting...');
+            resetPage();
+            return false;
+        }
+    }, true);
+    
+    // CHỐNG RIGHT-CLICK (Context Menu)
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    }, true);
+    
+    // CHỐNG SELECT TEXT (có thể dùng để inspect)
+    document.addEventListener('selectstart', function(e) {
+        e.preventDefault();
+        return false;
+    }, true);
+    
+    // Hàm reset trang
+    function resetPage() {
+        try {
+            // Xóa tất cả dữ liệu
+            localStorage.clear();
+            sessionStorage.clear();
+        } catch(e) {
+            console.error('[Anti-DevTools] Error clearing storage:', e);
+        }
+        // Reset ngay lập tức
+        window.location.reload(true);
+    }
+
+    // PHƯƠNG PHÁP PHÁT HIỆN DEVTOOLS
+    function detectDevTools() {
+        let detected = false;
+        let detectionMethod = '';
+
+        // PHƯƠNG PHÁP 1: Console detection với Object.defineProperty
+        try {
+            let devtoolsOpen = false;
+            const element = new Image();
+            Object.defineProperty(element, 'id', {
+                get: function() {
+                    devtoolsOpen = true;
+                }
+            });
+            console.log(element);
+            console.clear();
+            if (devtoolsOpen) {
+                detected = true;
+                detectionMethod = 'console-defineProperty';
+            }
+        } catch(e) {
+            // Ignore
+        }
+
+        // PHƯƠNG PHÁP 2: Debugger statement với timing (hiệu quả nhất)
+        if (!detected) {
+            try {
+                const start = performance.now();
+                (function() {
+                    'use strict';
+                    debugger;
+                })();
+                const end = performance.now();
+                const elapsed = end - start;
+                // Giảm threshold xuống 20ms để phát hiện nhanh hơn
+                if (elapsed > 20) {
+                    detected = true;
+                    detectionMethod = 'debugger-timing';
+                }
+            } catch(e) {
+                // Ignore
+            }
+        }
+
+        // PHƯƠNG PHÁP 3: Console object detection
+        if (!detected) {
+            try {
+                let detectedViaConsole = false;
+                const img = new Image();
+                Object.defineProperty(img, 'id', {
+                    get: function() {
+                        detectedViaConsole = true;
+                    }
+                });
+                console.log(img);
+                console.clear();
+                if (detectedViaConsole) {
+                    detected = true;
+                    detectionMethod = 'console-object';
+                }
+            } catch(e) {
+                // Ignore
+            }
+        }
+
+        // PHƯƠNG PHÁP 4: Window size detection
+        if (!detected) {
+            const widthThreshold = 100;
+            const heightThreshold = 100;
+            const widthDiff = window.outerWidth - window.innerWidth;
+            const heightDiff = window.outerHeight - window.innerHeight;
+            
+            if ((widthDiff > widthThreshold) || (heightDiff > heightThreshold)) {
+                detected = true;
+                detectionMethod = 'window-size';
+            }
+        }
+        
+        // PHƯƠNG PHÁP 5: Console fire detection
+        if (!detected) {
+            try {
+                let consoleFired = false;
+                const originalLog = console.log;
+                console.log = function() {
+                    consoleFired = true;
+                    originalLog.apply(console, arguments);
+                };
+                console.log('%c', 'color: transparent');
+                console.log = originalLog;
+                if (consoleFired) {
+                    const start = Date.now();
+                    console.log('%c', 'color: transparent');
+                    const end = Date.now();
+                    if (end - start > 10) {
+                        detected = true;
+                        detectionMethod = 'console-fire';
+                    }
+                }
+            } catch(e) {
+                // Ignore
+            }
+        }
+
+        return {
+            detected: detected,
+            method: detectionMethod
+        };
+    }
+
+    function check() {
+        checkCount++;
+        
+        // Cập nhật thời gian để Python biết script vẫn chạy
+        window.lastCheckTime = new Date().getTime(); 
+
+        // Phát hiện DevTools bằng các phương pháp hiện đại
+        const result = detectDevTools();
+        const isDevToolsOpen = result.detected;
+        
+        // Log debug mỗi 20 lần check (60 giây với interval 1s) hoặc khi phát hiện
+        if (checkCount % 20 === 0 || isDevToolsOpen) {
+            console.log('[Anti-DevTools] Check #' + checkCount + ':', {
+                detected: isDevToolsOpen,
+                method: result.method,
+                outerWidth: window.outerWidth,
+                innerWidth: window.innerWidth,
+                outerHeight: window.outerHeight,
+                innerHeight: window.innerHeight,
+                widthDiff: window.outerWidth - window.innerWidth,
+                heightDiff: window.outerHeight - window.innerHeight
+            });
+        }
+        
+        if (isDevToolsOpen && !lastDetection) {
+            // DevTools được phát hiện lần đầu - RESET NGAY LẬP TỨC
+            lastDetection = true;
+            document.title = signal;
+            window.devToolsDetected = true;
+            
+            console.log('[Anti-DevTools] DevTools detected via ' + result.method + '! RESETTING PAGE IMMEDIATELY...');
+            
+            // RESET NGAY LẬP TỨC: Reload trang ngay khi phát hiện
+            // Sử dụng setTimeout với delay 0 để đảm bảo reset được thực thi
+            setTimeout(function() {
+                // Xóa tất cả dữ liệu localStorage và sessionStorage trước khi reset
+                try {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                } catch(e) {
+                    console.error('[Anti-DevTools] Error clearing storage:', e);
+                }
+                
+                // Reset trang ngay lập tức
+                window.location.reload(true);
+            }, 0);
+            
+            // Tạo overlay để thông báo (sẽ bị reset ngay sau đó)
+            let overlay = document.getElementById('devtools-blocker-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'devtools-blocker-overlay';
+                overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(255, 0, 0, 0.95); z-index: 2147483647; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #FFFFFF; font-size: 32px; font-weight: bold; font-family: sans-serif; text-align: center;';
+                overlay.innerHTML = '<div>PHÁT HIỆN DEVTOOLS!</div><div style="font-size: 18px; margin-top: 10px;">ĐANG RESET TRANG...</div>';
+                document.body.appendChild(overlay);
+                console.log('[Anti-DevTools] Overlay created - page will reset immediately');
+            }
+        } else if (!isDevToolsOpen && lastDetection) {
+            // DevTools đã được đóng - reset trạng thái
+            lastDetection = false;
+            window.devToolsDetected = false;
+            
+            console.log('[Anti-DevTools] DevTools closed, removing overlay...');
+            
+            // Xóa overlay nếu có
+            let overlay = document.getElementById('devtools-blocker-overlay');
+            if (overlay) {
+                overlay.remove();
+                console.log('[Anti-DevTools] Overlay removed');
+            }
+        }
+    }
+
+    function loop() {
+        // Tăng tần suất kiểm tra khi đã phát hiện DevTools (100ms thay vì 1s)
+        const interval = lastDetection ? 100 : 1000; // 1 giây khi bình thường, 100ms khi phát hiện
+        window.devToolsDetectorLoopId = setTimeout(function() {
+            try {
+                check();
+            } catch(e) {
+                console.error('[Anti-DevTools] Error in check:', e);
+            }
+            loop();
+        }, interval);
+    }
+    
+    // CHỐNG DISABLE JAVASCRIPT: Nếu JavaScript bị disable, trang sẽ không hoạt động
+    // Thêm meta tag để cảnh báo
+    if (document.head) {
+        const meta = document.createElement('meta');
+        meta.httpEquiv = 'refresh';
+        meta.content = '0';
+        // Chỉ thêm nếu DevTools đã được phát hiện
+        if (window.devToolsDetected) {
+            document.head.appendChild(meta);
+        }
+    }
+    
+    // Bắt đầu ngay lập tức
+    console.log('[Anti-DevTools] Starting detection (Modern methods for Brave/Chrome)...');
+    console.log('[Anti-DevTools] Script version: 4.0 - Enhanced detection with immediate reset');
+    
+    // Chạy check ngay lần đầu với delay nhỏ để đảm bảo DOM đã sẵn sàng
+    setTimeout(function() {
+        try {
+            check();
+        } catch(e) {
+            console.error('[Anti-DevTools] Error in initial check:', e);
+        }
+    }, 100);
+    
+    // Bắt đầu loop ngay
+    loop();
+    
+    // CHỐNG DISABLE JAVASCRIPT: Kiểm tra định kỳ xem script có còn chạy không
+    setInterval(function() {
+        window.antiDevToolsAlive = Date.now();
+    }, 1000);
+    
+    // Nếu script bị disable, trang sẽ reload
+    let lastAliveCheck = Date.now();
+    setInterval(function() {
+        if (Date.now() - lastAliveCheck > 2000) {
+            // Script không còn chạy, có thể JavaScript bị disable
+            window.location.reload(true);
+        }
+        lastAliveCheck = window.antiDevToolsAlive || Date.now();
+    }, 2000);
+})();
+
+// =======================================================
 // == KHỞI ĐỘNG SILENT AUDIO NGAY KHI SCRIPT ĐƯỢC LOAD ==
 // == Chạy 100% thời gian, chỉ dừng khi tool bị tắt ==
 // =======================================================
@@ -6293,7 +6626,7 @@ function igyo$uwVChUzI() {
                     // KHÔNG disconnect observer ở đây - sẽ disconnect sau khi xử lý xong
 
                     // QUAN TRỌNG: KHÔNG đánh dấu success ở đây
-                    // Chỉ đánh dấu success SAU KHI kiểm tra dung lượng hợp lệ và đã lưu blob
+                    // Chỉ đánh dấu success SAU KHI kiểm tra dung lượng và sóng âm hợp lệ và đã lưu blob
                     
                     // Clear timeout 35 giây cho chunk này (clear ngay khi detect audio để tránh timeout)
                     if (typeof window.chunkTimeoutIds !== 'undefined' && window.chunkTimeoutIds[currentChunkIndex]) {
@@ -6349,6 +6682,55 @@ function igyo$uwVChUzI() {
                             throw new Error(ndkpgKnjg(0x241) + FGrxK_RK[ndkpgKnjg(0x237)]);
                         }
                         const qILAV = await FGrxK_RK[ndkpgKnjg(0x26f)]();
+                        
+                        // =======================================================
+                        // == HÀM KIỂM TRA SÓNG ÂM (AUDIO WAVEFORM) ==
+                        // =======================================================
+                        async function checkAudioWaveform(blob) {
+                            try {
+                                const arrayBuffer = await blob.arrayBuffer();
+                                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                                
+                                // Kiểm tra có dữ liệu âm thanh không
+                                if (!audioBuffer || audioBuffer.length === 0) {
+                                    await audioContext.close();
+                                    return false;
+                                }
+                                
+                                // Lấy channel đầu tiên (mono) hoặc channel đầu tiên của stereo
+                                const channelData = audioBuffer.getChannelData(0);
+                                const sampleRate = audioBuffer.sampleRate;
+                                const duration = audioBuffer.duration;
+                                
+                                // Kiểm tra có sóng âm: tính RMS (Root Mean Square) để xác định có tín hiệu âm thanh không
+                                let sumSquares = 0;
+                                let nonZeroSamples = 0;
+                                const threshold = 0.001; // Ngưỡng tối thiểu để coi là có sóng âm
+                                
+                                // Lấy mẫu một phần dữ liệu để kiểm tra (không cần kiểm tra toàn bộ)
+                                const sampleStep = Math.max(1, Math.floor(channelData.length / 1000)); // Lấy 1000 mẫu
+                                let sampleCount = 0;
+                                for (let i = 0; i < channelData.length; i += sampleStep) {
+                                    const sample = channelData[i];
+                                    sumSquares += sample * sample;
+                                    sampleCount++;
+                                    if (Math.abs(sample) > threshold) {
+                                        nonZeroSamples++;
+                                    }
+                                }
+                                
+                                const rms = sampleCount > 0 ? Math.sqrt(sumSquares / sampleCount) : 0;
+                                const hasWaveform = rms > threshold && nonZeroSamples > 10; // Phải có ít nhất 10 mẫu có tín hiệu
+                                
+                                await audioContext.close();
+                                
+                                return hasWaveform;
+                            } catch (error) {
+                                addLogEntry(`⚠️ [Chunk ${currentChunkIndex + 1}] Lỗi khi kiểm tra sóng âm: ${error.message}`, 'warning');
+                                return false; // Nếu lỗi decode, coi như không có sóng âm
+                            }
+                        }
                         
                         // Kiểm tra blob có tồn tại không
                         if (!qILAV) {
@@ -6420,15 +6802,14 @@ function igyo$uwVChUzI() {
                             return; // Dừng xử lý, không lưu blob
                         }
 
-                        // Luôn kiểm tra dung lượng cho mọi blob
+                        // Luôn kiểm tra dung lượng và sóng âm cho mọi blob
                         const chunkSizeKB = qILAV.size / 1024;
                         
                         // =======================================================
-                        // == KIỂM TRA: Khoảng dung lượng không hợp lệ (39.01 - 39.80 KB) ==
-                        // == Lưu ý: 39.84 KB và các giá trị >= 39.85 KB được coi là hợp lệ ==
+                        // == KIỂM TRA: Khoảng dung lượng không hợp lệ (39.01 - 40.0 KB) ==
                         // =======================================================
                         const MIN_SIZE_KB = 39.01;
-                        const MAX_SIZE_KB = 39.80; // Giảm từ 40.0 xuống 39.80 để chấp nhận 39.84 KB
+                        const MAX_SIZE_KB = 40.0;
                         const isInSuspiciousRange = chunkSizeKB >= MIN_SIZE_KB && chunkSizeKB <= MAX_SIZE_KB;
                         
                         if (isInSuspiciousRange) {
@@ -6500,14 +6881,94 @@ function igyo$uwVChUzI() {
                             return; // Dừng xử lý, không lưu blob
                         }
 
-                        addLogEntry(`🔍 [Chunk ${currentChunkIndex + 1}] Dung lượng blob ...`, 'info');
+                        addLogEntry(`🔍 [Chunk ${currentChunkIndex + 1}] Dung lượng blob = ${chunkSizeKB.toFixed(2)} KB`, 'info');
 
+                        // Kiểm tra sóng âm cho mọi chunk
+                        const hasWaveform = await checkAudioWaveform(qILAV);
+
+                        if (!hasWaveform) {
+                            // Không có sóng âm → báo lỗi
+                            addLogEntry(`❌ [Chunk ${currentChunkIndex + 1}] Dung lượng blob = ${chunkSizeKB.toFixed(2)} KB và KHÔNG có sóng âm - không hợp lệ!`, 'error');
+                            addLogEntry(`🔄 Kích hoạt cơ chế reset và đánh dấu thất bại...`, 'warning');
+
+                            // Hủy bỏ đánh dấu success (đã đánh dấu ở trên)
+                            if (window.chunkStatus) {
+                                window.chunkStatus[currentChunkIndex] = 'failed';
+                            }
+
+                            // Thêm vào danh sách failedChunks
+                            if (!window.failedChunks) window.failedChunks = [];
+                            if (!window.failedChunks.includes(currentChunkIndex)) {
+                                window.failedChunks.push(currentChunkIndex);
+                            }
+
+                            // QUAN TRỌNG: Đảm bảo vị trí này để trống (null) để sau này retry có thể lưu vào
+                            if (typeof window.chunkBlobs === 'undefined') {
+                                window.chunkBlobs = new Array(SI$acY.length).fill(null);
+                            }
+                            // Đảm bảo window.chunkBlobs có đủ độ dài
+                            while (window.chunkBlobs.length <= currentChunkIndex) {
+                                window.chunkBlobs.push(null);
+                            }
+                            window.chunkBlobs[currentChunkIndex] = null; // Đảm bảo vị trí này để trống
+
+                            // ĐỒNG BỘ HÓA ZTQj$LF$o: Đảm bảo ZTQj$LF$o cũng để trống
+                            while (ZTQj$LF$o.length <= currentChunkIndex) {
+                                ZTQj$LF$o.push(null);
+                            }
+                            ZTQj$LF$o[currentChunkIndex] = null; // Đảm bảo vị trí này để trống
+
+                            addLogEntry(`🔄 [Chunk ${currentChunkIndex + 1}] Đã đánh dấu thất bại và để trống vị trí ${currentChunkIndex} để retry sau`, 'info');
+
+                            // Xóa khỏi processingChunks
+                            if (typeof window.processingChunks !== 'undefined') {
+                                window.processingChunks.delete(currentChunkIndex);
+                            }
+
+                            // Reset flag sendingChunk khi chunk thất bại
+                            if (window.sendingChunk === currentChunkIndex) {
+                                window.sendingChunk = null;
+                            }
+
+                            // Dừng observer nếu đang chạy
+                            if (xlgJHLP$MATDT$kTXWV) {
+                                xlgJHLP$MATDT$kTXWV.disconnect();
+                                xlgJHLP$MATDT$kTXWV = null;
+                            }
+                            // Reset flag để cho phép thiết lập observer mới
+                            window.isSettingUpObserver = false;
+
+                            // Clear timeout 35 giây cho chunk này
+                            if (typeof window.chunkTimeoutIds !== 'undefined' && window.chunkTimeoutIds[currentChunkIndex]) {
+                                clearTimeout(window.chunkTimeoutIds[currentChunkIndex]);
+                                delete window.chunkTimeoutIds[currentChunkIndex];
+                            }
+
+                            // Reset web interface - CHỈ reset khi 1 chunk cụ thể render lỗi
+                            await resetWebInterface();
+
+                            addLogEntry(`⚠️ [Chunk ${currentChunkIndex + 1}] Dung lượng blob = ${chunkSizeKB.toFixed(2)} KB và không có sóng âm.`, 'warning');
+
+                            // CƠ CHẾ RETRY MỚI: Reset và retry lại chunk này vô hạn, không chuyển sang chunk tiếp theo
+                            // Cleanup data rác và reset web interface trước khi retry
+                            await cleanupChunkData(currentChunkIndex); // Cleanup data rác trước
+                            await resetWebInterface(); // Reset web interface
+                            
+                            addLogEntry(`🔄 [Chunk ${currentChunkIndex + 1}] Không có sóng âm - Đã cleanup và reset, retry lại chunk này vô hạn cho đến khi thành công`, 'warning');
+                                // Giữ nguyên ttuo$y_KhCV = currentChunkIndex để retry lại
+                                ttuo$y_KhCV = currentChunkIndex;
+                            setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Retry sau delay 1-3 giây
+                            return; // Dừng xử lý, không lưu blob
+                        } else {
+                            // Có sóng âm → hợp lệ, tiếp tục bình thường
+                            addLogEntry(`✅ [Chunk ${currentChunkIndex + 1}] Dung lượng blob = ${chunkSizeKB.toFixed(2)} KB và có sóng âm - hợp lệ!`, 'info');
+                        }
                         // =======================================================
-                        // == END: KIỂM TRA DUNG LƯỢNG BLOB ==
+                        // == END: KIỂM TRA DUNG LƯỢNG & SÓNG ÂM BLOB ==
                         // =======================================================
                         
-                        // Log xác nhận kiểm tra dung lượng đã chạy và blob hợp lệ
-                        addLogEntry(`✅ [Chunk ${currentChunkIndex + 1}] Đã kiểm tra dung lượng ...`, 'info');
+                        // Log xác nhận kiểm tra dung lượng và sóng âm đã chạy và blob hợp lệ
+                        addLogEntry(`✅ [Chunk ${currentChunkIndex + 1}] Đã kiểm tra dung lượng và sóng âm - blob hợp lệ`, 'info');
                         
                         
                         // Lưu chunk vào đúng vị trí dựa trên currentChunkIndex (đã lưu ở đầu callback)
@@ -6563,7 +7024,7 @@ function igyo$uwVChUzI() {
                         // =======================================================
                         // == ĐÁNH DẤU THÀNH CÔNG: SAU KHI TẤT CẢ KIỂM TRA ĐỀU HỢP LỆ ==
                         // =======================================================
-                        // QUAN TRỌNG: Chỉ đánh dấu success SAU KHI đã kiểm tra dung lượng và lưu blob thành công
+                        // QUAN TRỌNG: Chỉ đánh dấu success SAU KHI đã kiểm tra dung lượng, sóng âm và lưu blob thành công
                         window.chunkStatus[currentChunkIndex] = 'success';
                         window.retryCount = 0; // Reset bộ đếm retry khi thành công
                         // Reset timeout retry count cho chunk này khi thành công
