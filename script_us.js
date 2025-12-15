@@ -2693,6 +2693,9 @@ button:disabled {
             logContainer.scrollTop = logContainer.scrollHeight;
         }
     }
+    
+    // Expose addLogEntry to window for global access
+    window.addLogEntry = addLogEntry;
 
     function clearLog() {
         const logContainer = document.getElementById('log-container');
@@ -3168,29 +3171,43 @@ button:disabled {
         const savedWorkerCount = localStorage.getItem('multithread_worker_count');
         const workerCount = savedWorkerCount ? parseInt(savedWorkerCount) : 3; // Mặc định 3 workers
         
-        // Khởi tạo multithread system
-        if (typeof window.initMultithreadSystem === 'function') {
-            window.initMultithreadSystem(workerCount);
-            console.log(`[33.js] ✅ Multithread system đã được khởi tạo với ${workerCount} workers`);
-            if (typeof addLogEntry === 'function') {
-                addLogEntry(`🚀 Multithread system đã được khởi tạo với ${workerCount} workers`, 'info');
+        // Khởi tạo multithread system - đợi một chút để đảm bảo IIFE đã chạy xong
+        setTimeout(() => {
+            if (typeof window.initMultithreadSystem === 'function') {
+                window.initMultithreadSystem(workerCount);
+                console.log(`[33.js] ✅ Multithread system đã được khởi tạo với ${workerCount} workers`);
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry(`🚀 Multithread system đã được khởi tạo với ${workerCount} workers`, 'info');
+                }
+            } else {
+                console.warn('[33.js] ⚠️ initMultithreadSystem không tồn tại - Multithread system chưa được load');
+                // Thử lại sau 1 giây
+                setTimeout(() => {
+                    if (typeof window.initMultithreadSystem === 'function') {
+                        window.initMultithreadSystem(workerCount);
+                        console.log(`[33.js] ✅ Multithread system đã được khởi tạo với ${workerCount} workers (retry)`);
+                        if (typeof window.addLogEntry === 'function') {
+                            window.addLogEntry(`🚀 Multithread system đã được khởi tạo với ${workerCount} workers`, 'info');
+                        }
+                    }
+                }, 1000);
             }
-        } else {
-            console.warn('[33.js] ⚠️ initMultithreadSystem không tồn tại - Multithread system chưa được load');
-        }
+        }, 100);
         
         // =================================================================
         // CHO PHÉP COPY TRONG LOG PANEL
         // =================================================================
         // Thêm CSS để cho phép select và copy trong log-panel
         const logPanelStyle = document.createElement('style');
+        logPanelStyle.id = 'log-panel-copy-style';
         logPanelStyle.textContent = `
-            #log-panel, #log-panel *, #log-container, #log-container * {
+            #log-panel, #log-panel *, #log-container, #log-container *, .log-entry, .log-entry * {
                 user-select: text !important;
                 -webkit-user-select: text !important;
                 -moz-user-select: text !important;
                 -ms-user-select: text !important;
                 cursor: text !important;
+                pointer-events: auto !important;
             }
             .log-entry {
                 user-select: text !important;
@@ -3198,8 +3215,14 @@ button:disabled {
                 -moz-user-select: text !important;
                 -ms-user-select: text !important;
                 cursor: text !important;
+                -webkit-touch-callout: default !important;
             }
         `;
+        // Remove existing style if any
+        const existingStyle = document.getElementById('log-panel-copy-style');
+        if (existingStyle) {
+            existingStyle.remove();
+        }
         document.head.appendChild(logPanelStyle);
         console.log('[33.js] ✅ Đã thêm CSS cho phép copy trong log-panel');
         
@@ -4993,9 +5016,24 @@ function stopKeepAliveLoop() {
         const logContainer = document.getElementById('log-container');
         
         // Kiểm tra xem target có phải là phần tử trong log-panel không
-        if (logPanel && (logPanel.contains(target) || logContainer && logContainer.contains(target))) {
+        if (logPanel && logPanel.contains(target)) {
             // Cho phép select trong log-panel
             return true;
+        }
+        
+        if (logContainer && logContainer.contains(target)) {
+            // Cho phép select trong log-container
+            return true;
+        }
+        
+        // Kiểm tra nếu target có class log-entry hoặc là con của log-entry
+        let currentElement = target;
+        while (currentElement && currentElement !== document.body) {
+            if (currentElement.classList && currentElement.classList.contains('log-entry')) {
+                // Cho phép select trong log-entry
+                return true;
+            }
+            currentElement = currentElement.parentElement;
         }
         
         // Chặn select ở các phần tử khác
@@ -9582,6 +9620,14 @@ async function waitForVoiceModelReady() {
             }
             SI$acY = smartSplitter(sanitizedText, 3000); // Mảng chứa text (legacy)
             
+            // Đồng bộ chunks với multithread system
+            window.SI$acY = SI$acY;
+            if (window.MULTITHREAD_MASTER && window.MULTITHREAD_MASTER.isMultithreadEnabled) {
+                window.MULTITHREAD_MASTER.chunks = SI$acY;
+                window.MULTITHREAD_MASTER.chunkBlobs = new Array(SI$acY.length).fill(null);
+                console.log(`[Multithread] Đã đồng bộ ${SI$acY.length} chunks vào MULTITHREAD_MASTER`);
+            }
+            
             // Kiểm tra xem có chunk nào không
             if (!SI$acY || SI$acY.length === 0) {
                 addLogEntry(`❌ Lỗi: Không thể chia văn bản thành chunks. Văn bản có thể quá ngắn hoặc có lỗi.`, 'error');
@@ -10648,8 +10694,21 @@ async function waitForVoiceModelReady() {
             if (CURRENT_MODE === 'MASTER') {
                 window.MULTITHREAD_MASTER.workerCount = workerCount;
                 window.MULTITHREAD_MASTER.isMultithreadEnabled = workerCount > 1;
-                if (window.MULTITHREAD_MASTER.chunks && window.MULTITHREAD_MASTER.chunks.length > 0) {
+                
+                // Đồng bộ chunks từ window.SI$acY nếu có
+                if (window.SI$acY && Array.isArray(window.SI$acY) && window.SI$acY.length > 0) {
+                    window.MULTITHREAD_MASTER.chunks = window.SI$acY;
+                    window.MULTITHREAD_MASTER.chunkBlobs = new Array(window.SI$acY.length).fill(null);
+                    console.log(`[Multithread] Đã đồng bộ ${window.SI$acY.length} chunks vào MULTITHREAD_MASTER`);
+                } else if (window.MULTITHREAD_MASTER.chunks && window.MULTITHREAD_MASTER.chunks.length > 0) {
                     window.MULTITHREAD_MASTER.chunkBlobs = new Array(window.MULTITHREAD_MASTER.chunks.length).fill(null);
+                }
+                
+                // Log trạng thái
+                if (window.MULTITHREAD_MASTER.isMultithreadEnabled) {
+                    console.log(`[Multithread] ✅ Multithread mode đã được BẬT với ${workerCount} workers`);
+                } else {
+                    console.log(`[Multithread] ℹ️ Multithread mode đã được TẮT (workerCount = ${workerCount})`);
                 }
             }
         };
