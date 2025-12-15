@@ -3252,11 +3252,15 @@ button:disabled {
                     addLogEntry('🔍 Đang kiểm tra license từ Google Sheet...', 'info');
                 }
                 
-                // Sử dụng GM_xmlhttpRequest để tránh CORS (thay vì fetch)
+                // Sử dụng GM_xmlhttpRequest hoặc window.GM_xmlhttpRequest (polyfill từ extension)
                 const textData = await new Promise((resolve, reject) => {
-                    if (typeof GM_xmlhttpRequest !== 'undefined') {
-                        // Dùng GM_xmlhttpRequest (userscript)
-                        GM_xmlhttpRequest({
+                    // Kiểm tra GM_xmlhttpRequest (userscript) hoặc window.GM_xmlhttpRequest (polyfill từ extension)
+                    const gmRequest = typeof GM_xmlhttpRequest !== 'undefined' ? GM_xmlhttpRequest : 
+                                     (typeof window !== 'undefined' && typeof window.GM_xmlhttpRequest !== 'undefined' ? window.GM_xmlhttpRequest : null);
+                    
+                    if (gmRequest) {
+                        // Dùng GM_xmlhttpRequest (userscript hoặc polyfill từ extension)
+                        gmRequest({
                             method: 'GET',
                             url: sheetUrl,
                             headers: {
@@ -3267,20 +3271,22 @@ button:disabled {
                             timeout: 15000, // 15 giây timeout
                             onload: function(response) {
                                 if (response.status >= 200 && response.status < 300) {
-                                    resolve(response.responseText);
+                                    resolve(response.responseText || response.response);
                                 } else {
                                     reject(new Error(`HTTP ${response.status}: ${response.statusText}`));
                                 }
                             },
                             onerror: function(error) {
-                                reject(new Error(`Network error: ${error.message || 'Failed to fetch'}`));
+                                const errorMsg = error.error || error.message || 'Failed to fetch';
+                                reject(new Error(`Network error: ${errorMsg}`));
                             },
                             ontimeout: function() {
                                 reject(new Error('Request timeout after 15 seconds'));
                             }
                         });
                     } else {
-                        // Fallback: Dùng fetch nếu không có GM_xmlhttpRequest (extension context)
+                        // Fallback: Dùng fetch trực tiếp (trong MAIN world có thể fetch Google Sheet public URL)
+                        console.log('[33.js] ⚠️ Không có GM_xmlhttpRequest, dùng fetch trực tiếp');
                         fetch(sheetUrl, {
                             method: 'GET',
                             headers: {
@@ -3288,7 +3294,8 @@ button:disabled {
                                 'Pragma': 'no-cache',
                                 'Expires': '0'
                             },
-                            cache: 'no-store'
+                            cache: 'no-store',
+                            mode: 'cors' // Cho phép CORS
                         })
                         .then(response => {
                             if (!response.ok) {
@@ -3297,7 +3304,10 @@ button:disabled {
                             return response.text();
                         })
                         .then(resolve)
-                        .catch(reject);
+                        .catch(error => {
+                            console.error('[33.js] ❌ Fetch error:', error);
+                            reject(new Error(`Failed to fetch: ${error.message || 'Network error'}`));
+                        });
                     }
                 });
                 
