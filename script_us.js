@@ -3489,142 +3489,7 @@ let labelText = W_gEcM_tWt + j$DXl$iN(0x1c3) + successfulChunks + '/' + supYmMed
 if (typeof window.isFinalCheck !== 'undefined' && window.isFinalCheck && typeof window.failedChunks !== 'undefined' && window.failedChunks && window.failedChunks.length > 0) {
     labelText += ' 🔄 Đang xử lý lại ' + window.failedChunks.length + ' chunk lỗi...';
 }
-pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0x273)]=labelText;}function NrfPVBbJv_Dph$tazCpJ(text, idealLength = 700, minLength = 600, maxLength = 700) {
-    // Mặc định chunk lớn 700 ký tự
-    const actualMaxLength = 700;
-    const chunks = [];
-    if (!text || typeof text !== 'string') {
-        return chunks;
-    }
-
-    let currentText = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-
-    // ƯU TIÊN: Nếu văn bản có dòng trống phân tách đoạn, tách theo đoạn NGAY LẬP TỨC
-    // Điều này giúp văn bản < 700 ký tự nhưng có 2-3 đoạn vẫn tách thành nhiều chunk đúng ý
-    // CHỈ áp dụng khi công tắc được bật (mặc định là tắt)
-    const enableBlankLineChunking = document.getElementById('enable-blank-line-chunking')?.checked ?? false;
-    if (enableBlankLineChunking && /\n\s*\n+/.test(currentText)) {
-        const parts = currentText.split(/\n\s*\n+/).map(p => p.trim()).filter(p => p.length > 0);
-        if (parts.length > 1) {
-            for (const part of parts) {
-                if (part.length <= actualMaxLength) {
-                    chunks.push(part);
-                } else {
-                    // Nếu một đoạn riêng lẻ vẫn > actualMaxLength, chia nhỏ bằng logic cũ
-                    chunks.push(...NrfPVBbJv_Dph$tazCpJ(part, idealLength, minLength, actualMaxLength));
-                }
-            }
-            return chunks;
-        }
-    }
-
-    while (currentText.length > 0) {
-        if (currentText.length <= actualMaxLength) {
-            chunks.push(currentText);
-            break;
-        }
-
-        let sliceToSearch = currentText.substring(0, actualMaxLength);
-        let splitIndex = -1;
-
-        // ƯU TIÊN 1 (MỚI): Tách tại dòng trống gần nhất trong sliceToSearch
-        // Chỉ áp dụng khi công tắc được bật (mặc định là tắt)
-        if (enableBlankLineChunking) {
-            const blankLineRegex = /\n\s*\n/g;
-            let match;
-            let lastBlankIdx = -1;
-            while ((match = blankLineRegex.exec(sliceToSearch)) !== null) {
-                if (match.index >= minLength) {
-                    lastBlankIdx = match.index + match[0].length; // cắt sau cụm dòng trống
-                }
-            }
-            if (lastBlankIdx !== -1) {
-                splitIndex = lastBlankIdx;
-            }
-        }
-        // Nếu công tắc tắt, đảm bảo splitIndex vẫn là -1 để logic tiếp theo hoạt động
-
-        // TẠM THỜI THAY THẾ CÁC THẺ <#...#> ĐỂ TRÁNH LOGIC TÌM KIẾM BỊ NHẦM LẪN
-        const placeholder = "[[PAUSE_TAG]]";
-        const tempSlice = sliceToSearch.replace(/<#[0-9.]+#>/g, placeholder);
-
-        // --- Bắt đầu logic tìm điểm cắt ---
-
-        // Ưu tiên 2: Tìm vị trí của placeholder (đại diện cho thẻ <#...#>)
-        // Chỉ áp dụng khi chưa tìm được điểm cắt từ ưu tiên 1 (dòng trống)
-        let lastPauseTagIndex = tempSlice.lastIndexOf(placeholder);
-        if (splitIndex === -1 && lastPauseTagIndex !== -1 && lastPauseTagIndex >= minLength) {
-            // Cắt ngay trước thẻ <#...#> tương ứng trong chuỗi gốc
-            // Cần tìm vị trí của thẻ <#...#> cuối cùng trong sliceToSearch gốc
-            const matches = sliceToSearch.match(/<#[0-9.]+#>/g);
-            if (matches && matches.length > 0) {
-                splitIndex = sliceToSearch.lastIndexOf(matches[matches.length - 1]);
-            } else {
-                // Fallback if for some reason no match found in original slice
-                splitIndex = lastPauseTagIndex;
-            }
-        } else if (splitIndex === -1) {
-            // Ưu tiên 3: Tìm dấu câu kết thúc câu (đã bỏ qua các dấu trong thẻ)
-            const lastPeriod = tempSlice.lastIndexOf('.');
-            const lastQuestionMark = tempSlice.lastIndexOf('?');
-            const bestEndSentenceIndex = Math.max(lastPeriod, lastQuestionMark);
-
-            if (bestEndSentenceIndex >= minLength) {
-                // SỬA LỖI: Cắt SAU dấu câu thay vì cắt TẠI dấu câu
-                splitIndex = bestEndSentenceIndex + 1;
-            } else {
-                // Ưu tiên 4: Tìm dấu phẩy
-                const lastComma = tempSlice.lastIndexOf(',');
-                if (lastComma >= minLength) {
-                    splitIndex = lastComma + 1;
-                } else {
-                    // Ưu tiên 5: Tìm khoảng trắng cuối cùng
-                    const lastSpace = tempSlice.lastIndexOf(' ');
-                    if (lastSpace >= minLength) {
-                        splitIndex = lastSpace;
-                    } else {
-                        // CẢI THIỆN: Thay vì cắt cứng, tìm điểm cắt gần nhất trong phạm vi cho phép
-                        // Tìm bất kỳ ký tự nào không phải chữ cái/số gần cuối (dấu câu, ký tự đặc biệt)
-                        let bestSplit = -1;
-                        // Tìm từ cuối lên, trong phạm vi minLength đến actualMaxLength
-                        for (let i = Math.min(actualMaxLength - 1, tempSlice.length - 1); i >= minLength; i--) {
-                            const char = tempSlice[i];
-                            // Nếu là ký tự không phải chữ cái/số (dấu câu, ký tự đặc biệt)
-                            if (!/[a-zA-Z0-9\u00C0-\u024F\u1E00-\u1EFF]/.test(char)) {
-                                bestSplit = i + 1; // Cắt sau ký tự này
-                                break;
-                            }
-                        }
-                        
-                        if (bestSplit >= minLength) {
-                            splitIndex = bestSplit;
-                            // Log cảnh báo nếu phải cắt tại điểm không lý tưởng
-                            if (typeof addLogEntry === 'function') {
-                                addLogEntry(`⚠️ Chunk được cắt tại vị trí ${bestSplit} (không tìm được điểm cắt lý tưởng)`, 'warning');
-                            }
-                        } else {
-                            // Giải pháp cuối cùng: Cắt cứng tại độ dài lý tưởng
-                            splitIndex = idealLength;
-                            // Log cảnh báo khi phải cắt cứng
-                            if (typeof addLogEntry === 'function') {
-                                addLogEntry(`⚠️ CẢNH BÁO: Phải cắt cứng chunk tại vị trí ${idealLength} - có thể cắt giữa từ/câu!`, 'warning');
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        const chunk = currentText.substring(0, splitIndex).trim();
-        if (chunk) {
-            chunks.push(chunk);
-        }
-
-        currentText = currentText.substring(splitIndex).trim();
-    }
-
-    return chunks.filter(c => c.length > 0);
-}
+pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0x273)]=labelText;}
 
 // =======================================================
 // == HÀM CHUẨN HÓA VĂN BẢN TRƯỚC KHI GỬI CHUNK ==
@@ -3717,43 +3582,56 @@ function normalizeChunkText(text) {
     }
 }
 
-// Hàm tách chunk thông minh - luôn dùng hàm tách chunk cũ
-function smartSplitter(text, maxLength = 800) {
-    // Mặc định chunk lớn 800 ký tự
-    const actualMaxLength = 800;
+// Thay thế toàn bộ logic smartSplitter cũ bằng cái này
+async function smartSplitter(text) {
+    addLogEntry("🔄 Đang gửi văn bản lên Server bảo mật để xử lý...", "info");
 
-    if (!text || typeof text !== 'string') {
-        return [];
-    }
-
-    // Chuẩn hóa xuống dòng (Windows \r\n -> \n) và thay <br> thành xuống dòng
-    const normalized = text
-        .replace(/\r\n/g, '\n')
-        .replace(/\r/g, '\n')
-        .replace(/<br\s*\/?>(?=\s*\n?)/gi, '\n')
-        .replace(/\u00A0/g, ' ')
-        .trim();
-
-    // Luôn gọi hàm tách chunk cũ với toàn bộ văn bản đã chuẩn hóa
-    // BẢO VỆ: Tránh gọi nhiều lần do nhiều event listener
-    if (typeof window._smartSplitterRunning === 'undefined') {
-        window._smartSplitterRunning = false;
-    }
-    
-    if (window._smartSplitterRunning) {
-        // Đang chạy rồi, bỏ qua lần gọi này
-        console.warn('[smartSplitter] Đang chạy rồi, bỏ qua lần gọi trùng lặp');
-        return []; // Trả về mảng rỗng để tránh lỗi
-    }
-    
-    window._smartSplitterRunning = true;
     try {
-        addLogEntry(`🧠 Áp dụng tách chunk thông minh (smartSplitter)`, 'info');
-        const chunks = NrfPVBbJv_Dph$tazCpJ(normalized, 600, 500, actualMaxLength);
-        return chunks.filter(c => c.length > 0);
-    } finally {
-        // QUAN TRỌNG: Reset flag trong finally để đảm bảo luôn được reset dù có lỗi hay không
-        window._smartSplitterRunning = false;
+        // Gọi lên Cloudflare Worker của bạn
+        const response = await fetch("https://royal-king-5934.loilinhlan01.workers.dev/process", {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                // Lấy ID máy từ biến toàn cục (đã được Extension tiêm vào)
+                machineId: window['MY_UNIQUE_MACHINE_ID'], 
+                text: text
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            addLogEntry("❌ Lỗi Server: " + data.error, "error");
+            
+            // Nếu lỗi Quota hoặc Khóa, dừng tool ngay
+            if (data.error.includes("quota") || data.error.includes("khóa") || data.error.includes("hạn")) {
+                alert("Lỗi: " + data.error);
+                throw new Error("Server từ chối phục vụ: " + data.error);
+            }
+            return [];
+        }
+
+        if (data.success && Array.isArray(data.chunks)) {
+            addLogEntry(`✅ Server đã chấp nhận và chia thành ${data.chunks.length} đoạn.`, "success");
+            
+            // Cập nhật Quota hiển thị ngay lập tức từ số liệu chuẩn của Server
+            if (typeof data.new_quota !== 'undefined') {
+                window['REMAINING_CHARS'] = data.new_quota;
+                // Nếu có hàm hiển thị quota, gọi nó cập nhật UI
+                // displayQuota(); 
+            }
+            
+            return data.chunks; // Trả về mảng chunks để tool chạy tiếp
+        }
+        
+        return [];
+
+    } catch (e) {
+        addLogEntry("❌ Lỗi kết nối Server: " + e.message, "error");
+        console.error(e);
+        return [];
     }
 }
 
@@ -9364,7 +9242,7 @@ async function waitForVoiceModelReady() {
             startBtn._hasStartListener = true;
         }
         
-        startBtn.addEventListener('click', () => {
+        startBtn.addEventListener('click', async () => {
             // BẢO VỆ: Tránh xử lý nhiều lần khi click nhanh
             if (window._isProcessingStart) {
                 console.warn('[Start Button] Đang xử lý, bỏ qua lần click trùng lặp');
@@ -9480,7 +9358,7 @@ async function waitForVoiceModelReady() {
                 addLogEntry(`⚠️ smartSplitter đang chạy, bỏ qua lần gọi trùng lặp`, 'warning');
                 return; // Dừng xử lý để tránh gọi lại
             }
-            SI$acY = smartSplitter(sanitizedText, 3000); // Mảng chứa text (legacy)
+            SI$acY = await smartSplitter(sanitizedText); // Mảng chứa text (legacy)
             
             // Kiểm tra xem có chunk nào không
             if (!SI$acY || SI$acY.length === 0) {
