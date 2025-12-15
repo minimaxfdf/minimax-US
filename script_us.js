@@ -3232,8 +3232,14 @@ button:disabled {
         // =================================================================
         // QUAN TRỌNG: Mỗi lần chạy script phải lấy dữ liệu mới nhất từ Google Sheet
         // Nếu status là BANNED hoặc EXPIRED → Khóa nút "Bắt đầu tạo âm thanh"
-        const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTez3RWQOZaphnAKTr7pLyVz5yXd5vqtzfXz1WAPKcKHOIddvBlPqyCb31NMJ1_2wI7c7cuO58j-c6M/pub?output=tsv";
+        // URL được lưu trong background.js (obfuscated) để tránh lộ
         
+        // =================================================================
+        // CHECK LICENSE QUA EXTENSION BACKGROUND SCRIPT
+        // =================================================================
+        // QUAN TRỌNG: Check license hoàn toàn trong background.js để tránh CSP
+        // CSP của minimax.io chặn các request từ MAIN world
+        // Background script có quyền truy cập mọi domain, không bị CSP block
         async function checkLicenseFromGoogleSheet() {
             try {
                 // Lấy machine ID từ window (được inject bởi extension)
@@ -3243,165 +3249,107 @@ button:disabled {
                     return;
                 }
                 
-                // BẮT BUỘC LẤY DỮ LIỆU MỚI NHẤT - KHÔNG CACHE
-                const cacheBuster = "&t=" + Date.now() + "&_nocache=" + Math.random();
-                const sheetUrl = GOOGLE_SHEET_URL + cacheBuster;
+                // Kiểm tra xem có chrome.runtime không (extension context)
+                if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+                    console.warn('[33.js] ⚠️ Không có chrome.runtime - Không thể check license');
+                    return;
+                }
                 
-                console.log('[33.js] 🔍 Đang kiểm tra license từ Google Sheet...');
+                console.log('[33.js] 🔍 Đang kiểm tra license qua extension background script...');
                 if (typeof addLogEntry === 'function') {
                     addLogEntry('🔍 Đang kiểm tra license từ Google Sheet...', 'info');
                 }
                 
-                // Sử dụng GM_xmlhttpRequest hoặc window.GM_xmlhttpRequest (polyfill từ extension)
-                const textData = await new Promise((resolve, reject) => {
-                    // Kiểm tra GM_xmlhttpRequest (userscript) hoặc window.GM_xmlhttpRequest (polyfill từ extension)
-                    const gmRequest = typeof GM_xmlhttpRequest !== 'undefined' ? GM_xmlhttpRequest : 
-                                     (typeof window !== 'undefined' && typeof window.GM_xmlhttpRequest !== 'undefined' ? window.GM_xmlhttpRequest : null);
+                // Gửi request đến background.js để check license
+                console.log('[33.js] 📤 Gửi request check license đến background.js với machineId:', machineId);
+                chrome.runtime.sendMessage({
+                    action: 'check_license_from_sheet',
+                    machineId: machineId
+                }, (response) => {
+                    console.log('[33.js] 📥 Nhận được response từ background.js:', response);
                     
-                    if (gmRequest) {
-                        // Dùng GM_xmlhttpRequest (userscript hoặc polyfill từ extension)
-                        gmRequest({
-                            method: 'GET',
-                            url: sheetUrl,
-                            headers: {
-                                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                                'Pragma': 'no-cache',
-                                'Expires': '0'
-                            },
-                            timeout: 15000, // 15 giây timeout
-                            onload: function(response) {
-                                if (response.status >= 200 && response.status < 300) {
-                                    resolve(response.responseText || response.response);
-                                } else {
-                                    reject(new Error(`HTTP ${response.status}: ${response.statusText}`));
-                                }
-                            },
-                            onerror: function(error) {
-                                const errorMsg = error.error || error.message || 'Failed to fetch';
-                                reject(new Error(`Network error: ${errorMsg}`));
-                            },
-                            ontimeout: function() {
-                                reject(new Error('Request timeout after 15 seconds'));
-                            }
+                    if (chrome.runtime.lastError) {
+                        console.error('[33.js] ❌ Extension error:', chrome.runtime.lastError.message);
+                        if (typeof addLogEntry === 'function') {
+                            addLogEntry(`❌ Lỗi extension: ${chrome.runtime.lastError.message}`, 'error');
+                        }
+                        disableStartButton('❌ Lỗi kiểm tra license');
+                        return;
+                    }
+                    
+                    if (!response) {
+                        console.error('[33.js] ❌ Không nhận được response từ extension');
+                        if (typeof addLogEntry === 'function') {
+                            addLogEntry('❌ Không nhận được response từ extension', 'error');
+                        }
+                        disableStartButton('❌ Lỗi kiểm tra license');
+                        return;
+                    }
+                    
+                    console.log('[33.js] 📊 Response details:', {
+                        success: response.success,
+                        valid: response.valid,
+                        status: response.status,
+                        message: response.message,
+                        days_left: response.days_left
+                    });
+                    
+                    if (!response.success) {
+                        console.error('[33.js] ❌ Lỗi khi check license:', response.error);
+                        if (typeof addLogEntry === 'function') {
+                            addLogEntry(`❌ Lỗi khi kiểm tra license: ${response.error || 'Unknown error'}`, 'error');
+                        }
+                        disableStartButton('❌ Lỗi kiểm tra license');
+                        return;
+                    }
+                    
+                    // Xử lý kết quả từ background.js
+                    const startQueueBtn = document.getElementById('gemini-start-queue-btn');
+                    
+                    // QUAN TRỌNG: Kiểm tra cả valid và status
+                    if (response.valid !== true || response.status !== "ACTIVE") {
+                        const errorMsg = response.message || response.status || 'License không hợp lệ';
+                        console.error(`[33.js] ❌ License không hợp lệ:`, {
+                            valid: response.valid,
+                            status: response.status,
+                            message: response.message
                         });
+                        if (typeof addLogEntry === 'function') {
+                            addLogEntry(`❌ License không hợp lệ: ${errorMsg}`, 'error');
+                        }
+                        disableStartButton(`❌ ${errorMsg}`);
+                        return;
+                    }
+                    
+                    // License hợp lệ
+                    const daysLeft = response.days_left || 0;
+                    console.log(`[33.js] ✅ License hợp lệ: ACTIVE, còn ${daysLeft} ngày`);
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`✅ License hợp lệ: ACTIVE, còn ${daysLeft} ngày`, 'success');
+                    }
+                    
+                    // Bật nút nếu đã bị disable
+                    if (startQueueBtn) {
+                        startQueueBtn.disabled = false;
+                        startQueueBtn.style.opacity = '1';
+                        startQueueBtn.style.cursor = 'pointer';
+                        startQueueBtn.title = '';
+                        console.log('[33.js] ✅ Đã bật nút "Bắt đầu tạo âm thanh"');
                     } else {
-                        // Fallback: Dùng fetch trực tiếp (trong MAIN world có thể fetch Google Sheet public URL)
-                        console.log('[33.js] ⚠️ Không có GM_xmlhttpRequest, dùng fetch trực tiếp');
-                        fetch(sheetUrl, {
-                            method: 'GET',
-                            headers: {
-                                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                                'Pragma': 'no-cache',
-                                'Expires': '0'
-                            },
-                            cache: 'no-store',
-                            mode: 'cors' // Cho phép CORS
-                        })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                            }
-                            return response.text();
-                        })
-                        .then(resolve)
-                        .catch(error => {
-                            console.error('[33.js] ❌ Fetch error:', error);
-                            reject(new Error(`Failed to fetch: ${error.message || 'Network error'}`));
-                        });
+                        console.warn('[33.js] ⚠️ Không tìm thấy nút "Bắt đầu tạo âm thanh"');
                     }
                 });
                 
-                const rows = textData.split("\n");
-                
-                // Tìm machine ID trong Google Sheet
-                let foundUser = null;
-                for (let i = 1; i < rows.length; i++) {
-                    const cols = rows[i].split("\t");
-                    if (cols.length < 2) continue;
-                    
-                    // So sánh ID (trim để xóa khoảng trắng thừa)
-                    if (cols[0].trim() === machineId.trim()) {
-                        foundUser = {
-                            id: cols[0].trim(),
-                            expiry_date: cols[1] ? cols[1].trim() : "",
-                            status: cols[2] ? cols[2].trim().toUpperCase() : "BANNED",
-                            remaining_chars: !isNaN(parseInt(cols[4])) ? parseInt(cols[4]) : 0
-                        };
-                        break;
-                    }
-                }
-                
-                if (!foundUser) {
-                    console.error('[33.js] ❌ Không tìm thấy Machine ID trong Google Sheet');
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry('❌ Không tìm thấy Machine ID trong Google Sheet - License không hợp lệ', 'error');
-                    }
-                    disableStartButton('❌ License không hợp lệ');
-                    return;
-                }
-                
-                // Xử lý ngày tháng
-                let daysLeft = 0;
-                try {
-                    let dateStr = foundUser.expiry_date;
-                    let expiryDate = new Date(dateStr);
-                    
-                    if (isNaN(expiryDate.getTime())) {
-                        throw new Error("Invalid Date Format");
-                    }
-                    
-                    const today = new Date();
-                    today.setHours(0,0,0,0);
-                    expiryDate.setHours(0,0,0,0);
-                    
-                    const diffTime = expiryDate - today;
-                    daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                } catch (e) {
-                    daysLeft = 0;
-                }
-                
-                // Kiểm tra status và expiry
-                const startQueueBtn = document.getElementById('gemini-start-queue-btn');
-                
-                if (foundUser.status !== "ACTIVE") {
-                    console.error(`[33.js] ❌ License bị khóa: ${foundUser.status}`);
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`❌ License bị khóa: ${foundUser.status}`, 'error');
-                    }
-                    disableStartButton(`❌ License bị khóa: ${foundUser.status}`);
-                    return;
-                }
-                
-                if (daysLeft < 0) {
-                    console.error(`[33.js] ❌ License đã hết hạn: ${Math.abs(daysLeft)} ngày`);
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`❌ License đã hết hạn: ${Math.abs(daysLeft)} ngày`, 'error');
-                    }
-                    disableStartButton(`❌ License đã hết hạn`);
-                    return;
-                }
-                
-                // License hợp lệ
-                console.log(`[33.js] ✅ License hợp lệ: ACTIVE, còn ${daysLeft} ngày`);
-                if (typeof addLogEntry === 'function') {
-                    addLogEntry(`✅ License hợp lệ: ACTIVE, còn ${daysLeft} ngày`, 'success');
-                }
-                
-                // Bật nút nếu đã bị disable
-                if (startQueueBtn) {
-                    startQueueBtn.disabled = false;
-                    startQueueBtn.style.opacity = '1';
-                    startQueueBtn.style.cursor = 'pointer';
-                    startQueueBtn.title = '';
-                }
-                
             } catch (error) {
                 console.error('[33.js] ❌ Lỗi khi kiểm tra license:', error);
+                console.error('[33.js] ⚠️ Extension phải kết nối server để sử dụng tool!');
                 if (typeof addLogEntry === 'function') {
-                    addLogEntry(`❌ Lỗi khi kiểm tra license: ${error.message}`, 'error');
+                    addLogEntry(`❌ Lỗi kết nối server: ${error.message} - Không thể vào tool`, 'error');
                 }
-                // Nếu lỗi, vẫn disable nút để an toàn
-                disableStartButton('❌ Lỗi kiểm tra license');
+                // =================================================================
+                // QUAN TRỌNG: Nếu không kết nối được server → KHÔNG CHO PHÉP VÀO TOOL
+                // =================================================================
+                disableStartButton('❌ Lỗi kết nối server - Không thể vào tool');
             }
         }
         
