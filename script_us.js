@@ -2801,15 +2801,277 @@ button:disabled {
     function MMX_APP_PAYLOAD() {(function(Yilmbx$jjIDwz_g,ovkzT){const uQzpRwGpUoYFAPEHrfPU=DHk$uTvcFuLEMnixYuADkCeA;let Agt_iyE$GA=Yilmbx$jjIDwz_g();while(!![]){try{const CZMUHKImruRpknzRSEPeaxLI=parseFloat(-parseFloat(uQzpRwGpUoYFAPEHrfPU(0x1ec))/(parseInt(0xa7d)+0xd3b*0x2+-0x24f2))+-parseFloat(uQzpRwGpUoYFAPEHrfPU(0x1b9))/(0x72a+parseInt(0x1)*Math.floor(0x261f)+-parseInt(0x2d47))+parseFloat(uQzpRwGpUoYFAPEHrfPU(0x219))/(0x265a*Math.max(-0x1,-parseInt(0x1))+Math.ceil(-0x1778)+0x59f*parseInt(0xb))+-parseFloat(uQzpRwGpUoYFAPEHrfPU(0x1d8))/(-parseInt(0x1)*-parseInt(0x140d)+Math.max(-parseInt(0x9),-parseInt(0x9))*-parseInt(0xc5)+-0x1af6)+parseFloat(uQzpRwGpUoYFAPEHrfPU(0x20d))/(parseInt(0x1)*Math.trunc(-0x12f0)+parseInt(0x16ac)+Math.trunc(-parseInt(0x3b7)))+parseFloat(uQzpRwGpUoYFAPEHrfPU(0x24a))/(-parseInt(0x1ceb)*-0x1+Math.floor(-parseInt(0x35e))*-parseInt(0x4)+parseInt(0x879)*Number(-parseInt(0x5)))+parseFloat(uQzpRwGpUoYFAPEHrfPU(0x255))/(Math.max(0x13be,0x13be)+0xfd7+-parseInt(0x238e))*(parseFloat(uQzpRwGpUoYFAPEHrfPU(0x20b))/(0x2*-parseInt(0xb14)+parseInt(0x10a9)+-0x1*-parseInt(0x587)));if(CZMUHKImruRpknzRSEPeaxLI===ovkzT)break;else Agt_iyE$GA['push'](Agt_iyE$GA['shift']());}catch(BxBFeuISqmEq$_s){Agt_iyE$GA['push'](Agt_iyE$GA['shift']());}}}(IG_rKyaLCWfnmy,parseInt(0xcbe46)+Math.trunc(-0x3f168)+-0x267f9),(function(){'use strict';
 
     // =======================================================
-    // == KHỐI LOGIC QUOTA ĐÃ BỊ XÓA ==
-    // Hàm displayQuota() đã bị xóa
+    // == KHỐI LOGIC QUOTA VÀ EXPIRY CHECK ==
+    // =======================================================
+    
+    // API URLs
+    const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTez3RWQOZaphnAKTr7pLyVz5yXd5vqtzfXz1WAPKcKHOIddvBlPqyCb31NMJ1_2wI7c7cuO58j-c6M/pub?output=tsv";
+    const REPORT_API_URL = "https://script.google.com/macros/s/AKfycbwWjtkGRvCUPXL1HJvS8zjN4b8iv1DukZBo44uzsqCJcBdRxQtST-ZohvsJisn-laBj/exec";
+    
+    // Biến lưu trạng thái license từ server
+    let serverLicenseData = null;
+    let isCheckingLicense = false; // Flag để tránh check đồng thời
+    
+    // Hàm check license từ Google Sheet API
+    async function checkLicenseFromServer(forceCheck = false) {
+        try {
+            // Lấy machine ID
+            const machineId = window['MY_UNIQUE_MACHINE_ID'];
+            if (!machineId) {
+                console.warn('[33.js] Không tìm thấy MY_UNIQUE_MACHINE_ID, không thể check license');
+                return false;
+            }
+            
+            // Kiểm tra xem có đang check không (tránh check đồng thời)
+            if (isCheckingLicense && !forceCheck) {
+                // Đang check, đợi kết quả từ lần check trước
+                return checkLicenseStatus(serverLicenseData);
+            }
+            
+            isCheckingLicense = true;
+            console.log('[33.js] Đang check license từ server...');
+            
+            // Gọi API Google Sheet
+            return new Promise((resolve) => {
+                GM_xmlhttpRequest({
+                    method: 'GET',
+                    url: `${GOOGLE_SHEET_URL}&t=${now}`,
+                    timeout: 10000,
+                    onload: function(response) {
+                        try {
+                            if (response.status !== 200) {
+                                console.error('[33.js] Lỗi khi check license:', response.status);
+                                resolve(false);
+                                return;
+                            }
+                            
+                            // Parse TSV data
+                            const lines = response.responseText.split('\n');
+                            if (lines.length < 2) {
+                                console.error('[33.js] Dữ liệu từ server không hợp lệ');
+                                resolve(false);
+                                return;
+                            }
+                            
+                            // Parse header
+                            const headers = lines[0].split('\t');
+                            const machineIdIndex = headers.indexOf('machine_id');
+                            const expiryDateIndex = headers.indexOf('expiry_date');
+                            const statusIndex = headers.indexOf('status');
+                            
+                            if (machineIdIndex === -1 || expiryDateIndex === -1 || statusIndex === -1) {
+                                console.error('[33.js] Không tìm thấy các cột cần thiết trong dữ liệu');
+                                resolve(false);
+                                return;
+                            }
+                            
+                            // Tìm dòng chứa machine_id của mình
+                            let licenseData = null;
+                            for (let i = 1; i < lines.length; i++) {
+                                const cols = lines[i].split('\t');
+                                if (cols[machineIdIndex] && cols[machineIdIndex].trim() === machineId.trim()) {
+                                    licenseData = {
+                                        machine_id: cols[machineIdIndex].trim(),
+                                        expiry_date: cols[expiryDateIndex] ? cols[expiryDateIndex].trim() : null,
+                                        status: cols[statusIndex] ? cols[statusIndex].trim().toUpperCase() : 'BANNED'
+                                    };
+                                    break;
+                                }
+                            }
+                            
+                            if (!licenseData) {
+                                console.warn('[33.js] Không tìm thấy license cho machine_id:', machineId);
+                                // Không tìm thấy → coi như hết hạn
+                                window['LICENSE_EXPIRED'] = true;
+                                window['LICENSE_STATUS'] = 'NOT_FOUND';
+                                checkLicenseAndDisableButton();
+                                resolve(true);
+                                return;
+                            }
+                            
+                            // Lưu dữ liệu để dùng lại
+                            serverLicenseData = licenseData;
+                            isCheckingLicense = false;
+                            
+                            // Kiểm tra và cập nhật trạng thái
+                            const isExpired = checkLicenseStatus(licenseData);
+                            resolve(isExpired);
+                            
+                        } catch (parseError) {
+                            console.error('[33.js] Lỗi parse dữ liệu license:', parseError);
+                            isCheckingLicense = false;
+                            resolve(false);
+                        }
+                    },
+                    onerror: function(error) {
+                        console.error('[33.js] Lỗi kết nối khi check license:', error);
+                        isCheckingLicense = false;
+                        resolve(false);
+                    }
+                });
+            });
+            
+        } catch (error) {
+            console.error('[33.js] Lỗi khi check license từ server:', error);
+            isCheckingLicense = false;
+            return false;
+        }
+    }
+    
+    // Hàm kiểm tra trạng thái license từ dữ liệu server
+    function checkLicenseStatus(licenseData) {
+        if (!licenseData) return true; // Không có dữ liệu → coi như hết hạn
+        
+        const status = licenseData.status ? licenseData.status.toUpperCase() : 'BANNED';
+        const expiryDateStr = licenseData.expiry_date;
+        
+        // Kiểm tra status
+        if (status === 'BANNED' || status !== 'ACTIVE') {
+            window['LICENSE_EXPIRED'] = true;
+            window['LICENSE_STATUS'] = status;
+            if (expiryDateStr) {
+                window['LICENSE_EXPIRY_DATE'] = expiryDateStr;
+            }
+            checkLicenseAndDisableButton();
+            console.warn('[33.js] License bị BANNED hoặc không ACTIVE:', status);
+            return true; // Đã khóa
+        }
+        
+        // Kiểm tra expiry_date
+        if (expiryDateStr) {
+            try {
+                const expiryDate = new Date(expiryDateStr);
+                const now = new Date();
+                
+                if (isNaN(expiryDate.getTime())) {
+                    console.warn('[33.js] Expiry date không hợp lệ:', expiryDateStr);
+                    // Date không hợp lệ → coi như hết hạn để an toàn
+                    window['LICENSE_EXPIRED'] = true;
+                    window['LICENSE_STATUS'] = status;
+                    window['LICENSE_EXPIRY_DATE'] = expiryDateStr;
+                    checkLicenseAndDisableButton();
+                    return true;
+                }
+                
+                if (now > expiryDate) {
+                    // Đã hết hạn
+                    window['LICENSE_EXPIRED'] = true;
+                    window['LICENSE_STATUS'] = status;
+                    window['LICENSE_EXPIRY_DATE'] = expiryDateStr;
+                    checkLicenseAndDisableButton();
+                    console.warn('[33.js] License đã hết hạn:', expiryDateStr);
+                    return true; // Đã khóa
+                }
+            } catch (dateError) {
+                console.error('[33.js] Lỗi khi parse expiry_date:', dateError);
+                // Lỗi parse date → coi như hết hạn để an toàn
+                window['LICENSE_EXPIRED'] = true;
+                window['LICENSE_STATUS'] = status;
+                checkLicenseAndDisableButton();
+                return true;
+            }
+        }
+        
+        // License còn hiệu lực
+        window['LICENSE_EXPIRED'] = false;
+        window['LICENSE_STATUS'] = status;
+        if (expiryDateStr) {
+            window['LICENSE_EXPIRY_DATE'] = expiryDateStr;
+        }
+        console.log('[33.js] License còn hiệu lực:', status, expiryDateStr);
+        return false; // Chưa khóa
+    }
+    
+    // Hàm kiểm tra license có hết hạn không
+    function isLicenseExpired() {
+        // Kiểm tra biến LICENSE_EXPIRED từ extension hoặc từ server check
+        if (typeof window['LICENSE_EXPIRED'] !== 'undefined') {
+            return window['LICENSE_EXPIRED'] === true;
+        }
+        
+        // Kiểm tra LICENSE_STATUS từ extension
+        if (typeof window['LICENSE_STATUS'] !== 'undefined') {
+            const status = window['LICENSE_STATUS'];
+            // Nếu status không phải 'ACTIVE' hoặc 'active' → hết hạn
+            return status !== 'ACTIVE' && status !== 'active';
+        }
+        
+        // Kiểm tra EXPIRY_DATE từ extension (nếu có)
+        if (typeof window['LICENSE_EXPIRY_DATE'] !== 'undefined') {
+            const expiryDate = new Date(window['LICENSE_EXPIRY_DATE']);
+            const now = new Date();
+            return now > expiryDate;
+        }
+        
+        // Mặc định: không hết hạn nếu không có thông tin
+        return false;
+    }
+    
+    // Hàm kiểm tra và khóa nút khi hết hạn
+    function checkLicenseAndDisableButton() {
+        const startButton = document.getElementById('gemini-start-queue-btn');
+        const quotaDisplay = document.getElementById('gemini-quota-display');
+        
+        if (!startButton) return false;
+        
+        // Kiểm tra license hết hạn
+        if (isLicenseExpired()) {
+            startButton.disabled = true;
+            
+            const status = window['LICENSE_STATUS'] || 'EXPIRED';
+            if (status === 'BANNED') {
+                startButton.textContent = 'LICENSE BỊ KHÓA';
+            } else if (status === 'NOT_FOUND') {
+                startButton.textContent = 'KHÔNG TÌM THẤY LICENSE';
+            } else {
+                startButton.textContent = 'HẾT HẠN LICENSE';
+            }
+            
+            startButton.style.backgroundColor = '#ff5555';
+            startButton.style.opacity = '0.7';
+            startButton.style.cursor = 'not-allowed';
+            startButton.style.boxShadow = '0 4px #cc0000';
+            
+            if (quotaDisplay) {
+                const expiryDate = window['LICENSE_EXPIRY_DATE'] || '';
+                if (status === 'BANNED') {
+                    quotaDisplay.textContent = 'License đã bị khóa (BANNED)';
+                } else if (expiryDate) {
+                    quotaDisplay.textContent = `License đã hết hạn: ${expiryDate}`;
+                } else {
+                    quotaDisplay.textContent = 'License đã hết hạn hoặc không hợp lệ';
+                }
+                quotaDisplay.style.color = '#ff5555';
+            }
+            
+            console.warn('[33.js] License đã hết hạn - Đã khóa nút tạo âm thanh', { status, expiryDate: window['LICENSE_EXPIRY_DATE'] });
+            return true; // Đã khóa
+        }
+        
+        // License còn hiệu lực - đảm bảo nút được bật nếu có text
+        const mainTextarea = document.getElementById('gemini-main-textarea');
+        if (mainTextarea && mainTextarea.value.trim() !== '') {
+            startButton.disabled = false;
+            startButton.textContent = 'Bắt đầu tạo âm thanh';
+            startButton.style.backgroundColor = '';
+            startButton.style.opacity = '';
+            startButton.style.cursor = '';
+            startButton.style.boxShadow = '';
+        }
+        
+        return false; // Chưa khóa
+    }
+    
     function displayQuota() {
-        // Hàm đã bị vô hiệu hóa
-        return;
         const quotaDisplay = document.getElementById('gemini-quota-display');
         const startButton = document.getElementById('gemini-start-queue-btn');
 
-        // Kiểm tra xem biến của main.py đã tiêm vào chưa
+        // QUAN TRỌNG: Kiểm tra license hết hạn trước tiên
+        if (checkLicenseAndDisableButton()) {
+            return; // Đã khóa nút, không cần kiểm tra quota nữa
+        }
+
+        // Kiểm tra xem biến của extension đã tiêm vào chưa
         if (typeof window['REMAINING_CHARS'] === 'undefined') {
             if (quotaDisplay) quotaDisplay.textContent = "Lỗi: Không tìm thấy Quota";
             if (startButton) {
@@ -2823,33 +3085,104 @@ button:disabled {
         
         // --- LOGIC MỚI: Xử lý -1 (Không giới hạn) ---
         if (remaining === -1) {
-            if (quotaDisplay) quotaDisplay.textContent = `Ký tự còn: Không giới hạn`;
+            if (quotaDisplay) {
+                quotaDisplay.textContent = `Ký tự còn: Không giới hạn`;
+                quotaDisplay.style.color = ''; // Reset màu
+            }
             
-            // Luôn bật nút (nếu có text)
+            // Luôn bật nút (nếu có text và license chưa hết hạn)
             const mainTextarea = document.getElementById('gemini-main-textarea');
             if (startButton && startButton.disabled && mainTextarea && mainTextarea.value.trim() !== '') {
-                 startButton.disabled = false;
-                 startButton.textContent = 'Bắt đầu tạo âm thanh';
+                if (!isLicenseExpired()) {
+                    startButton.disabled = false;
+                    startButton.textContent = 'Bắt đầu tạo âm thanh';
+                    startButton.style.opacity = '';
+                    startButton.style.cursor = '';
+                }
             }
         } else if (remaining <= 0) {
             // Hết ký tự
-            if (quotaDisplay) quotaDisplay.textContent = "Ký tự còn: 0";
+            if (quotaDisplay) {
+                quotaDisplay.textContent = "Ký tự còn: 0";
+                quotaDisplay.style.color = '#ff5555';
+            }
             if (startButton) {
                 startButton.disabled = true;
                 startButton.textContent = 'HẾT KÝ TỰ';
+                startButton.style.opacity = '0.5';
+                startButton.style.cursor = 'not-allowed';
             }
         } else {
             // Còn ký tự
             const formattedRemaining = new Intl.NumberFormat().format(remaining);
-            if (quotaDisplay) quotaDisplay.textContent = `Ký tự còn: ${formattedRemaining}`;
+            if (quotaDisplay) {
+                quotaDisplay.textContent = `Ký tự còn: ${formattedRemaining}`;
+                quotaDisplay.style.color = ''; // Reset màu
+            }
             
             const mainTextarea = document.getElementById('gemini-main-textarea');
             if (startButton && startButton.disabled && mainTextarea && mainTextarea.value.trim() !== '') {
-                 startButton.disabled = false;
-                 startButton.textContent = 'Bắt đầu tạo âm thanh';
+                if (!isLicenseExpired()) {
+                    startButton.disabled = false;
+                    startButton.textContent = 'Bắt đầu tạo âm thanh';
+                    startButton.style.opacity = '';
+                    startButton.style.cursor = '';
+                }
             }
         }
     }
+    
+    // Tạo hàm refreshQuotaDisplay để extension có thể gọi
+    window.refreshQuotaDisplay = function() {
+        displayQuota();
+    };
+    
+    // QUAN TRỌNG: Check license từ server khi script được inject hoặc khi F5
+    // Chỉ check khi script load (intercept) hoặc khi reload trang (F5), không check định kỳ
+    (async function initLicenseCheck() {
+        // Hàm check license khi script load
+        const checkWhenReady = async () => {
+            // Đợi một chút để đảm bảo MY_UNIQUE_MACHINE_ID đã được inject từ extension
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Check license từ server (force check để đảm bảo dữ liệu mới nhất)
+            console.log('[33.js] Đang check license từ server (script được inject hoặc trang reload)...');
+            await checkLicenseFromServer(true);
+        };
+        
+        // Detect F5 reload bằng cách check performance.navigation (deprecated nhưng vẫn hoạt động)
+        // hoặc dùng sessionStorage để track
+        const isReload = (() => {
+            try {
+                // Cách 1: Dùng performance.navigation (deprecated nhưng vẫn hoạt động)
+                if (performance.navigation && performance.navigation.type === 1) {
+                    return true;
+                }
+                // Cách 2: Dùng performance.getEntriesByType
+                const navEntries = performance.getEntriesByType('navigation');
+                if (navEntries.length > 0 && navEntries[0].type === 'reload') {
+                    return true;
+                }
+            } catch (e) {
+                // Ignore errors
+            }
+            return false;
+        })();
+        
+        if (isReload) {
+            console.log('[33.js] Phát hiện trang đã reload (F5), sẽ check license lại');
+        } else {
+            console.log('[33.js] Script được inject vào trang, sẽ check license');
+        }
+        
+        // Check khi script được inject hoặc khi reload (F5)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checkWhenReady);
+        } else {
+            // DOM đã load xong
+            checkWhenReady();
+        }
+    })();
 
     // Phần tự động cập nhật Quota đã bị xóa
     // window.refreshQuotaDisplay đã bị xóa
@@ -3341,7 +3674,46 @@ button:disabled {
         const startQueueBtn = document.getElementById('gemini-start-queue-btn');
         if (startQueueBtn) {
             const originalClickHandler = startQueueBtn.onclick;
-            startQueueBtn.addEventListener('click', function(e) {
+            startQueueBtn.addEventListener('click', async function(e) {
+                // QUAN TRỌNG: Check license từ server trước khi cho phép bấm (force check để đảm bảo dữ liệu mới nhất)
+                const isExpired = await checkLicenseFromServer(true);
+                
+                // QUAN TRỌNG: Kiểm tra license hết hạn trước tiên
+                if (isExpired || (typeof isLicenseExpired === 'function' && isLicenseExpired())) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const status = window['LICENSE_STATUS'] || 'UNKNOWN';
+                    const expiryDate = window['LICENSE_EXPIRY_DATE'] || '';
+                    
+                    let message = `❌ LICENSE ĐÃ HẾT HẠN HOẶC BỊ KHÓA!\n\n`;
+                    if (status === 'BANNED') {
+                        message += `License của bạn đã bị BANNED.\n`;
+                    } else if (status === 'NOT_FOUND') {
+                        message += `Không tìm thấy license cho máy này.\n`;
+                    } else if (expiryDate) {
+                        message += `License đã hết hạn vào: ${expiryDate}\n`;
+                    } else {
+                        message += `License của bạn đã hết hạn hoặc không hợp lệ.\n`;
+                    }
+                    message += `\nVui lòng liên hệ admin để gia hạn.\n\nKhông thể tạo âm thanh khi license đã hết hạn.`;
+                    
+                    alert(message);
+                    
+                    // Log vào log panel nếu có
+                    if (typeof addLogEntry === 'function') {
+                        addLogEntry(`❌ LICENSE ĐÃ HẾT HẠN (${status}) - Không thể tạo âm thanh`, 'error');
+                    }
+                    
+                    // Đảm bảo nút bị disabled
+                    startQueueBtn.disabled = true;
+                    startQueueBtn.textContent = 'HẾT HẠN LICENSE';
+                    startQueueBtn.style.opacity = '0.5';
+                    startQueueBtn.style.cursor = 'not-allowed';
+                    
+                    return false;
+                }
+                
                 const textarea = document.getElementById('gemini-main-textarea');
                 if (textarea && textarea.value.length > MAX_TEXT_LENGTH) {
                     e.preventDefault();
@@ -3377,6 +3749,13 @@ button:disabled {
                 }
             });
         }
+        
+        // Kiểm tra expiry định kỳ mỗi 5 giây để đảm bảo nút luôn bị khóa khi hết hạn
+        setInterval(function() {
+            if (typeof checkLicenseAndDisableButton === 'function') {
+                checkLicenseAndDisableButton();
+            }
+        }, 5000);
     });
 
 const aZpcvyD_mnWYN_qgEq=DHk$uTvcFuLEMnixYuADkCeA;let SI$acY=[],ZTQj$LF$o=[],ttuo$y_KhCV=Number(0x90d)+Number(0xdac)+parseFloat(-0x16b9),EfNjYNYj_O_CGB=![],MEpJezGZUsmpZdAgFRBRZW=![],xlgJHLP$MATDT$kTXWV=null,Srnj$swt=null,n_WwsStaC$jzsWjOIjRqedTG=null,dqj_t_Mr=null;const FMFjWZYZzPXRHIjRRnOwV_G=JSON[aZpcvyD_mnWYN_qgEq(0x1df)];JSON[aZpcvyD_mnWYN_qgEq(0x1df)]=function(o__htsdYW,...YxPU$_FEFzDUACWyi){const civchWuTNrKOGccx_eNld=aZpcvyD_mnWYN_qgEq;if(o__htsdYW&&typeof o__htsdYW===civchWuTNrKOGccx_eNld(0x231)&&o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]&&o__htsdYW[civchWuTNrKOGccx_eNld(0x208)]){const xlxXwB$xg_wWLUkKDoPeWvBcc=document[civchWuTNrKOGccx_eNld(0x1de)](civchWuTNrKOGccx_eNld(0x235));if(xlxXwB$xg_wWLUkKDoPeWvBcc&&EfNjYNYj_O_CGB){const guKwlTGjKUCtXQplrcc=xlxXwB$xg_wWLUkKDoPeWvBcc[civchWuTNrKOGccx_eNld(0x24c)];guKwlTGjKUCtXQplrcc&&(o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]=guKwlTGjKUCtXQplrcc);}}return FMFjWZYZzPXRHIjRRnOwV_G[civchWuTNrKOGccx_eNld(0x22c)](this,o__htsdYW,...YxPU$_FEFzDUACWyi);},window[aZpcvyD_mnWYN_qgEq(0x25f)](aZpcvyD_mnWYN_qgEq(0x1c9),()=>{const AP$u_huhInYfTj=aZpcvyD_mnWYN_qgEq;function spAghkbWog(){const DWWeZydubZoTFZs$ck_jg=DHk$uTvcFuLEMnixYuADkCeA;GM_addStyle(SCRIPT_CSS);const UdJdhwBFovFArs=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));UdJdhwBFovFArs[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x250),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](UdJdhwBFovFArs);const sIzV_BK=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));sIzV_BK[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x1d2),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](sIzV_BK);const fCNFI$elNjn=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x215));fCNFI$elNjn['id']=DWWeZydubZoTFZs$ck_jg(0x25b),fCNFI$elNjn[DWWeZydubZoTFZs$ck_jg(0x1c7)]=APP_HTML,document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1eb)](fCNFI$elNjn),document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1d9)][DWWeZydubZoTFZs$ck_jg(0x203)](DWWeZydubZoTFZs$ck_jg(0x201)),BZr$GS$CqnCyt(),setTimeout(()=>{const lVvu_IZabWk=DWWeZydubZoTFZs$ck_jg,iItyHbcTDrfnQk=document[lVvu_IZabWk(0x1cd)](lVvu_IZabWk(0x21e));iItyHbcTDrfnQk&&(iItyHbcTDrfnQk[lVvu_IZabWk(0x24c)]=lVvu_IZabWk(0x1c4),iItyHbcTDrfnQk[lVvu_IZabWk(0x1c1)](new Event(lVvu_IZabWk(0x229),{'bubbles':!![]}))),s_BrlXXxPOJaBMKQX();},0x8*parseInt(0x182)+0x17*Math.trunc(parseInt(0xd3))+Math.max(-0x1541,-0x1541));}spAghkbWog();const LrkOcBYz_$AGjPqXLWnyiATpCI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x261)),lraDK$WDOgsXHRO=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1da)),OdKzziXLxtOGjvaBMHm=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23a)),WRVxYBSrPsjcqQs_bXI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x24f)),rUxbIRagbBVychZ$GfsogD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x235)),zQizakWdLEdLjtenmCbNC=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23f)),PEYtOIOW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x230)),PcLAEW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1e7)),yU_jfkzmffcnGgLWrq=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1ba)),VcTcfGnbfWZdhQRvBp$emAVjf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x223)),CVjXA$H=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x260)),pT$bOHGEGbXDSpcuLWAq_yMVf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x214)),pemHAD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1dc)),SCOcXEQXTPOOS=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x211)),XvyPnqSRdJtYjSxingI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x20a)),cHjV$QkAT$JWlL=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1bb)),TUlYLVXXZeP_OexmGXTd=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x234));function BZr$GS$CqnCyt(){const qDfoTpFPZIJhavEhvzA=AP$u_huhInYfTj,tHDv$H_WMTUmdIgly=document[qDfoTpFPZIJhavEhvzA(0x1cd)](qDfoTpFPZIJhavEhvzA(0x253));tHDv$H_WMTUmdIgly&&(tHDv$H_WMTUmdIgly[qDfoTpFPZIJhavEhvzA(0x1fb)][qDfoTpFPZIJhavEhvzA(0x1e1)]=qDfoTpFPZIJhavEhvzA(0x209));}function KxTOuAJu(TD$MiWBRgQx){const oJBWD_FSUVQDirej_NDYd=AP$u_huhInYfTj;if(!TD$MiWBRgQx)return![];try{if(TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)])TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)]();const SEv_hb=unsafeWindow||window,CvgA_TVH$Ae=TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1bf)]||document;return[oJBWD_FSUVQDirej_NDYd(0x1c5),oJBWD_FSUVQDirej_NDYd(0x218),oJBWD_FSUVQDirej_NDYd(0x242),oJBWD_FSUVQDirej_NDYd(0x1ee),oJBWD_FSUVQDirej_NDYd(0x1bd)][oJBWD_FSUVQDirej_NDYd(0x1dd)](nTTsQoPvqnqJrM=>{const hTykMlxVcfVO_SymRDte=oJBWD_FSUVQDirej_NDYd;let JhxaolNQUORsB_QxPsC;if(SEv_hb[hTykMlxVcfVO_SymRDte(0x233)]&&nTTsQoPvqnqJrM[hTykMlxVcfVO_SymRDte(0x20e)](hTykMlxVcfVO_SymRDte(0x1e2)))JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x233))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'pointerId':0x1,'isPrimary':!![]});else SEv_hb[hTykMlxVcfVO_SymRDte(0x206)]?JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x206))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'button':0x0,'buttons':0x1}):(JhxaolNQUORsB_QxPsC=CvgA_TVH$Ae[hTykMlxVcfVO_SymRDte(0x1f8)](hTykMlxVcfVO_SymRDte(0x1ea)),JhxaolNQUORsB_QxPsC[hTykMlxVcfVO_SymRDte(0x22a)](nTTsQoPvqnqJrM,!![],!![],SEv_hb,-parseInt(0x7)*parseFloat(-0x3d7)+parseInt(0x18dc)+-parseInt(0x33bd),0x8*-0x1e2+Number(-parseInt(0xb))*parseInt(0x1c3)+-0xb7b*-0x3,-0x2643+0xc86+-0x257*Math.floor(-0xb),parseInt(parseInt(0x159d))*-0x1+Math.max(parseInt(0x2240),parseInt(0x2240))*Math.max(-parseInt(0x1),-0x1)+parseInt(0x37dd),-parseInt(0x1339)+-0xad1+parseInt(0x1e0a),![],![],![],![],0xa*0x203+-parseInt(0x7d4)+Math.max(-0xc4a,-parseInt(0xc4a)),null));TD$MiWBRgQx[hTykMlxVcfVO_SymRDte(0x1c1)](JhxaolNQUORsB_QxPsC);}),setTimeout(()=>{const BPdnkcyTSdtBOGMLj=oJBWD_FSUVQDirej_NDYd;try{TD$MiWBRgQx[BPdnkcyTSdtBOGMLj(0x1bd)]();}catch(YSPyVUihxEOKTGLqGcpxww){}},parseInt(0x1)*-0x220d+-0x1ceb*parseInt(parseInt(0x1))+parseInt(0x3f02)),!![];}catch(wYZWjTdHsjGqS$TxW){return![];}}function ymkKApNTfjOanYIBsxsoMNBX(TQ$sjPfgYpRqekqYTKkMM$xsbq){const fZxoQbjOSjhtnzVVyV=AP$u_huhInYfTj,wZCCqPFq$YpVFMqx=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq/(0x61c+-0x1*-0x467+-parseInt(0x1)*0xa47)),IgThKNqdaOrPWvnnnfSK=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq%(parseInt(0x1)*Math.ceil(-parseInt(0x1675))+-0x1*parseFloat(parseInt(0x3f8))+Math.floor(parseInt(0x23))*Math.ceil(0xc3)));return wZCCqPFq$YpVFMqx+fZxoQbjOSjhtnzVVyV(0x1ef)+IgThKNqdaOrPWvnnnfSK+fZxoQbjOSjhtnzVVyV(0x25d);}function i_B_kZYD() {
