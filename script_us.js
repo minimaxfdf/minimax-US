@@ -107,15 +107,31 @@
                             ? interceptText.substring(0, 100) + '...' 
                             : interceptText;
                         
-                        // Chỉ log message chính một lần cho mỗi chunk để tránh spam
-                        if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
-                            logToUI(`🛡️ [NETWORK INTERCEPTOR] Force-fix payload chunk ${(currentIndex || 0) + 1}`, 'warning');
-                            window._interceptLoggedForChunk = currentIndex;
+                        // LUÔN log để debug - không bị chặn bởi flag
+                        const logMsg1 = `🛡️ [NETWORK INTERCEPTOR] Force-fix payload chunk ${(currentIndex || 0) + 1}`;
+                        const logMsg2 = `📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`;
+                        
+                        // Log vào cả console và UI
+                        console.log(logMsg1);
+                        console.log(logMsg2);
+                        console.log(`[DEBUG] Force-fix text: ${interceptText.length} ký tự - "${interceptText}"`);
+                        
+                        // Gọi logToUI và addLogEntry để đảm bảo hiển thị
+                        try {
+                            logToUI(logMsg1, 'warning');
+                            logToUI(logMsg2, 'info');
+                            if (typeof window.addLogEntry === 'function') {
+                                window.addLogEntry(logMsg1, 'warning');
+                                window.addLogEntry(logMsg2, 'info');
+                            }
+                        } catch (e) {
+                            console.error('Lỗi khi log:', e);
                         }
                         
-                        // LUÔN log text đã gửi đi để debug
-                        logToUI(`📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`, 'info');
-                        console.log(`[DEBUG] Force-fix text: ${interceptText.length} ký tự - "${interceptText}"`);
+                        // Chỉ set flag sau khi đã log
+                        if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
+                            window._interceptLoggedForChunk = currentIndex;
+                        }
                     }
                     return interceptText; // Trả về ngay text đúng
                 }
@@ -339,15 +355,31 @@
                                         ? interceptText.substring(0, 100) + '...' 
                                         : interceptText;
                                     
-                                    // Chỉ log message chính một lần cho mỗi chunk để tránh spam
-                                    if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
-                                        logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload (field: ${foundField}) bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
-                                        window._interceptLoggedForChunk = currentIndex;
+                                    // LUÔN log để debug - không bị chặn bởi flag
+                                    const logMsg1 = `🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload (field: ${foundField}) bằng chunk ${(currentIndex || 0) + 1}`;
+                                    const logMsg2 = `📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`;
+                                    
+                                    // Log vào cả console và UI
+                                    console.log(logMsg1);
+                                    console.log(logMsg2);
+                                    console.log(`[DEBUG] Text đã thay thế: ${interceptText.length} ký tự - "${interceptText}"`);
+                                    
+                                    // Gọi logToUI và addLogEntry để đảm bảo hiển thị
+                                    try {
+                                        logToUI(logMsg1, 'warning');
+                                        logToUI(logMsg2, 'info');
+                                        if (typeof window.addLogEntry === 'function') {
+                                            window.addLogEntry(logMsg1, 'warning');
+                                            window.addLogEntry(logMsg2, 'info');
+                                        }
+                                    } catch (e) {
+                                        console.error('Lỗi khi log:', e);
                                     }
                                     
-                                    // LUÔN log text đã gửi đi để debug
-                                    logToUI(`📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`, 'info');
-                                    console.log(`[DEBUG] Text đã thay thế: ${interceptText.length} ký tự - "${interceptText}"`);
+                                    // Chỉ set flag sau khi đã log
+                                    if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
+                                        window._interceptLoggedForChunk = currentIndex;
+                                    }
                                     
                                     // Debug: Log payload sau khi thay thế (chỉ log một phần để không spam)
                                     const debugPayload = JSON.stringify(parsed).substring(0, 300);
@@ -368,15 +400,31 @@
                                     ? interceptText.substring(0, 100) + '...' 
                                     : interceptText;
                                 
-                                // Chỉ log message chính một lần cho mỗi chunk để tránh spam
-                                if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
-                                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
-                                    window._interceptLoggedForChunk = currentIndex;
+                                // LUÔN log để debug - không bị chặn bởi flag
+                                const logMsg1 = `🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`;
+                                const logMsg2 = `📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`;
+                                
+                                // Log vào cả console và UI
+                                console.log(logMsg1);
+                                console.log(logMsg2);
+                                console.log(`[DEBUG] Text đã thay thế (string payload): ${interceptText.length} ký tự - "${interceptText}"`);
+                                
+                                // Gọi logToUI và addLogEntry để đảm bảo hiển thị
+                                try {
+                                    logToUI(logMsg1, 'warning');
+                                    logToUI(logMsg2, 'info');
+                                    if (typeof window.addLogEntry === 'function') {
+                                        window.addLogEntry(logMsg1, 'warning');
+                                        window.addLogEntry(logMsg2, 'info');
+                                    }
+                                } catch (e) {
+                                    console.error('Lỗi khi log:', e);
                                 }
                                 
-                                // LUÔN log text đã gửi đi để debug
-                                logToUI(`📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`, 'info');
-                                console.log(`[DEBUG] Text đã thay thế (string payload): ${interceptText.length} ký tự - "${interceptText}"`);
+                                // Chỉ set flag sau khi đã log
+                                if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
+                                    window._interceptLoggedForChunk = currentIndex;
+                                }
                                 return interceptText;
                             }
                         } catch (e) {
@@ -2710,6 +2758,9 @@ button:disabled {
 
     // Log functionality
     function addLogEntry(message, type = 'info') {
+        // LUÔN log vào console để debug
+        console.log(`[addLogEntry] ${type}: ${message}`);
+        
         const logContainer = document.getElementById('log-container');
         if (logContainer) {
             const logEntry = document.createElement('div');
@@ -2717,6 +2768,11 @@ button:disabled {
             logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
             logContainer.appendChild(logEntry);
             logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // Debug: Kiểm tra xem log entry có được append không
+            console.log(`[addLogEntry] Đã append log entry vào container, tổng số entries: ${logContainer.children.length}`);
+        } else {
+            console.warn(`[addLogEntry] Không tìm thấy log-container!`);
         }
     }
     
