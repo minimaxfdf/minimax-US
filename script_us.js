@@ -91,6 +91,9 @@
                     };
                 }
                 
+                // Hook các hàm CRC phổ biến
+                this.hookCRCFunctions();
+                
                 // Hook crypto-js nếu có
                 if (window.CryptoJS) {
                     const originalMD5 = window.CryptoJS.MD5;
@@ -133,6 +136,93 @@
                 console.log(cryptoInitMsg);
                 if (typeof window.addLogEntry === 'function') {
                     window.addLogEntry('🔐 [SIGNATURE_ANALYZER] Crypto hooks initialized', 'info');
+                }
+            },
+            
+            hookCRCFunctions: function() {
+                // Tìm và hook các hàm CRC trong window
+                const crcPatterns = [
+                    'crc32', 'crc16', 'crc', 'CRC32', 'CRC16', 'CRC',
+                    'calculateCRC', 'computeCRC', 'getCRC', 'makeCRC'
+                ];
+                
+                crcPatterns.forEach(pattern => {
+                    if (window[pattern] && typeof window[pattern] === 'function') {
+                        const original = window[pattern];
+                        window[pattern] = function(...args) {
+                            const result = original.apply(this, args);
+                            const logMsg = `🔐 [CRC_HOOK] ${pattern} called: args=${JSON.stringify(args).substring(0, 100)}, result=${result}`;
+                            console.log(logMsg);
+                            if (typeof window.addLogEntry === 'function') {
+                                window.addLogEntry(logMsg, 'info');
+                            }
+                            return result;
+                        };
+                    }
+                });
+                
+                // Hook vào các object có thể chứa CRC functions
+                ['crypto', 'CryptoJS', 'crc', 'CRC'].forEach(objName => {
+                    if (window[objName] && typeof window[objName] === 'object') {
+                        crcPatterns.forEach(pattern => {
+                            if (window[objName][pattern] && typeof window[objName][pattern] === 'function') {
+                                const original = window[objName][pattern];
+                                window[objName][pattern] = function(...args) {
+                                    const result = original.apply(this, args);
+                                    const logMsg = `🔐 [CRC_HOOK] ${objName}.${pattern} called: args=${JSON.stringify(args).substring(0, 100)}, result=${result}`;
+                                    console.log(logMsg);
+                                    if (typeof window.addLogEntry === 'function') {
+                                        window.addLogEntry(logMsg, 'info');
+                                    }
+                                    return result;
+                                };
+                            }
+                        });
+                    }
+                });
+                
+                // Tìm trong source code các hàm tính CRC
+                this.findCRCFunctionsInCode();
+            },
+            
+            findCRCFunctionsInCode: function() {
+                const scripts = Array.from(document.querySelectorAll('script'));
+                const crcFunctions = [];
+                
+                scripts.forEach((script, idx) => {
+                    const content = script.textContent || script.innerHTML || '';
+                    
+                    // Tìm pattern: function crc..., crc: function..., crc = function...
+                    const patterns = [
+                        /function\s+(\w*crc\w*)\s*\([^)]*\)\s*\{[^}]*\}/gi,
+                        /(\w*crc\w*)\s*[:=]\s*function\s*\([^)]*\)\s*\{[^}]*\}/gi,
+                        /(\w*crc\w*)\s*[:=]\s*\([^)]*\)\s*=>\s*\{[^}]*\}/gi,
+                        /crc\s*[:=]\s*([^;]+)/gi
+                    ];
+                    
+                    patterns.forEach(pattern => {
+                        const matches = content.matchAll(pattern);
+                        for (const match of matches) {
+                            if (match[1] && match[1].length < 100) {
+                                crcFunctions.push({
+                                    function: match[1],
+                                    context: match[0].substring(0, 200),
+                                    scriptIndex: idx
+                                });
+                            }
+                        }
+                    });
+                });
+                
+                if (crcFunctions.length > 0) {
+                    const logMsg = `🔐 [CRC_FINDER] Found ${crcFunctions.length} potential CRC functions in code`;
+                    console.log(logMsg, crcFunctions);
+                    if (typeof window.addLogEntry === 'function') {
+                        window.addLogEntry(logMsg, 'info');
+                        crcFunctions.forEach((func, idx) => {
+                            window.addLogEntry(`🔐 [CRC_FINDER] Function ${idx + 1}: ${func.function}`, 'info');
+                        });
+                    }
                 }
             },
             
@@ -228,6 +318,32 @@
                     }
                 }
                 
+                // Load CRC32 library nếu chưa có
+                if (!window.crc32) {
+                    const loadCRCMsg = '[SIGNATURE_ANALYZER] Loading CRC32 library...';
+                    if (typeof window.addLogEntry === 'function') {
+                        window.addLogEntry(`🔐 ${loadCRCMsg}`, 'info');
+                    }
+                    const crcScript = document.createElement('script');
+                    crcScript.src = 'https://cdn.jsdelivr.net/npm/crc@4.1.0/lib/index.js';
+                    document.head.appendChild(crcScript);
+                    await new Promise(resolve => {
+                        crcScript.onload = resolve;
+                        crcScript.onerror = () => {
+                            // Fallback: implement CRC32 manually
+                            if (typeof window.addLogEntry === 'function') {
+                                window.addLogEntry('🔐 [SIGNATURE_ANALYZER] CRC32 library load failed, using manual implementation', 'warning');
+                            }
+                            resolve();
+                        };
+                    });
+                }
+                
+                // Implement CRC32 manually nếu cần
+                if (!window.crc32 && !window.CRC32) {
+                    this.implementCRC32();
+                }
+                
                 const algorithms = [
                     { name: 'MD5', fn: () => CryptoJS.MD5(payloadStr).toString() },
                     { name: 'SHA1', fn: () => CryptoJS.SHA1(payloadStr).toString() },
@@ -236,6 +352,25 @@
                     { name: 'MD5_HEX', fn: () => CryptoJS.MD5(payloadStr).toString(CryptoJS.enc.Hex) },
                     { name: 'SHA256_HEX', fn: () => CryptoJS.SHA256(payloadStr).toString(CryptoJS.enc.Hex) },
                 ];
+                
+                // Test CRC algorithms
+                if (window.crc32) {
+                    algorithms.push({ name: 'CRC32', fn: () => window.crc32(payloadStr).toString() });
+                    algorithms.push({ name: 'CRC32_SIGNED', fn: () => {
+                        const crc = window.crc32(payloadStr);
+                        // Convert to signed 32-bit integer
+                        return (crc | 0).toString();
+                    }});
+                }
+                if (window.CRC32) {
+                    algorithms.push({ name: 'CRC32_ALT', fn: () => window.CRC32(payloadStr).toString() });
+                }
+                // Manual CRC32
+                algorithms.push({ name: 'CRC32_MANUAL', fn: () => this.calculateCRC32(payloadStr).toString() });
+                algorithms.push({ name: 'CRC32_MANUAL_SIGNED', fn: () => {
+                    const crc = this.calculateCRC32(payloadStr);
+                    return (crc | 0).toString();
+                }});
                 
                 const potentialKeys = this.findPotentialKeys();
                 for (const keyData of potentialKeys.slice(0, 10)) {
@@ -285,6 +420,24 @@
                     });
                 }
                 return null;
+            },
+            
+            calculateCRC32: function(str) {
+                // CRC32 implementation
+                const crcTable = [];
+                for (let i = 0; i < 256; i++) {
+                    let crc = i;
+                    for (let j = 0; j < 8; j++) {
+                        crc = (crc & 1) ? (0xEDB88320 ^ (crc >>> 1)) : (crc >>> 1);
+                    }
+                    crcTable[i] = crc;
+                }
+                
+                let crc = 0xFFFFFFFF;
+                for (let i = 0; i < str.length; i++) {
+                    crc = crcTable[(crc ^ str.charCodeAt(i)) & 0xFF] ^ (crc >>> 8);
+                }
+                return (crc ^ 0xFFFFFFFF) >>> 0;
             },
             
             exportData: function() {
@@ -1220,7 +1373,14 @@
                                 try {
                                     const decoded = atob(dataValue);
                                     parsedPayload = JSON.parse(decoded);
-                                    signature = urlParams.get('signature') || urlParams.get('hash') || urlParams.get('crc') || urlParams.get('ext');
+                                    // Extract CRC from ext parameter: ext=crc=123456
+                                    const extValue = urlParams.get('ext') || '';
+                                    const crcMatch = extValue.match(/crc[=:](-?\d+)/i);
+                                    if (crcMatch) {
+                                        signature = crcMatch[1];
+                                    } else {
+                                        signature = urlParams.get('signature') || urlParams.get('hash') || urlParams.get('crc') || extValue;
+                                    }
                                 } catch (e) {}
                             }
                         } else {
