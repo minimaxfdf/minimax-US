@@ -3864,7 +3864,21 @@ function dExAbhXwTJeTJBIjWr(EARfsfSN_QdgxH){const tENdSoNDV_gGwQKLZv$sYaZKhl=AP$
                 // --- THAY ĐỔI (KHÔNG TRỪ CỤC BỘ NẾU LÀ -1) ---
                 // Chỉ trừ quota cục bộ trên UI nếu không phải là "Không giới hạn"
                 if (window.REMAINING_CHARS !== -1) {
-                    window.REMAINING_CHARS -= charsToReport;
+                    // Dùng updateRemainingChars() để update (protected variable)
+                    const newQuota = window.REMAINING_CHARS - charsToReport;
+                    if (typeof window.updateRemainingChars === 'function') {
+                        // Dùng token nếu có (từ protected variable system)
+                        const token = window._QUOTA_UPDATE_TOKEN || null;
+                        if (token) {
+                            window.updateRemainingChars(newQuota, 'core_script', token);
+                        } else {
+                            // Fallback: Dùng source name (backward compatibility)
+                            window.updateRemainingChars(newQuota, 'core_script');
+                        }
+                    } else {
+                        // Fallback: Nếu không có updateRemainingChars, gán trực tiếp (backward compatibility)
+                        window.REMAINING_CHARS = newQuota;
+                    }
                     displayQuota(); // Cập nhật UI ngay
                 }
                 // Nếu là -1, main.py sẽ tự động gửi lại -1, UI không cần trừ
