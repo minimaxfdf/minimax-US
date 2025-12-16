@@ -335,6 +335,41 @@
                             }
                             
                             if (parsed && typeof parsed === 'object') {
+                                // Bỏ qua payload tracking/analytics (không có field text/preview_text)
+                                // Payload tracking thường có: type="track", event, distinct_id, _track_id, identities, lib
+                                const isTrackingPayload = (
+                                    parsed.type === 'track' || 
+                                    parsed.event || 
+                                    parsed.distinct_id || 
+                                    parsed._track_id || 
+                                    parsed.identities ||
+                                    (parsed.lib && parsed.lib.$lib)
+                                );
+                                
+                                // Nếu là tracking payload và không có field text/preview_text, bỏ qua
+                                if (isTrackingPayload && !parsed.text && !parsed.preview_text) {
+                                    // Kiểm tra trong nested objects xem có text/preview_text không
+                                    let hasTextField = false;
+                                    function checkForTextField(obj) {
+                                        if (!obj || typeof obj !== 'object') return false;
+                                        for (const key in obj) {
+                                            if ((key === 'text' || key === 'preview_text') && typeof obj[key] === 'string') {
+                                                hasTextField = true;
+                                                return true;
+                                            } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                                                if (checkForTextField(obj[key])) return true;
+                                            }
+                                        }
+                                        return false;
+                                    }
+                                    checkForTextField(parsed);
+                                    
+                                    // Nếu không có text field, bỏ qua payload này (không log warning)
+                                    if (!hasTextField) {
+                                        return payload;
+                                    }
+                                }
+                                
                                 // Tìm các trường có thể chứa text và thay trực tiếp (ưu tiên 'text' và 'preview_text')
                                 const textFields = ['text', 'preview_text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
                                 let modified = false;
