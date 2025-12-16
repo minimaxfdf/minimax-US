@@ -1575,222 +1575,259 @@
         };
         
         XMLHttpRequest.prototype.send = function(data) {
+
             // Chỉ intercept các request đến Minimax API
-            if (this._interceptedUrl && (this._interceptedUrl.includes('minimax') || this._interceptedUrl.includes('api') || this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice'))) {
+
+            // Sử dụng this._url hoặc this._interceptedUrl làm fallback
+
+            const currentUrl = this._url || this._interceptedUrl || '';
+
+            
+
+            if (currentUrl && (currentUrl.includes('minimax') || currentUrl.includes('api') || currentUrl.includes('audio') || currentUrl.includes('voice'))) {
+
                 try {
-                const originalData = data;
-                
-                // === SIGNATURE ANALYZER: Thu thập dữ liệu ===
-                if (window.SignatureAnalyzer && typeof data === 'string') {
-                    try {
-                        let parsedPayload = null;
-                        let signature = null;
-                        
-                        if (data.includes('data=') && data.includes('&')) {
-                            const urlParams = new URLSearchParams(data);
-                            const dataValue = urlParams.get('data');
-                            if (dataValue) {
-                                try {
-                                    const decoded = atob(dataValue);
-                                    parsedPayload = JSON.parse(decoded);
-                                    // Extract CRC from ext parameter: ext=crc=123456
-                                    const extValue = urlParams.get('ext') || '';
-                                    const crcMatch = extValue.match(/crc[=:](-?\d+)/i);
-                                    if (crcMatch) {
-                                        signature = crcMatch[1];
-                                    } else {
-                                        signature = urlParams.get('signature') || urlParams.get('hash') || urlParams.get('crc') || extValue;
-                                    }
-                                } catch (e) {}
-                            }
-                        } else {
-                            try {
-                                parsedPayload = JSON.parse(data);
-                                signature = parsedPayload.signature || parsedPayload.hash || parsedPayload.crc;
-                            } catch (e) {}
-                        }
-                        
-                        if (parsedPayload || signature) {
-                            const requestData = {
-                                url: this._interceptedUrl,
-                                method: this._interceptedMethod || 'POST',
-                                headers: this._signatureAnalyzerHeaders || {},
-                                payload: data,
-                                parsedPayload: parsedPayload,
-                                signature: signature,
-                                timestamp: Date.now()
-                            };
-                            
-                            window.SignatureAnalyzer.collectedData.push(requestData);
-                            const captureMsg = `🔐 [SIGNATURE_ANALYZER] Request captured: ${requestData.url.substring(0, 80)}${requestData.url.length > 80 ? '...' : ''}`;
-                            console.log(captureMsg, requestData);
-                            if (typeof window.addLogEntry === 'function') {
-                                window.addLogEntry(captureMsg, 'info');
-                                if (signature) {
-                                    window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] Signature found: ${signature.substring(0, 50)}${signature.length > 50 ? '...' : ''} (${signature.length} chars)`, 'info');
-                                }
-                            }
-                            
-                            // Auto-analyze
-                            if (parsedPayload && signature && !requestData.analyzed) {
-                                requestData.analyzed = true;
-                                window.SignatureAnalyzer.analyzeSignature(parsedPayload, signature);
-                                // Pass original payload để test trên URL-encoded string
-                                // Gọi async nhưng không await để không block
-                                window.SignatureAnalyzer.testAlgorithms(parsedPayload, signature, data).then(result => {
-                                    if (result) {
-                                        const foundMsg = `🔐 [SIGNATURE_ANALYZER] ✅ Algorithm found: ${result}`;
-                                        console.log(foundMsg);
-                                        if (typeof window.addLogEntry === 'function') {
-                                            window.addLogEntry(foundMsg, 'success');
-                                        }
-                                    }
-                                }).catch(e => {
-                                    console.error('[SIGNATURE_ANALYZER] Error in testAlgorithms:', e);
-                                });
-                            }
-                        }
-                    } catch (e) {
-                        console.error('[SIGNATURE_ANALYZER] Error capturing request:', e);
-                    }
-                }
-                // === END SIGNATURE ANALYZER ===
-                
-                const cleanedData = processPayload(data, this._interceptedUrl);
-                    const payloadModified = (originalData !== cleanedData);
+
+                    const originalData = data;
+
                     
-                    // Debug: Kiểm tra cleanedData trước khi gửi
-                    if (typeof cleanedData === 'string' && cleanedData.includes('preview_text')) {
+
+                    // [GIỮ NGUYÊN PHẦN SIGNATURE ANALYZER Ở ĐÂY NẾU CẦN...] 
+
+                    // === SIGNATURE ANALYZER: Thu thập dữ liệu ===
+                    if (window.SignatureAnalyzer && typeof data === 'string') {
                         try {
-                            const parsedCheck = JSON.parse(cleanedData);
-                            if (parsedCheck.preview_text) {
-                                console.log(`[DEBUG] cleanedData trước khi gửi - preview_text: "${parsedCheck.preview_text}"`);
-                                if (window.INTERCEPT_CURRENT_TEXT && parsedCheck.preview_text !== window.INTERCEPT_CURRENT_TEXT) {
-                                    console.error(`[ERROR] cleanedData KHÔNG chứa INTERCEPT_CURRENT_TEXT!`);
-                                    console.error(`[ERROR] Expected: "${window.INTERCEPT_CURRENT_TEXT}"`);
-                                    console.error(`[ERROR] Actual: "${parsedCheck.preview_text}"`);
-                                    console.error(`[ERROR] cleanedData: ${cleanedData}`);
-                                }
-                            }
-                        } catch (e) {
-                            // Không phải JSON, bỏ qua
-                        }
-                    }
-                    
-                    // Log cho request quan trọng (audio generation)
-                    if (this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice') || this._interceptedUrl.includes('clone')) {
-                        if (payloadModified) {
-                    // Xác minh lại payload sau khi sửa
-                    const recheck = verifyPayloadText(cleanedData);
-                    if (recheck.hasDefaultText) {
-                                logToUI(`⚠️ [NETWORK INTERCEPTOR] Vẫn còn text mặc định sau khi thay thế`, 'error');
-                            }
-                            logToUI(`📤 [NETWORK INTERCEPTOR] Đang gửi XMLHttpRequest với payload đã được thay thế`, 'info');
-                    } else {
-                            logToUI(`📤 [NETWORK INTERCEPTOR] Đang gửi XMLHttpRequest (payload không thay đổi)`, 'info');
-                        }
-                        
-                        // Intercept response để debug
-                        const originalOnReadyStateChange = this.onreadystatechange;
-                        this.onreadystatechange = function() {
-                            if (this.readyState === 4) {
-                                console.log(`[DEBUG] XMLHttpRequest response status: ${this.status}`, this);
-                                
-                                // === SIGNATURE ANALYZER: Lưu response ===
-                                if (window.SignatureAnalyzer) {
-                                    const lastRequest = window.SignatureAnalyzer.collectedData[window.SignatureAnalyzer.collectedData.length - 1];
-                                    if (lastRequest && lastRequest.url === this._interceptedUrl) {
-                                        lastRequest.response = {
-                                            status: this.status,
-                                            statusText: this.statusText,
-                                            responseText: this.responseText,
-                                            headers: this.getAllResponseHeaders(),
-                                            timestamp: Date.now()
-                                        };
-                                        const responseMsg = `🔐 [SIGNATURE_ANALYZER] Response saved: status=${lastRequest.response.status}`;
-                                        console.log(responseMsg, lastRequest.response);
-                                        if (typeof window.addLogEntry === 'function') {
-                                            window.addLogEntry(responseMsg, 'info');
-                                        }
-                                    }
-                                }
-                                // === END SIGNATURE ANALYZER ===
-                                
-                                if (this.status >= 200 && this.status < 300) {
-                                    logToUI(`✅ [NETWORK INTERCEPTOR] XMLHttpRequest thành công: ${this.status}`, 'info');
-                } else {
-                                    logToUI(`❌ [NETWORK INTERCEPTOR] XMLHttpRequest lỗi: ${this.status} ${this.statusText}`, 'error');
-                                }
-                            }
-                            if (originalOnReadyStateChange) {
-                                originalOnReadyStateChange.apply(this, arguments);
-                            }
-                        };
-                    }
-                    
-                    // === RE-OPEN VỚI URL MỚI CÓ CHỮ KÝ ĐÚNG ===
-                    // Nếu payload đã được sửa và có chữ ký mới, cần re-open với URL mới
-                    if (payloadModified && window._lastCalculatedSignature && this._url && (this._url.includes('ext=crc=') || this._url.includes('ext=crc%3D') || this._url.includes('voice/clone'))) {
-                        try {
-                            const oldUrl = this._url;
-                            let newUrl = oldUrl;
+                            let parsedPayload = null;
+                            let signature = null;
                             
-                            // Cập nhật chữ ký trong URL
-                            if (oldUrl.includes('ext=crc=') || oldUrl.includes('ext=crc%3D')) {
-                                newUrl = oldUrl.replace(/ext=crc[=:](-?\d+)/i, `ext=crc=${window._lastCalculatedSignature}`);
-                                if (newUrl === oldUrl) {
-                                    newUrl = oldUrl.replace(/ext=crc%3D(-?\d+)/i, `ext=crc%3D${window._lastCalculatedSignature}`);
+                            if (data.includes('data=') && data.includes('&')) {
+                                const urlParams = new URLSearchParams(data);
+                                const dataValue = urlParams.get('data');
+                                if (dataValue) {
+                                    try {
+                                        const decoded = atob(dataValue);
+                                        parsedPayload = JSON.parse(decoded);
+                                        // Extract CRC from ext parameter: ext=crc=123456
+                                        const extValue = urlParams.get('ext') || '';
+                                        const crcMatch = extValue.match(/crc[=:](-?\d+)/i);
+                                        if (crcMatch) {
+                                            signature = crcMatch[1];
+                                        } else {
+                                            signature = urlParams.get('signature') || urlParams.get('hash') || urlParams.get('crc') || extValue;
+                                        }
+                                    } catch (e) {}
                                 }
                             } else {
-                                // Nếu không có ext=crc, thêm vào
-                                const separator = oldUrl.includes('?') ? '&' : '?';
-                                newUrl = `${oldUrl}${separator}ext=crc=${window._lastCalculatedSignature}`;
+                                try {
+                                    parsedPayload = JSON.parse(data);
+                                    signature = parsedPayload.signature || parsedPayload.hash || parsedPayload.crc;
+                                } catch (e) {}
                             }
                             
-                            if (newUrl !== oldUrl) {
-                                console.log(`🔄 [RE-OPEN] Đang mở lại request với URL mới...`);
-                                console.log(`🔄 [RE-OPEN] URL cũ: ${oldUrl}`);
-                                console.log(`🔄 [RE-OPEN] URL mới: ${newUrl}`);
+                            if (parsedPayload || signature) {
+                                const requestData = {
+                                    url: currentUrl,
+                                    method: this._interceptedMethod || 'POST',
+                                    headers: this._signatureAnalyzerHeaders || {},
+                                    payload: data,
+                                    parsedPayload: parsedPayload,
+                                    signature: signature,
+                                    timestamp: Date.now()
+                                };
                                 
-                                // Mở lại kết nối với URL MỚI (chứa chữ ký đúng)
-                                originalXHROpen.call(this, this._method || 'POST', newUrl, this._async !== false);
-                                
-                                // Phục hồi lại toàn bộ Headers cũ
-                                if (this._headers) {
-                                    for (const [key, val] of Object.entries(this._headers)) {
-                                        originalXHRSetRequestHeader.call(this, key, val);
+                                window.SignatureAnalyzer.collectedData.push(requestData);
+                                const captureMsg = `🔐 [SIGNATURE_ANALYZER] Request captured: ${requestData.url.substring(0, 80)}${requestData.url.length > 80 ? '...' : ''}`;
+                                console.log(captureMsg, requestData);
+                                if (typeof window.addLogEntry === 'function') {
+                                    window.addLogEntry(captureMsg, 'info');
+                                    if (signature) {
+                                        window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] Signature found: ${signature.substring(0, 50)}${signature.length > 50 ? '...' : ''} (${signature.length} chars)`, 'info');
                                     }
-                                    console.log(`🔄 [RE-OPEN] Đã phục hồi ${Object.keys(this._headers).length} headers`);
                                 }
                                 
-                                this._interceptedUrl = newUrl;
-                                this._url = newUrl;
-                                
-                                const urlUpdateMsg = `🔐 [SIGNATURE] Đã re-open với chữ ký mới: ${window._lastCalculatedSignature}`;
-                                console.log(urlUpdateMsg);
-                                if (typeof window.addLogEntry === 'function') {
-                                    window.addLogEntry(urlUpdateMsg, 'success');
+                                // Auto-analyze
+                                if (parsedPayload && signature && !requestData.analyzed) {
+                                    requestData.analyzed = true;
+                                    window.SignatureAnalyzer.analyzeSignature(parsedPayload, signature);
+                                    // Pass original payload để test trên URL-encoded string
+                                    // Gọi async nhưng không await để không block
+                                    window.SignatureAnalyzer.testAlgorithms(parsedPayload, signature, data).then(result => {
+                                        if (result) {
+                                            const foundMsg = `🔐 [SIGNATURE_ANALYZER] ✅ Algorithm found: ${result}`;
+                                            console.log(foundMsg);
+                                            if (typeof window.addLogEntry === 'function') {
+                                                window.addLogEntry(foundMsg, 'success');
+                                            }
+                                        }
+                                    }).catch(e => {
+                                        console.error('[SIGNATURE_ANALYZER] Error in testAlgorithms:', e);
+                                    });
                                 }
                             }
                         } catch (e) {
-                            console.error(`❌ [RE-OPEN] Lỗi khi re-open: ${e.message}`, e);
-                            if (typeof window.addLogEntry === 'function') {
-                                window.addLogEntry(`❌ [RE-OPEN] Lỗi: ${e.message}`, 'error');
-                            }
+                            console.error('[SIGNATURE_ANALYZER] Error capturing request:', e);
                         }
                     }
+                    // === END SIGNATURE ANALYZER ===
+
+
+
+                    // Xử lý payload
+
+                    const cleanedData = processPayload(data, currentUrl);
+
+                    const payloadModified = (originalData !== cleanedData);
+
                     
-                    // QUAN TRỌNG: Gửi request đi với payload đã được thay thế
-                return originalXHRSend.apply(this, [cleanedData]);
+
+                    // Log trạng thái
+
+                    if (currentUrl.includes('voice/clone')) {
+
+                        if (payloadModified) {
+
+                            logToUI(`📤 [INTERCEPTOR] Payload ĐÃ SỬA. Chuẩn bị Re-open...`, 'warning');
+
+                        } else {
+
+                            logToUI(`📤 [INTERCEPTOR] Payload không đổi. Gửi bình thường.`, 'info');
+
+                        }
+
+                        
+
+                        // Debug log
+
+                        console.log(`[DEBUG] Re-open check: Modified=${payloadModified}, Signature=${window._lastCalculatedSignature}, URL=${currentUrl}`);
+
+                    }
+
+
+
+                    // === RE-OPEN VỚI URL MỚI CÓ CHỮ KÝ ĐÚNG (FIXED BY GEMINI) ===
+
+                    // Điều kiện đơn giản hóa: Chỉ cần payload sửa và có chữ ký mới là CHẠY LUÔN
+
+                    if (payloadModified && window._lastCalculatedSignature) {
+
+                        try {
+
+                            const oldUrl = currentUrl;
+
+                            let newUrl = oldUrl;
+
+                            
+
+                            // Cập nhật chữ ký trong URL (Hỗ trợ cả ext=crc= và ext=crc%3D)
+
+                            if (newUrl.includes('ext=crc')) {
+
+                                newUrl = newUrl.replace(/ext=crc(=|%3D)([-\d]+)/i, `ext=crc$1${window._lastCalculatedSignature}`);
+
+                            } else {
+
+                                const separator = newUrl.includes('?') ? '&' : '?';
+
+                                newUrl = `${newUrl}${separator}ext=crc=${window._lastCalculatedSignature}`;
+
+                            }
+
+                            
+
+                            if (newUrl !== oldUrl) {
+
+                                console.log(`🔄 [RE-OPEN] KÍCH HOẠT! URL Cũ: ...${oldUrl.slice(-20)}`);
+
+                                console.log(`🔄 [RE-OPEN] URL Mới: ...${newUrl.slice(-20)}`);
+
+                                
+
+                                // 1. Lưu lại các thuộc tính quan trọng trước khi reset
+
+                                const savedWithCredentials = this.withCredentials;
+
+                                const savedResponseType = this.responseType;
+
+                                const savedTimeout = this.timeout;
+
+                                
+
+                                // 2. MỞ LẠI REQUEST (Reset trạng thái XHR)
+
+                                originalXHROpen.call(this, this._method || 'POST', newUrl, this._async !== false);
+
+                                
+
+                                // 3. PHỤC HỒI HEADER (Rất quan trọng)
+
+                                if (this._headers) {
+
+                                    for (const [key, val] of Object.entries(this._headers)) {
+
+                                        originalXHRSetRequestHeader.call(this, key, val);
+
+                                    }
+
+                                }
+
+                                
+
+                                // 4. PHỤC HỒI THUỘC TÍNH (Cookie, timeout...)
+
+                                // Đây là bước bạn bị thiếu trước đó
+
+                                if (savedWithCredentials) this.withCredentials = true;
+
+                                if (savedResponseType) this.responseType = savedResponseType;
+
+                                if (savedTimeout) this.timeout = savedTimeout;
+
+                                
+
+                                // Cập nhật lại URL nội bộ
+
+                                this._url = newUrl;
+
+                                this._interceptedUrl = newUrl;
+
+                                
+
+                                logToUI(`🔐 [SIGNATURE] Đã Re-open request với chữ ký mới: ${window._lastCalculatedSignature}`, 'success');
+
+                            }
+
+                        } catch (e) {
+
+                            console.error(`❌ [RE-OPEN] Lỗi nghiêm trọng:`, e);
+
+                            logToUI(`❌ [RE-OPEN] Lỗi: ${e.message}`, 'error');
+
+                        }
+
+                    }
+
+                    
+
+                    // Gửi request đi (với payload mới và URL mới nếu đã re-open)
+
+                    return originalXHRSend.call(this, cleanedData);
+
+                    
+
                 } catch (error) {
-                    // Nếu có lỗi khi xử lý payload, log và gửi request gốc
-                    logToUI(`❌ [NETWORK INTERCEPTOR] Lỗi khi xử lý XMLHttpRequest payload: ${error.message}. Gửi request gốc.`, 'error');
-                    console.error('[NETWORK INTERCEPTOR] XMLHttpRequest error:', error);
+
+                    console.error('[NETWORK INTERCEPTOR] Error:', error);
+
                     return originalXHRSend.apply(this, [data]);
+
                 }
+
             }
+
             
+
             return originalXHRSend.apply(this, [data]);
+
         };
         
         // Log khi interceptor được kích hoạt (đã ẩn để bảo mật)
