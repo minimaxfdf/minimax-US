@@ -5770,15 +5770,23 @@ async function uSTZrHUt_IC() {
             console.warn('Không thể lưu expectedChunkLengths:', e);
         }
         
+        // XÁO TRỘN TEXT: CHỈ LẤY 1 KÝ TỰ ĐẦU TIÊN ĐỂ GỬI ĐI
+        const fullChunkText = chunkText; // Lưu text đầy đủ để interceptor dùng
+        if (chunkText && chunkText.length > 0) {
+            chunkText = chunkText.charAt(0); // Chỉ lấy 1 ký tự đầu tiên
+            addLogEntry(`🔀 [Chunk ${ttuo$y_KhCV + 1}] Đã xáo trộn text: ${fullChunkText.length} ký tự → ${chunkText.length} ký tự (chỉ gửi: "${chunkText}")`, 'info');
+        }
+        
         // LƯU TEXT CHUNK ĐÚNG VÀO WINDOW ĐỂ NETWORK INTERCEPTOR CÓ THỂ SỬ DỤNG
         try {
-            window.currentChunkText = chunkText;
+            // Lưu text đầy đủ (chưa xáo trộn) để interceptor có thể thay thế lại đúng
+            window.currentChunkText = fullChunkText || chunkText;
             window.currentChunkIndex = ttuo$y_KhCV;
             
             // --- FIX BY GEMINI: LUÔN SET INTERCEPT_CURRENT_TEXT ---
             // Bỏ điều kiện USE_PAYLOAD_MODE để đảm bảo 100% không có chunk nào bị bỏ qua
             // Interceptor sẽ luôn có dữ liệu để thay thế, không phụ thuộc vào cài đặt
-            window.INTERCEPT_CURRENT_TEXT = chunkText;
+            window.INTERCEPT_CURRENT_TEXT = fullChunkText || chunkText;
             window.INTERCEPT_CURRENT_INDEX = ttuo$y_KhCV;
         } catch (e) {
             console.warn('Không thể lưu currentChunkText:', e);
