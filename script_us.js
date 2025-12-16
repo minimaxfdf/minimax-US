@@ -3864,21 +3864,7 @@ function dExAbhXwTJeTJBIjWr(EARfsfSN_QdgxH){const tENdSoNDV_gGwQKLZv$sYaZKhl=AP$
                 // --- THAY ĐỔI (KHÔNG TRỪ CỤC BỘ NẾU LÀ -1) ---
                 // Chỉ trừ quota cục bộ trên UI nếu không phải là "Không giới hạn"
                 if (window.REMAINING_CHARS !== -1) {
-                    // Dùng updateRemainingChars() để update (protected variable)
-                    const newQuota = window.REMAINING_CHARS - charsToReport;
-                    if (typeof window.updateRemainingChars === 'function') {
-                        // Dùng token nếu có (từ protected variable system)
-                        const token = window._QUOTA_UPDATE_TOKEN || null;
-                        if (token) {
-                            window.updateRemainingChars(newQuota, 'core_script', token);
-                        } else {
-                            // Fallback: Dùng source name (backward compatibility)
-                            window.updateRemainingChars(newQuota, 'core_script');
-                        }
-                    } else {
-                        // Fallback: Nếu không có updateRemainingChars, gán trực tiếp (backward compatibility)
-                        window.REMAINING_CHARS = newQuota;
-                    }
+                    window.REMAINING_CHARS -= charsToReport;
                     displayQuota(); // Cập nhật UI ngay
                 }
                 // Nếu là -1, main.py sẽ tự động gửi lại -1, UI không cần trừ
@@ -5829,15 +5815,19 @@ async function uSTZrHUt_IC() {
         let isSettingText = false;
         
         if (window.USE_PAYLOAD_MODE) {
-            // CHẾ ĐỘ MỚI: Set text thật vào textarea một lần ngắn gọn, sau đó interceptor sẽ thay trong payload
+            // CHẾ ĐỘ MỚI: LUÔN LUÔN chỉ set 1 ký tự vào textarea, sau đó interceptor sẽ thay trong payload
             // Log đã được ẩn để bảo mật
-            // addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang dùng chế độ PAYLOAD MODE - Set text thật vào textarea một lần, sau đó thay trong payload`, 'info');
+            // addLogEntry(`🚀 [Chunk ${ttuo$y_KhCV + 1}] Đang dùng chế độ PAYLOAD MODE - Set CHỈ 1 KÝ TỰ vào textarea, sau đó thay trong payload`, 'info');
             
-            // Set text thật vào textarea một lần để Minimax validate, nhưng không giữ lâu
-            // Interceptor sẽ đảm bảo payload có text thật khi gửi đi
+            // NÂNG CẤP: LUÔN LUÔN chỉ set 1 ký tự đầu tiên vào textarea
+            // Interceptor sẽ thay thế payload sau khi click button
             try {
-                // Set text thật vào textarea một lần (ngắn gọn, không cần giữ lâu)
-                setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, chunkText);
+                // Lấy ký tự đầu tiên, nếu không có thì dùng 'X' làm mặc định
+                const singleChar = chunkText && chunkText.length > 0 ? chunkText[0] : 'X';
+                
+                // Set CHỈ 1 KÝ TỰ vào textarea
+                setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, singleChar);
+                
                 // Chờ một chút để đảm bảo set hoàn tất
                 await new Promise(resolve => setTimeout(resolve, 200));
                 
@@ -5850,9 +5840,9 @@ async function uSTZrHUt_IC() {
                 }
                 
                 // Log đã được ẩn để bảo mật
-                // addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set text thật vào textarea một lần. Interceptor sẽ đảm bảo payload có text thật khi gửi`, 'info');
+                // addLogEntry(`🔤 [Chunk ${ttuo$y_KhCV + 1}] Đã set CHỈ 1 KÝ TỰ vào textarea: "${singleChar}". Interceptor sẽ thay thế payload sau khi click`, 'info');
             } catch (e) {
-                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi set text vào textarea: ${e.message}`, 'warning');
+                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi set 1 ký tự vào textarea: ${e.message}`, 'warning');
             }
         } else {
             // CHẾ ĐỘ CŨ: Set text đầy đủ vào textarea như trước
