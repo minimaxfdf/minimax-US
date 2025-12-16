@@ -58,13 +58,21 @@
                         header.toLowerCase().includes('hash') ||
                         header.toLowerCase().includes('auth') ||
                         header.toLowerCase().includes('token')) {
-                        console.log('[SIGNATURE_ANALYZER] Header found:', { header, value });
+                        const logMsg = `🔐 [SIGNATURE_ANALYZER] Header found: ${header} = ${value.substring(0, 50)}${value.length > 50 ? '...' : ''}`;
+                        console.log(logMsg);
+                        if (typeof window.addLogEntry === 'function') {
+                            window.addLogEntry(logMsg, 'info');
+                        }
                     }
                     
                     return originalXHRSetHeader.apply(this, arguments);
                 };
                 
-                console.log('[SIGNATURE_ANALYZER] Network interceptor hooks initialized');
+                const initMsg = '[SIGNATURE_ANALYZER] Network interceptor hooks initialized';
+                console.log(initMsg);
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry('🔐 [SIGNATURE_ANALYZER] Network interceptor hooks initialized', 'info');
+                }
             },
             
             initCryptoHooks: function() {
@@ -72,11 +80,13 @@
                 if (window.crypto && window.crypto.subtle) {
                     const originalDigest = window.crypto.subtle.digest;
                     window.crypto.subtle.digest = function(algorithm, data) {
-                        console.log('[CRYPTO_HOOK] crypto.subtle.digest called:', {
-                            algorithm: algorithm.name || algorithm,
-                            dataLength: data.byteLength || data.length,
-                            timestamp: Date.now()
-                        });
+                        const algoName = algorithm.name || algorithm;
+                        const dataLen = data.byteLength || data.length;
+                        const logMsg = `🔐 [CRYPTO_HOOK] crypto.subtle.digest called: ${algoName}, dataLength: ${dataLen}`;
+                        console.log(logMsg);
+                        if (typeof window.addLogEntry === 'function') {
+                            window.addLogEntry(logMsg, 'info');
+                        }
                         return originalDigest.apply(this, arguments);
                     };
                 }
@@ -88,32 +98,42 @@
                     const originalHmacSHA256 = window.CryptoJS.HmacSHA256;
                     
                     window.CryptoJS.MD5 = function(message) {
-                        console.log('[CRYPTOJS_HOOK] MD5 called:', {
-                            message: typeof message === 'string' ? message.substring(0, 100) : message,
-                            timestamp: Date.now()
-                        });
+                        const msgPreview = typeof message === 'string' ? message.substring(0, 50) : 'object';
+                        const logMsg = `🔐 [CRYPTOJS_HOOK] MD5 called: "${msgPreview}${typeof message === 'string' && message.length > 50 ? '...' : ''}"`;
+                        console.log(logMsg);
+                        if (typeof window.addLogEntry === 'function') {
+                            window.addLogEntry(logMsg, 'info');
+                        }
                         return originalMD5.apply(this, arguments);
                     };
                     
                     window.CryptoJS.SHA256 = function(message) {
-                        console.log('[CRYPTOJS_HOOK] SHA256 called:', {
-                            message: typeof message === 'string' ? message.substring(0, 100) : message,
-                            timestamp: Date.now()
-                        });
+                        const msgPreview = typeof message === 'string' ? message.substring(0, 50) : 'object';
+                        const logMsg = `🔐 [CRYPTOJS_HOOK] SHA256 called: "${msgPreview}${typeof message === 'string' && message.length > 50 ? '...' : ''}"`;
+                        console.log(logMsg);
+                        if (typeof window.addLogEntry === 'function') {
+                            window.addLogEntry(logMsg, 'info');
+                        }
                         return originalSHA256.apply(this, arguments);
                     };
                     
                     window.CryptoJS.HmacSHA256 = function(message, key) {
-                        console.log('[CRYPTOJS_HOOK] HmacSHA256 called:', {
-                            message: typeof message === 'string' ? message.substring(0, 100) : message,
-                            key: key ? (typeof key === 'string' ? key.substring(0, 50) : 'undefined') : 'undefined',
-                            timestamp: Date.now()
-                        });
+                        const msgPreview = typeof message === 'string' ? message.substring(0, 50) : 'object';
+                        const keyPreview = key ? (typeof key === 'string' ? key.substring(0, 30) : 'object') : 'undefined';
+                        const logMsg = `🔐 [CRYPTOJS_HOOK] HmacSHA256 called: message="${msgPreview}${typeof message === 'string' && message.length > 50 ? '...' : ''}", key="${keyPreview}${key && typeof key === 'string' && key.length > 30 ? '...' : ''}"`;
+                        console.log(logMsg);
+                        if (typeof window.addLogEntry === 'function') {
+                            window.addLogEntry(logMsg, 'info');
+                        }
                         return originalHmacSHA256.apply(this, arguments);
                     };
                 }
                 
-                console.log('[SIGNATURE_ANALYZER] Crypto hooks initialized');
+                const cryptoInitMsg = '[SIGNATURE_ANALYZER] Crypto hooks initialized';
+                console.log(cryptoInitMsg);
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry('🔐 [SIGNATURE_ANALYZER] Crypto hooks initialized', 'info');
+                }
             },
             
             findPotentialKeys: function() {
@@ -156,7 +176,14 @@
                     }
                 } catch (e) {}
                 
-                console.log('[SIGNATURE_ANALYZER] Potential keys found:', potentialKeys);
+                const keysMsg = `🔐 [SIGNATURE_ANALYZER] Potential keys found: ${potentialKeys.length} keys`;
+                console.log(keysMsg, potentialKeys);
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry(keysMsg, 'info');
+                    potentialKeys.forEach((keyData, idx) => {
+                        window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] Key ${idx + 1}: ${keyData.context.substring(0, 80)}... (${keyData.key.length} chars)`, 'info');
+                    });
+                }
                 return potentialKeys;
             },
             
@@ -171,7 +198,11 @@
                     payloadLength: typeof payload === 'string' ? payload.length : JSON.stringify(payload).length
                 };
                 
-                console.log('[SIGNATURE_ANALYZER] Signature analysis:', analysis);
+                const analysisMsg = `🔐 [SIGNATURE_ANALYZER] Signature analysis: length=${analysis.length}, isHex=${analysis.isHex}, isBase64=${analysis.isBase64}, isNumeric=${analysis.isNumeric}, payloadLength=${analysis.payloadLength}`;
+                console.log(analysisMsg, analysis);
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry(analysisMsg, 'info');
+                }
                 return analysis;
             },
             
@@ -183,11 +214,18 @@
                 
                 // Load crypto-js nếu chưa có
                 if (!window.CryptoJS) {
-                    console.warn('[SIGNATURE_ANALYZER] CryptoJS not found, loading...');
+                    const loadMsg = '[SIGNATURE_ANALYZER] CryptoJS not found, loading...';
+                    console.warn(loadMsg);
+                    if (typeof window.addLogEntry === 'function') {
+                        window.addLogEntry(`🔐 ${loadMsg}`, 'warning');
+                    }
                     const script = document.createElement('script');
                     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js';
                     document.head.appendChild(script);
                     await new Promise(resolve => script.onload = resolve);
+                    if (typeof window.addLogEntry === 'function') {
+                        window.addLogEntry('🔐 [SIGNATURE_ANALYZER] CryptoJS loaded successfully', 'success');
+                    }
                 }
                 
                 const algorithms = [
@@ -220,15 +258,32 @@
                         });
                         
                         if (match) {
-                            console.log(`[SIGNATURE_ANALYZER] ✅ MATCH FOUND: ${algo.name}`);
+                            const matchMsg = `🔐 [SIGNATURE_ANALYZER] ✅ MATCH FOUND: ${algo.name}`;
+                            console.log(matchMsg);
+                            if (typeof window.addLogEntry === 'function') {
+                                window.addLogEntry(matchMsg, 'success');
+                                window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] Algorithm: ${algo.name}, Result: ${result}`, 'success');
+                            }
                             return algo.name;
                         }
                     } catch (e) {
-                        console.error(`[SIGNATURE_ANALYZER] Error testing ${algo.name}:`, e);
+                        const errorMsg = `[SIGNATURE_ANALYZER] Error testing ${algo.name}: ${e.message}`;
+                        console.error(errorMsg, e);
+                        if (typeof window.addLogEntry === 'function') {
+                            window.addLogEntry(`🔐 ${errorMsg}`, 'error');
+                        }
                     }
                 }
                 
-                console.log('[SIGNATURE_ANALYZER] Test results:', results);
+                const resultsMsg = `🔐 [SIGNATURE_ANALYZER] Test results: ${results.length} algorithms tested, no match found`;
+                console.log(resultsMsg, results);
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry(resultsMsg, 'warning');
+                    // Log top 3 results gần nhất
+                    results.slice(0, 3).forEach((r, idx) => {
+                        window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] Result ${idx + 1}: ${r.algorithm} (length: ${r.length}, match: ${r.match})`, 'info');
+                    });
+                }
                 return null;
             },
             
@@ -241,19 +296,28 @@
                 a.download = `signature-analysis-${Date.now()}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
-                console.log('[SIGNATURE_ANALYZER] Data exported');
+                const exportMsg = `🔐 [SIGNATURE_ANALYZER] Data exported: ${this.collectedData.length} requests`;
+                console.log(exportMsg);
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry(exportMsg, 'success');
+                }
             },
             
             init: function() {
                 this.initNetworkInterceptor();
                 this.initCryptoHooks();
-                console.log('[SIGNATURE_ANALYZER] ✅ Initialized. Use SignatureAnalyzer.exportData() to export collected data.');
+                const initMsg = '[SIGNATURE_ANALYZER] ✅ Initialized. Use SignatureAnalyzer.exportData() to export collected data.';
+                console.log(initMsg);
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry(`🔐 ${initMsg}`, 'success');
+                }
                 
                 // Auto-analyze khi có data mới
                 setInterval(() => {
                     if (this.collectedData.length > 0) {
                         const lastRequest = this.collectedData[this.collectedData.length - 1];
-                        if (lastRequest.parsedPayload && lastRequest.signature) {
+                        if (lastRequest.parsedPayload && lastRequest.signature && !lastRequest.analyzed) {
+                            lastRequest.analyzed = true; // Đánh dấu đã phân tích để tránh duplicate
                             this.analyzeSignature(lastRequest.parsedPayload, lastRequest.signature);
                             this.testAlgorithms(lastRequest.parsedPayload, lastRequest.signature);
                         }
@@ -1178,10 +1242,18 @@
                             };
                             
                             window.SignatureAnalyzer.collectedData.push(requestData);
-                            console.log('[SIGNATURE_ANALYZER] Request captured:', requestData);
+                            const captureMsg = `🔐 [SIGNATURE_ANALYZER] Request captured: ${requestData.url.substring(0, 80)}${requestData.url.length > 80 ? '...' : ''}`;
+                            console.log(captureMsg, requestData);
+                            if (typeof window.addLogEntry === 'function') {
+                                window.addLogEntry(captureMsg, 'info');
+                                if (signature) {
+                                    window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] Signature found: ${signature.substring(0, 50)}${signature.length > 50 ? '...' : ''} (${signature.length} chars)`, 'info');
+                                }
+                            }
                             
                             // Auto-analyze
-                            if (parsedPayload && signature) {
+                            if (parsedPayload && signature && !requestData.analyzed) {
+                                requestData.analyzed = true;
                                 window.SignatureAnalyzer.analyzeSignature(parsedPayload, signature);
                                 window.SignatureAnalyzer.testAlgorithms(parsedPayload, signature);
                             }
@@ -1243,7 +1315,11 @@
                                             headers: this.getAllResponseHeaders(),
                                             timestamp: Date.now()
                                         };
-                                        console.log('[SIGNATURE_ANALYZER] Response saved:', lastRequest.response);
+                                        const responseMsg = `🔐 [SIGNATURE_ANALYZER] Response saved: status=${lastRequest.response.status}`;
+                                        console.log(responseMsg, lastRequest.response);
+                                        if (typeof window.addLogEntry === 'function') {
+                                            window.addLogEntry(responseMsg, 'info');
+                                        }
                                     }
                                 }
                                 // === END SIGNATURE ANALYZER ===
