@@ -86,10 +86,10 @@
                 }
                 
                 // Nếu không có log-container, không log vào console (bảo mật)
-                // console.log(`[NETWORK INTERCEPTOR] ${message}`); // Đã ẩn để bảo mật
+                console.log(`[NETWORK INTERCEPTOR] ${message}`);
             } catch (e) {
                 // Không log để bảo mật
-                // console.log(`[NETWORK INTERCEPTOR] ${message}`); // Đã ẩn để bảo mật
+                console.log(`[NETWORK INTERCEPTOR] ${message}`);
             }
         }
         
@@ -628,11 +628,11 @@
         };
         
         // Log khi interceptor được kích hoạt (đã ẩn để bảo mật)
-        // console.log('[NETWORK INTERCEPTOR] Đã kích hoạt'); // Đã ẩn để bảo mật
-        // logToUI('🛡️ [NETWORK INTERCEPTOR]', 'info'); // Đã ẩn để bảo mật
-        // setTimeout(() => {
-        //     logToUI('🛡️ [NETWORK INTERCEPTOR]', 'info'); // Đã ẩn để bảo mật
-        // }, 2000);
+        console.log('[NETWORK INTERCEPTOR] Đã kích hoạt');
+        logToUI('🛡️ [NETWORK INTERCEPTOR]', 'info');
+        setTimeout(() => {
+            logToUI('🛡️ [NETWORK INTERCEPTOR]', 'info');
+        }, 2000);
     })();
 
     // =================================================================
