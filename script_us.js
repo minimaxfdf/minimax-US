@@ -1552,39 +1552,26 @@
         
         // Intercept XMLHttpRequest
         const originalXHROpen = XMLHttpRequest.prototype.open;
+        const originalXHRSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
         const originalXHRSend = XMLHttpRequest.prototype.send;
         
-        XMLHttpRequest.prototype.open = function(method, url, ...rest) {
-            // === CẬP NHẬT URL VỚI CHỮ KÝ MỚI (Nếu có) ===
-            let finalUrl = url;
-            if (window._lastCalculatedSignature && url) {
-                // Cập nhật chữ ký trong URL nếu có tham số ext=crc=...
-                if (url.includes('ext=crc=') || url.includes('ext=crc%3D')) {
-                    const oldUrl = url;
-                    // Tìm và thay thế chữ ký cũ bằng chữ ký mới
-                    finalUrl = url.replace(/ext=crc[=:](-?\d+)/i, `ext=crc=${window._lastCalculatedSignature}`);
-                    // Nếu URL không thay đổi, có thể format khác, thử thêm vào cuối
-                    if (finalUrl === oldUrl) {
-                        // Thử thay thế với format URL-encoded
-                        finalUrl = url.replace(/ext=crc%3D(-?\d+)/i, `ext=crc%3D${window._lastCalculatedSignature}`);
-                    }
-                    // Nếu vẫn không thay đổi, thêm vào cuối URL
-                    if (finalUrl === oldUrl && url.includes('?')) {
-                        finalUrl = `${url}&ext=crc=${window._lastCalculatedSignature}`;
-                    }
-                    
-                    if (finalUrl !== oldUrl) {
-                        const urlUpdateMsg = `🔐 [SIGNATURE] Đã cập nhật URL trong open() với chữ ký mới: ${window._lastCalculatedSignature}`;
-                        console.log(urlUpdateMsg);
-                        if (typeof window.addLogEntry === 'function') {
-                            window.addLogEntry(urlUpdateMsg, 'success');
-                        }
-                    }
-                }
-            }
+        // 1. Hook Open để lưu thông tin
+        XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+            this._method = method;
+            this._url = url; // Lưu URL gốc
+            this._async = async !== false; // Mặc định là true nếu không chỉ định
+            this._headers = {}; // Tạo kho chứa headers
+            this._interceptedUrl = url; // Giữ để tương thích với code cũ
             
-            this._interceptedUrl = finalUrl;
-            return originalXHROpen.apply(this, [method, finalUrl, ...rest]);
+            return originalXHROpen.apply(this, arguments);
+        };
+        
+        // 2. Hook setRequestHeader để lưu headers (QUAN TRỌNG)
+        XMLHttpRequest.prototype.setRequestHeader = function(header, value) {
+            if (!this._headers) this._headers = {};
+            this._headers[header] = value; // Lưu lại để dùng sau
+            
+            return originalXHRSetRequestHeader.apply(this, arguments);
         };
         
         XMLHttpRequest.prototype.send = function(data) {
@@ -1741,31 +1728,55 @@
                         };
                     }
                     
-                    // === CẬP NHẬT URL VỚI CHỮ KÝ MỚI (Nếu có) ===
-                    // Lưu ý: XMLHttpRequest không cho phép thay đổi URL sau khi open(),
-                    // nhưng chúng ta có thể thử gọi lại open() với URL mới
-                    if (window._lastCalculatedSignature && this._interceptedUrl && (this._interceptedUrl.includes('ext=crc=') || this._interceptedUrl.includes('ext=crc%3D'))) {
+                    // === RE-OPEN VỚI URL MỚI CÓ CHỮ KÝ ĐÚNG ===
+                    // Nếu payload đã được sửa và có chữ ký mới, cần re-open với URL mới
+                    if (payloadModified && window._lastCalculatedSignature && this._url && (this._url.includes('ext=crc=') || this._url.includes('ext=crc%3D') || this._url.includes('voice/clone'))) {
                         try {
-                            const oldUrl = this._interceptedUrl;
-                            let newUrl = oldUrl.replace(/ext=crc[=:](-?\d+)/i, `ext=crc=${window._lastCalculatedSignature}`);
-                            if (newUrl === oldUrl) {
-                                newUrl = oldUrl.replace(/ext=crc%3D(-?\d+)/i, `ext=crc%3D${window._lastCalculatedSignature}`);
+                            const oldUrl = this._url;
+                            let newUrl = oldUrl;
+                            
+                            // Cập nhật chữ ký trong URL
+                            if (oldUrl.includes('ext=crc=') || oldUrl.includes('ext=crc%3D')) {
+                                newUrl = oldUrl.replace(/ext=crc[=:](-?\d+)/i, `ext=crc=${window._lastCalculatedSignature}`);
+                                if (newUrl === oldUrl) {
+                                    newUrl = oldUrl.replace(/ext=crc%3D(-?\d+)/i, `ext=crc%3D${window._lastCalculatedSignature}`);
+                                }
+                            } else {
+                                // Nếu không có ext=crc, thêm vào
+                                const separator = oldUrl.includes('?') ? '&' : '?';
+                                newUrl = `${oldUrl}${separator}ext=crc=${window._lastCalculatedSignature}`;
                             }
                             
                             if (newUrl !== oldUrl) {
-                                // Thử gọi lại open() với URL mới (có thể không hoạt động với một số trình duyệt)
-                                const method = this._interceptedMethod || 'POST';
-                                originalXHROpen.call(this, method, newUrl, true);
-                                this._interceptedUrl = newUrl;
+                                console.log(`🔄 [RE-OPEN] Đang mở lại request với URL mới...`);
+                                console.log(`🔄 [RE-OPEN] URL cũ: ${oldUrl}`);
+                                console.log(`🔄 [RE-OPEN] URL mới: ${newUrl}`);
                                 
-                                const urlUpdateMsg = `🔐 [SIGNATURE] Đã cập nhật URL với chữ ký mới: ${window._lastCalculatedSignature}`;
+                                // Mở lại kết nối với URL MỚI (chứa chữ ký đúng)
+                                originalXHROpen.call(this, this._method || 'POST', newUrl, this._async !== false);
+                                
+                                // Phục hồi lại toàn bộ Headers cũ
+                                if (this._headers) {
+                                    for (const [key, val] of Object.entries(this._headers)) {
+                                        originalXHRSetRequestHeader.call(this, key, val);
+                                    }
+                                    console.log(`🔄 [RE-OPEN] Đã phục hồi ${Object.keys(this._headers).length} headers`);
+                                }
+                                
+                                this._interceptedUrl = newUrl;
+                                this._url = newUrl;
+                                
+                                const urlUpdateMsg = `🔐 [SIGNATURE] Đã re-open với chữ ký mới: ${window._lastCalculatedSignature}`;
                                 console.log(urlUpdateMsg);
                                 if (typeof window.addLogEntry === 'function') {
                                     window.addLogEntry(urlUpdateMsg, 'success');
                                 }
                             }
                         } catch (e) {
-                            console.warn(`[SIGNATURE] Không thể cập nhật URL: ${e.message}`);
+                            console.error(`❌ [RE-OPEN] Lỗi khi re-open: ${e.message}`, e);
+                            if (typeof window.addLogEntry === 'function') {
+                                window.addLogEntry(`❌ [RE-OPEN] Lỗi: ${e.message}`, 'error');
+                            }
                         }
                     }
                     
