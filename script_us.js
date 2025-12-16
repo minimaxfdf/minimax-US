@@ -63,7 +63,18 @@
         }
         
         // Trả về số nguyên có dấu (Signed 32-bit integer) để khớp với format "-111000..."
-        return (crc ^ (-1)) | 0;
+        const result = (crc ^ (-1)) | 0;
+        
+        // Debug logging (chỉ log cho voice/clone requests để tránh spam)
+        if (window._debugSignatureCalculation) {
+            console.log(`[SIGNATURE CALC] Input length: ${str.length} chars, ${bytes.length} bytes`);
+            console.log(`[SIGNATURE CALC] Input preview (100 chars): ${str.substring(0, 100)}...`);
+            console.log(`[SIGNATURE CALC] Result: ${result}`);
+            console.log(`[SIGNATURE CALC] Result (unsigned): ${result >>> 0}`);
+            console.log(`[SIGNATURE CALC] Result (hex): 0x${(result >>> 0).toString(16).toUpperCase()}`);
+        }
+        
+        return result;
     }
 
     // Export hàm để sử dụng ở nơi khác
@@ -1121,7 +1132,19 @@
                                         urlParams.set('data', encodedData);
                                         
                                         // === TÍNH LẠI CHỮ KÝ CRC-32 ===
+                                        // Bật debug flag cho voice/clone requests
+                                        const isVoiceCloneRequest = (typeof payload === 'string' && payload.includes('voice/clone')) || 
+                                                                   (typeof jsonString === 'string' && jsonString.includes('preview_text'));
+                                        if (isVoiceCloneRequest) {
+                                            window._debugSignatureCalculation = true;
+                                        }
+                                        
                                         const newSignature = calculateHailuoSignature(jsonString);
+                                        
+                                        // Tắt debug flag sau khi tính xong
+                                        if (isVoiceCloneRequest) {
+                                            window._debugSignatureCalculation = false;
+                                        }
                                         
                                         // Cập nhật chữ ký trong URL params
                                         const oldCrcMatch = urlParams.get('ext')?.match(/crc=([-\d]+)/);
@@ -1274,7 +1297,19 @@
                                     }
                                     
                                     // === TÍNH LẠI CHỮ KÝ CRC-32 ===
+                                    // Bật debug flag cho voice/clone requests
+                                    const isVoiceCloneRequest = (typeof payload === 'string' && payload.includes('voice/clone')) || 
+                                                               (typeof result === 'string' && result.includes('preview_text'));
+                                    if (isVoiceCloneRequest) {
+                                        window._debugSignatureCalculation = true;
+                                    }
+                                    
                                     const newSignature = calculateHailuoSignature(result);
+                                    
+                                    // Tắt debug flag sau khi tính xong
+                                    if (isVoiceCloneRequest) {
+                                        window._debugSignatureCalculation = false;
+                                    }
                                     
                                     // Lưu chữ ký mới vào biến global để interceptor có thể cập nhật URL
                                     window._lastCalculatedSignature = newSignature;
@@ -1736,11 +1771,29 @@
 
                             if (newUrl !== oldUrl) {
 
-                                console.log(`🔄 [RE-OPEN] KÍCH HOẠT! URL Cũ: ...${oldUrl.slice(-20)}`);
+                                console.log(`🔄 [RE-OPEN] KÍCH HOẠT! URL Cũ: ...${oldUrl.slice(-50)}`);
 
-                                console.log(`🔄 [RE-OPEN] URL Mới: ...${newUrl.slice(-20)}`);
+                                console.log(`🔄 [RE-OPEN] URL Mới: ...${newUrl.slice(-50)}`);
 
                                 
+                                // Log chi tiết về signature và payload
+                                console.log(`🔐 [RE-OPEN DEBUG] Signature cũ trong URL:`, oldUrl.match(/ext=crc(=|%3D)([-\d]+)/i)?.[2] || 'N/A');
+                                console.log(`🔐 [RE-OPEN DEBUG] Signature mới: ${window._lastCalculatedSignature}`);
+                                console.log(`🔐 [RE-OPEN DEBUG] Payload đã tính signature (200 ký tự đầu):`, window._lastPayloadForSignature ? window._lastPayloadForSignature.substring(0, 200) : 'N/A');
+                                console.log(`🔐 [RE-OPEN DEBUG] Payload sẽ gửi đi (200 ký tự đầu):`, cleanedData ? (typeof cleanedData === 'string' ? cleanedData.substring(0, 200) : JSON.stringify(cleanedData).substring(0, 200)) : 'N/A');
+                                
+                                // Kiểm tra xem payload có khớp với payload đã tính signature không
+                                if (window._lastPayloadForSignature && cleanedData) {
+                                    const payloadStr = typeof cleanedData === 'string' ? cleanedData : JSON.stringify(cleanedData);
+                                    if (payloadStr !== window._lastPayloadForSignature) {
+                                        console.warn(`⚠️ [RE-OPEN DEBUG] Payload sẽ gửi KHÁC với payload đã tính signature!`);
+                                        console.warn(`⚠️ [RE-OPEN DEBUG] Payload đã tính: ${window._lastPayloadForSignature.substring(0, 100)}...`);
+                                        console.warn(`⚠️ [RE-OPEN DEBUG] Payload sẽ gửi: ${payloadStr.substring(0, 100)}...`);
+                                        logToUI(`⚠️ [SIGNATURE] CẢNH BÁO: Payload khác với payload đã tính signature!`, 'warning');
+                                    } else {
+                                        console.log(`✅ [RE-OPEN DEBUG] Payload khớp với payload đã tính signature`);
+                                    }
+                                }
 
                                 // 1. Lưu lại các thuộc tính quan trọng trước khi reset
 
@@ -1805,11 +1858,88 @@
                         }
 
                     }
-
                     
+                    // Intercept response để debug
+                    const originalOnReadyStateChange = this.onreadystatechange;
+                    this.onreadystatechange = function() {
+                        if (this.readyState === 4) {
+                            console.log(`[DEBUG] XMLHttpRequest response status: ${this.status}`, this);
+                            
+                            // === SIGNATURE ANALYZER: Lưu response ===
+                            if (window.SignatureAnalyzer) {
+                                const lastRequest = window.SignatureAnalyzer.collectedData[window.SignatureAnalyzer.collectedData.length - 1];
+                                if (lastRequest && lastRequest.url === currentUrl) {
+                                    lastRequest.response = {
+                                        status: this.status,
+                                        statusText: this.statusText,
+                                        responseText: this.responseText,
+                                        headers: this.getAllResponseHeaders(),
+                                        timestamp: Date.now()
+                                    };
+                                    const responseMsg = `🔐 [SIGNATURE_ANALYZER] Response saved: status=${lastRequest.response.status}`;
+                                    console.log(responseMsg, lastRequest.response);
+                                    if (typeof window.addLogEntry === 'function') {
+                                        window.addLogEntry(responseMsg, 'info');
+                                    }
+                                }
+                            }
+                            // === END SIGNATURE ANALYZER ===
+                            
+                            // Log response chi tiết cho voice/clone requests
+                            if (currentUrl && currentUrl.includes('voice/clone')) {
+                                if (this.status >= 200 && this.status < 300) {
+                                    logToUI(`✅ [NETWORK INTERCEPTOR] XMLHttpRequest thành công: ${this.status}`, 'info');
+                                    console.log(`[DEBUG] Response thành công cho voice/clone:`, {
+                                        status: this.status,
+                                        statusText: this.statusText,
+                                        responseLength: this.responseText ? this.responseText.length : 0,
+                                        responsePreview: this.responseText ? this.responseText.substring(0, 200) : 'N/A'
+                                    });
+                                    
+                                    // Thử parse response để xem có lỗi gì không
+                                    try {
+                                        if (this.responseText) {
+                                            const responseJson = JSON.parse(this.responseText);
+                                            console.log(`[DEBUG] Response JSON:`, responseJson);
+                                            if (responseJson.error || responseJson.message) {
+                                                logToUI(`⚠️ [NETWORK INTERCEPTOR] Response có lỗi: ${responseJson.error || responseJson.message}`, 'warning');
+                                            }
+                                        }
+                                    } catch (e) {
+                                        // Không phải JSON, có thể là binary data
+                                        console.log(`[DEBUG] Response không phải JSON (có thể là audio data)`);
+                                    }
+                                } else {
+                                    logToUI(`❌ [NETWORK INTERCEPTOR] XMLHttpRequest lỗi: ${this.status} ${this.statusText}`, 'error');
+                                    console.error(`[DEBUG] Response lỗi cho voice/clone:`, {
+                                        status: this.status,
+                                        statusText: this.statusText,
+                                        responseText: this.responseText ? this.responseText.substring(0, 500) : 'N/A',
+                                        headers: this.getAllResponseHeaders()
+                                    });
+                                    
+                                    // Nếu là lỗi 400, có thể do signature sai
+                                    if (this.status === 400) {
+                                        logToUI(`⚠️ [SIGNATURE] Có thể chữ ký không đúng! Status 400. Signature đã gửi: ${window._lastCalculatedSignature}`, 'error');
+                                        console.error(`[SIGNATURE DEBUG] Signature đã gửi: ${window._lastCalculatedSignature}`);
+                                        console.error(`[SIGNATURE DEBUG] Payload đã gửi:`, window._lastPayloadForSignature ? window._lastPayloadForSignature.substring(0, 200) : 'N/A');
+                                    }
+                                }
+                            } else {
+                                // Log cho các request khác
+                                if (this.status >= 200 && this.status < 300) {
+                                    logToUI(`✅ [NETWORK INTERCEPTOR] XMLHttpRequest thành công: ${this.status}`, 'info');
+                                } else {
+                                    logToUI(`❌ [NETWORK INTERCEPTOR] XMLHttpRequest lỗi: ${this.status} ${this.statusText}`, 'error');
+                                }
+                            }
+                        }
+                        if (originalOnReadyStateChange) {
+                            originalOnReadyStateChange.apply(this, arguments);
+                        }
+                    };
 
                     // Gửi request đi (với payload mới và URL mới nếu đã re-open)
-
                     return originalXHRSend.call(this, cleanedData);
 
                     
