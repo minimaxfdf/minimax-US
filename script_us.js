@@ -360,11 +360,24 @@
                                 }
                                 
                                 if (modified) {
+                                    // DEBUG: Kiểm tra preview_text đã được thay thế chưa
+                                    const previewTextAfterReplace = parsed.preview_text || parsed.text || '';
+                                    addLogEntry(`🔍 [INTERCEPTOR] Kiểm tra sau khi thay thế: ${foundField} = ${previewTextAfterReplace.length} ký tự`, 'info');
+                                    
                                     const result = JSON.stringify(parsed);
                                     
                                     // DEBUG: Log chi tiết payload sau khi thay thế
                                     addLogEntry(`📤 [INTERCEPTOR] ✅ ĐÃ THAY THẾ: Giữ nguyên TẤT CẢ các field khác, CHỈ thay ${foundField}`, 'success');
-                                    addLogEntry(`📤 [INTERCEPTOR] Payload sau khi thay thế (300 ký tự đầu): ${result.substring(0, 300)}...`, 'info');
+                                    
+                                    // Log preview_text để xác nhận đã thay thế đúng
+                                    if (parsed.preview_text) {
+                                        addLogEntry(`📝 [INTERCEPTOR] preview_text sau khi thay thế: "${parsed.preview_text.substring(0, 100)}..." (${parsed.preview_text.length} ký tự)`, 'success');
+                                    }
+                                    if (parsed.text) {
+                                        addLogEntry(`📝 [INTERCEPTOR] text sau khi thay thế: "${parsed.text.substring(0, 100)}..." (${parsed.text.length} ký tự)`, 'success');
+                                    }
+                                    
+                                    addLogEntry(`📤 [INTERCEPTOR] Payload sau khi thay thế (500 ký tự đầu): ${result.substring(0, 500)}...`, 'info');
                                     addLogEntry(`📊 [INTERCEPTOR] Độ dài payload sau khi thay thế: ${result.length} ký tự, field đã thay: ${foundField}`, 'info');
                                     
                                     // Log các field khác để xác nhận giữ nguyên
@@ -373,8 +386,9 @@
                                         addLogEntry(`🔒 [INTERCEPTOR] Các field khác được GIỮ NGUYÊN: ${otherFields.join(', ')}`, 'info');
                                     }
                                     
-                                    console.log(`[DEBUG INTERCEPTOR] Payload sau khi thay thế (300 ký tự đầu): ${result.substring(0, 300)}...`);
+                                    console.log(`[DEBUG INTERCEPTOR] Payload sau khi thay thế (500 ký tự đầu): ${result.substring(0, 500)}...`);
                                     console.log(`[DEBUG INTERCEPTOR] Độ dài payload: ${result.length} ký tự, field thay thế: ${foundField}`);
+                                    console.log(`[DEBUG INTERCEPTOR] preview_text sau khi thay:`, parsed.preview_text ? parsed.preview_text.substring(0, 100) + '...' : 'null');
                                     console.log(`[DEBUG INTERCEPTOR] Các field khác giữ nguyên:`, otherFields);
                                     
                                     // Chỉ log một lần cho mỗi chunk (dùng flag global)
@@ -646,8 +660,26 @@
                     const payloadModified = (originalData !== cleanedData);
                     addLogEntry(`🔄 [INTERCEPTOR XMLHttpRequest] Payload đã được thay đổi: ${payloadModified ? 'CÓ' : 'KHÔNG'}`, payloadModified ? 'success' : 'warning');
                     
-                    // Log cho request quan trọng (audio generation)
+                    // QUAN TRỌNG: Kiểm tra cleanedData trước khi gửi (đặc biệt cho request audio)
                     if (this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice') || this._interceptedUrl.includes('clone')) {
+                        // Kiểm tra cleanedData có chứa preview_text đúng không
+                        if (typeof cleanedData === 'string') {
+                            try {
+                                const parsedCheck = JSON.parse(cleanedData);
+                                if (parsedCheck.preview_text) {
+                                    addLogEntry(`✅ [INTERCEPTOR XMLHttpRequest] KIỂM TRA: preview_text trong cleanedData = ${parsedCheck.preview_text.length} ký tự`, 'success');
+                                    addLogEntry(`📝 [INTERCEPTOR XMLHttpRequest] preview_text: "${parsedCheck.preview_text.substring(0, 100)}..."`, 'info');
+                                    
+                                    // CẢNH BÁO nếu preview_text vẫn chỉ có 1 ký tự
+                                    if (parsedCheck.preview_text.length <= 1) {
+                                        addLogEntry(`🚨 [INTERCEPTOR XMLHttpRequest] CẢNH BÁO: preview_text vẫn chỉ có ${parsedCheck.preview_text.length} ký tự! Có thể payload không được thay thế đúng!`, 'error');
+                                    }
+                                }
+                            } catch (e) {
+                                addLogEntry(`⚠️ [INTERCEPTOR XMLHttpRequest] Không thể parse cleanedData để kiểm tra: ${e.message}`, 'warning');
+                            }
+                        }
+                        
                         if (payloadModified) {
                     // Xác minh lại payload sau khi sửa
                     const recheck = verifyPayloadText(cleanedData);
@@ -677,6 +709,7 @@
                     }
                     
                     // QUAN TRỌNG: Gửi request đi với payload đã được thay thế
+                    addLogEntry(`🚀 [INTERCEPTOR XMLHttpRequest] Đang gửi request với cleanedData (${typeof cleanedData === 'string' ? cleanedData.length : 'non-string'} ký tự)`, 'info');
                 return originalXHRSend.apply(this, [cleanedData]);
                 } catch (error) {
                     // Nếu có lỗi khi xử lý payload, log và gửi request gốc
@@ -6337,6 +6370,29 @@ async function uSTZrHUt_IC() {
         
         // Thực hiện click
         KxTOuAJu(targetButton);
+        
+        // QUAN TRỌNG: Ngay sau khi click, set text đầy đủ vào textarea để Minimax đọc được
+        // Minimax có thể đọc từ textarea ngay khi click, trước khi interceptor chặn request
+        if (window.USE_PAYLOAD_MODE && window.INTERCEPT_CURRENT_TEXT) {
+            try {
+                // Set text đầy đủ vào textarea ngay sau khi click (trong vòng vài ms)
+                // Để Minimax đọc được text đầy đủ nếu nó đọc từ textarea
+                setTimeout(() => {
+                    try {
+                        setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, window.INTERCEPT_CURRENT_TEXT);
+                        addLogEntry(`⚡ [Chunk ${ttuo$y_KhCV + 1}] Đã set text đầy đủ vào textarea ngay sau khi click (${window.INTERCEPT_CURRENT_TEXT.length} ký tự)`, 'info');
+                        
+                        // Trigger event để Minimax nhận biết
+                        const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+                        rUxbIRagbBVychZ$GfsogD.dispatchEvent(inputEvent);
+                    } catch (e) {
+                        addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi set text đầy đủ sau click: ${e.message}`, 'warning');
+                    }
+                }, 10); // Chờ 10ms sau khi click để đảm bảo Minimax chưa đọc textarea
+            } catch (e) {
+                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi setup set text sau click: ${e.message}`, 'warning');
+            }
+        }
 
         // =======================================================
         // VÒNG XÁC MINH BỔ SUNG SAU KHI GỬI (CHỜ 3 GIÂY)
