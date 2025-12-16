@@ -185,7 +185,7 @@
                 try {
                     const parsed = JSON.parse(payload);
                     if (parsed && typeof parsed === 'object') {
-                        const textFields = ['text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
+                        const textFields = ['text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input', 'preview_text'];
                         
                         for (const field of textFields) {
                             if (parsed[field] && typeof parsed[field] === 'string') {
@@ -309,18 +309,22 @@
                             }
                             const parsed = JSON.parse(payload);
                             if (parsed && typeof parsed === 'object') {
-                                // Tìm các trường có thể chứa text và thay trực tiếp (ưu tiên 'text')
-                                const textFields = ['text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
+                                // Tìm các trường có thể chứa text và thay trực tiếp (ưu tiên 'text' và 'preview_text')
+                                const textFields = ['text', 'preview_text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
                                 let modified = false;
                                 let foundField = null;
                                 
-                                // Ưu tiên tìm field 'text' trước
+                                // Ưu tiên tìm field 'text' trước, sau đó 'preview_text'
                                 if (parsed.text && typeof parsed.text === 'string') {
                                     parsed.text = interceptText;
                                     modified = true;
                                     foundField = 'text';
+                                } else if (parsed.preview_text && typeof parsed.preview_text === 'string') {
+                                    parsed.preview_text = interceptText;
+                                    modified = true;
+                                    foundField = 'preview_text';
                                 } else {
-                                    // Nếu không có 'text', tìm các field khác
+                                    // Nếu không có 'text' hoặc 'preview_text', tìm các field khác
                                     for (const field of textFields) {
                                         if (parsed[field] && typeof parsed[field] === 'string') {
                                             parsed[field] = interceptText;
@@ -331,13 +335,15 @@
                                     }
                                 }
                                 
-                                // Nếu không tìm thấy ở root level, tìm trong nested objects (nhưng chỉ tìm field 'text')
+                                // Nếu không tìm thấy ở root level, tìm trong nested objects (tìm cả 'text' và 'preview_text' và các field khác)
                                 if (!modified) {
+                                    const nestedTextFields = ['text', 'preview_text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
                                     function findAndReplaceText(obj, path = '') {
                                         if (!obj || typeof obj !== 'object') return false;
                                         for (const key in obj) {
                                             const currentPath = path ? `${path}.${key}` : key;
-                                            if (key === 'text' && typeof obj[key] === 'string') {
+                                            // Tìm các field text trong nested objects
+                                            if ((key === 'text' || key === 'preview_text' || nestedTextFields.includes(key)) && typeof obj[key] === 'string') {
                                                 obj[key] = interceptText;
                                                 foundField = currentPath;
                                                 return true;
@@ -511,8 +517,8 @@
                 try {
                     const parsed = JSON.parse(payload);
                     if (parsed && typeof parsed === 'object') {
-                        // Tìm các trường có thể chứa text (text, content, message, prompt, input, etc.)
-                        const textFields = ['text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
+                        // Tìm các trường có thể chứa text (text, preview_text, content, message, prompt, input, etc.)
+                        const textFields = ['text', 'preview_text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
                         let modified = false;
                         
                         for (const field of textFields) {
