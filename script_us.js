@@ -462,6 +462,12 @@
                 const expectedNum = parseInt(expectedSignature, 10);
                 const isNumericSignature = !isNaN(expectedNum);
                 
+                const algoCountMsg = `🔐 [SIGNATURE_ANALYZER] Starting to test ${algorithms.length} algorithms...`;
+                console.log(algoCountMsg);
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry(algoCountMsg, 'info');
+                }
+                
                 for (const algo of algorithms) {
                     try {
                         const result = algo.fn();
@@ -493,10 +499,13 @@
                             }
                         }
                         
-                        // Log tất cả kết quả test (không chỉ CRC) để debug
-                        if (results.length <= 20) { // Chỉ log nếu không quá nhiều
-                            const allTestMsg = `🔐 [SIGNATURE_ANALYZER] Test ${results.length}: ${algo.name} = ${result.substring(0, 50)}${result.length > 50 ? '...' : ''} (match: ${match})`;
+                        // Log tất cả kết quả test CRC (luôn log)
+                        if (algo.name.includes('CRC')) {
+                            const allTestMsg = `🔐 [SIGNATURE_ANALYZER] Test ${results.length}: ${algo.name} = ${result}, expected = ${expectedSignature}, match = ${match}`;
                             console.log(allTestMsg);
+                            if (typeof window.addLogEntry === 'function') {
+                                window.addLogEntry(allTestMsg, match ? 'success' : 'info');
+                            }
                         }
                         
                         if (match) {
@@ -517,25 +526,30 @@
                     }
                 }
                 
-                const resultsMsg = `🔐 [SIGNATURE_ANALYZER] Test results: ${results.length} algorithms tested, no match found`;
+                const resultsMsg = `🔐 [SIGNATURE_ANALYZER] Test completed: ${results.length} algorithms tested, no match found`;
                 console.log(resultsMsg, results);
                 if (typeof window.addLogEntry === 'function') {
                     window.addLogEntry(resultsMsg, 'warning');
-                    // Log tất cả CRC results
+                    // Log tất cả CRC results (QUAN TRỌNG)
                     const crcResults = results.filter(r => r.algorithm.includes('CRC'));
                     if (crcResults.length > 0) {
-                        window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] CRC32 test results (${crcResults.length} variants):`, 'info');
+                        window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] 📊 CRC32 test results (${crcResults.length} variants):`, 'info');
                         crcResults.forEach((r, idx) => {
-                            window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] CRC ${idx + 1}: ${r.algorithm} = ${r.result}, expected = ${r.expected}, match = ${r.match}`, r.match ? 'success' : 'info');
+                            const crcMsg = `🔐 [SIGNATURE_ANALYZER] CRC ${idx + 1}/${crcResults.length}: ${r.algorithm} | result=${r.result} | expected=${r.expected} | match=${r.match}`;
+                            console.log(crcMsg);
+                            window.addLogEntry(crcMsg, r.match ? 'success' : 'info');
                         });
                     } else {
-                        window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] ⚠️ No CRC32 algorithms were tested!`, 'warning');
+                        const noCrcMsg = `🔐 [SIGNATURE_ANALYZER] ⚠️ No CRC32 algorithms were tested! Algorithms count: ${algorithms.length}`;
+                        console.warn(noCrcMsg);
+                        window.addLogEntry(noCrcMsg, 'warning');
                     }
                     // Log top 5 results gần nhất (không phải CRC)
                     const nonCrcResults = results.filter(r => !r.algorithm.includes('CRC'));
                     if (nonCrcResults.length > 0) {
+                        window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] Other algorithms (top 5):`, 'info');
                         nonCrcResults.slice(0, 5).forEach((r, idx) => {
-                            window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] Result ${idx + 1}: ${r.algorithm} (length: ${r.length}, match: ${r.match})`, 'info');
+                            window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] ${idx + 1}. ${r.algorithm} (length: ${r.length}, match: ${r.match})`, 'info');
                         });
                     }
                 }
