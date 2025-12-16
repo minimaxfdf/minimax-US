@@ -423,41 +423,65 @@
                                     modified = findAndReplaceText(parsed);
                                 }
                                 
-                                // Nếu payload ban đầu là URL-encoded, cần encode lại
-                                if (modified && payload.includes('data=') && payload.includes('&')) {
-                                    const urlParams = new URLSearchParams(payload);
-                                    const encodedData = btoa(JSON.stringify(parsed));
-                                    urlParams.set('data', encodedData);
-                                    const result = urlParams.toString();
-                                    
-                                    // Log đầy đủ
-                                    const textPreview = interceptText;
-                                    const logMsg1 = `🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload (field: ${foundField}) bằng chunk ${(currentIndex || 0) + 1}`;
-                                    const logMsg2 = `📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`;
-                                    
-                                    console.log(logMsg1);
-                                    console.log(logMsg2);
-                                    console.log(`[DEBUG] Text đã thay thế: ${interceptText.length} ký tự - "${interceptText}"`);
-                                    console.log(`[DEBUG] Payload sau khi thay thế (URL-encoded, ${result.length} ký tự): ${result.substring(0, 300)}...`);
-                                    
-                                    try {
-                                        logToUI(logMsg1, 'warning');
-                                        logToUI(logMsg2, 'info');
-                                        if (typeof window.addLogEntry === 'function') {
-                                            window.addLogEntry(logMsg1, 'warning');
-                                            window.addLogEntry(logMsg2, 'info');
-                                            window.addLogEntry(`[DEBUG] Payload sau khi thay thế (URL-encoded, ${result.length} ký tự): ${result}`, 'info');
+                                    // Nếu payload ban đầu là URL-encoded, cần encode lại
+                                    if (modified && payload.includes('data=') && payload.includes('&')) {
+                                        const urlParams = new URLSearchParams(payload);
+                                        let jsonString = JSON.stringify(parsed);
+                                        
+                                        // FIX: Kiểm tra xem JSON string có chứa interceptText không
+                                        // Nếu không, dùng string replace để ép buộc thay thế
+                                        if (!jsonString.includes(interceptText)) {
+                                            console.error(`[ERROR] JSON string sau khi stringify KHÔNG chứa interceptText "${interceptText}"!`);
+                                            console.error(`[ERROR] JSON string: ${jsonString}`);
+                                            
+                                            // FALLBACK: Dùng string replace để ép buộc thay thế
+                                            const fieldPattern = new RegExp(`"${foundField}"\\s*:\\s*"([^"]*)"`, 'g');
+                                            const oldValueMatch = jsonString.match(fieldPattern);
+                                            if (oldValueMatch && oldValueMatch.length > 0) {
+                                                const oldValue = oldValueMatch[0].match(/:"([^"]*)"/)[1];
+                                                console.log(`[FALLBACK] Tìm thấy giá trị cũ: "${oldValue}", đang thay thế bằng "${interceptText}"`);
+                                                
+                                                jsonString = jsonString.replace(
+                                                    new RegExp(`"${foundField}"\\s*:\\s*"${oldValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'g'),
+                                                    `"${foundField}":"${interceptText.replace(/"/g, '\\"')}"`
+                                                );
+                                                
+                                                console.log(`[FALLBACK] JSON string sau khi ép buộc thay thế: ${jsonString}`);
+                                            }
                                         }
-                                    } catch (e) {
-                                        console.error('Lỗi khi log:', e);
+                                        
+                                        const encodedData = btoa(jsonString);
+                                        urlParams.set('data', encodedData);
+                                        const result = urlParams.toString();
+                                        
+                                        // Log đầy đủ
+                                        const textPreview = interceptText;
+                                        const logMsg1 = `🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload (field: ${foundField}) bằng chunk ${(currentIndex || 0) + 1}`;
+                                        const logMsg2 = `📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`;
+                                        
+                                        console.log(logMsg1);
+                                        console.log(logMsg2);
+                                        console.log(`[DEBUG] Text đã thay thế: ${interceptText.length} ký tự - "${interceptText}"`);
+                                        console.log(`[DEBUG] Payload sau khi thay thế (URL-encoded, ${result.length} ký tự): ${result.substring(0, 300)}...`);
+                                        
+                                        try {
+                                            logToUI(logMsg1, 'warning');
+                                            logToUI(logMsg2, 'info');
+                                            if (typeof window.addLogEntry === 'function') {
+                                                window.addLogEntry(logMsg1, 'warning');
+                                                window.addLogEntry(logMsg2, 'info');
+                                                window.addLogEntry(`[DEBUG] Payload sau khi thay thế (URL-encoded, ${result.length} ký tự): ${result}`, 'info');
+                                            }
+                                        } catch (e) {
+                                            console.error('Lỗi khi log:', e);
+                                        }
+                                        
+                                        if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
+                                            window._interceptLoggedForChunk = currentIndex;
+                                        }
+                                        
+                                        return result;
                                     }
-                                    
-                                    if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
-                                        window._interceptLoggedForChunk = currentIndex;
-                                    }
-                                    
-                                    return result;
-                                }
                                 
                                 if (modified) {
                                     // Hiển thị text đã được thay thế để debug (luôn log để xem text gửi đi)
@@ -496,21 +520,50 @@
                                     console.log(`[DEBUG] - parsed object:`, JSON.stringify(parsed, null, 2));
                                     
                                     // Debug: Log payload sau khi thay thế - hiển thị full payload trong UI log
-                                    const result = JSON.stringify(parsed);
+                                    let result = JSON.stringify(parsed);
                                     const debugPayload = result; // Hiển thị full payload
                                     console.log(`[DEBUG] Payload sau khi thay thế (300 ký tự đầu): ${result.substring(0, 300)}...`);
                                     console.log(`[DEBUG] Payload sau khi thay thế (FULL): ${result}`);
                                     
-                                    // Kiểm tra xem result có chứa interceptText không
+                                    // FIX: Kiểm tra xem result có chứa interceptText không
+                                    // Nếu không, có thể do object bị khóa hoặc JSON.stringify bị hook
+                                    // → Dùng string replace để ép buộc thay thế
                                     if (!result.includes(interceptText)) {
                                         console.error(`[ERROR] Payload sau khi stringify KHÔNG chứa interceptText "${interceptText}"!`);
-                                        console.error(`[ERROR] Payload: ${result}`);
+                                        console.error(`[ERROR] Payload gốc: ${result}`);
                                         console.error(`[ERROR] parsed.${foundField}: "${parsed[foundField]}"`);
+                                        
+                                        // FALLBACK: Dùng string replace để ép buộc thay thế
+                                        // Tìm giá trị cũ của field trong JSON string
+                                        const fieldPattern = new RegExp(`"${foundField}"\\s*:\\s*"([^"]*)"`, 'g');
+                                        const oldValueMatch = result.match(fieldPattern);
+                                        if (oldValueMatch && oldValueMatch.length > 0) {
+                                            // Lấy giá trị cũ từ match đầu tiên
+                                            const oldValue = oldValueMatch[0].match(/:"([^"]*)"/)[1];
+                                            console.log(`[FALLBACK] Tìm thấy giá trị cũ: "${oldValue}", đang thay thế bằng "${interceptText}"`);
+                                            
+                                            // Thay thế giá trị cũ bằng giá trị mới
+                                            result = result.replace(
+                                                new RegExp(`"${foundField}"\\s*:\\s*"${oldValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'g'),
+                                                `"${foundField}":"${interceptText.replace(/"/g, '\\"')}"`
+                                            );
+                                            
+                                            console.log(`[FALLBACK] Payload sau khi ép buộc thay thế: ${result}`);
+                                            
+                                            // Kiểm tra lại
+                                            if (result.includes(interceptText)) {
+                                                console.log(`[FALLBACK] ✅ Thành công! Payload đã chứa interceptText`);
+                                            } else {
+                                                console.error(`[FALLBACK] ❌ Vẫn thất bại sau khi ép buộc thay thế!`);
+                                            }
+                                        } else {
+                                            console.error(`[FALLBACK] ❌ Không tìm thấy field "${foundField}" trong JSON string để thay thế!`);
+                                        }
                                     }
                                     
                                     // Log full payload vào UI
                                     if (typeof window.addLogEntry === 'function') {
-                                        window.addLogEntry(`[DEBUG] Payload sau khi thay thế (${result.length} ký tự): ${debugPayload}`, 'info');
+                                        window.addLogEntry(`[DEBUG] Payload sau khi thay thế (${result.length} ký tự): ${result}`, 'info');
                                     }
                                     
                                     console.log(`[DEBUG] Payload đã được stringify, độ dài: ${result.length} ký tự, field thay thế: ${foundField}`);
