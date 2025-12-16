@@ -276,13 +276,17 @@
                 const currentIndex = window.INTERCEPT_CURRENT_INDEX;
                 
                 if (typeof interceptText === 'string' && interceptText.trim().length > 0) {
+                    // DEBUG: Log để theo dõi
+                    addLogEntry(`🛡️ [INTERCEPTOR] Chunk ${(currentIndex || 0) + 1}: Đang xử lý payload. INTERCEPT_CURRENT_TEXT = ${interceptText.length} ký tự`, 'info');
+                    
                     // Nếu là string (JSON)
                     if (typeof payload === 'string') {
                         try {
                             // Debug: Log payload gốc để xem cấu trúc
-                            if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
-                                console.log(`[DEBUG] Payload gốc (500 ký tự đầu):`, payload.substring(0, 500));
-                            }
+                            const payloadPreview = payload.substring(0, 500);
+                            addLogEntry(`📥 [INTERCEPTOR] Payload gốc (500 ký tự đầu): ${payloadPreview}`, 'info');
+                            console.log(`[DEBUG INTERCEPTOR] Payload gốc (500 ký tự đầu):`, payloadPreview);
+                            
                             const parsed = JSON.parse(payload);
                             if (parsed && typeof parsed === 'object') {
                                 // Tìm các trường có thể chứa text và thay trực tiếp (ưu tiên 'text')
@@ -292,16 +296,26 @@
                                 
                                 // Ưu tiên tìm field 'text' trước
                                 if (parsed.text && typeof parsed.text === 'string') {
+                                    const oldText = parsed.text;
                                     parsed.text = interceptText;
                                     modified = true;
                                     foundField = 'text';
+                                    
+                                    // DEBUG: Log chi tiết
+                                    addLogEntry(`🔄 [INTERCEPTOR] Tìm thấy field 'text'. Text cũ: "${oldText.substring(0, 50)}..." (${oldText.length} ký tự)`, 'warning');
+                                    addLogEntry(`✅ [INTERCEPTOR] Đã thay thế thành: "${interceptText.substring(0, 50)}..." (${interceptText.length} ký tự)`, 'success');
                                 } else {
                                     // Nếu không có 'text', tìm các field khác
                                     for (const field of textFields) {
                                         if (parsed[field] && typeof parsed[field] === 'string') {
+                                            const oldText = parsed[field];
                                             parsed[field] = interceptText;
                                             modified = true;
                                             foundField = field;
+                                            
+                                            // DEBUG: Log chi tiết
+                                            addLogEntry(`🔄 [INTERCEPTOR] Tìm thấy field '${field}'. Text cũ: "${oldText.substring(0, 50)}..." (${oldText.length} ký tự)`, 'warning');
+                                            addLogEntry(`✅ [INTERCEPTOR] Đã thay thế thành: "${interceptText.substring(0, 50)}..." (${interceptText.length} ký tự)`, 'success');
                                             break; // Chỉ thay field đầu tiên tìm thấy
                                         }
                                     }
@@ -329,20 +343,27 @@
                                 }
                                 
                                 if (modified) {
+                                    const result = JSON.stringify(parsed);
+                                    
+                                    // DEBUG: Log chi tiết payload sau khi thay thế
+                                    addLogEntry(`📤 [INTERCEPTOR] Payload sau khi thay thế (300 ký tự đầu): ${result.substring(0, 300)}...`, 'info');
+                                    addLogEntry(`📊 [INTERCEPTOR] Độ dài payload sau khi thay thế: ${result.length} ký tự, field: ${foundField}`, 'info');
+                                    console.log(`[DEBUG INTERCEPTOR] Payload sau khi thay thế (300 ký tự đầu): ${result.substring(0, 300)}...`);
+                                    console.log(`[DEBUG INTERCEPTOR] Độ dài payload: ${result.length} ký tự, field thay thế: ${foundField}`);
+                                    
                                     // Chỉ log một lần cho mỗi chunk (dùng flag global)
                                     if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
                                         logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload (field: ${foundField}) bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
-                                        // Debug: Log payload sau khi thay thế (chỉ log một phần để không spam)
-                                        const debugPayload = JSON.stringify(parsed).substring(0, 300);
-                                        console.log(`[DEBUG] Payload sau khi thay thế (300 ký tự đầu): ${debugPayload}...`);
                                         window._interceptLoggedForChunk = currentIndex;
                                     }
-                                    const result = JSON.stringify(parsed);
-                                    console.log(`[DEBUG] Payload đã được stringify, độ dài: ${result.length} ký tự, field thay thế: ${foundField}`);
+                                    
                                     return result;
                                 } else {
                                     // Nếu không modified, log để debug
-                                    console.warn(`[DEBUG] Không tìm thấy field text trong payload để thay thế. Payload gốc:`, payload.substring(0, 500));
+                                    addLogEntry(`❌ [INTERCEPTOR] KHÔNG TÌM THẤY field text trong payload để thay thế!`, 'error');
+                                    addLogEntry(`📋 [INTERCEPTOR] Payload gốc: ${payload.substring(0, 500)}`, 'error');
+                                    console.warn(`[DEBUG INTERCEPTOR] Không tìm thấy field text trong payload để thay thế. Payload gốc:`, payload.substring(0, 500));
+                                    console.warn(`[DEBUG INTERCEPTOR] Các field có trong payload:`, Object.keys(parsed));
                                     // Trả về payload gốc để không làm hỏng request
                                     return payload;
                                 }
@@ -506,6 +527,12 @@
             
             // Chỉ intercept các request đến Minimax API
             if (urlStr && (urlStr.includes('minimax') || urlStr.includes('api') || urlStr.includes('audio') || urlStr.includes('voice'))) {
+                // DEBUG: Log khi interceptor được gọi
+                addLogEntry(`🔍 [INTERCEPTOR] Đã chặn request đến: ${urlStr}`, 'info');
+                addLogEntry(`🔍 [INTERCEPTOR] INTERCEPT_CURRENT_TEXT: ${window.INTERCEPT_CURRENT_TEXT ? window.INTERCEPT_CURRENT_TEXT.length + ' ký tự' : 'NULL'}`, 'info');
+                console.log(`[DEBUG INTERCEPTOR] Đã chặn request đến:`, urlStr);
+                console.log(`[DEBUG INTERCEPTOR] INTERCEPT_CURRENT_TEXT:`, window.INTERCEPT_CURRENT_TEXT ? window.INTERCEPT_CURRENT_TEXT.substring(0, 100) + '...' : 'NULL');
+                
                 try {
                     // Clone options để không modify original (clone sâu hơn để đảm bảo body được copy đúng)
                     const newOptions = { ...options };
@@ -517,8 +544,10 @@
                     let payloadModified = false;
                 if (newOptions.body) {
                     const originalBody = newOptions.body;
+                    addLogEntry(`📥 [INTERCEPTOR] Body gốc (100 ký tự đầu): ${typeof originalBody === 'string' ? originalBody.substring(0, 100) : 'Không phải string'}`, 'info');
                     newOptions.body = processPayload(newOptions.body, urlStr);
                         payloadModified = (originalBody !== newOptions.body);
+                        addLogEntry(`🔄 [INTERCEPTOR] Payload đã được thay đổi: ${payloadModified ? 'CÓ' : 'KHÔNG'}`, payloadModified ? 'success' : 'warning');
                         
                         // Log cho request quan trọng (audio generation)
                         if (urlStr.includes('audio') || urlStr.includes('voice') || urlStr.includes('clone')) {
@@ -579,10 +608,17 @@
         XMLHttpRequest.prototype.send = function(data) {
             // Chỉ intercept các request đến Minimax API
             if (this._interceptedUrl && (this._interceptedUrl.includes('minimax') || this._interceptedUrl.includes('api') || this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice'))) {
+                // DEBUG: Log khi XMLHttpRequest interceptor được gọi
+                addLogEntry(`🔍 [INTERCEPTOR XMLHttpRequest] Đã chặn request đến: ${this._interceptedUrl}`, 'info');
+                addLogEntry(`🔍 [INTERCEPTOR XMLHttpRequest] INTERCEPT_CURRENT_TEXT: ${window.INTERCEPT_CURRENT_TEXT ? window.INTERCEPT_CURRENT_TEXT.length + ' ký tự' : 'NULL'}`, 'info');
+                console.log(`[DEBUG INTERCEPTOR XMLHttpRequest] Đã chặn request đến:`, this._interceptedUrl);
+                
                 try {
                 const originalData = data;
+                addLogEntry(`📥 [INTERCEPTOR XMLHttpRequest] Data gốc (100 ký tự đầu): ${typeof originalData === 'string' ? originalData.substring(0, 100) : 'Không phải string'}`, 'info');
                 const cleanedData = processPayload(data, this._interceptedUrl);
                     const payloadModified = (originalData !== cleanedData);
+                    addLogEntry(`🔄 [INTERCEPTOR XMLHttpRequest] Payload đã được thay đổi: ${payloadModified ? 'CÓ' : 'KHÔNG'}`, payloadModified ? 'success' : 'warning');
                     
                     // Log cho request quan trọng (audio generation)
                     if (this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice') || this._interceptedUrl.includes('clone')) {
@@ -5785,6 +5821,10 @@ async function uSTZrHUt_IC() {
             // Interceptor sẽ luôn có dữ liệu để thay thế, không phụ thuộc vào cài đặt
             window.INTERCEPT_CURRENT_TEXT = chunkText;
             window.INTERCEPT_CURRENT_INDEX = ttuo$y_KhCV;
+            
+            // DEBUG: Log để theo dõi
+            addLogEntry(`💾 [SETUP] Đã set INTERCEPT_CURRENT_TEXT cho chunk ${ttuo$y_KhCV + 1}: ${chunkText.length} ký tự`, 'info');
+            console.log(`[DEBUG SETUP] INTERCEPT_CURRENT_TEXT cho chunk ${ttuo$y_KhCV + 1}:`, chunkText.substring(0, 100) + '...');
         } catch (e) {
             console.warn('Không thể lưu currentChunkText:', e);
         }
@@ -5825,6 +5865,11 @@ async function uSTZrHUt_IC() {
                 // Lấy ký tự đầu tiên, nếu không có thì dùng 'X' làm mặc định
                 const singleChar = chunkText && chunkText.length > 0 ? chunkText[0] : 'X';
                 
+                // DEBUG: Log thông tin chunkText
+                addLogEntry(`🔤 [Chunk ${ttuo$y_KhCV + 1}] ChunkText đầy đủ: ${chunkText.length} ký tự`, 'info');
+                addLogEntry(`🔤 [Chunk ${ttuo$y_KhCV + 1}] INTERCEPT_CURRENT_TEXT đã được set: ${window.INTERCEPT_CURRENT_TEXT ? window.INTERCEPT_CURRENT_TEXT.length + ' ký tự' : 'CHƯA SET'}`, 'info');
+                addLogEntry(`🔤 [Chunk ${ttuo$y_KhCV + 1}] Đang set CHỈ 1 KÝ TỰ vào textarea: "${singleChar}"`, 'info');
+                
                 // Set CHỈ 1 KÝ TỰ vào textarea
                 setReactTextareaValue(rUxbIRagbBVychZ$GfsogD, singleChar);
                 
@@ -5839,8 +5884,7 @@ async function uSTZrHUt_IC() {
                     // Bỏ qua
                 }
                 
-                // Log đã được ẩn để bảo mật
-                // addLogEntry(`🔤 [Chunk ${ttuo$y_KhCV + 1}] Đã set CHỈ 1 KÝ TỰ vào textarea: "${singleChar}". Interceptor sẽ thay thế payload sau khi click`, 'info');
+                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã set 1 ký tự vào textarea. Interceptor sẽ thay thế payload sau khi click`, 'info');
             } catch (e) {
                 addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi set 1 ký tự vào textarea: ${e.message}`, 'warning');
             }
