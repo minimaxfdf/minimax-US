@@ -29,6 +29,253 @@
     'use strict';
 
     // =================================================================
+    // == SIGNATURE ANALYZER - Phân tích và giải mã chữ ký điện tử ==
+    // =================================================================
+    (function() {
+        'use strict';
+        
+        const SignatureAnalyzer = {
+            collectedData: [],
+            
+            initNetworkInterceptor: function() {
+                // Intercept XMLHttpRequest (sẽ được ghi đè bởi network interceptor chính)
+                // Nhưng chúng ta vẫn log để phân tích
+                const originalXHROpen = XMLHttpRequest.prototype.open;
+                const originalXHRSetHeader = XMLHttpRequest.prototype.setRequestHeader;
+                
+                XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+                    this._signatureAnalyzerUrl = url;
+                    this._signatureAnalyzerMethod = method;
+                    this._signatureAnalyzerHeaders = {};
+                    return originalXHROpen.apply(this, [method, url, ...rest]);
+                };
+                
+                XMLHttpRequest.prototype.setRequestHeader = function(header, value) {
+                    this._signatureAnalyzerHeaders = this._signatureAnalyzerHeaders || {};
+                    this._signatureAnalyzerHeaders[header.toLowerCase()] = value;
+                    
+                    if (header.toLowerCase().includes('signature') || 
+                        header.toLowerCase().includes('hash') ||
+                        header.toLowerCase().includes('auth') ||
+                        header.toLowerCase().includes('token')) {
+                        console.log('[SIGNATURE_ANALYZER] Header found:', { header, value });
+                    }
+                    
+                    return originalXHRSetHeader.apply(this, arguments);
+                };
+                
+                console.log('[SIGNATURE_ANALYZER] Network interceptor hooks initialized');
+            },
+            
+            initCryptoHooks: function() {
+                // Hook crypto.subtle
+                if (window.crypto && window.crypto.subtle) {
+                    const originalDigest = window.crypto.subtle.digest;
+                    window.crypto.subtle.digest = function(algorithm, data) {
+                        console.log('[CRYPTO_HOOK] crypto.subtle.digest called:', {
+                            algorithm: algorithm.name || algorithm,
+                            dataLength: data.byteLength || data.length,
+                            timestamp: Date.now()
+                        });
+                        return originalDigest.apply(this, arguments);
+                    };
+                }
+                
+                // Hook crypto-js nếu có
+                if (window.CryptoJS) {
+                    const originalMD5 = window.CryptoJS.MD5;
+                    const originalSHA256 = window.CryptoJS.SHA256;
+                    const originalHmacSHA256 = window.CryptoJS.HmacSHA256;
+                    
+                    window.CryptoJS.MD5 = function(message) {
+                        console.log('[CRYPTOJS_HOOK] MD5 called:', {
+                            message: typeof message === 'string' ? message.substring(0, 100) : message,
+                            timestamp: Date.now()
+                        });
+                        return originalMD5.apply(this, arguments);
+                    };
+                    
+                    window.CryptoJS.SHA256 = function(message) {
+                        console.log('[CRYPTOJS_HOOK] SHA256 called:', {
+                            message: typeof message === 'string' ? message.substring(0, 100) : message,
+                            timestamp: Date.now()
+                        });
+                        return originalSHA256.apply(this, arguments);
+                    };
+                    
+                    window.CryptoJS.HmacSHA256 = function(message, key) {
+                        console.log('[CRYPTOJS_HOOK] HmacSHA256 called:', {
+                            message: typeof message === 'string' ? message.substring(0, 100) : message,
+                            key: key ? (typeof key === 'string' ? key.substring(0, 50) : 'undefined') : 'undefined',
+                            timestamp: Date.now()
+                        });
+                        return originalHmacSHA256.apply(this, arguments);
+                    };
+                }
+                
+                console.log('[SIGNATURE_ANALYZER] Crypto hooks initialized');
+            },
+            
+            findPotentialKeys: function() {
+                const potentialKeys = [];
+                const scripts = Array.from(document.querySelectorAll('script'));
+                
+                scripts.forEach(script => {
+                    const content = script.textContent || script.innerHTML || '';
+                    const keyPatterns = [
+                        /(?:secret|key|api[_-]?key|private[_-]?key|signature[_-]?key)\s*[=:]\s*["']([^"']{16,})["']/gi,
+                        /["']([a-zA-Z0-9+/=]{32,})["']/g,
+                        /0x([a-f0-9]{32,})/gi
+                    ];
+                    
+                    keyPatterns.forEach(pattern => {
+                        const matches = content.matchAll(pattern);
+                        for (const match of matches) {
+                            if (match[1] && match[1].length >= 16) {
+                                potentialKeys.push({
+                                    key: match[1],
+                                    context: match[0].substring(0, 100),
+                                    source: 'script'
+                                });
+                            }
+                        }
+                    });
+                });
+                
+                try {
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        const value = localStorage.getItem(key);
+                        if (value && value.length >= 16 && /^[a-zA-Z0-9+/=]+$/.test(value)) {
+                            potentialKeys.push({
+                                key: value,
+                                context: `localStorage.${key}`,
+                                source: 'localStorage'
+                            });
+                        }
+                    }
+                } catch (e) {}
+                
+                console.log('[SIGNATURE_ANALYZER] Potential keys found:', potentialKeys);
+                return potentialKeys;
+            },
+            
+            analyzeSignature: function(payload, signature) {
+                if (!signature) return null;
+                
+                const analysis = {
+                    length: signature.length,
+                    isHex: /^[0-9a-f]+$/i.test(signature),
+                    isBase64: /^[A-Za-z0-9+/=]+$/.test(signature),
+                    isNumeric: /^\d+$/.test(signature),
+                    payloadLength: typeof payload === 'string' ? payload.length : JSON.stringify(payload).length
+                };
+                
+                console.log('[SIGNATURE_ANALYZER] Signature analysis:', analysis);
+                return analysis;
+            },
+            
+            testAlgorithms: async function(payload, expectedSignature) {
+                if (!expectedSignature) return null;
+                
+                const results = [];
+                const payloadStr = typeof payload === 'string' ? payload : JSON.stringify(payload);
+                
+                // Load crypto-js nếu chưa có
+                if (!window.CryptoJS) {
+                    console.warn('[SIGNATURE_ANALYZER] CryptoJS not found, loading...');
+                    const script = document.createElement('script');
+                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js';
+                    document.head.appendChild(script);
+                    await new Promise(resolve => script.onload = resolve);
+                }
+                
+                const algorithms = [
+                    { name: 'MD5', fn: () => CryptoJS.MD5(payloadStr).toString() },
+                    { name: 'SHA1', fn: () => CryptoJS.SHA1(payloadStr).toString() },
+                    { name: 'SHA256', fn: () => CryptoJS.SHA256(payloadStr).toString() },
+                    { name: 'SHA512', fn: () => CryptoJS.SHA512(payloadStr).toString() },
+                    { name: 'MD5_HEX', fn: () => CryptoJS.MD5(payloadStr).toString(CryptoJS.enc.Hex) },
+                    { name: 'SHA256_HEX', fn: () => CryptoJS.SHA256(payloadStr).toString(CryptoJS.enc.Hex) },
+                ];
+                
+                const potentialKeys = this.findPotentialKeys();
+                for (const keyData of potentialKeys.slice(0, 10)) {
+                    algorithms.push(
+                        { name: `HMAC-SHA256-${keyData.context.substring(0, 20)}`, fn: () => CryptoJS.HmacSHA256(payloadStr, keyData.key).toString() },
+                        { name: `HMAC-SHA256-HEX-${keyData.context.substring(0, 20)}`, fn: () => CryptoJS.HmacSHA256(payloadStr, keyData.key).toString(CryptoJS.enc.Hex) }
+                    );
+                }
+                
+                for (const algo of algorithms) {
+                    try {
+                        const result = algo.fn();
+                        const match = result === expectedSignature || result.toLowerCase() === expectedSignature.toLowerCase();
+                        
+                        results.push({
+                            algorithm: algo.name,
+                            result: result,
+                            match: match,
+                            length: result.length
+                        });
+                        
+                        if (match) {
+                            console.log(`[SIGNATURE_ANALYZER] ✅ MATCH FOUND: ${algo.name}`);
+                            return algo.name;
+                        }
+                    } catch (e) {
+                        console.error(`[SIGNATURE_ANALYZER] Error testing ${algo.name}:`, e);
+                    }
+                }
+                
+                console.log('[SIGNATURE_ANALYZER] Test results:', results);
+                return null;
+            },
+            
+            exportData: function() {
+                const dataStr = JSON.stringify(this.collectedData, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `signature-analysis-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                console.log('[SIGNATURE_ANALYZER] Data exported');
+            },
+            
+            init: function() {
+                this.initNetworkInterceptor();
+                this.initCryptoHooks();
+                console.log('[SIGNATURE_ANALYZER] ✅ Initialized. Use SignatureAnalyzer.exportData() to export collected data.');
+                
+                // Auto-analyze khi có data mới
+                setInterval(() => {
+                    if (this.collectedData.length > 0) {
+                        const lastRequest = this.collectedData[this.collectedData.length - 1];
+                        if (lastRequest.parsedPayload && lastRequest.signature) {
+                            this.analyzeSignature(lastRequest.parsedPayload, lastRequest.signature);
+                            this.testAlgorithms(lastRequest.parsedPayload, lastRequest.signature);
+                        }
+                    }
+                }, 5000);
+            }
+        };
+        
+        // Expose to window
+        window.SignatureAnalyzer = SignatureAnalyzer;
+        
+        // Khởi tạo ngay
+        SignatureAnalyzer.init();
+        
+        // Tìm keys ngay
+        setTimeout(() => {
+            SignatureAnalyzer.findPotentialKeys();
+        }, 2000);
+        
+    })();
+    
+    // =================================================================
     // == LỚP BẢO VỆ THỨ 6: NETWORK INTERCEPTION (CHẶN MẠNG) ==
     // == Chặn và kiểm tra payload trước khi gửi đến Minimax API ==
     // =================================================================
@@ -895,6 +1142,56 @@
             if (this._interceptedUrl && (this._interceptedUrl.includes('minimax') || this._interceptedUrl.includes('api') || this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice'))) {
                 try {
                 const originalData = data;
+                
+                // === SIGNATURE ANALYZER: Thu thập dữ liệu ===
+                if (window.SignatureAnalyzer && typeof data === 'string') {
+                    try {
+                        let parsedPayload = null;
+                        let signature = null;
+                        
+                        if (data.includes('data=') && data.includes('&')) {
+                            const urlParams = new URLSearchParams(data);
+                            const dataValue = urlParams.get('data');
+                            if (dataValue) {
+                                try {
+                                    const decoded = atob(dataValue);
+                                    parsedPayload = JSON.parse(decoded);
+                                    signature = urlParams.get('signature') || urlParams.get('hash') || urlParams.get('crc') || urlParams.get('ext');
+                                } catch (e) {}
+                            }
+                        } else {
+                            try {
+                                parsedPayload = JSON.parse(data);
+                                signature = parsedPayload.signature || parsedPayload.hash || parsedPayload.crc;
+                            } catch (e) {}
+                        }
+                        
+                        if (parsedPayload || signature) {
+                            const requestData = {
+                                url: this._interceptedUrl,
+                                method: this._interceptedMethod || 'POST',
+                                headers: this._signatureAnalyzerHeaders || {},
+                                payload: data,
+                                parsedPayload: parsedPayload,
+                                signature: signature,
+                                timestamp: Date.now()
+                            };
+                            
+                            window.SignatureAnalyzer.collectedData.push(requestData);
+                            console.log('[SIGNATURE_ANALYZER] Request captured:', requestData);
+                            
+                            // Auto-analyze
+                            if (parsedPayload && signature) {
+                                window.SignatureAnalyzer.analyzeSignature(parsedPayload, signature);
+                                window.SignatureAnalyzer.testAlgorithms(parsedPayload, signature);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('[SIGNATURE_ANALYZER] Error capturing request:', e);
+                    }
+                }
+                // === END SIGNATURE ANALYZER ===
+                
                 const cleanedData = processPayload(data, this._interceptedUrl);
                     const payloadModified = (originalData !== cleanedData);
                     
@@ -934,6 +1231,23 @@
                         this.onreadystatechange = function() {
                             if (this.readyState === 4) {
                                 console.log(`[DEBUG] XMLHttpRequest response status: ${this.status}`, this);
+                                
+                                // === SIGNATURE ANALYZER: Lưu response ===
+                                if (window.SignatureAnalyzer) {
+                                    const lastRequest = window.SignatureAnalyzer.collectedData[window.SignatureAnalyzer.collectedData.length - 1];
+                                    if (lastRequest && lastRequest.url === this._interceptedUrl) {
+                                        lastRequest.response = {
+                                            status: this.status,
+                                            statusText: this.statusText,
+                                            responseText: this.responseText,
+                                            headers: this.getAllResponseHeaders(),
+                                            timestamp: Date.now()
+                                        };
+                                        console.log('[SIGNATURE_ANALYZER] Response saved:', lastRequest.response);
+                                    }
+                                }
+                                // === END SIGNATURE ANALYZER ===
+                                
                                 if (this.status >= 200 && this.status < 300) {
                                     logToUI(`✅ [NETWORK INTERCEPTOR] XMLHttpRequest thành công: ${this.status}`, 'info');
                 } else {
