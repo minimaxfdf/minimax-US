@@ -6389,8 +6389,9 @@ async function uSTZrHUt_IC() {
         // =======================================================
         // KIỂM TRA PAYLOAD SAU 3 GIÂY - PHÁT HIỆN THAY ĐỔI
         // =======================================================
-        // Lưu text gốc của chunk để so sánh sau 3 giây
-        const originalChunkText = chunkText;
+        // Lưu text gốc ĐẦY ĐỦ của chunk để so sánh sau 3 giây (KHÔNG phải text đã xáo trộn)
+        // Sử dụng text đầy đủ từ window.fullChunkTextForInterceptor hoặc window.INTERCEPT_CURRENT_TEXT
+        const originalChunkText = window.fullChunkTextForInterceptor || window.INTERCEPT_CURRENT_TEXT || chunkText;
         const originalChunkIndex = ttuo$y_KhCV;
         
         // Chờ 3 giây sau khi bắt đầu render để kiểm tra payload
