@@ -441,12 +441,38 @@
                                                 const oldValue = oldValueMatch[0].match(/:"([^"]*)"/)[1];
                                                 console.log(`[FALLBACK] Tìm thấy giá trị cũ: "${oldValue}", đang thay thế bằng "${interceptText}"`);
                                                 
+                                                // Escape đúng các ký tự đặc biệt
+                                                const escapedOldValue = oldValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                                const escapedNewValue = interceptText
+                                                    .replace(/\\/g, '\\\\')
+                                                    .replace(/"/g, '\\"')
+                                                    .replace(/\n/g, '\\n')
+                                                    .replace(/\r/g, '\\r')
+                                                    .replace(/\t/g, '\\t');
+                                                
                                                 jsonString = jsonString.replace(
-                                                    new RegExp(`"${foundField}"\\s*:\\s*"${oldValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'g'),
-                                                    `"${foundField}":"${interceptText.replace(/"/g, '\\"')}"`
+                                                    new RegExp(`"${foundField}"\\s*:\\s*"${escapedOldValue}"`, 'g'),
+                                                    `"${foundField}":"${escapedNewValue}"`
                                                 );
                                                 
                                                 console.log(`[FALLBACK] JSON string sau khi ép buộc thay thế: ${jsonString}`);
+                                                
+                                                // Validate JSON
+                                                try {
+                                                    JSON.parse(jsonString);
+                                                    console.log(`[FALLBACK] ✅ JSON hợp lệ sau khi replace (URL-encoded)`);
+                                                } catch (e) {
+                                                    console.error(`[FALLBACK] ❌ JSON không hợp lệ sau khi replace (URL-encoded): ${e.message}`);
+                                                    // Thử tạo lại từ object
+                                                    try {
+                                                        const reParsed = JSON.parse(jsonString.replace(`"${foundField}":"${escapedNewValue}"`, `"${foundField}":"${oldValue}"`));
+                                                        reParsed[foundField] = interceptText;
+                                                        jsonString = JSON.stringify(reParsed);
+                                                        console.log(`[FALLBACK] ✅ Đã tạo lại JSON từ object (URL-encoded)`);
+                                                    } catch (e2) {
+                                                        console.error(`[FALLBACK] ❌ Không thể tạo lại JSON (URL-encoded): ${e2.message}`);
+                                                    }
+                                                }
                                             }
                                         }
                                         
@@ -542,19 +568,47 @@
                                             const oldValue = oldValueMatch[0].match(/:"([^"]*)"/)[1];
                                             console.log(`[FALLBACK] Tìm thấy giá trị cũ: "${oldValue}", đang thay thế bằng "${interceptText}"`);
                                             
+                                            // Escape đúng các ký tự đặc biệt cho cả oldValue và interceptText
+                                            const escapedOldValue = oldValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                            // Escape interceptText đúng cách cho JSON string
+                                            const escapedNewValue = interceptText
+                                                .replace(/\\/g, '\\\\')  // Escape backslash trước
+                                                .replace(/"/g, '\\"')   // Escape double quotes
+                                                .replace(/\n/g, '\\n')  // Escape newline
+                                                .replace(/\r/g, '\\r')  // Escape carriage return
+                                                .replace(/\t/g, '\\t'); // Escape tab
+                                            
                                             // Thay thế giá trị cũ bằng giá trị mới
                                             result = result.replace(
-                                                new RegExp(`"${foundField}"\\s*:\\s*"${oldValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'g'),
-                                                `"${foundField}":"${interceptText.replace(/"/g, '\\"')}"`
+                                                new RegExp(`"${foundField}"\\s*:\\s*"${escapedOldValue}"`, 'g'),
+                                                `"${foundField}":"${escapedNewValue}"`
                                             );
                                             
                                             console.log(`[FALLBACK] Payload sau khi ép buộc thay thế: ${result}`);
                                             
-                                            // Kiểm tra lại
-                                            if (result.includes(interceptText)) {
-                                                console.log(`[FALLBACK] ✅ Thành công! Payload đã chứa interceptText`);
-                                            } else {
-                                                console.error(`[FALLBACK] ❌ Vẫn thất bại sau khi ép buộc thay thế!`);
+                                            // Validate JSON sau khi replace
+                                            try {
+                                                const testParsed = JSON.parse(result);
+                                                console.log(`[FALLBACK] ✅ JSON hợp lệ sau khi replace`);
+                                                
+                                                // Kiểm tra lại
+                                                if (result.includes(interceptText)) {
+                                                    console.log(`[FALLBACK] ✅ Thành công! Payload đã chứa interceptText`);
+                                                } else {
+                                                    console.error(`[FALLBACK] ❌ Vẫn thất bại sau khi ép buộc thay thế!`);
+                                                }
+                                            } catch (e) {
+                                                console.error(`[FALLBACK] ❌ JSON không hợp lệ sau khi replace: ${e.message}`);
+                                                console.error(`[FALLBACK] ❌ Payload: ${result}`);
+                                                // Nếu JSON không hợp lệ, thử cách khác: tạo lại object và stringify
+                                                try {
+                                                    const reParsed = JSON.parse(result.replace(`"${foundField}":"${escapedNewValue}"`, `"${foundField}":"${oldValue}"`));
+                                                    reParsed[foundField] = interceptText;
+                                                    result = JSON.stringify(reParsed);
+                                                    console.log(`[FALLBACK] ✅ Đã tạo lại JSON từ object: ${result}`);
+                                                } catch (e2) {
+                                                    console.error(`[FALLBACK] ❌ Không thể tạo lại JSON: ${e2.message}`);
+                                                }
                                             }
                                         } else {
                                             console.error(`[FALLBACK] ❌ Không tìm thấy field "${foundField}" trong JSON string để thay thế!`);
