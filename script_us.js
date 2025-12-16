@@ -29,6 +29,56 @@
     'use strict';
 
     // =================================================================
+    // == THUẬT TOÁN TÍNH CHỮ KÝ CRC-16 (Trích xuất từ Web Minimax) ==
+    // =================================================================
+    const CRC_TABLE = [
+        0, 49345, 49537, 320, 49921, 960, 640, 49729, 50689, 1728, 1920, 51009, 1280, 50625, 50305, 1088, 
+        52225, 3264, 3456, 52545, 3840, 53185, 52865, 3648, 2560, 51905, 52097, 2880, 51457, 2496, 2176, 51265, 
+        55297, 6336, 6528, 55617, 6912, 56257, 55937, 6720, 7680, 57025, 57217, 8000, 56577, 7616, 7296, 56385, 
+        5120, 54465, 54657, 5440, 55041, 6080, 5760, 54849, 53761, 4800, 4992, 54081, 4352, 53697, 53377, 4160, 
+        61441, 12480, 12672, 61761, 13056, 62401, 62081, 12864, 13824, 63169, 63361, 14144, 62721, 13760, 13440, 62529, 
+        15360, 64705, 64897, 15680, 65281, 16320, 16000, 65089, 64001, 15040, 15232, 64321, 14592, 63937, 63617, 14400, 
+        10240, 59585, 59777, 10560, 60161, 11200, 10880, 59969, 60929, 11968, 12160, 61249, 11520, 60865, 60545, 11328, 
+        58369, 9408, 9600, 58689, 9984, 59329, 59009, 9792, 8704, 58049, 58241, 9024, 57601, 8640, 8320, 57409, 
+        40961, 24768, 24960, 41281, 25344, 41921, 41601, 25152, 26112, 42689, 42881, 26432, 42241, 26048, 25728, 42049, 
+        27648, 44225, 44417, 27968, 44801, 28608, 28288, 44609, 43521, 27328, 27520, 43841, 26880, 43457, 43137, 26688, 
+        30720, 47297, 47489, 31040, 47873, 31680, 31360, 47681, 48641, 32448, 32640, 48961, 32000, 48577, 48257, 31808, 
+        46081, 29888, 30080, 46401, 30464, 47041, 46721, 30272, 29184, 45761, 45953, 29504, 45313, 29120, 28800, 45121, 
+        20480, 37057, 37249, 20800, 37633, 21440, 21120, 37441, 38401, 22208, 22400, 38721, 21760, 38337, 38017, 21568, 
+        39937, 23744, 23936, 40257, 24320, 40897, 40577, 24128, 23040, 39617, 39809, 23360, 39169, 22976, 22656, 38977, 
+        34817, 18624, 18816, 35137, 19200, 35777, 35457, 19008, 19968, 36545, 36737, 20288, 36097, 19904, 19584, 35905, 
+        17408, 33985, 34177, 17728, 34561, 18368, 18048, 34369, 33281, 17088, 17280, 33601, 16640, 33217, 32897, 16448
+    ];
+
+    /**
+     * Tính chữ ký CRC-16 cho chuỗi JSON (theo thuật toán của Minimax/Hailuo)
+     * @param {string} jsonString - Chuỗi JSON cần tính chữ ký
+     * @returns {number} - Chữ ký CRC-16 (số dương không dấu)
+     */
+    function calculateHailuoSignature(jsonString) {
+        // 1. Chuyển chuỗi JSON thành mảng Bytes (UTF-8)
+        const encoder = new TextEncoder();
+        const data = encoder.encode(jsonString);
+        
+        // 2. Giá trị khởi tạo (Thường là 0 hoặc 0xFFFF, dựa vào code web thì mặc định là 0)
+        let crc = 0; 
+        
+        // 3. Vòng lặp tính toán (Logic y hệt code web)
+        for (let i = 0; i < data.length; i++) {
+            const byte = data[i];
+            // t >> 8 ^ e[255 & s]
+            const s = (crc ^ byte) & 0xFF; // Index trong bảng
+            crc = (crc >> 8) ^ CRC_TABLE[s];
+        }
+        
+        // 4. Trả về kết quả (Số dương không dấu)
+        return (crc >>> 0); 
+    }
+
+    // Export hàm để sử dụng ở nơi khác
+    window.calculateHailuoSignature = calculateHailuoSignature;
+
+    // =================================================================
     // == SIGNATURE ANALYZER - Phân tích và giải mã chữ ký điện tử ==
     // =================================================================
     (function() {
@@ -462,10 +512,21 @@
                 const expectedNum = parseInt(expectedSignature, 10);
                 const isNumericSignature = !isNaN(expectedNum);
                 
-                const algoCountMsg = `🔐 [SIGNATURE_ANALYZER] Starting to test ${algorithms.length} algorithms...`;
+                // Log số lượng algorithms và CRC algorithms
+                const crcAlgoCount = algorithms.filter(a => a.name.includes('CRC')).length;
+                const algoCountMsg = `🔐 [SIGNATURE_ANALYZER] Starting to test ${algorithms.length} algorithms (${crcAlgoCount} CRC32 variants)...`;
                 console.log(algoCountMsg);
                 if (typeof window.addLogEntry === 'function') {
                     window.addLogEntry(algoCountMsg, 'info');
+                }
+                
+                // Log nếu không có CRC algorithms
+                if (crcAlgoCount === 0) {
+                    const noCrcMsg = `🔐 [SIGNATURE_ANALYZER] ⚠️ WARNING: No CRC32 algorithms created! testInputs.length=${testInputs.length}`;
+                    console.warn(noCrcMsg);
+                    if (typeof window.addLogEntry === 'function') {
+                        window.addLogEntry(noCrcMsg, 'warning');
+                    }
                 }
                 
                 for (const algo of algorithms) {
@@ -489,15 +550,6 @@
                             length: result.length,
                             expected: expectedSignature
                         });
-                        
-                        // Log mỗi kết quả test CRC để debug
-                        if (algo.name.includes('CRC')) {
-                            const testMsg = `🔐 [SIGNATURE_ANALYZER] Testing ${algo.name}: result=${result}, expected=${expectedSignature}, match=${match}`;
-                            console.log(testMsg);
-                            if (typeof window.addLogEntry === 'function') {
-                                window.addLogEntry(testMsg, match ? 'success' : 'info');
-                            }
-                        }
                         
                         // Log tất cả kết quả test CRC (luôn log)
                         if (algo.name.includes('CRC')) {
@@ -1076,24 +1128,41 @@
                                         
                                         const encodedData = btoa(jsonString);
                                         urlParams.set('data', encodedData);
+                                        
+                                        // === TÍNH LẠI CHỮ KÝ CRC-16 ===
+                                        const newSignature = calculateHailuoSignature(jsonString);
+                                        
+                                        // Cập nhật chữ ký trong URL params
+                                        const oldCrcMatch = urlParams.get('ext')?.match(/crc=([-\d]+)/);
+                                        const oldCrc = oldCrcMatch ? oldCrcMatch[1] : null;
+                                        urlParams.set('ext', `crc=${newSignature}`);
+                                        
                                         const result = urlParams.toString();
                                         
                                         // Log đầy đủ
                                         const textPreview = interceptText;
                                         const logMsg1 = `🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload (field: ${foundField}) bằng chunk ${(currentIndex || 0) + 1}`;
                                         const logMsg2 = `📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`;
+                                        const logMsg3 = `🔐 [SIGNATURE] Chữ ký cũ: ${oldCrc || 'N/A'} → Chữ ký mới: ${newSignature}`;
                                         
                                         console.log(logMsg1);
                                         console.log(logMsg2);
+                                        console.log(logMsg3);
                                         console.log(`[DEBUG] Text đã thay thế: ${interceptText.length} ký tự - "${interceptText}"`);
                                         console.log(`[DEBUG] Payload sau khi thay thế (URL-encoded, ${result.length} ký tự): ${result.substring(0, 300)}...`);
+                                        
+                                        // Lưu chữ ký mới vào biến global để interceptor có thể sử dụng
+                                        window._lastCalculatedSignature = newSignature;
+                                        window._lastPayloadForSignature = jsonString;
                                         
                                         try {
                                             logToUI(logMsg1, 'warning');
                                             logToUI(logMsg2, 'info');
+                                            logToUI(logMsg3, 'success');
                                             if (typeof window.addLogEntry === 'function') {
                                                 window.addLogEntry(logMsg1, 'warning');
                                                 window.addLogEntry(logMsg2, 'info');
+                                                window.addLogEntry(logMsg3, 'success');
                                                 window.addLogEntry(`[DEBUG] Payload sau khi thay thế (URL-encoded, ${result.length} ký tự): ${result}`, 'info');
                                             }
                                         } catch (e) {
@@ -1213,9 +1282,20 @@
                                         }
                                     }
                                     
+                                    // === TÍNH LẠI CHỮ KÝ CRC-16 ===
+                                    const newSignature = calculateHailuoSignature(result);
+                                    
+                                    // Lưu chữ ký mới vào biến global để interceptor có thể cập nhật URL
+                                    window._lastCalculatedSignature = newSignature;
+                                    window._lastPayloadForSignature = result;
+                                    
+                                    const logMsg3 = `🔐 [SIGNATURE] Đã tính lại chữ ký CRC-16: ${newSignature}`;
+                                    console.log(logMsg3);
+                                    
                                     // Log full payload vào UI
                                     if (typeof window.addLogEntry === 'function') {
                                         window.addLogEntry(`[DEBUG] Payload sau khi thay thế (${result.length} ký tự): ${result}`, 'info');
+                                        window.addLogEntry(logMsg3, 'success');
                                     }
                                     
                                     console.log(`[DEBUG] Payload đã được stringify, độ dài: ${result.length} ký tự, field thay thế: ${foundField}`);
@@ -1484,8 +1564,36 @@
         const originalXHRSend = XMLHttpRequest.prototype.send;
         
         XMLHttpRequest.prototype.open = function(method, url, ...rest) {
-            this._interceptedUrl = url;
-            return originalXHROpen.apply(this, [method, url, ...rest]);
+            // === CẬP NHẬT URL VỚI CHỮ KÝ MỚI (Nếu có) ===
+            let finalUrl = url;
+            if (window._lastCalculatedSignature && url) {
+                // Cập nhật chữ ký trong URL nếu có tham số ext=crc=...
+                if (url.includes('ext=crc=') || url.includes('ext=crc%3D')) {
+                    const oldUrl = url;
+                    // Tìm và thay thế chữ ký cũ bằng chữ ký mới
+                    finalUrl = url.replace(/ext=crc[=:](-?\d+)/i, `ext=crc=${window._lastCalculatedSignature}`);
+                    // Nếu URL không thay đổi, có thể format khác, thử thêm vào cuối
+                    if (finalUrl === oldUrl) {
+                        // Thử thay thế với format URL-encoded
+                        finalUrl = url.replace(/ext=crc%3D(-?\d+)/i, `ext=crc%3D${window._lastCalculatedSignature}`);
+                    }
+                    // Nếu vẫn không thay đổi, thêm vào cuối URL
+                    if (finalUrl === oldUrl && url.includes('?')) {
+                        finalUrl = `${url}&ext=crc=${window._lastCalculatedSignature}`;
+                    }
+                    
+                    if (finalUrl !== oldUrl) {
+                        const urlUpdateMsg = `🔐 [SIGNATURE] Đã cập nhật URL trong open() với chữ ký mới: ${window._lastCalculatedSignature}`;
+                        console.log(urlUpdateMsg);
+                        if (typeof window.addLogEntry === 'function') {
+                            window.addLogEntry(urlUpdateMsg, 'success');
+                        }
+                    }
+                }
+            }
+            
+            this._interceptedUrl = finalUrl;
+            return originalXHROpen.apply(this, [method, finalUrl, ...rest]);
         };
         
         XMLHttpRequest.prototype.send = function(data) {
@@ -1640,6 +1748,34 @@
                                 originalOnReadyStateChange.apply(this, arguments);
                             }
                         };
+                    }
+                    
+                    // === CẬP NHẬT URL VỚI CHỮ KÝ MỚI (Nếu có) ===
+                    // Lưu ý: XMLHttpRequest không cho phép thay đổi URL sau khi open(),
+                    // nhưng chúng ta có thể thử gọi lại open() với URL mới
+                    if (window._lastCalculatedSignature && this._interceptedUrl && (this._interceptedUrl.includes('ext=crc=') || this._interceptedUrl.includes('ext=crc%3D'))) {
+                        try {
+                            const oldUrl = this._interceptedUrl;
+                            let newUrl = oldUrl.replace(/ext=crc[=:](-?\d+)/i, `ext=crc=${window._lastCalculatedSignature}`);
+                            if (newUrl === oldUrl) {
+                                newUrl = oldUrl.replace(/ext=crc%3D(-?\d+)/i, `ext=crc%3D${window._lastCalculatedSignature}`);
+                            }
+                            
+                            if (newUrl !== oldUrl) {
+                                // Thử gọi lại open() với URL mới (có thể không hoạt động với một số trình duyệt)
+                                const method = this._interceptedMethod || 'POST';
+                                originalXHROpen.call(this, method, newUrl, true);
+                                this._interceptedUrl = newUrl;
+                                
+                                const urlUpdateMsg = `🔐 [SIGNATURE] Đã cập nhật URL với chữ ký mới: ${window._lastCalculatedSignature}`;
+                                console.log(urlUpdateMsg);
+                                if (typeof window.addLogEntry === 'function') {
+                                    window.addLogEntry(urlUpdateMsg, 'success');
+                                }
+                            }
+                        } catch (e) {
+                            console.warn(`[SIGNATURE] Không thể cập nhật URL: ${e.message}`);
+                        }
                     }
                     
                     // QUAN TRỌNG: Gửi request đi với payload đã được thay thế
