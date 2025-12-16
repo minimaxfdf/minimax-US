@@ -411,9 +411,41 @@
                                         }
                                     }
                                     
-                                    // Tạo object mới để đảm bảo không bị ảnh hưởng bởi getter/setter
-                                    const cleanObject = JSON.parse(JSON.stringify(parsed));
-                                    cleanObject[foundField] = interceptText; // Đảm bảo giá trị đúng
+                                    // QUAN TRỌNG: Tạo object mới HOÀN TOÀN từ đầu để tránh getter/setter
+                                    // KHÔNG dùng JSON.parse(JSON.stringify(parsed)) vì sẽ giữ lại giá trị cũ
+                                    // Thay vào đó, tạo object mới và copy từng field một
+                                    function deepCloneAndSet(obj, targetField, targetValue) {
+                                        if (obj === null || typeof obj !== 'object') {
+                                            return obj;
+                                        }
+                                        
+                                        if (Array.isArray(obj)) {
+                                            return obj.map(item => deepCloneAndSet(item, targetField, targetValue));
+                                        }
+                                        
+                                        const cloned = {};
+                                        for (const key in obj) {
+                                            if (obj.hasOwnProperty(key)) {
+                                                if (key === targetField) {
+                                                    // Set giá trị mới trực tiếp
+                                                    cloned[key] = targetValue;
+                                                } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                                                    // Clone nested object
+                                                    cloned[key] = deepCloneAndSet(obj[key], targetField, targetValue);
+                                                } else {
+                                                    // Copy giá trị nguyên thủy
+                                                    cloned[key] = obj[key];
+                                                }
+                                            }
+                                        }
+                                        return cloned;
+                                    }
+                                    
+                                    // Tạo object mới với giá trị đúng
+                                    const cleanObject = deepCloneAndSet(parsed, foundField, interceptText);
+                                    
+                                    // Đảm bảo giá trị đúng trong cleanObject
+                                    cleanObject[foundField] = interceptText;
                                     
                                     // Stringify object mới
                                     const result = JSON.stringify(cleanObject);
@@ -422,27 +454,30 @@
                                     try {
                                         const parsedAfterStringify = JSON.parse(result);
                                         const checkAfterStringify = parsedAfterStringify[foundField] || '';
-                                        addLogEntry(`🔍 [INTERCEPTOR] Kiểm tra SAU KHI stringify: ${foundField} = ${checkAfterStringify.length} ký tự`, 'info');
+                                        addLogEntry(`🔍 [INTERCEPTOR] Kiểm tra SAU KHI stringify: ${foundField} = "${checkAfterStringify.substring(0, 50)}..." (${checkAfterStringify.length} ký tự)`, 'info');
                                         
                                         if (checkAfterStringify.length <= 1 || checkAfterStringify !== interceptText) {
                                             addLogEntry(`🚨 [INTERCEPTOR] LỖI: Sau khi stringify, ${foundField} = "${checkAfterStringify}" (${checkAfterStringify.length} ký tự) thay vì "${interceptText.substring(0, 50)}..." (${interceptText.length} ký tự)!`, 'error');
-                                            addLogEntry(`🔧 [INTERCEPTOR] Đang tạo lại payload với giá trị đúng...`, 'warning');
+                                            addLogEntry(`🔧 [INTERCEPTOR] Đang tạo lại payload với giá trị đúng bằng cách stringify trực tiếp...`, 'warning');
                                             
-                                            // Tạo lại payload với giá trị đúng - tạo object mới hoàn toàn
-                                            const fixedObject = { ...parsedAfterStringify };
-                                            fixedObject[foundField] = interceptText;
-                                            const fixedResult = JSON.stringify(fixedObject);
+                                            // PHƯƠNG PHÁP CUỐI CÙNG: Thay thế trực tiếp trong string JSON
+                                            const jsonString = JSON.stringify(parsed);
+                                            const regex = new RegExp(`"${foundField}"\\s*:\\s*"[^"]*"`, 'g');
+                                            const replacement = `"${foundField}":"${interceptText.replace(/"/g, '\\"')}"`;
+                                            const fixedResult = jsonString.replace(regex, replacement);
                                             
                                             // Kiểm tra lại lần cuối
                                             const finalVerify = JSON.parse(fixedResult);
                                             const finalValue = finalVerify[foundField] || '';
-                                            addLogEntry(`✅ [INTERCEPTOR] Đã tạo lại payload. ${foundField} = "${finalValue.substring(0, 50)}..." (${finalValue.length} ký tự)`, 'success');
+                                            addLogEntry(`✅ [INTERCEPTOR] Đã tạo lại payload bằng regex. ${foundField} = "${finalValue.substring(0, 50)}..." (${finalValue.length} ký tự)`, 'success');
                                             
                                             if (finalValue.length <= 1) {
-                                                addLogEntry(`🚨 [INTERCEPTOR] VẪN LỖI: Sau khi tạo lại, ${foundField} vẫn chỉ có ${finalValue.length} ký tự!`, 'error');
+                                                addLogEntry(`🚨 [INTERCEPTOR] VẪN LỖI: Sau khi tạo lại bằng regex, ${foundField} vẫn chỉ có ${finalValue.length} ký tự!`, 'error');
+                                                addLogEntry(`🔍 [INTERCEPTOR] Debug: jsonString = ${jsonString.substring(0, 200)}...`, 'info');
+                                                addLogEntry(`🔍 [INTERCEPTOR] Debug: fixedResult = ${fixedResult.substring(0, 200)}...`, 'info');
+                                            } else {
+                                                return fixedResult;
                                             }
-                                            
-                                            return fixedResult;
                                         }
                                     } catch (e) {
                                         addLogEntry(`⚠️ [INTERCEPTOR] Không thể parse lại để kiểm tra: ${e.message}`, 'warning');
