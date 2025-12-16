@@ -5756,7 +5756,7 @@ async function uSTZrHUt_IC() {
         // Áp dụng chuẩn hóa cho chunk trước khi gửi
         // DEBUG: Đảm bảo hàm được gọi
         console.log(`[DEBUG] Đang chuẩn hóa chunk ${ttuo$y_KhCV + 1}, độ dài: ${SI$acY[ttuo$y_KhCV].length}`);
-        const chunkText = normalizeChunkText(SI$acY[ttuo$y_KhCV]);
+        let chunkText = normalizeChunkText(SI$acY[ttuo$y_KhCV]);
         console.log(`[DEBUG] Sau chuẩn hóa, độ dài: ${chunkText.length}`);
 
         // LƯU LẠI ĐỘ DÀI VĂN BẢN ĐÃ CHUẨN HÓA ĐỂ KIỂM TRA SAU KHI GỬI
@@ -5772,36 +5772,53 @@ async function uSTZrHUt_IC() {
         
         // XÁO TRỘN TEXT: CHỈ SET 1 KÝ TỰ VÀO TEXTAREA (GHI NHỚ ĐỘ DÀI ĐẦY ĐỦ NHƯNG CHỈ GỬI 1 KÝ TỰ)
         // QUAN TRỌNG: Lưu text đầy đủ TRƯỚC KHI xáo trộn để interceptor có thể thay thế lại đúng
-        const fullChunkText = String(chunkText || ''); // Lưu text đầy đủ để interceptor dùng
-        
-        // XÁO TRỘN: Chỉ lấy 1 ký tự đầu tiên để set vào textarea (không xóa hết)
-        // Ghi nhớ độ dài bao nhiêu thì mặc kệ, chỉ gửi đi 1 ký tự vào textarea
-        const originalLength = fullChunkText.length;
-        let textForTextarea = '';
-        
-        if (fullChunkText.length > 0) {
-            // Chỉ lấy 1 ký tự đầu tiên để set vào textarea
-            textForTextarea = fullChunkText.charAt(0);
-        } else {
-            // Nếu text rỗng, dùng space để tránh Minimax tự thêm text mặc định
-            textForTextarea = ' ';
+        try {
+            const fullChunkText = String(chunkText || ''); // Lưu text đầy đủ để interceptor dùng
+            
+            // XÁO TRỘN: Chỉ lấy 1 ký tự đầu tiên để set vào textarea (không xóa hết)
+            // Ghi nhớ độ dài bao nhiêu thì mặc kệ, chỉ gửi đi 1 ký tự vào textarea
+            const originalLength = fullChunkText.length;
+            let textForTextarea = '';
+            
+            if (fullChunkText.length > 0) {
+                // Chỉ lấy 1 ký tự đầu tiên để set vào textarea
+                textForTextarea = fullChunkText.charAt(0);
+            } else {
+                // Nếu text rỗng, dùng space để tránh Minimax tự thêm text mặc định
+                textForTextarea = ' ';
+            }
+            
+            // Gán text đã xáo trộn (1 ký tự) vào chunkText để set vào textarea
+            chunkText = textForTextarea;
+            
+            // Log ra cả console và UI để đảm bảo hiển thị
+            const logMsg = `🔀 [Chunk ${ttuo$y_KhCV + 1}] Đã xáo trộn text: ${originalLength} ký tự → ${chunkText.length} ký tự (chỉ gửi vào textarea: "${chunkText}")`;
+            console.log(logMsg);
+            addLogEntry(logMsg, 'info');
+            
+            // Lưu text đầy đủ vào window để interceptor dùng
+            window.fullChunkTextForInterceptor = fullChunkText;
+        } catch (e) {
+            console.error('Lỗi khi xáo trộn text:', e);
+            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi xáo trộn text: ${e.message}`, 'error');
+            // Nếu có lỗi, đảm bảo có ít nhất 1 ký tự
+            if (!chunkText || chunkText.length === 0) {
+                chunkText = ' ';
+            }
         }
-        
-        // Gán text đã xáo trộn (1 ký tự) vào chunkText để set vào textarea
-        chunkText = textForTextarea;
-        
-        addLogEntry(`🔀 [Chunk ${ttuo$y_KhCV + 1}] Đã xáo trộn text: ${originalLength} ký tự → ${chunkText.length} ký tự (chỉ gửi vào textarea: "${chunkText}")`, 'info');
         
         // LƯU TEXT CHUNK ĐÚNG VÀO WINDOW ĐỂ NETWORK INTERCEPTOR CÓ THỂ SỬ DỤNG
         try {
             // Lưu text đầy đủ (chưa xáo trộn) để interceptor có thể thay thế lại đúng
-            window.currentChunkText = fullChunkText || chunkText;
+            // Sử dụng fullChunkTextForInterceptor nếu có, nếu không thì dùng chunkText hiện tại (đã xáo trộn)
+            const fullTextForInterceptor = window.fullChunkTextForInterceptor || chunkText;
+            window.currentChunkText = fullTextForInterceptor;
             window.currentChunkIndex = ttuo$y_KhCV;
             
             // --- FIX BY GEMINI: LUÔN SET INTERCEPT_CURRENT_TEXT ---
             // Bỏ điều kiện USE_PAYLOAD_MODE để đảm bảo 100% không có chunk nào bị bỏ qua
             // Interceptor sẽ luôn có dữ liệu để thay thế, không phụ thuộc vào cài đặt
-            window.INTERCEPT_CURRENT_TEXT = fullChunkText || chunkText;
+            window.INTERCEPT_CURRENT_TEXT = fullTextForInterceptor;
             window.INTERCEPT_CURRENT_INDEX = ttuo$y_KhCV;
         } catch (e) {
             console.warn('Không thể lưu currentChunkText:', e);
