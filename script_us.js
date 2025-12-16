@@ -493,6 +493,12 @@
                             }
                         }
                         
+                        // Log tất cả kết quả test (không chỉ CRC) để debug
+                        if (results.length <= 20) { // Chỉ log nếu không quá nhiều
+                            const allTestMsg = `🔐 [SIGNATURE_ANALYZER] Test ${results.length}: ${algo.name} = ${result.substring(0, 50)}${result.length > 50 ? '...' : ''} (match: ${match})`;
+                            console.log(allTestMsg);
+                        }
+                        
                         if (match) {
                             const matchMsg = `🔐 [SIGNATURE_ANALYZER] ✅ MATCH FOUND: ${algo.name}`;
                             console.log(matchMsg);
@@ -515,10 +521,23 @@
                 console.log(resultsMsg, results);
                 if (typeof window.addLogEntry === 'function') {
                     window.addLogEntry(resultsMsg, 'warning');
-                    // Log top 3 results gần nhất
-                    results.slice(0, 3).forEach((r, idx) => {
-                        window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] Result ${idx + 1}: ${r.algorithm} (length: ${r.length}, match: ${r.match})`, 'info');
-                    });
+                    // Log tất cả CRC results
+                    const crcResults = results.filter(r => r.algorithm.includes('CRC'));
+                    if (crcResults.length > 0) {
+                        window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] CRC32 test results (${crcResults.length} variants):`, 'info');
+                        crcResults.forEach((r, idx) => {
+                            window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] CRC ${idx + 1}: ${r.algorithm} = ${r.result}, expected = ${r.expected}, match = ${r.match}`, r.match ? 'success' : 'info');
+                        });
+                    } else {
+                        window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] ⚠️ No CRC32 algorithms were tested!`, 'warning');
+                    }
+                    // Log top 5 results gần nhất (không phải CRC)
+                    const nonCrcResults = results.filter(r => !r.algorithm.includes('CRC'));
+                    if (nonCrcResults.length > 0) {
+                        nonCrcResults.slice(0, 5).forEach((r, idx) => {
+                            window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] Result ${idx + 1}: ${r.algorithm} (length: ${r.length}, match: ${r.match})`, 'info');
+                        });
+                    }
                 }
                 return null;
             },
