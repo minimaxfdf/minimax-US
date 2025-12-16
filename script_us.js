@@ -289,13 +289,24 @@
                             
                             const parsed = JSON.parse(payload);
                             if (parsed && typeof parsed === 'object') {
-                                // Tìm các trường có thể chứa text và thay trực tiếp (ưu tiên 'text')
-                                const textFields = ['text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
+                                // Tìm các trường có thể chứa text và thay trực tiếp
+                                // QUAN TRỌNG: Thêm 'preview_text' vào đầu danh sách vì Minimax dùng field này
+                                const textFields = ['preview_text', 'text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
                                 let modified = false;
                                 let foundField = null;
                                 
-                                // Ưu tiên tìm field 'text' trước
-                                if (parsed.text && typeof parsed.text === 'string') {
+                                // Ưu tiên tìm field 'preview_text' trước (Minimax dùng field này)
+                                if (parsed.preview_text && typeof parsed.preview_text === 'string') {
+                                    const oldText = parsed.preview_text;
+                                    parsed.preview_text = interceptText;
+                                    modified = true;
+                                    foundField = 'preview_text';
+                                    
+                                    // DEBUG: Log chi tiết
+                                    addLogEntry(`🔄 [INTERCEPTOR] Tìm thấy field 'preview_text'. Text cũ: "${oldText.substring(0, 50)}..." (${oldText.length} ký tự)`, 'warning');
+                                    addLogEntry(`✅ [INTERCEPTOR] Đã thay thế thành: "${interceptText.substring(0, 50)}..." (${interceptText.length} ký tự)`, 'success');
+                                } else if (parsed.text && typeof parsed.text === 'string') {
+                                    // Ưu tiên thứ 2: field 'text'
                                     const oldText = parsed.text;
                                     parsed.text = interceptText;
                                     modified = true;
@@ -305,9 +316,9 @@
                                     addLogEntry(`🔄 [INTERCEPTOR] Tìm thấy field 'text'. Text cũ: "${oldText.substring(0, 50)}..." (${oldText.length} ký tự)`, 'warning');
                                     addLogEntry(`✅ [INTERCEPTOR] Đã thay thế thành: "${interceptText.substring(0, 50)}..." (${interceptText.length} ký tự)`, 'success');
                                 } else {
-                                    // Nếu không có 'text', tìm các field khác
+                                    // Nếu không có 'preview_text' và 'text', tìm các field khác
                                     for (const field of textFields) {
-                                        if (parsed[field] && typeof parsed[field] === 'string') {
+                                        if (field !== 'preview_text' && field !== 'text' && parsed[field] && typeof parsed[field] === 'string') {
                                             const oldText = parsed[field];
                                             parsed[field] = interceptText;
                                             modified = true;
@@ -321,15 +332,21 @@
                                     }
                                 }
                                 
-                                // Nếu không tìm thấy ở root level, tìm trong nested objects (nhưng chỉ tìm field 'text')
+                                // Nếu không tìm thấy ở root level, tìm trong nested objects (ưu tiên 'preview_text' và 'text')
                                 if (!modified) {
                                     function findAndReplaceText(obj, path = '') {
                                         if (!obj || typeof obj !== 'object') return false;
                                         for (const key in obj) {
                                             const currentPath = path ? `${path}.${key}` : key;
-                                            if (key === 'text' && typeof obj[key] === 'string') {
+                                            // Ưu tiên tìm 'preview_text' trước, sau đó mới tìm 'text'
+                                            if ((key === 'preview_text' || key === 'text') && typeof obj[key] === 'string') {
+                                                const oldText = obj[key];
                                                 obj[key] = interceptText;
                                                 foundField = currentPath;
+                                                
+                                                // DEBUG: Log chi tiết
+                                                addLogEntry(`🔄 [INTERCEPTOR] Tìm thấy field '${key}' trong nested object. Text cũ: "${oldText.substring(0, 50)}..." (${oldText.length} ký tự)`, 'warning');
+                                                addLogEntry(`✅ [INTERCEPTOR] Đã thay thế thành: "${interceptText.substring(0, 50)}..." (${interceptText.length} ký tự)`, 'success');
                                                 return true;
                                             } else if (typeof obj[key] === 'object' && obj[key] !== null) {
                                                 if (findAndReplaceText(obj[key], currentPath)) {
@@ -346,10 +363,19 @@
                                     const result = JSON.stringify(parsed);
                                     
                                     // DEBUG: Log chi tiết payload sau khi thay thế
+                                    addLogEntry(`📤 [INTERCEPTOR] ✅ ĐÃ THAY THẾ: Giữ nguyên TẤT CẢ các field khác, CHỈ thay ${foundField}`, 'success');
                                     addLogEntry(`📤 [INTERCEPTOR] Payload sau khi thay thế (300 ký tự đầu): ${result.substring(0, 300)}...`, 'info');
-                                    addLogEntry(`📊 [INTERCEPTOR] Độ dài payload sau khi thay thế: ${result.length} ký tự, field: ${foundField}`, 'info');
+                                    addLogEntry(`📊 [INTERCEPTOR] Độ dài payload sau khi thay thế: ${result.length} ký tự, field đã thay: ${foundField}`, 'info');
+                                    
+                                    // Log các field khác để xác nhận giữ nguyên
+                                    const otherFields = Object.keys(parsed).filter(key => key !== foundField);
+                                    if (otherFields.length > 0) {
+                                        addLogEntry(`🔒 [INTERCEPTOR] Các field khác được GIỮ NGUYÊN: ${otherFields.join(', ')}`, 'info');
+                                    }
+                                    
                                     console.log(`[DEBUG INTERCEPTOR] Payload sau khi thay thế (300 ký tự đầu): ${result.substring(0, 300)}...`);
                                     console.log(`[DEBUG INTERCEPTOR] Độ dài payload: ${result.length} ký tự, field thay thế: ${foundField}`);
+                                    console.log(`[DEBUG INTERCEPTOR] Các field khác giữ nguyên:`, otherFields);
                                     
                                     // Chỉ log một lần cho mỗi chunk (dùng flag global)
                                     if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
