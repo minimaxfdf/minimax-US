@@ -5772,9 +5772,11 @@ async function uSTZrHUt_IC() {
         
         // XÁO TRỘN TEXT: CHỈ SET 1 KÝ TỰ VÀO TEXTAREA (GHI NHỚ ĐỘ DÀI ĐẦY ĐỦ NHƯNG CHỈ GỬI 1 KÝ TỰ)
         // QUAN TRỌNG: Lưu text đầy đủ TRƯỚC KHI xáo trộn để interceptor có thể thay thế lại đúng
+        // Lưu text đầy đủ vào window TRƯỚC KHI xáo trộn (đảm bảo luôn có giá trị)
+        const fullChunkText = String(chunkText || ''); // Lưu text đầy đủ để interceptor dùng
+        window.fullChunkTextForInterceptor = fullChunkText; // Lưu ngay để đảm bảo không bị mất
+        
         try {
-            const fullChunkText = String(chunkText || ''); // Lưu text đầy đủ để interceptor dùng
-            
             // XÁO TRỘN: Chỉ lấy 1 ký tự đầu tiên để set vào textarea (không xóa hết)
             // Ghi nhớ độ dài bao nhiêu thì mặc kệ, chỉ gửi đi 1 ký tự vào textarea
             const originalLength = fullChunkText.length;
@@ -5795,9 +5797,6 @@ async function uSTZrHUt_IC() {
             const logMsg = `🔀 [Chunk ${ttuo$y_KhCV + 1}] Đã xáo trộn text: ${originalLength} ký tự → ${chunkText.length} ký tự (chỉ gửi vào textarea: "${chunkText}")`;
             console.log(logMsg);
             addLogEntry(logMsg, 'info');
-            
-            // Lưu text đầy đủ vào window để interceptor dùng
-            window.fullChunkTextForInterceptor = fullChunkText;
         } catch (e) {
             console.error('Lỗi khi xáo trộn text:', e);
             addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi xáo trộn text: ${e.message}`, 'error');
@@ -5810,16 +5809,31 @@ async function uSTZrHUt_IC() {
         // LƯU TEXT CHUNK ĐÚNG VÀO WINDOW ĐỂ NETWORK INTERCEPTOR CÓ THỂ SỬ DỤNG
         try {
             // Lưu text đầy đủ (chưa xáo trộn) để interceptor có thể thay thế lại đúng
-            // Sử dụng fullChunkTextForInterceptor nếu có, nếu không thì dùng chunkText hiện tại (đã xáo trộn)
-            const fullTextForInterceptor = window.fullChunkTextForInterceptor || chunkText;
-            window.currentChunkText = fullTextForInterceptor;
-            window.currentChunkIndex = ttuo$y_KhCV;
+            // QUAN TRỌNG: Phải dùng fullChunkTextForInterceptor (text đầy đủ), KHÔNG dùng chunkText (đã xáo trộn thành 1 ký tự)
+            const fullTextForInterceptor = window.fullChunkTextForInterceptor;
             
-            // --- FIX BY GEMINI: LUÔN SET INTERCEPT_CURRENT_TEXT ---
-            // Bỏ điều kiện USE_PAYLOAD_MODE để đảm bảo 100% không có chunk nào bị bỏ qua
-            // Interceptor sẽ luôn có dữ liệu để thay thế, không phụ thuộc vào cài đặt
-            window.INTERCEPT_CURRENT_TEXT = fullTextForInterceptor;
-            window.INTERCEPT_CURRENT_INDEX = ttuo$y_KhCV;
+            if (!fullTextForInterceptor) {
+                console.error(`[ERROR] fullChunkTextForInterceptor không tồn tại cho chunk ${ttuo$y_KhCV + 1}!`);
+                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] CẢNH BÁO: fullChunkTextForInterceptor không tồn tại!`, 'error');
+            }
+            
+            // Đảm bảo luôn có text đầy đủ để interceptor dùng
+            if (fullTextForInterceptor && fullTextForInterceptor.length > 0) {
+                window.currentChunkText = fullTextForInterceptor;
+                window.currentChunkIndex = ttuo$y_KhCV;
+                
+                // --- FIX BY GEMINI: LUÔN SET INTERCEPT_CURRENT_TEXT ---
+                // Bỏ điều kiện USE_PAYLOAD_MODE để đảm bảo 100% không có chunk nào bị bỏ qua
+                // Interceptor sẽ luôn có dữ liệu để thay thế, không phụ thuộc vào cài đặt
+                window.INTERCEPT_CURRENT_TEXT = fullTextForInterceptor;
+                window.INTERCEPT_CURRENT_INDEX = ttuo$y_KhCV;
+                
+                // Debug log để đảm bảo text đầy đủ được lưu đúng
+                console.log(`[DEBUG] Đã lưu INTERCEPT_CURRENT_TEXT cho chunk ${ttuo$y_KhCV + 1}: ${fullTextForInterceptor.length} ký tự - "${fullTextForInterceptor.substring(0, 50)}..."`);
+            } else {
+                console.error(`[ERROR] Không thể lưu INTERCEPT_CURRENT_TEXT cho chunk ${ttuo$y_KhCV + 1} - fullTextForInterceptor rỗng hoặc không hợp lệ!`);
+                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] LỖI: Không thể lưu text đầy đủ vào INTERCEPT_CURRENT_TEXT!`, 'error');
+            }
         } catch (e) {
             console.warn('Không thể lưu currentChunkText:', e);
         }
