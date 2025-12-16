@@ -1911,18 +1911,60 @@
                                     }
                                 } else {
                                     logToUI(`❌ [NETWORK INTERCEPTOR] XMLHttpRequest lỗi: ${this.status} ${this.statusText}`, 'error');
+                                    
+                                    // Log response body đầy đủ
+                                    let responseBody = 'N/A';
+                                    let responseJson = null;
+                                    try {
+                                        if (this.responseText) {
+                                            responseBody = this.responseText;
+                                            responseJson = JSON.parse(this.responseText);
+                                        }
+                                    } catch (e) {
+                                        responseBody = this.responseText || 'N/A';
+                                    }
+                                    
                                     console.error(`[DEBUG] Response lỗi cho voice/clone:`, {
                                         status: this.status,
                                         statusText: this.statusText,
-                                        responseText: this.responseText ? this.responseText.substring(0, 500) : 'N/A',
+                                        responseText: responseBody,
+                                        responseJson: responseJson,
                                         headers: this.getAllResponseHeaders()
                                     });
+                                    
+                                    // Log vào UI log
+                                    if (typeof window.addLogEntry === 'function') {
+                                        window.addLogEntry(`❌ [VOICE/CLONE ERROR] Status: ${this.status} ${this.statusText}`, 'error');
+                                        if (responseJson) {
+                                            window.addLogEntry(`❌ [VOICE/CLONE ERROR] Response: ${JSON.stringify(responseJson)}`, 'error');
+                                        } else if (responseBody && responseBody !== 'N/A') {
+                                            window.addLogEntry(`❌ [VOICE/CLONE ERROR] Response: ${responseBody.substring(0, 500)}`, 'error');
+                                        }
+                                    }
                                     
                                     // Nếu là lỗi 400, có thể do signature sai
                                     if (this.status === 400) {
                                         logToUI(`⚠️ [SIGNATURE] Có thể chữ ký không đúng! Status 400. Signature đã gửi: ${window._lastCalculatedSignature}`, 'error');
                                         console.error(`[SIGNATURE DEBUG] Signature đã gửi: ${window._lastCalculatedSignature}`);
                                         console.error(`[SIGNATURE DEBUG] Payload đã gửi:`, window._lastPayloadForSignature ? window._lastPayloadForSignature.substring(0, 200) : 'N/A');
+                                        console.error(`[SIGNATURE DEBUG] URL đã gửi:`, this._url || currentUrl);
+                                        
+                                        // Tính lại signature từ payload để so sánh
+                                        if (window._lastPayloadForSignature) {
+                                            const recalculated = calculateHailuoSignature(window._lastPayloadForSignature);
+                                            console.error(`[SIGNATURE DEBUG] Signature tính lại từ payload: ${recalculated}`);
+                                            if (recalculated !== window._lastCalculatedSignature) {
+                                                console.error(`[SIGNATURE DEBUG] ⚠️ Signature không khớp! Có thể payload đã thay đổi sau khi tính signature.`);
+                                            }
+                                        }
+                                        
+                                        // Log response error message nếu có
+                                        if (responseJson) {
+                                            console.error(`[SIGNATURE DEBUG] Server error message:`, responseJson);
+                                            if (typeof window.addLogEntry === 'function') {
+                                                window.addLogEntry(`⚠️ [SIGNATURE] Server error: ${JSON.stringify(responseJson)}`, 'error');
+                                            }
+                                        }
                                     }
                                 }
                             } else {
