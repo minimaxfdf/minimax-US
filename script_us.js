@@ -103,9 +103,8 @@
                         const currentIndex = window.INTERCEPT_CURRENT_INDEX;
                         
                         // Hiển thị text đã được thay thế để debug (luôn log để xem text gửi đi)
-                        const textPreview = interceptText.length > 100 
-                            ? interceptText.substring(0, 100) + '...' 
-                            : interceptText;
+                        // KHÔNG truncate để hiển thị đầy đủ nội dung log
+                        const textPreview = interceptText; // Hiển thị full text
                         
                         // LUÔN log để debug - không bị chặn bởi flag
                         const logMsg1 = `🛡️ [NETWORK INTERCEPTOR] Force-fix payload chunk ${(currentIndex || 0) + 1}`;
@@ -303,6 +302,10 @@
                             // Debug: Log payload gốc để xem cấu trúc
                             if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
                                 console.log(`[DEBUG] Payload gốc (500 ký tự đầu):`, payload.substring(0, 500));
+                                // Log full payload vào UI để hiển thị đầy đủ
+                                if (typeof window.addLogEntry === 'function') {
+                                    window.addLogEntry(`[DEBUG] Payload gốc (${payload.length} ký tự): ${payload}`, 'info');
+                                }
                             }
                             const parsed = JSON.parse(payload);
                             if (parsed && typeof parsed === 'object') {
@@ -351,9 +354,8 @@
                                 
                                 if (modified) {
                                     // Hiển thị text đã được thay thế để debug (luôn log để xem text gửi đi)
-                                    const textPreview = interceptText.length > 100 
-                                        ? interceptText.substring(0, 100) + '...' 
-                                        : interceptText;
+                                    // KHÔNG truncate để hiển thị đầy đủ nội dung log
+                                    const textPreview = interceptText; // Hiển thị full text
                                     
                                     // LUÔN log để debug - không bị chặn bởi flag
                                     const logMsg1 = `🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload (field: ${foundField}) bằng chunk ${(currentIndex || 0) + 1}`;
@@ -381,24 +383,31 @@
                                         window._interceptLoggedForChunk = currentIndex;
                                     }
                                     
-                                    // Debug: Log payload sau khi thay thế (chỉ log một phần để không spam)
-                                    const debugPayload = JSON.stringify(parsed).substring(0, 300);
-                                    console.log(`[DEBUG] Payload sau khi thay thế (300 ký tự đầu): ${debugPayload}...`);
-                                    
+                                    // Debug: Log payload sau khi thay thế - hiển thị full payload trong UI log
                                     const result = JSON.stringify(parsed);
+                                    const debugPayload = result; // Hiển thị full payload
+                                    console.log(`[DEBUG] Payload sau khi thay thế (300 ký tự đầu): ${result.substring(0, 300)}...`);
+                                    // Log full payload vào UI
+                                    if (typeof window.addLogEntry === 'function') {
+                                        window.addLogEntry(`[DEBUG] Payload sau khi thay thế (${result.length} ký tự): ${debugPayload}`, 'info');
+                                    }
+                                    
                                     console.log(`[DEBUG] Payload đã được stringify, độ dài: ${result.length} ký tự, field thay thế: ${foundField}`);
                                     return result;
                                 } else {
-                                    // Nếu không modified, log để debug
-                                    console.warn(`[DEBUG] Không tìm thấy field text trong payload để thay thế. Payload gốc:`, payload.substring(0, 500));
+                                    // Nếu không modified, log để debug - hiển thị full payload trong UI log
+                                    console.warn(`[DEBUG] Không tìm thấy field text trong payload để thay thế. Payload gốc (500 ký tự đầu):`, payload.substring(0, 500));
+                                    // Log full payload vào UI
+                                    if (typeof window.addLogEntry === 'function') {
+                                        window.addLogEntry(`[DEBUG] Không tìm thấy field text trong payload để thay thế. Payload gốc (${payload.length} ký tự): ${payload}`, 'warning');
+                                    }
                                     // Trả về payload gốc để không làm hỏng request
                                     return payload;
                                 }
                             } else if (typeof parsed === 'string') {
                                 // Hiển thị text đã được thay thế để debug (luôn log để xem text gửi đi)
-                                const textPreview = interceptText.length > 100 
-                                    ? interceptText.substring(0, 100) + '...' 
-                                    : interceptText;
+                                // KHÔNG truncate để hiển thị đầy đủ nội dung log
+                                const textPreview = interceptText; // Hiển thị full text
                                 
                                 // LUÔN log để debug - không bị chặn bởi flag
                                 const logMsg1 = `🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`;
@@ -5914,8 +5923,12 @@ async function uSTZrHUt_IC() {
                 window.INTERCEPT_CURRENT_TEXT = fullTextForInterceptor;
                 window.INTERCEPT_CURRENT_INDEX = ttuo$y_KhCV;
                 
-                // Debug log để đảm bảo text đầy đủ được lưu đúng
-                console.log(`[DEBUG] Đã lưu INTERCEPT_CURRENT_TEXT cho chunk ${ttuo$y_KhCV + 1}: ${fullTextForInterceptor.length} ký tự - "${fullTextForInterceptor.substring(0, 50)}..."`);
+                // Debug log để đảm bảo text đầy đủ được lưu đúng - hiển thị full text
+                console.log(`[DEBUG] Đã lưu INTERCEPT_CURRENT_TEXT cho chunk ${ttuo$y_KhCV + 1}: ${fullTextForInterceptor.length} ký tự - "${fullTextForInterceptor}"`);
+                // Log vào UI để hiển thị đầy đủ
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry(`[DEBUG] Đã lưu INTERCEPT_CURRENT_TEXT cho chunk ${ttuo$y_KhCV + 1}: ${fullTextForInterceptor.length} ký tự - "${fullTextForInterceptor}"`, 'info');
+                }
             } else {
                 console.error(`[ERROR] Không thể lưu INTERCEPT_CURRENT_TEXT cho chunk ${ttuo$y_KhCV + 1} - fullTextForInterceptor rỗng hoặc không hợp lệ!`);
                 addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] LỖI: Không thể lưu text đầy đủ vào INTERCEPT_CURRENT_TEXT!`, 'error');
