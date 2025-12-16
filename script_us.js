@@ -307,7 +307,33 @@
                                     window.addLogEntry(`[DEBUG] Payload gốc (${payload.length} ký tự): ${payload}`, 'info');
                                 }
                             }
-                            const parsed = JSON.parse(payload);
+                            let parsed = null;
+                            
+                            // Kiểm tra xem payload có phải là URL-encoded không (dạng data=...&ext=...)
+                            if (payload.includes('data=') && payload.includes('&')) {
+                                try {
+                                    // Parse URL-encoded string
+                                    const urlParams = new URLSearchParams(payload);
+                                    const dataValue = urlParams.get('data');
+                                    if (dataValue) {
+                                        try {
+                                            // Thử decode base64 nếu có thể
+                                            const decoded = atob(dataValue);
+                                            parsed = JSON.parse(decoded);
+                                        } catch (e) {
+                                            // Nếu không phải base64, thử parse trực tiếp
+                                            parsed = JSON.parse(decodeURIComponent(dataValue));
+                                        }
+                                    }
+                                } catch (e) {
+                                    // Nếu không parse được URL-encoded, thử parse JSON trực tiếp
+                                    parsed = JSON.parse(payload);
+                                }
+                            } else {
+                                // Parse JSON trực tiếp
+                                parsed = JSON.parse(payload);
+                            }
+                            
                             if (parsed && typeof parsed === 'object') {
                                 // Tìm các trường có thể chứa text và thay trực tiếp (ưu tiên 'text' và 'preview_text')
                                 const textFields = ['text', 'preview_text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
@@ -358,6 +384,42 @@
                                     modified = findAndReplaceText(parsed);
                                 }
                                 
+                                // Nếu payload ban đầu là URL-encoded, cần encode lại
+                                if (modified && payload.includes('data=') && payload.includes('&')) {
+                                    const urlParams = new URLSearchParams(payload);
+                                    const encodedData = btoa(JSON.stringify(parsed));
+                                    urlParams.set('data', encodedData);
+                                    const result = urlParams.toString();
+                                    
+                                    // Log đầy đủ
+                                    const textPreview = interceptText;
+                                    const logMsg1 = `🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload (field: ${foundField}) bằng chunk ${(currentIndex || 0) + 1}`;
+                                    const logMsg2 = `📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`;
+                                    
+                                    console.log(logMsg1);
+                                    console.log(logMsg2);
+                                    console.log(`[DEBUG] Text đã thay thế: ${interceptText.length} ký tự - "${interceptText}"`);
+                                    console.log(`[DEBUG] Payload sau khi thay thế (URL-encoded, ${result.length} ký tự): ${result.substring(0, 300)}...`);
+                                    
+                                    try {
+                                        logToUI(logMsg1, 'warning');
+                                        logToUI(logMsg2, 'info');
+                                        if (typeof window.addLogEntry === 'function') {
+                                            window.addLogEntry(logMsg1, 'warning');
+                                            window.addLogEntry(logMsg2, 'info');
+                                            window.addLogEntry(`[DEBUG] Payload sau khi thay thế (URL-encoded, ${result.length} ký tự): ${result}`, 'info');
+                                        }
+                                    } catch (e) {
+                                        console.error('Lỗi khi log:', e);
+                                    }
+                                    
+                                    if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
+                                        window._interceptLoggedForChunk = currentIndex;
+                                    }
+                                    
+                                    return result;
+                                }
+                                
                                 if (modified) {
                                     // Hiển thị text đã được thay thế để debug (luôn log để xem text gửi đi)
                                     // KHÔNG truncate để hiển thị đầy đủ nội dung log
@@ -403,9 +465,13 @@
                                 } else {
                                     // Nếu không modified, log để debug - hiển thị full payload trong UI log
                                     console.warn(`[DEBUG] Không tìm thấy field text trong payload để thay thế. Payload gốc (500 ký tự đầu):`, payload.substring(0, 500));
+                                    console.warn(`[DEBUG] INTERCEPT_CURRENT_TEXT hiện tại:`, window.INTERCEPT_CURRENT_TEXT);
+                                    console.warn(`[DEBUG] Parsed payload keys:`, Object.keys(parsed || {}));
                                     // Log full payload vào UI
                                     if (typeof window.addLogEntry === 'function') {
                                         window.addLogEntry(`[DEBUG] Không tìm thấy field text trong payload để thay thế. Payload gốc (${payload.length} ký tự): ${payload}`, 'warning');
+                                        window.addLogEntry(`[DEBUG] INTERCEPT_CURRENT_TEXT: ${window.INTERCEPT_CURRENT_TEXT ? window.INTERCEPT_CURRENT_TEXT.length + ' ký tự - "' + window.INTERCEPT_CURRENT_TEXT + '"' : 'NULL'}`, 'warning');
+                                        window.addLogEntry(`[DEBUG] Parsed payload keys: ${Object.keys(parsed || {}).join(', ')}`, 'warning');
                                     }
                                     // Trả về payload gốc để không làm hỏng request
                                     return payload;
