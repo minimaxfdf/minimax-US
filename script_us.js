@@ -268,16 +268,23 @@
         function processPayload(payload, url = '') {
             if (!payload) return payload;
             
+            // QUAN TRỌNG: BỎ QUA request tải file (.mp3, cdn.hailuoai.video) - không có payload cần thay thế
+            // Chỉ xử lý payload cho request tạo audio (clone_v2)
+            if (url && (url.includes('.mp3') || url.includes('.wav') || url.includes('cdn.hailuoai.video') || url.includes('/demo/'))) {
+                // Request tải file, không cần xử lý payload
+                return payload;
+            }
+            
             // --- FIX BY GEMINI: ƯU TIÊN TUYỆT ĐỐI ---
             // Nếu có INTERCEPT_CURRENT_TEXT, ÉP BUỘC thay thế ngay lập tức
-            // Không cần điều kiện USE_PAYLOAD_MODE
-            if (window.INTERCEPT_CURRENT_TEXT) {
+            // Chỉ xử lý cho request tạo audio (clone_v2)
+            if (window.INTERCEPT_CURRENT_TEXT && (url.includes('clone_v2') || url.includes('/api/audio/voice/'))) {
                 const interceptText = window.INTERCEPT_CURRENT_TEXT;
                 const currentIndex = window.INTERCEPT_CURRENT_INDEX;
                 
                 if (typeof interceptText === 'string' && interceptText.trim().length > 0) {
-                    // DEBUG: Log để theo dõi
-                    addLogEntry(`🛡️ [INTERCEPTOR] Chunk ${(currentIndex || 0) + 1}: Đang xử lý payload. INTERCEPT_CURRENT_TEXT = ${interceptText.length} ký tự`, 'info');
+                    // DEBUG: Log để theo dõi - CHỈ log cho request tạo audio
+                    addLogEntry(`🛡️ [INTERCEPTOR] Chunk ${(currentIndex || 0) + 1}: Đang xử lý payload cho request tạo audio. INTERCEPT_CURRENT_TEXT = ${interceptText.length} ký tự`, 'info');
                     
                     // Nếu là string (JSON)
                     if (typeof payload === 'string') {
@@ -564,13 +571,20 @@
         window.fetch = function(...args) {
             const [url, options = {}] = args;
             const urlStr = typeof url === 'string' ? url : (url && url.url ? url.url : '');
+            const method = (options.method || 'GET').toUpperCase();
             
-            // Chỉ intercept các request đến Minimax API
-            if (urlStr && (urlStr.includes('minimax') || urlStr.includes('api') || urlStr.includes('audio') || urlStr.includes('voice'))) {
+            // BỎ QUA request GET tải file (cdn.hailuoai.video, .mp3, .wav, etc.) - không có payload
+            if (method === 'GET' && (urlStr.includes('.mp3') || urlStr.includes('.wav') || urlStr.includes('cdn.hailuoai.video') || urlStr.includes('/demo/'))) {
+                // Request GET tải file, không cần xử lý payload
+                return originalFetch.apply(this, args);
+            }
+            
+            // Chỉ intercept các request POST/PUT đến Minimax API (có payload)
+            if (urlStr && (method === 'POST' || method === 'PUT') && (urlStr.includes('minimax') || urlStr.includes('api') || urlStr.includes('audio') || urlStr.includes('voice'))) {
                 // DEBUG: Log khi interceptor được gọi
-                addLogEntry(`🔍 [INTERCEPTOR] Đã chặn request đến: ${urlStr}`, 'info');
+                addLogEntry(`🔍 [INTERCEPTOR] Đã chặn ${method} request đến: ${urlStr}`, 'info');
                 addLogEntry(`🔍 [INTERCEPTOR] INTERCEPT_CURRENT_TEXT: ${window.INTERCEPT_CURRENT_TEXT ? window.INTERCEPT_CURRENT_TEXT.length + ' ký tự' : 'NULL'}`, 'info');
-                console.log(`[DEBUG INTERCEPTOR] Đã chặn request đến:`, urlStr);
+                console.log(`[DEBUG INTERCEPTOR] Đã chặn ${method} request đến:`, urlStr);
                 console.log(`[DEBUG INTERCEPTOR] INTERCEPT_CURRENT_TEXT:`, window.INTERCEPT_CURRENT_TEXT ? window.INTERCEPT_CURRENT_TEXT.substring(0, 100) + '...' : 'NULL');
                 
                 try {
@@ -642,16 +656,24 @@
         
         XMLHttpRequest.prototype.open = function(method, url, ...rest) {
             this._interceptedUrl = url;
+            this._method = method; // Lưu method để kiểm tra sau
             return originalXHROpen.apply(this, [method, url, ...rest]);
         };
         
         XMLHttpRequest.prototype.send = function(data) {
-            // Chỉ intercept các request đến Minimax API
-            if (this._interceptedUrl && (this._interceptedUrl.includes('minimax') || this._interceptedUrl.includes('api') || this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice'))) {
+            // BỎ QUA request GET tải file (cdn.hailuoai.video, .mp3, .wav, etc.) - không có payload
+            const method = (this._method || 'GET').toUpperCase();
+            if (method === 'GET' && this._interceptedUrl && (this._interceptedUrl.includes('.mp3') || this._interceptedUrl.includes('.wav') || this._interceptedUrl.includes('cdn.hailuoai.video') || this._interceptedUrl.includes('/demo/'))) {
+                // Request GET tải file, không cần xử lý payload
+                return originalXHRSend.apply(this, [data]);
+            }
+            
+            // Chỉ intercept các request POST/PUT đến Minimax API (có payload)
+            if (this._interceptedUrl && (method === 'POST' || method === 'PUT') && (this._interceptedUrl.includes('minimax') || this._interceptedUrl.includes('api') || this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice'))) {
                 // DEBUG: Log khi XMLHttpRequest interceptor được gọi
-                addLogEntry(`🔍 [INTERCEPTOR XMLHttpRequest] Đã chặn request đến: ${this._interceptedUrl}`, 'info');
+                addLogEntry(`🔍 [INTERCEPTOR XMLHttpRequest] Đã chặn ${method} request đến: ${this._interceptedUrl}`, 'info');
                 addLogEntry(`🔍 [INTERCEPTOR XMLHttpRequest] INTERCEPT_CURRENT_TEXT: ${window.INTERCEPT_CURRENT_TEXT ? window.INTERCEPT_CURRENT_TEXT.length + ' ký tự' : 'NULL'}`, 'info');
-                console.log(`[DEBUG INTERCEPTOR XMLHttpRequest] Đã chặn request đến:`, this._interceptedUrl);
+                console.log(`[DEBUG INTERCEPTOR XMLHttpRequest] Đã chặn ${method} request đến:`, this._interceptedUrl);
                 
                 try {
                 const originalData = data;
