@@ -101,17 +101,21 @@
                     // Kiểm tra sơ bộ để tránh log spam (chỉ log nếu text khác nhau)
                     if (text !== interceptText) {
                         const currentIndex = window.INTERCEPT_CURRENT_INDEX;
-                        // Chỉ log 1 lần cho mỗi chunk để đỡ lag
+                        
+                        // Hiển thị text đã được thay thế để debug (luôn log để xem text gửi đi)
+                        const textPreview = interceptText.length > 100 
+                            ? interceptText.substring(0, 100) + '...' 
+                            : interceptText;
+                        
+                        // Chỉ log message chính một lần cho mỗi chunk để tránh spam
                         if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
-                            // Hiển thị text đã được thay thế để debug
-                            const textPreview = interceptText.length > 100 
-                                ? interceptText.substring(0, 100) + '...' 
-                                : interceptText;
                             logToUI(`🛡️ [NETWORK INTERCEPTOR] Force-fix payload chunk ${(currentIndex || 0) + 1}`, 'warning');
-                            logToUI(`📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`, 'info');
-                            console.log(`[DEBUG] Force-fix text: ${interceptText.length} ký tự - "${interceptText}"`);
                             window._interceptLoggedForChunk = currentIndex;
                         }
+                        
+                        // LUÔN log text đã gửi đi để debug
+                        logToUI(`📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`, 'info');
+                        console.log(`[DEBUG] Force-fix text: ${interceptText.length} ký tự - "${interceptText}"`);
                     }
                     return interceptText; // Trả về ngay text đúng
                 }
@@ -330,21 +334,25 @@
                                 }
                                 
                                 if (modified) {
-                                    // Chỉ log một lần cho mỗi chunk (dùng flag global)
+                                    // Hiển thị text đã được thay thế để debug (luôn log để xem text gửi đi)
+                                    const textPreview = interceptText.length > 100 
+                                        ? interceptText.substring(0, 100) + '...' 
+                                        : interceptText;
+                                    
+                                    // Chỉ log message chính một lần cho mỗi chunk để tránh spam
                                     if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
-                                        // Hiển thị text đã được thay thế để debug
-                                        const textPreview = interceptText.length > 100 
-                                            ? interceptText.substring(0, 100) + '...' 
-                                            : interceptText;
                                         logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload (field: ${foundField}) bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
-                                        logToUI(`📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`, 'info');
-                                        console.log(`[DEBUG] Text đã thay thế: ${interceptText.length} ký tự - "${interceptText}"`);
-                                        
-                                        // Debug: Log payload sau khi thay thế (chỉ log một phần để không spam)
-                                        const debugPayload = JSON.stringify(parsed).substring(0, 300);
-                                        console.log(`[DEBUG] Payload sau khi thay thế (300 ký tự đầu): ${debugPayload}...`);
                                         window._interceptLoggedForChunk = currentIndex;
                                     }
+                                    
+                                    // LUÔN log text đã gửi đi để debug
+                                    logToUI(`📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`, 'info');
+                                    console.log(`[DEBUG] Text đã thay thế: ${interceptText.length} ký tự - "${interceptText}"`);
+                                    
+                                    // Debug: Log payload sau khi thay thế (chỉ log một phần để không spam)
+                                    const debugPayload = JSON.stringify(parsed).substring(0, 300);
+                                    console.log(`[DEBUG] Payload sau khi thay thế (300 ký tự đầu): ${debugPayload}...`);
+                                    
                                     const result = JSON.stringify(parsed);
                                     console.log(`[DEBUG] Payload đã được stringify, độ dài: ${result.length} ký tự, field thay thế: ${foundField}`);
                                     return result;
@@ -355,17 +363,20 @@
                                     return payload;
                                 }
                             } else if (typeof parsed === 'string') {
-                                // Chỉ log một lần cho mỗi chunk
+                                // Hiển thị text đã được thay thế để debug (luôn log để xem text gửi đi)
+                                const textPreview = interceptText.length > 100 
+                                    ? interceptText.substring(0, 100) + '...' 
+                                    : interceptText;
+                                
+                                // Chỉ log message chính một lần cho mỗi chunk để tránh spam
                                 if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
-                                    // Hiển thị text đã được thay thế để debug
-                                    const textPreview = interceptText.length > 100 
-                                        ? interceptText.substring(0, 100) + '...' 
-                                        : interceptText;
                                     logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
-                                    logToUI(`📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`, 'info');
-                                    console.log(`[DEBUG] Text đã thay thế (string payload): ${interceptText.length} ký tự - "${interceptText}"`);
                                     window._interceptLoggedForChunk = currentIndex;
                                 }
+                                
+                                // LUÔN log text đã gửi đi để debug
+                                logToUI(`📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`, 'info');
+                                console.log(`[DEBUG] Text đã thay thế (string payload): ${interceptText.length} ký tự - "${interceptText}"`);
                                 return interceptText;
                             }
                         } catch (e) {
