@@ -5770,11 +5770,24 @@ async function uSTZrHUt_IC() {
             console.warn('Không thể lưu expectedChunkLengths:', e);
         }
         
-        // XÁO TRỘN TEXT: CHỈ LẤY 1 KÝ TỰ ĐẦU TIÊN ĐỂ GỬI ĐI
+        // XÁO TRỘN TEXT: CHỈ LẤY 1 KÝ TỰ ĐẦU TIÊN ĐỂ GỬI ĐI (KHÔNG XÓA HẾT - PHẢI CHỪA LẠI ÍT NHẤT 1 KÝ TỰ)
         const fullChunkText = chunkText; // Lưu text đầy đủ để interceptor dùng
         if (chunkText && chunkText.length > 0) {
-            chunkText = chunkText.charAt(0); // Chỉ lấy 1 ký tự đầu tiên
-            addLogEntry(`🔀 [Chunk ${ttuo$y_KhCV + 1}] Đã xáo trộn text: ${fullChunkText.length} ký tự → ${chunkText.length} ký tự (chỉ gửi: "${chunkText}")`, 'info');
+            // QUAN TRỌNG: Chỉ lấy 1 ký tự đầu tiên, KHÔNG XÓA HẾT
+            // Nếu xóa hết thì Minimax sẽ tự thêm text mặc định gây lỗi
+            const originalLength = chunkText.length;
+            chunkText = chunkText.charAt(0); // Chỉ lấy 1 ký tự đầu tiên (luôn có ít nhất 1 ký tự)
+            
+            // Đảm bảo luôn có ít nhất 1 ký tự (không bao giờ rỗng)
+            if (!chunkText || chunkText.length === 0) {
+                chunkText = fullChunkText.charAt(0) || ' '; // Fallback: lấy ký tự đầu hoặc space
+            }
+            
+            addLogEntry(`🔀 [Chunk ${ttuo$y_KhCV + 1}] Đã xáo trộn text: ${originalLength} ký tự → ${chunkText.length} ký tự (chỉ gửi: "${chunkText}")`, 'info');
+        } else {
+            // Nếu text rỗng, đảm bảo có ít nhất 1 ký tự để tránh Minimax tự thêm text mặc định
+            chunkText = chunkText || ' ';
+            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Text rỗng, đã thêm 1 ký tự space để tránh Minimax tự thêm text mặc định`, 'warning');
         }
         
         // LƯU TEXT CHUNK ĐÚNG VÀO WINDOW ĐỂ NETWORK INTERCEPTOR CÓ THỂ SỬ DỤNG
