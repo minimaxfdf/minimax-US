@@ -8538,25 +8538,6 @@ async function waitForVoiceModelReady() {
                 });
             }
 
-
-            // Override console.log để phát hiện khi hết retry
-            const originalConsoleLog = console.log;
-            console.log = function(...args) {
-                const message = args.join(' ');
-
-                // Phát hiện khi hết retry
-                if (message.includes('Đã thử lại') && message.includes('lần nhưng vẫn thất bại')) {
-                    console.warn('🚨 Phát hiện hết lượt retry, ngừng tool...');
-                    setTimeout(() => {
-                        if (typeof window.stopTool === 'function') {
-                            window.stopTool();
-                        }
-                    }, 1000);
-                }
-
-                return originalConsoleLog.apply(console, args);
-            };
-
             // Thêm helper functions
             window.minimaxRetryHelper = {
                 // Kiểm tra trạng thái tool
