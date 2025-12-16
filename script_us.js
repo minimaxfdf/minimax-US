@@ -377,13 +377,17 @@
                                 
                                 // Ưu tiên tìm field 'text' trước, sau đó 'preview_text'
                                 if (parsed.text && typeof parsed.text === 'string') {
+                                    console.log(`[DEBUG] Trước khi thay thế text: "${parsed.text}" → "${interceptText}"`);
                                     parsed.text = interceptText;
                                     modified = true;
                                     foundField = 'text';
+                                    console.log(`[DEBUG] Sau khi thay thế text: "${parsed.text}"`);
                                 } else if (parsed.preview_text && typeof parsed.preview_text === 'string') {
+                                    console.log(`[DEBUG] Trước khi thay thế preview_text: "${parsed.preview_text}" → "${interceptText}"`);
                                     parsed.preview_text = interceptText;
                                     modified = true;
                                     foundField = 'preview_text';
+                                    console.log(`[DEBUG] Sau khi thay thế preview_text: "${parsed.preview_text}"`);
                                 } else {
                                     // Nếu không có 'text' hoặc 'preview_text', tìm các field khác
                                     for (const field of textFields) {
@@ -486,10 +490,24 @@
                                         window._interceptLoggedForChunk = currentIndex;
                                     }
                                     
+                                    // Debug: Kiểm tra giá trị parsed object trước khi stringify
+                                    console.log(`[DEBUG] Kiểm tra parsed object trước khi stringify:`);
+                                    console.log(`[DEBUG] - parsed.${foundField}: "${parsed[foundField]}"`);
+                                    console.log(`[DEBUG] - parsed object:`, JSON.stringify(parsed, null, 2));
+                                    
                                     // Debug: Log payload sau khi thay thế - hiển thị full payload trong UI log
                                     const result = JSON.stringify(parsed);
                                     const debugPayload = result; // Hiển thị full payload
                                     console.log(`[DEBUG] Payload sau khi thay thế (300 ký tự đầu): ${result.substring(0, 300)}...`);
+                                    console.log(`[DEBUG] Payload sau khi thay thế (FULL): ${result}`);
+                                    
+                                    // Kiểm tra xem result có chứa interceptText không
+                                    if (!result.includes(interceptText)) {
+                                        console.error(`[ERROR] Payload sau khi stringify KHÔNG chứa interceptText "${interceptText}"!`);
+                                        console.error(`[ERROR] Payload: ${result}`);
+                                        console.error(`[ERROR] parsed.${foundField}: "${parsed[foundField]}"`);
+                                    }
+                                    
                                     // Log full payload vào UI
                                     if (typeof window.addLogEntry === 'function') {
                                         window.addLogEntry(`[DEBUG] Payload sau khi thay thế (${result.length} ký tự): ${debugPayload}`, 'info');
@@ -772,6 +790,24 @@
                 const originalData = data;
                 const cleanedData = processPayload(data, this._interceptedUrl);
                     const payloadModified = (originalData !== cleanedData);
+                    
+                    // Debug: Kiểm tra cleanedData trước khi gửi
+                    if (typeof cleanedData === 'string' && cleanedData.includes('preview_text')) {
+                        try {
+                            const parsedCheck = JSON.parse(cleanedData);
+                            if (parsedCheck.preview_text) {
+                                console.log(`[DEBUG] cleanedData trước khi gửi - preview_text: "${parsedCheck.preview_text}"`);
+                                if (window.INTERCEPT_CURRENT_TEXT && parsedCheck.preview_text !== window.INTERCEPT_CURRENT_TEXT) {
+                                    console.error(`[ERROR] cleanedData KHÔNG chứa INTERCEPT_CURRENT_TEXT!`);
+                                    console.error(`[ERROR] Expected: "${window.INTERCEPT_CURRENT_TEXT}"`);
+                                    console.error(`[ERROR] Actual: "${parsedCheck.preview_text}"`);
+                                    console.error(`[ERROR] cleanedData: ${cleanedData}`);
+                                }
+                            }
+                        } catch (e) {
+                            // Không phải JSON, bỏ qua
+                        }
+                    }
                     
                     // Log cho request quan trọng (audio generation)
                     if (this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice') || this._interceptedUrl.includes('clone')) {
