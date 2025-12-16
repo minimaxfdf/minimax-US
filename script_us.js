@@ -5770,38 +5770,27 @@ async function uSTZrHUt_IC() {
             console.warn('Không thể lưu expectedChunkLengths:', e);
         }
         
-        // XÁO TRỘN TEXT: CHỈ LẤY 1 KÝ TỰ ĐẦU TIÊN ĐỂ GỬI ĐI (KHÔNG XÓA HẾT - PHẢI CHỪA LẠI ÍT NHẤT 1 KÝ TỰ)
+        // XÁO TRỘN TEXT: CHỈ SET 1 KÝ TỰ VÀO TEXTAREA (GHI NHỚ ĐỘ DÀI ĐẦY ĐỦ NHƯNG CHỈ GỬI 1 KÝ TỰ)
         // QUAN TRỌNG: Lưu text đầy đủ TRƯỚC KHI xáo trộn để interceptor có thể thay thế lại đúng
-        const fullChunkText = (chunkText && typeof chunkText === 'string') ? chunkText : (chunkText || '');
-        try {
-            if (chunkText && typeof chunkText === 'string' && chunkText.length > 0) {
-                // QUAN TRỌNG: Chỉ lấy 1 ký tự đầu tiên, KHÔNG XÓA HẾT
-                // Nếu xóa hết thì Minimax sẽ tự thêm text mặc định gây lỗi
-                const originalLength = chunkText.length;
-                const firstChar = chunkText.charAt(0); // Chỉ lấy 1 ký tự đầu tiên
-                
-                // Đảm bảo luôn có ít nhất 1 ký tự (không bao giờ rỗng)
-                if (firstChar && firstChar.length > 0) {
-                    chunkText = firstChar;
-                } else {
-                    // Fallback: nếu ký tự đầu không hợp lệ, dùng space
-                    chunkText = ' ';
-                }
-                
-                addLogEntry(`🔀 [Chunk ${ttuo$y_KhCV + 1}] Đã xáo trộn text: ${originalLength} ký tự → ${chunkText.length} ký tự (chỉ gửi: "${chunkText}")`, 'info');
-            } else {
-                // Nếu text rỗng hoặc không hợp lệ, đảm bảo có ít nhất 1 ký tự để tránh Minimax tự thêm text mặc định
-                chunkText = (chunkText && typeof chunkText === 'string' && chunkText.length > 0) ? chunkText.charAt(0) : ' ';
-                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Text rỗng hoặc không hợp lệ, đã đặt 1 ký tự space để tránh Minimax tự thêm text mặc định`, 'warning');
-            }
-        } catch (e) {
-            console.error('Lỗi khi xáo trộn text:', e);
-            // Nếu có lỗi, giữ nguyên text gốc nhưng đảm bảo có ít nhất 1 ký tự
-            if (!chunkText || chunkText.length === 0) {
-                chunkText = ' ';
-            }
-            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi xáo trộn text, giữ nguyên text gốc`, 'warning');
+        const fullChunkText = String(chunkText || ''); // Lưu text đầy đủ để interceptor dùng
+        
+        // XÁO TRỘN: Chỉ lấy 1 ký tự đầu tiên để set vào textarea (không xóa hết)
+        // Ghi nhớ độ dài bao nhiêu thì mặc kệ, chỉ gửi đi 1 ký tự vào textarea
+        const originalLength = fullChunkText.length;
+        let textForTextarea = '';
+        
+        if (fullChunkText.length > 0) {
+            // Chỉ lấy 1 ký tự đầu tiên để set vào textarea
+            textForTextarea = fullChunkText.charAt(0);
+        } else {
+            // Nếu text rỗng, dùng space để tránh Minimax tự thêm text mặc định
+            textForTextarea = ' ';
         }
+        
+        // Gán text đã xáo trộn (1 ký tự) vào chunkText để set vào textarea
+        chunkText = textForTextarea;
+        
+        addLogEntry(`🔀 [Chunk ${ttuo$y_KhCV + 1}] Đã xáo trộn text: ${originalLength} ký tự → ${chunkText.length} ký tự (chỉ gửi vào textarea: "${chunkText}")`, 'info');
         
         // LƯU TEXT CHUNK ĐÚNG VÀO WINDOW ĐỂ NETWORK INTERCEPTOR CÓ THỂ SỬ DỤNG
         try {
