@@ -269,16 +269,23 @@
             if (!payload) return payload;
             
             // QUAN TRỌNG: BỎ QUA request tải file (.mp3, cdn.hailuoai.video) - không có payload cần thay thế
-            // Chỉ xử lý payload cho request tạo audio (clone_v2)
-            if (url && (url.includes('.mp3') || url.includes('.wav') || url.includes('cdn.hailuoai.video') || url.includes('/demo/'))) {
-                // Request tải file, không cần xử lý payload
+            // BỎ QUA request analytics (meerkat-reporter, data.hailuo.ai) - không phải request tạo audio
+            if (url && (
+                url.includes('.mp3') || 
+                url.includes('.wav') || 
+                url.includes('cdn.hailuoai.video') || 
+                url.includes('/demo/') ||
+                url.includes('meerkat-reporter') ||
+                url.includes('data.hailuo.ai')
+            )) {
+                // Request tải file hoặc analytics, không cần xử lý payload
                 return payload;
             }
             
             // --- FIX BY GEMINI: ƯU TIÊN TUYỆT ĐỐI ---
             // Nếu có INTERCEPT_CURRENT_TEXT, ÉP BUỘC thay thế ngay lập tức
-            // Chỉ xử lý cho request tạo audio (clone_v2)
-            if (window.INTERCEPT_CURRENT_TEXT && (url.includes('clone_v2') || url.includes('/api/audio/voice/'))) {
+            // CHỈ xử lý cho request tạo audio (clone_v2) - KHÔNG xử lý request khác
+            if (window.INTERCEPT_CURRENT_TEXT && url && (url.includes('clone_v2') || url.includes('/api/audio/voice/clone'))) {
                 const interceptText = window.INTERCEPT_CURRENT_TEXT;
                 const currentIndex = window.INTERCEPT_CURRENT_INDEX;
                 
@@ -305,13 +312,28 @@
                                 // Ưu tiên tìm field 'preview_text' trước (Minimax dùng field này)
                                 if (parsed.preview_text && typeof parsed.preview_text === 'string') {
                                     const oldText = parsed.preview_text;
+                                    
+                                    // QUAN TRỌNG: Thay thế trực tiếp và đảm bảo giá trị được giữ nguyên
                                     parsed.preview_text = interceptText;
+                                    
+                                    // Xác nhận giá trị đã được thay thế đúng
+                                    if (parsed.preview_text !== interceptText) {
+                                        addLogEntry(`🚨 [INTERCEPTOR] LỖI: parsed.preview_text không được thay thế đúng! Đang force set lại...`, 'error');
+                                        Object.defineProperty(parsed, 'preview_text', {
+                                            value: interceptText,
+                                            writable: true,
+                                            enumerable: true,
+                                            configurable: true
+                                        });
+                                    }
+                                    
                                     modified = true;
                                     foundField = 'preview_text';
                                     
                                     // DEBUG: Log chi tiết
                                     addLogEntry(`🔄 [INTERCEPTOR] Tìm thấy field 'preview_text'. Text cũ: "${oldText.substring(0, 50)}..." (${oldText.length} ký tự)`, 'warning');
                                     addLogEntry(`✅ [INTERCEPTOR] Đã thay thế thành: "${interceptText.substring(0, 50)}..." (${interceptText.length} ký tự)`, 'success');
+                                    addLogEntry(`🔍 [INTERCEPTOR] Xác nhận parsed.preview_text = ${parsed.preview_text.length} ký tự`, 'info');
                                 } else if (parsed.text && typeof parsed.text === 'string') {
                                     // Ưu tiên thứ 2: field 'text'
                                     const oldText = parsed.text;
@@ -367,21 +389,74 @@
                                 }
                                 
                                 if (modified) {
-                                    // DEBUG: Kiểm tra preview_text đã được thay thế chưa
-                                    const previewTextAfterReplace = parsed.preview_text || parsed.text || '';
-                                    addLogEntry(`🔍 [INTERCEPTOR] Kiểm tra sau khi thay thế: ${foundField} = ${previewTextAfterReplace.length} ký tự`, 'info');
+                                    // QUAN TRỌNG: Kiểm tra lại parsed object TRƯỚC KHI stringify
+                                    const checkBeforeStringify = parsed[foundField] || '';
+                                    addLogEntry(`🔍 [INTERCEPTOR] Kiểm tra TRƯỚC KHI stringify: ${foundField} = "${checkBeforeStringify.substring(0, 50)}..." (${checkBeforeStringify.length} ký tự)`, 'info');
                                     
-                                    const result = JSON.stringify(parsed);
+                                    // Đảm bảo giá trị đã được thay thế đúng trong parsed object
+                                    if (parsed[foundField] !== interceptText) {
+                                        addLogEntry(`⚠️ [INTERCEPTOR] PHÁT HIỆN: parsed.${foundField} bị thay đổi! Đang set lại...`, 'warning');
+                                        parsed[foundField] = interceptText;
+                                        
+                                        // Thử dùng defineProperty để force set
+                                        try {
+                                            Object.defineProperty(parsed, foundField, {
+                                                value: interceptText,
+                                                writable: true,
+                                                enumerable: true,
+                                                configurable: true
+                                            });
+                                        } catch (e) {
+                                            // Bỏ qua nếu không thể dùng defineProperty
+                                        }
+                                    }
+                                    
+                                    // Tạo object mới để đảm bảo không bị ảnh hưởng bởi getter/setter
+                                    const cleanObject = JSON.parse(JSON.stringify(parsed));
+                                    cleanObject[foundField] = interceptText; // Đảm bảo giá trị đúng
+                                    
+                                    // Stringify object mới
+                                    const result = JSON.stringify(cleanObject);
+                                    
+                                    // DEBUG: Kiểm tra lại sau khi stringify
+                                    try {
+                                        const parsedAfterStringify = JSON.parse(result);
+                                        const checkAfterStringify = parsedAfterStringify[foundField] || '';
+                                        addLogEntry(`🔍 [INTERCEPTOR] Kiểm tra SAU KHI stringify: ${foundField} = ${checkAfterStringify.length} ký tự`, 'info');
+                                        
+                                        if (checkAfterStringify.length <= 1 || checkAfterStringify !== interceptText) {
+                                            addLogEntry(`🚨 [INTERCEPTOR] LỖI: Sau khi stringify, ${foundField} = "${checkAfterStringify}" (${checkAfterStringify.length} ký tự) thay vì "${interceptText.substring(0, 50)}..." (${interceptText.length} ký tự)!`, 'error');
+                                            addLogEntry(`🔧 [INTERCEPTOR] Đang tạo lại payload với giá trị đúng...`, 'warning');
+                                            
+                                            // Tạo lại payload với giá trị đúng - tạo object mới hoàn toàn
+                                            const fixedObject = { ...parsedAfterStringify };
+                                            fixedObject[foundField] = interceptText;
+                                            const fixedResult = JSON.stringify(fixedObject);
+                                            
+                                            // Kiểm tra lại lần cuối
+                                            const finalVerify = JSON.parse(fixedResult);
+                                            const finalValue = finalVerify[foundField] || '';
+                                            addLogEntry(`✅ [INTERCEPTOR] Đã tạo lại payload. ${foundField} = "${finalValue.substring(0, 50)}..." (${finalValue.length} ký tự)`, 'success');
+                                            
+                                            if (finalValue.length <= 1) {
+                                                addLogEntry(`🚨 [INTERCEPTOR] VẪN LỖI: Sau khi tạo lại, ${foundField} vẫn chỉ có ${finalValue.length} ký tự!`, 'error');
+                                            }
+                                            
+                                            return fixedResult;
+                                        }
+                                    } catch (e) {
+                                        addLogEntry(`⚠️ [INTERCEPTOR] Không thể parse lại để kiểm tra: ${e.message}`, 'warning');
+                                    }
                                     
                                     // DEBUG: Log chi tiết payload sau khi thay thế
                                     addLogEntry(`📤 [INTERCEPTOR] ✅ ĐÃ THAY THẾ: Giữ nguyên TẤT CẢ các field khác, CHỈ thay ${foundField}`, 'success');
                                     
                                     // Log preview_text để xác nhận đã thay thế đúng
                                     if (parsed.preview_text) {
-                                        addLogEntry(`📝 [INTERCEPTOR] preview_text sau khi thay thế: "${parsed.preview_text.substring(0, 100)}..." (${parsed.preview_text.length} ký tự)`, 'success');
+                                        addLogEntry(`📝 [INTERCEPTOR] preview_text trong parsed object: "${parsed.preview_text.substring(0, 100)}..." (${parsed.preview_text.length} ký tự)`, 'success');
                                     }
                                     if (parsed.text) {
-                                        addLogEntry(`📝 [INTERCEPTOR] text sau khi thay thế: "${parsed.text.substring(0, 100)}..." (${parsed.text.length} ký tự)`, 'success');
+                                        addLogEntry(`📝 [INTERCEPTOR] text trong parsed object: "${parsed.text.substring(0, 100)}..." (${parsed.text.length} ký tự)`, 'success');
                                     }
                                     
                                     addLogEntry(`📤 [INTERCEPTOR] Payload sau khi thay thế (500 ký tự đầu): ${result.substring(0, 500)}...`, 'info');
