@@ -296,11 +296,33 @@
                 return analysis;
             },
             
-            testAlgorithms: async function(payload, expectedSignature) {
+            testAlgorithms: async function(payload, expectedSignature, originalPayload = null) {
                 if (!expectedSignature) return null;
                 
                 const results = [];
                 const payloadStr = typeof payload === 'string' ? payload : JSON.stringify(payload);
+                
+                // Nếu có originalPayload (URL-encoded), test trên đó thay vì parsed payload
+                const testInputs = [];
+                if (originalPayload && typeof originalPayload === 'string') {
+                    // Test trên toàn bộ URL-encoded string
+                    testInputs.push({ name: 'FULL_URL_ENCODED', data: originalPayload });
+                    
+                    // Test trên data parameter (base64 decoded)
+                    if (originalPayload.includes('data=') && originalPayload.includes('&')) {
+                        const urlParams = new URLSearchParams(originalPayload);
+                        const dataValue = urlParams.get('data');
+                        if (dataValue) {
+                            try {
+                                const decoded = atob(dataValue);
+                                testInputs.push({ name: 'DATA_DECODED', data: decoded });
+                                testInputs.push({ name: 'DATA_JSON_STRINGIFIED', data: JSON.stringify(JSON.parse(decoded)) });
+                            } catch (e) {}
+                        }
+                    }
+                } else {
+                    testInputs.push({ name: 'PARSED_PAYLOAD', data: payloadStr });
+                }
                 
                 // Load crypto-js nếu chưa có
                 if (!window.CryptoJS) {
@@ -344,33 +366,58 @@
                     this.implementCRC32();
                 }
                 
-                const algorithms = [
-                    { name: 'MD5', fn: () => CryptoJS.MD5(payloadStr).toString() },
-                    { name: 'SHA1', fn: () => CryptoJS.SHA1(payloadStr).toString() },
-                    { name: 'SHA256', fn: () => CryptoJS.SHA256(payloadStr).toString() },
-                    { name: 'SHA512', fn: () => CryptoJS.SHA512(payloadStr).toString() },
-                    { name: 'MD5_HEX', fn: () => CryptoJS.MD5(payloadStr).toString(CryptoJS.enc.Hex) },
-                    { name: 'SHA256_HEX', fn: () => CryptoJS.SHA256(payloadStr).toString(CryptoJS.enc.Hex) },
-                ];
+                const algorithms = [];
                 
-                // Test CRC algorithms
-                if (window.crc32) {
-                    algorithms.push({ name: 'CRC32', fn: () => window.crc32(payloadStr).toString() });
-                    algorithms.push({ name: 'CRC32_SIGNED', fn: () => {
-                        const crc = window.crc32(payloadStr);
-                        // Convert to signed 32-bit integer
-                        return (crc | 0).toString();
-                    }});
+                // Chỉ test hash algorithms trên parsed payload (không phải URL-encoded)
+                if (testInputs.length > 0 && testInputs[0].name !== 'FULL_URL_ENCODED') {
+                    algorithms.push(
+                        { name: 'MD5', fn: () => CryptoJS.MD5(payloadStr).toString() },
+                        { name: 'SHA1', fn: () => CryptoJS.SHA1(payloadStr).toString() },
+                        { name: 'SHA256', fn: () => CryptoJS.SHA256(payloadStr).toString() },
+                        { name: 'SHA512', fn: () => CryptoJS.SHA512(payloadStr).toString() },
+                        { name: 'MD5_HEX', fn: () => CryptoJS.MD5(payloadStr).toString(CryptoJS.enc.Hex) },
+                        { name: 'SHA256_HEX', fn: () => CryptoJS.SHA256(payloadStr).toString(CryptoJS.enc.Hex) }
+                    );
                 }
-                if (window.CRC32) {
-                    algorithms.push({ name: 'CRC32_ALT', fn: () => window.CRC32(payloadStr).toString() });
+                
+                // Test CRC algorithms trên từng input
+                for (const testInput of testInputs) {
+                    const inputData = testInput.data;
+                    const inputName = testInput.name;
+                    
+                    // Test CRC32
+                    if (window.crc32) {
+                        algorithms.push({ 
+                            name: `CRC32_${inputName}`, 
+                            fn: () => window.crc32(inputData).toString() 
+                        });
+                        algorithms.push({ 
+                            name: `CRC32_SIGNED_${inputName}`, 
+                            fn: () => {
+                                const crc = window.crc32(inputData);
+                                return (crc | 0).toString();
+                            }
+                        });
+                    }
+                    if (window.CRC32) {
+                        algorithms.push({ 
+                            name: `CRC32_ALT_${inputName}`, 
+                            fn: () => window.CRC32(inputData).toString() 
+                        });
+                    }
+                    // Manual CRC32
+                    algorithms.push({ 
+                        name: `CRC32_MANUAL_${inputName}`, 
+                        fn: () => this.calculateCRC32(inputData).toString() 
+                    });
+                    algorithms.push({ 
+                        name: `CRC32_MANUAL_SIGNED_${inputName}`, 
+                        fn: () => {
+                            const crc = this.calculateCRC32(inputData);
+                            return (crc | 0).toString();
+                        }
+                    });
                 }
-                // Manual CRC32
-                algorithms.push({ name: 'CRC32_MANUAL', fn: () => this.calculateCRC32(payloadStr).toString() });
-                algorithms.push({ name: 'CRC32_MANUAL_SIGNED', fn: () => {
-                    const crc = this.calculateCRC32(payloadStr);
-                    return (crc | 0).toString();
-                }});
                 
                 const potentialKeys = this.findPotentialKeys();
                 for (const keyData of potentialKeys.slice(0, 10)) {
@@ -380,24 +427,47 @@
                     );
                 }
                 
+                // Convert expectedSignature to number để so sánh với CRC
+                const expectedNum = parseInt(expectedSignature, 10);
+                const isNumericSignature = !isNaN(expectedNum);
+                
                 for (const algo of algorithms) {
                     try {
                         const result = algo.fn();
-                        const match = result === expectedSignature || result.toLowerCase() === expectedSignature.toLowerCase();
+                        let match = false;
+                        
+                        if (isNumericSignature) {
+                            // So sánh số với số (cho CRC)
+                            const resultNum = parseInt(result, 10);
+                            match = !isNaN(resultNum) && resultNum === expectedNum;
+                        } else {
+                            // So sánh string
+                            match = result === expectedSignature || result.toLowerCase() === expectedSignature.toLowerCase();
+                        }
                         
                         results.push({
                             algorithm: algo.name,
                             result: result,
                             match: match,
-                            length: result.length
+                            length: result.length,
+                            expected: expectedSignature
                         });
+                        
+                        // Log mỗi kết quả test CRC để debug
+                        if (algo.name.includes('CRC')) {
+                            const testMsg = `🔐 [SIGNATURE_ANALYZER] Testing ${algo.name}: result=${result}, expected=${expectedSignature}, match=${match}`;
+                            console.log(testMsg);
+                            if (typeof window.addLogEntry === 'function') {
+                                window.addLogEntry(testMsg, match ? 'success' : 'info');
+                            }
+                        }
                         
                         if (match) {
                             const matchMsg = `🔐 [SIGNATURE_ANALYZER] ✅ MATCH FOUND: ${algo.name}`;
                             console.log(matchMsg);
                             if (typeof window.addLogEntry === 'function') {
                                 window.addLogEntry(matchMsg, 'success');
-                                window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] Algorithm: ${algo.name}, Result: ${result}`, 'success');
+                                window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] Algorithm: ${algo.name}, Result: ${result}, Expected: ${expectedSignature}`, 'success');
                             }
                             return algo.name;
                         }
@@ -1415,7 +1485,8 @@
                             if (parsedPayload && signature && !requestData.analyzed) {
                                 requestData.analyzed = true;
                                 window.SignatureAnalyzer.analyzeSignature(parsedPayload, signature);
-                                window.SignatureAnalyzer.testAlgorithms(parsedPayload, signature);
+                                // Pass original payload để test trên URL-encoded string
+                                window.SignatureAnalyzer.testAlgorithms(parsedPayload, signature, data);
                             }
                         }
                     } catch (e) {
