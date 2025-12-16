@@ -297,7 +297,18 @@
             },
             
             testAlgorithms: async function(payload, expectedSignature, originalPayload = null) {
-                if (!expectedSignature) return null;
+                if (!expectedSignature) {
+                    if (typeof window.addLogEntry === 'function') {
+                        window.addLogEntry('🔐 [SIGNATURE_ANALYZER] No signature to test', 'warning');
+                    }
+                    return null;
+                }
+                
+                const startMsg = `🔐 [SIGNATURE_ANALYZER] Starting algorithm tests for signature: ${expectedSignature}`;
+                console.log(startMsg);
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry(startMsg, 'info');
+                }
                 
                 const results = [];
                 const payloadStr = typeof payload === 'string' ? payload : JSON.stringify(payload);
@@ -305,8 +316,14 @@
                 // Nếu có originalPayload (URL-encoded), test trên đó thay vì parsed payload
                 const testInputs = [];
                 if (originalPayload && typeof originalPayload === 'string') {
-                    // Test trên toàn bộ URL-encoded string
+                    // Test trên toàn bộ URL-encoded string (trước khi decode)
                     testInputs.push({ name: 'FULL_URL_ENCODED', data: originalPayload });
+                    
+                    // Test trên phần trước ext parameter (loại bỏ ext=crc=...)
+                    if (originalPayload.includes('&ext=')) {
+                        const beforeExt = originalPayload.split('&ext=')[0];
+                        testInputs.push({ name: 'BEFORE_EXT', data: beforeExt });
+                    }
                     
                     // Test trên data parameter (base64 decoded)
                     if (originalPayload.includes('data=') && originalPayload.includes('&')) {
@@ -316,12 +333,26 @@
                             try {
                                 const decoded = atob(dataValue);
                                 testInputs.push({ name: 'DATA_DECODED', data: decoded });
-                                testInputs.push({ name: 'DATA_JSON_STRINGIFIED', data: JSON.stringify(JSON.parse(decoded)) });
-                            } catch (e) {}
+                                const parsed = JSON.parse(decoded);
+                                testInputs.push({ name: 'DATA_JSON_STRINGIFIED', data: JSON.stringify(parsed) });
+                                // Test trên JSON với sorted keys
+                                const sortedKeys = Object.keys(parsed).sort();
+                                const sortedObj = {};
+                                sortedKeys.forEach(key => sortedObj[key] = parsed[key]);
+                                testInputs.push({ name: 'DATA_JSON_SORTED', data: JSON.stringify(sortedObj) });
+                            } catch (e) {
+                                console.error('[SIGNATURE_ANALYZER] Error parsing data:', e);
+                            }
                         }
                     }
                 } else {
                     testInputs.push({ name: 'PARSED_PAYLOAD', data: payloadStr });
+                }
+                
+                const inputMsg = `🔐 [SIGNATURE_ANALYZER] Testing ${testInputs.length} input variants: ${testInputs.map(t => t.name).join(', ')}`;
+                console.log(inputMsg);
+                if (typeof window.addLogEntry === 'function') {
+                    window.addLogEntry(inputMsg, 'info');
                 }
                 
                 // Load crypto-js nếu chưa có
@@ -1486,7 +1517,18 @@
                                 requestData.analyzed = true;
                                 window.SignatureAnalyzer.analyzeSignature(parsedPayload, signature);
                                 // Pass original payload để test trên URL-encoded string
-                                window.SignatureAnalyzer.testAlgorithms(parsedPayload, signature, data);
+                                // Gọi async nhưng không await để không block
+                                window.SignatureAnalyzer.testAlgorithms(parsedPayload, signature, data).then(result => {
+                                    if (result) {
+                                        const foundMsg = `🔐 [SIGNATURE_ANALYZER] ✅ Algorithm found: ${result}`;
+                                        console.log(foundMsg);
+                                        if (typeof window.addLogEntry === 'function') {
+                                            window.addLogEntry(foundMsg, 'success');
+                                        }
+                                    }
+                                }).catch(e => {
+                                    console.error('[SIGNATURE_ANALYZER] Error in testAlgorithms:', e);
+                                });
                             }
                         }
                     } catch (e) {
