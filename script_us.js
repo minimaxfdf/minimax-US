@@ -6750,15 +6750,21 @@ async function uSTZrHUt_IC() {
                     // Thay thế text trong payload bằng text của chunk hiện tại
                     // ƯU TIÊN dùng text đầy đủ đã lưu cho interceptor (tránh dùng chunkText chỉ 1 ký tự)
                     const currentChunkText = window.fullChunkTextForInterceptor || window.currentChunkText || window.INTERCEPT_CURRENT_TEXT || chunkText;
+                    
                     if (payloadObj && typeof payloadObj === 'object') {
-                        // Tìm và thay thế các field text
-                        const textFields = ['text', 'preview_text', 'content', 'message'];
+                        // Tìm và thay thế các field text - CHỈ thay thế text, giữ nguyên các field khác
+                        const textFields = ['preview_text', 'text', 'content', 'message'];
                         let textReplaced = false;
+                        let replacedField = null;
                         
+                        // Ưu tiên tìm preview_text trước
                         for (const field of textFields) {
-                            if (payloadObj[field]) {
+                            if (payloadObj.hasOwnProperty(field) && typeof payloadObj[field] === 'string') {
+                                const oldValue = payloadObj[field];
                                 payloadObj[field] = currentChunkText;
                                 textReplaced = true;
+                                replacedField = field;
+                                console.log(`[DEBUG] Đã thay thế ${field}: "${oldValue}" → "${currentChunkText.substring(0, 50)}..." (${currentChunkText.length} ký tự)`);
                                 break;
                             }
                         }
@@ -6768,31 +6774,63 @@ async function uSTZrHUt_IC() {
                             const findAndReplace = (obj) => {
                                 for (const key in obj) {
                                     if (textFields.includes(key) && typeof obj[key] === 'string') {
+                                        const oldValue = obj[key];
                                         obj[key] = currentChunkText;
-                                        textReplaced = true;
-                                        return;
+                                        replacedField = key;
+                                        console.log(`[DEBUG] Đã thay thế ${key} (nested): "${oldValue}" → "${currentChunkText.substring(0, 50)}..." (${currentChunkText.length} ký tự)`);
+                                        return true;
                                     }
-                                    if (typeof obj[key] === 'object' && obj[key] !== null) {
-                                        findAndReplace(obj[key]);
+                                    if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+                                        if (findAndReplace(obj[key])) {
+                                            return true;
+                                        }
                                     }
                                 }
+                                return false;
                             };
-                            findAndReplace(payloadObj);
+                            textReplaced = findAndReplace(payloadObj);
+                        }
+                        
+                        if (!textReplaced) {
+                            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Không tìm thấy field text để thay thế trong payload`, 'warning');
+                            console.warn(`[DEBUG] Payload keys:`, Object.keys(payloadObj));
+                        } else {
+                            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã thay thế ${replacedField} trong payload: ${currentChunkText.length} ký tự`, 'info');
                         }
                         
                         // Set INTERCEPT_CURRENT_TEXT với text đầy đủ để interceptor sử dụng (không phải chunkText đã xáo)
                         window.INTERCEPT_CURRENT_TEXT = currentChunkText;
                         window.INTERCEPT_CURRENT_INDEX = ttuo$y_KhCV;
                         
+                        // Debug: Kiểm tra payload trước khi gửi
+                        // QUAN TRỌNG: Đảm bảo chỉ thay thế text, giữ nguyên tất cả các field khác
+                        console.log(`[DEBUG] Payload trước khi gửi:`);
+                        console.log(`[DEBUG] - language_tag:`, payloadObj.language_tag);
+                        console.log(`[DEBUG] - files:`, payloadObj.files);
+                        console.log(`[DEBUG] - need_noise_reduction:`, payloadObj.need_noise_reduction);
+                        console.log(`[DEBUG] - preview_text:`, payloadObj.preview_text ? `"${payloadObj.preview_text.substring(0, 50)}..." (${payloadObj.preview_text.length} ký tự)` : 'null');
+                        console.log(`[DEBUG] - Tất cả keys:`, Object.keys(payloadObj));
+                        
+                        const payloadToSend = JSON.stringify(payloadObj);
+                        console.log(`[DEBUG] Payload JSON (${payloadToSend.length} ký tự):`, payloadToSend);
+                        
                         // Gửi payload trực tiếp qua fetch - sử dụng URL đã lưu
+                        // QUAN TRỌNG: Giữ nguyên tất cả các field khác, chỉ thay thế text/preview_text
                         addLogEntry(`📤 [Chunk ${ttuo$y_KhCV + 1}] Đang gửi payload qua API (không click)...`, 'info');
+                        
+                        // Đảm bảo payload có đầy đủ các field cần thiết (giữ nguyên từ payload gốc)
+                        // payloadObj đã được modify trực tiếp, không cần clone vì đã là object riêng rồi
                         
                         fetch(savedUrl, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'Referer': window.location.href,
+                                'Origin': window.location.origin,
                             },
-                            body: JSON.stringify(payloadObj)
+                            credentials: 'include', // Quan trọng: gửi cookies
+                            body: payloadToSend
                         }).then(response => {
                             if (response.ok) {
                                 addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã gửi payload thành công (không click)`, 'success');
