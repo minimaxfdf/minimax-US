@@ -29,658 +29,6 @@
     'use strict';
 
     // =================================================================
-    // == THUẬT TOÁN CRC-32 (CHUẨN MINIMAX API) ==
-    // =================================================================
-    const makeCRCTable = function(){
-        let c;
-        let crcTable = [];
-        for(let n = 0; n < 256; n++){
-            c = n;
-            for(let k = 0; k < 8; k++){
-                c = ((c&1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
-            }
-            crcTable[n] = c;
-        }
-        return crcTable;
-    };
-
-    const crcTable = makeCRCTable();
-
-    /**
-     * Tính chữ ký CRC-32 cho chuỗi JSON (theo thuật toán chuẩn Minimax API)
-     * @param {string} str - Chuỗi JSON cần tính chữ ký
-     * @returns {number} - Chữ ký CRC-32 (số nguyên có dấu 32-bit, ví dụ: -1110002534)
-     */
-    function calculateHailuoSignature(str) {
-        // Chuyển chuỗi thành UTF-8 bytes (Quan trọng vì JSON có tiếng Việt)
-        const encoder = new TextEncoder();
-        const bytes = encoder.encode(str);
-        
-        let crc = 0 ^ (-1);
-        
-        for (let i = 0; i < bytes.length; i++ ) {
-            crc = (crc >>> 8) ^ crcTable[(crc ^ bytes[i]) & 0xFF];
-        }
-        
-        // Trả về số nguyên có dấu (Signed 32-bit integer) để khớp với format "-111000..."
-        const result = (crc ^ (-1)) | 0;
-        
-        // Debug logging (chỉ log cho voice/clone requests để tránh spam)
-        if (window._debugSignatureCalculation) {
-            console.log(`[SIGNATURE CALC] Input length: ${str.length} chars, ${bytes.length} bytes`);
-            console.log(`[SIGNATURE CALC] Input preview (100 chars): ${str.substring(0, 100)}...`);
-            console.log(`[SIGNATURE CALC] Result: ${result}`);
-            console.log(`[SIGNATURE CALC] Result (unsigned): ${result >>> 0}`);
-            console.log(`[SIGNATURE CALC] Result (hex): 0x${(result >>> 0).toString(16).toUpperCase()}`);
-        }
-        
-        return result;
-    }
-
-    // Export hàm để sử dụng ở nơi khác
-    window.calculateHailuoSignature = calculateHailuoSignature;
-
-    // =================================================================
-    // == SIGNATURE ANALYZER - Phân tích và giải mã chữ ký điện tử ==
-    // =================================================================
-    (function() {
-        'use strict';
-        
-        const SignatureAnalyzer = {
-            collectedData: [],
-            
-            initNetworkInterceptor: function() {
-                // Intercept XMLHttpRequest (sẽ được ghi đè bởi network interceptor chính)
-                // Nhưng chúng ta vẫn log để phân tích
-                const originalXHROpen = XMLHttpRequest.prototype.open;
-                const originalXHRSetHeader = XMLHttpRequest.prototype.setRequestHeader;
-                
-                XMLHttpRequest.prototype.open = function(method, url, ...rest) {
-                    this._signatureAnalyzerUrl = url;
-                    this._signatureAnalyzerMethod = method;
-                    this._signatureAnalyzerHeaders = {};
-                    return originalXHROpen.apply(this, [method, url, ...rest]);
-                };
-                
-                XMLHttpRequest.prototype.setRequestHeader = function(header, value) {
-                    this._signatureAnalyzerHeaders = this._signatureAnalyzerHeaders || {};
-                    this._signatureAnalyzerHeaders[header.toLowerCase()] = value;
-                    
-                    if (header.toLowerCase().includes('signature') || 
-                        header.toLowerCase().includes('hash') ||
-                        header.toLowerCase().includes('auth') ||
-                        header.toLowerCase().includes('token')) {
-                        const logMsg = `🔐 [SIGNATURE_ANALYZER] Header found: ${header} = ${value.substring(0, 50)}${value.length > 50 ? '...' : ''}`;
-                        console.log(logMsg);
-                        if (typeof window.addLogEntry === 'function') {
-                            window.addLogEntry(logMsg, 'info');
-                        }
-                    }
-                    
-                    return originalXHRSetHeader.apply(this, arguments);
-                };
-                
-                const initMsg = '[SIGNATURE_ANALYZER] Network interceptor hooks initialized';
-                console.log(initMsg);
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry('🔐 [SIGNATURE_ANALYZER] Network interceptor hooks initialized', 'info');
-                }
-            },
-            
-            initCryptoHooks: function() {
-                // Hook crypto.subtle
-                if (window.crypto && window.crypto.subtle) {
-                    const originalDigest = window.crypto.subtle.digest;
-                    window.crypto.subtle.digest = function(algorithm, data) {
-                        const algoName = algorithm.name || algorithm;
-                        const dataLen = data.byteLength || data.length;
-                        const logMsg = `🔐 [CRYPTO_HOOK] crypto.subtle.digest called: ${algoName}, dataLength: ${dataLen}`;
-                        console.log(logMsg);
-                        if (typeof window.addLogEntry === 'function') {
-                            window.addLogEntry(logMsg, 'info');
-                        }
-                        return originalDigest.apply(this, arguments);
-                    };
-                }
-                
-                // Hook các hàm CRC phổ biến
-                this.hookCRCFunctions();
-                
-                // Hook crypto-js nếu có
-                if (window.CryptoJS) {
-                    const originalMD5 = window.CryptoJS.MD5;
-                    const originalSHA256 = window.CryptoJS.SHA256;
-                    const originalHmacSHA256 = window.CryptoJS.HmacSHA256;
-                    
-                    window.CryptoJS.MD5 = function(message) {
-                        const msgPreview = typeof message === 'string' ? message.substring(0, 50) : 'object';
-                        const logMsg = `🔐 [CRYPTOJS_HOOK] MD5 called: "${msgPreview}${typeof message === 'string' && message.length > 50 ? '...' : ''}"`;
-                        console.log(logMsg);
-                        if (typeof window.addLogEntry === 'function') {
-                            window.addLogEntry(logMsg, 'info');
-                        }
-                        return originalMD5.apply(this, arguments);
-                    };
-                    
-                    window.CryptoJS.SHA256 = function(message) {
-                        const msgPreview = typeof message === 'string' ? message.substring(0, 50) : 'object';
-                        const logMsg = `🔐 [CRYPTOJS_HOOK] SHA256 called: "${msgPreview}${typeof message === 'string' && message.length > 50 ? '...' : ''}"`;
-                        console.log(logMsg);
-                        if (typeof window.addLogEntry === 'function') {
-                            window.addLogEntry(logMsg, 'info');
-                        }
-                        return originalSHA256.apply(this, arguments);
-                    };
-                    
-                    window.CryptoJS.HmacSHA256 = function(message, key) {
-                        const msgPreview = typeof message === 'string' ? message.substring(0, 50) : 'object';
-                        const keyPreview = key ? (typeof key === 'string' ? key.substring(0, 30) : 'object') : 'undefined';
-                        const logMsg = `🔐 [CRYPTOJS_HOOK] HmacSHA256 called: message="${msgPreview}${typeof message === 'string' && message.length > 50 ? '...' : ''}", key="${keyPreview}${key && typeof key === 'string' && key.length > 30 ? '...' : ''}"`;
-                        console.log(logMsg);
-                        if (typeof window.addLogEntry === 'function') {
-                            window.addLogEntry(logMsg, 'info');
-                        }
-                        return originalHmacSHA256.apply(this, arguments);
-                    };
-                }
-                
-                const cryptoInitMsg = '[SIGNATURE_ANALYZER] Crypto hooks initialized';
-                console.log(cryptoInitMsg);
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry('🔐 [SIGNATURE_ANALYZER] Crypto hooks initialized', 'info');
-                }
-            },
-            
-            hookCRCFunctions: function() {
-                // Tìm và hook các hàm CRC trong window
-                const crcPatterns = [
-                    'crc32', 'crc16', 'crc', 'CRC32', 'CRC16', 'CRC',
-                    'calculateCRC', 'computeCRC', 'getCRC', 'makeCRC'
-                ];
-                
-                crcPatterns.forEach(pattern => {
-                    if (window[pattern] && typeof window[pattern] === 'function') {
-                        const original = window[pattern];
-                        window[pattern] = function(...args) {
-                            const result = original.apply(this, args);
-                            const logMsg = `🔐 [CRC_HOOK] ${pattern} called: args=${JSON.stringify(args).substring(0, 100)}, result=${result}`;
-                            console.log(logMsg);
-                            if (typeof window.addLogEntry === 'function') {
-                                window.addLogEntry(logMsg, 'info');
-                            }
-                            return result;
-                        };
-                    }
-                });
-                
-                // Hook vào các object có thể chứa CRC functions
-                ['crypto', 'CryptoJS', 'crc', 'CRC'].forEach(objName => {
-                    if (window[objName] && typeof window[objName] === 'object') {
-                        crcPatterns.forEach(pattern => {
-                            if (window[objName][pattern] && typeof window[objName][pattern] === 'function') {
-                                const original = window[objName][pattern];
-                                window[objName][pattern] = function(...args) {
-                                    const result = original.apply(this, args);
-                                    const logMsg = `🔐 [CRC_HOOK] ${objName}.${pattern} called: args=${JSON.stringify(args).substring(0, 100)}, result=${result}`;
-                                    console.log(logMsg);
-                                    if (typeof window.addLogEntry === 'function') {
-                                        window.addLogEntry(logMsg, 'info');
-                                    }
-                                    return result;
-                                };
-                            }
-                        });
-                    }
-                });
-                
-                // Tìm trong source code các hàm tính CRC
-                this.findCRCFunctionsInCode();
-            },
-            
-            findCRCFunctionsInCode: function() {
-                const scripts = Array.from(document.querySelectorAll('script'));
-                const crcFunctions = [];
-                
-                scripts.forEach((script, idx) => {
-                    const content = script.textContent || script.innerHTML || '';
-                    
-                    // Tìm pattern: function crc..., crc: function..., crc = function...
-                    const patterns = [
-                        /function\s+(\w*crc\w*)\s*\([^)]*\)\s*\{[^}]*\}/gi,
-                        /(\w*crc\w*)\s*[:=]\s*function\s*\([^)]*\)\s*\{[^}]*\}/gi,
-                        /(\w*crc\w*)\s*[:=]\s*\([^)]*\)\s*=>\s*\{[^}]*\}/gi,
-                        /crc\s*[:=]\s*([^;]+)/gi
-                    ];
-                    
-                    patterns.forEach(pattern => {
-                        const matches = content.matchAll(pattern);
-                        for (const match of matches) {
-                            if (match[1] && match[1].length < 100) {
-                                crcFunctions.push({
-                                    function: match[1],
-                                    context: match[0].substring(0, 200),
-                                    scriptIndex: idx
-                                });
-                            }
-                        }
-                    });
-                });
-                
-                if (crcFunctions.length > 0) {
-                    const logMsg = `🔐 [CRC_FINDER] Found ${crcFunctions.length} potential CRC functions in code`;
-                    console.log(logMsg, crcFunctions);
-                    if (typeof window.addLogEntry === 'function') {
-                        window.addLogEntry(logMsg, 'info');
-                        crcFunctions.forEach((func, idx) => {
-                            window.addLogEntry(`🔐 [CRC_FINDER] Function ${idx + 1}: ${func.function}`, 'info');
-                        });
-                    }
-                }
-            },
-            
-            findPotentialKeys: function() {
-                const potentialKeys = [];
-                const scripts = Array.from(document.querySelectorAll('script'));
-                
-                scripts.forEach(script => {
-                    const content = script.textContent || script.innerHTML || '';
-                    const keyPatterns = [
-                        /(?:secret|key|api[_-]?key|private[_-]?key|signature[_-]?key)\s*[=:]\s*["']([^"']{16,})["']/gi,
-                        /["']([a-zA-Z0-9+/=]{32,})["']/g,
-                        /0x([a-f0-9]{32,})/gi
-                    ];
-                    
-                    keyPatterns.forEach(pattern => {
-                        const matches = content.matchAll(pattern);
-                        for (const match of matches) {
-                            if (match[1] && match[1].length >= 16) {
-                                potentialKeys.push({
-                                    key: match[1],
-                                    context: match[0].substring(0, 100),
-                                    source: 'script'
-                                });
-                            }
-                        }
-                    });
-                });
-                
-                try {
-                    for (let i = 0; i < localStorage.length; i++) {
-                        const key = localStorage.key(i);
-                        const value = localStorage.getItem(key);
-                        if (value && value.length >= 16 && /^[a-zA-Z0-9+/=]+$/.test(value)) {
-                            potentialKeys.push({
-                                key: value,
-                                context: `localStorage.${key}`,
-                                source: 'localStorage'
-                            });
-                        }
-                    }
-                } catch (e) {}
-                
-                const keysMsg = `🔐 [SIGNATURE_ANALYZER] Potential keys found: ${potentialKeys.length} keys`;
-                console.log(keysMsg, potentialKeys);
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry(keysMsg, 'info');
-                    potentialKeys.forEach((keyData, idx) => {
-                        window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] Key ${idx + 1}: ${keyData.context.substring(0, 80)}... (${keyData.key.length} chars)`, 'info');
-                    });
-                }
-                return potentialKeys;
-            },
-            
-            analyzeSignature: function(payload, signature) {
-                if (!signature) return null;
-                
-                const analysis = {
-                    length: signature.length,
-                    isHex: /^[0-9a-f]+$/i.test(signature),
-                    isBase64: /^[A-Za-z0-9+/=]+$/.test(signature),
-                    isNumeric: /^\d+$/.test(signature),
-                    payloadLength: typeof payload === 'string' ? payload.length : JSON.stringify(payload).length
-                };
-                
-                const analysisMsg = `🔐 [SIGNATURE_ANALYZER] Signature analysis: length=${analysis.length}, isHex=${analysis.isHex}, isBase64=${analysis.isBase64}, isNumeric=${analysis.isNumeric}, payloadLength=${analysis.payloadLength}`;
-                console.log(analysisMsg, analysis);
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry(analysisMsg, 'info');
-                }
-                return analysis;
-            },
-            
-            testAlgorithms: async function(payload, expectedSignature, originalPayload = null) {
-                if (!expectedSignature) {
-                    if (typeof window.addLogEntry === 'function') {
-                        window.addLogEntry('🔐 [SIGNATURE_ANALYZER] No signature to test', 'warning');
-                    }
-                    return null;
-                }
-                
-                const startMsg = `🔐 [SIGNATURE_ANALYZER] Starting algorithm tests for signature: ${expectedSignature}`;
-                console.log(startMsg);
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry(startMsg, 'info');
-                }
-                
-                const results = [];
-                const payloadStr = typeof payload === 'string' ? payload : JSON.stringify(payload);
-                
-                // Nếu có originalPayload (URL-encoded), test trên đó thay vì parsed payload
-                const testInputs = [];
-                if (originalPayload && typeof originalPayload === 'string') {
-                    // Test trên toàn bộ URL-encoded string (trước khi decode)
-                    testInputs.push({ name: 'FULL_URL_ENCODED', data: originalPayload });
-                    
-                    // Test trên phần trước ext parameter (loại bỏ ext=crc=...)
-                    if (originalPayload.includes('&ext=')) {
-                        const beforeExt = originalPayload.split('&ext=')[0];
-                        testInputs.push({ name: 'BEFORE_EXT', data: beforeExt });
-                    }
-                    
-                    // Test trên data parameter (base64 decoded)
-                    if (originalPayload.includes('data=') && originalPayload.includes('&')) {
-                        const urlParams = new URLSearchParams(originalPayload);
-                        const dataValue = urlParams.get('data');
-                        if (dataValue) {
-                            try {
-                                const decoded = atob(dataValue);
-                                testInputs.push({ name: 'DATA_DECODED', data: decoded });
-                                const parsed = JSON.parse(decoded);
-                                testInputs.push({ name: 'DATA_JSON_STRINGIFIED', data: JSON.stringify(parsed) });
-                                // Test trên JSON với sorted keys
-                                const sortedKeys = Object.keys(parsed).sort();
-                                const sortedObj = {};
-                                sortedKeys.forEach(key => sortedObj[key] = parsed[key]);
-                                testInputs.push({ name: 'DATA_JSON_SORTED', data: JSON.stringify(sortedObj) });
-                            } catch (e) {
-                                console.error('[SIGNATURE_ANALYZER] Error parsing data:', e);
-                            }
-                        }
-                    }
-                } else {
-                    testInputs.push({ name: 'PARSED_PAYLOAD', data: payloadStr });
-                }
-                
-                const inputMsg = `🔐 [SIGNATURE_ANALYZER] Testing ${testInputs.length} input variants: ${testInputs.map(t => t.name).join(', ')}`;
-                console.log(inputMsg);
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry(inputMsg, 'info');
-                }
-                
-                // Load crypto-js nếu chưa có
-                if (!window.CryptoJS) {
-                    const loadMsg = '[SIGNATURE_ANALYZER] CryptoJS not found, loading...';
-                    console.warn(loadMsg);
-                    if (typeof window.addLogEntry === 'function') {
-                        window.addLogEntry(`🔐 ${loadMsg}`, 'warning');
-                    }
-                    const script = document.createElement('script');
-                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js';
-                    document.head.appendChild(script);
-                    await new Promise(resolve => script.onload = resolve);
-                    if (typeof window.addLogEntry === 'function') {
-                        window.addLogEntry('🔐 [SIGNATURE_ANALYZER] CryptoJS loaded successfully', 'success');
-                    }
-                }
-                
-                // Load CRC32 library nếu chưa có
-                if (!window.crc32) {
-                    const loadCRCMsg = '[SIGNATURE_ANALYZER] Loading CRC32 library...';
-                    if (typeof window.addLogEntry === 'function') {
-                        window.addLogEntry(`🔐 ${loadCRCMsg}`, 'info');
-                    }
-                    const crcScript = document.createElement('script');
-                    crcScript.src = 'https://cdn.jsdelivr.net/npm/crc@4.1.0/lib/index.js';
-                    document.head.appendChild(crcScript);
-                    await new Promise(resolve => {
-                        crcScript.onload = resolve;
-                        crcScript.onerror = () => {
-                            // Fallback: implement CRC32 manually
-                            if (typeof window.addLogEntry === 'function') {
-                                window.addLogEntry('🔐 [SIGNATURE_ANALYZER] CRC32 library load failed, using manual implementation', 'warning');
-                            }
-                            resolve();
-                        };
-                    });
-                }
-                
-                // Implement CRC32 manually nếu cần
-                if (!window.crc32 && !window.CRC32) {
-                    this.implementCRC32();
-                }
-                
-                const algorithms = [];
-                
-                // Chỉ test hash algorithms trên parsed payload (không phải URL-encoded)
-                if (testInputs.length > 0 && testInputs[0].name !== 'FULL_URL_ENCODED') {
-                    algorithms.push(
-                        { name: 'MD5', fn: () => CryptoJS.MD5(payloadStr).toString() },
-                        { name: 'SHA1', fn: () => CryptoJS.SHA1(payloadStr).toString() },
-                        { name: 'SHA256', fn: () => CryptoJS.SHA256(payloadStr).toString() },
-                        { name: 'SHA512', fn: () => CryptoJS.SHA512(payloadStr).toString() },
-                        { name: 'MD5_HEX', fn: () => CryptoJS.MD5(payloadStr).toString(CryptoJS.enc.Hex) },
-                        { name: 'SHA256_HEX', fn: () => CryptoJS.SHA256(payloadStr).toString(CryptoJS.enc.Hex) }
-                    );
-                }
-                
-                // Test CRC algorithms trên từng input
-                for (const testInput of testInputs) {
-                    const inputData = testInput.data;
-                    const inputName = testInput.name;
-                    
-                    // Test CRC32
-                    if (window.crc32) {
-                        algorithms.push({ 
-                            name: `CRC32_${inputName}`, 
-                            fn: () => window.crc32(inputData).toString() 
-                        });
-                        algorithms.push({ 
-                            name: `CRC32_SIGNED_${inputName}`, 
-                            fn: () => {
-                                const crc = window.crc32(inputData);
-                                return (crc | 0).toString();
-                            }
-                        });
-                    }
-                    if (window.CRC32) {
-                        algorithms.push({ 
-                            name: `CRC32_ALT_${inputName}`, 
-                            fn: () => window.CRC32(inputData).toString() 
-                        });
-                    }
-                    // Manual CRC32
-                    algorithms.push({ 
-                        name: `CRC32_MANUAL_${inputName}`, 
-                        fn: () => this.calculateCRC32(inputData).toString() 
-                    });
-                    algorithms.push({ 
-                        name: `CRC32_MANUAL_SIGNED_${inputName}`, 
-                        fn: () => {
-                            const crc = this.calculateCRC32(inputData);
-                            return (crc | 0).toString();
-                        }
-                    });
-                }
-                
-                const potentialKeys = this.findPotentialKeys();
-                for (const keyData of potentialKeys.slice(0, 10)) {
-                    algorithms.push(
-                        { name: `HMAC-SHA256-${keyData.context.substring(0, 20)}`, fn: () => CryptoJS.HmacSHA256(payloadStr, keyData.key).toString() },
-                        { name: `HMAC-SHA256-HEX-${keyData.context.substring(0, 20)}`, fn: () => CryptoJS.HmacSHA256(payloadStr, keyData.key).toString(CryptoJS.enc.Hex) }
-                    );
-                }
-                
-                // Convert expectedSignature to number để so sánh với CRC
-                const expectedNum = parseInt(expectedSignature, 10);
-                const isNumericSignature = !isNaN(expectedNum);
-                
-                // Log số lượng algorithms và CRC algorithms
-                const crcAlgoCount = algorithms.filter(a => a.name.includes('CRC')).length;
-                const algoCountMsg = `🔐 [SIGNATURE_ANALYZER] Starting to test ${algorithms.length} algorithms (${crcAlgoCount} CRC32 variants)...`;
-                console.log(algoCountMsg);
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry(algoCountMsg, 'info');
-                }
-                
-                // Log nếu không có CRC algorithms
-                if (crcAlgoCount === 0) {
-                    const noCrcMsg = `🔐 [SIGNATURE_ANALYZER] ⚠️ WARNING: No CRC32 algorithms created! testInputs.length=${testInputs.length}`;
-                    console.warn(noCrcMsg);
-                    if (typeof window.addLogEntry === 'function') {
-                        window.addLogEntry(noCrcMsg, 'warning');
-                    }
-                }
-                
-                for (const algo of algorithms) {
-                    try {
-                        const result = algo.fn();
-                        let match = false;
-                        
-                        if (isNumericSignature) {
-                            // So sánh số với số (cho CRC)
-                            const resultNum = parseInt(result, 10);
-                            match = !isNaN(resultNum) && resultNum === expectedNum;
-                        } else {
-                            // So sánh string
-                            match = result === expectedSignature || result.toLowerCase() === expectedSignature.toLowerCase();
-                        }
-                        
-                        results.push({
-                            algorithm: algo.name,
-                            result: result,
-                            match: match,
-                            length: result.length,
-                            expected: expectedSignature
-                        });
-                        
-                        // Log tất cả kết quả test CRC (luôn log)
-                        if (algo.name.includes('CRC')) {
-                            const allTestMsg = `🔐 [SIGNATURE_ANALYZER] Test ${results.length}: ${algo.name} = ${result}, expected = ${expectedSignature}, match = ${match}`;
-                            console.log(allTestMsg);
-                            if (typeof window.addLogEntry === 'function') {
-                                window.addLogEntry(allTestMsg, match ? 'success' : 'info');
-                            }
-                        }
-                        
-                        if (match) {
-                            const matchMsg = `🔐 [SIGNATURE_ANALYZER] ✅ MATCH FOUND: ${algo.name}`;
-                            console.log(matchMsg);
-                            if (typeof window.addLogEntry === 'function') {
-                                window.addLogEntry(matchMsg, 'success');
-                                window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] Algorithm: ${algo.name}, Result: ${result}, Expected: ${expectedSignature}`, 'success');
-                            }
-                            return algo.name;
-                        }
-                    } catch (e) {
-                        const errorMsg = `[SIGNATURE_ANALYZER] Error testing ${algo.name}: ${e.message}`;
-                        console.error(errorMsg, e);
-                        if (typeof window.addLogEntry === 'function') {
-                            window.addLogEntry(`🔐 ${errorMsg}`, 'error');
-                        }
-                    }
-                }
-                
-                const resultsMsg = `🔐 [SIGNATURE_ANALYZER] Test completed: ${results.length} algorithms tested, no match found`;
-                console.log(resultsMsg, results);
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry(resultsMsg, 'warning');
-                    // Log tất cả CRC results (QUAN TRỌNG)
-                    const crcResults = results.filter(r => r.algorithm.includes('CRC'));
-                    if (crcResults.length > 0) {
-                        window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] 📊 CRC32 test results (${crcResults.length} variants):`, 'info');
-                        crcResults.forEach((r, idx) => {
-                            const crcMsg = `🔐 [SIGNATURE_ANALYZER] CRC ${idx + 1}/${crcResults.length}: ${r.algorithm} | result=${r.result} | expected=${r.expected} | match=${r.match}`;
-                            console.log(crcMsg);
-                            window.addLogEntry(crcMsg, r.match ? 'success' : 'info');
-                        });
-                    } else {
-                        const noCrcMsg = `🔐 [SIGNATURE_ANALYZER] ⚠️ No CRC32 algorithms were tested! Algorithms count: ${algorithms.length}`;
-                        console.warn(noCrcMsg);
-                        window.addLogEntry(noCrcMsg, 'warning');
-                    }
-                    // Log top 5 results gần nhất (không phải CRC)
-                    const nonCrcResults = results.filter(r => !r.algorithm.includes('CRC'));
-                    if (nonCrcResults.length > 0) {
-                        window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] Other algorithms (top 5):`, 'info');
-                        nonCrcResults.slice(0, 5).forEach((r, idx) => {
-                            window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] ${idx + 1}. ${r.algorithm} (length: ${r.length}, match: ${r.match})`, 'info');
-                        });
-                    }
-                }
-                return null;
-            },
-            
-            calculateCRC32: function(str) {
-                // CRC32 implementation
-                const crcTable = [];
-                for (let i = 0; i < 256; i++) {
-                    let crc = i;
-                    for (let j = 0; j < 8; j++) {
-                        crc = (crc & 1) ? (0xEDB88320 ^ (crc >>> 1)) : (crc >>> 1);
-                    }
-                    crcTable[i] = crc;
-                }
-                
-                let crc = 0xFFFFFFFF;
-                for (let i = 0; i < str.length; i++) {
-                    crc = crcTable[(crc ^ str.charCodeAt(i)) & 0xFF] ^ (crc >>> 8);
-                }
-                return (crc ^ 0xFFFFFFFF) >>> 0;
-            },
-            
-            exportData: function() {
-                const dataStr = JSON.stringify(this.collectedData, null, 2);
-                const blob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `signature-analysis-${Date.now()}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-                const exportMsg = `🔐 [SIGNATURE_ANALYZER] Data exported: ${this.collectedData.length} requests`;
-                console.log(exportMsg);
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry(exportMsg, 'success');
-                }
-            },
-            
-            init: function() {
-                this.initNetworkInterceptor();
-                this.initCryptoHooks();
-                const initMsg = '[SIGNATURE_ANALYZER] ✅ Initialized. Use SignatureAnalyzer.exportData() to export collected data.';
-                console.log(initMsg);
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry(`🔐 ${initMsg}`, 'success');
-                }
-                
-                // Auto-analyze khi có data mới
-                setInterval(() => {
-                    if (this.collectedData.length > 0) {
-                        const lastRequest = this.collectedData[this.collectedData.length - 1];
-                        if (lastRequest.parsedPayload && lastRequest.signature && !lastRequest.analyzed) {
-                            lastRequest.analyzed = true; // Đánh dấu đã phân tích để tránh duplicate
-                            this.analyzeSignature(lastRequest.parsedPayload, lastRequest.signature);
-                            this.testAlgorithms(lastRequest.parsedPayload, lastRequest.signature);
-                        }
-                    }
-                }, 5000);
-            }
-        };
-        
-        // Expose to window
-        window.SignatureAnalyzer = SignatureAnalyzer;
-        
-        // Khởi tạo ngay
-        SignatureAnalyzer.init();
-        
-        // Tìm keys ngay
-        setTimeout(() => {
-            SignatureAnalyzer.findPotentialKeys();
-        }, 2000);
-        
-    })();
-    
-    // =================================================================
     // == LỚP BẢO VỆ THỨ 6: NETWORK INTERCEPTION (CHẶN MẠNG) ==
     // == Chặn và kiểm tra payload trước khi gửi đến Minimax API ==
     // =================================================================
@@ -1075,120 +423,41 @@
                                     modified = findAndReplaceText(parsed);
                                 }
                                 
-                                    // Nếu payload ban đầu là URL-encoded, cần encode lại
-                                    if (modified && payload.includes('data=') && payload.includes('&')) {
-                                        const urlParams = new URLSearchParams(payload);
-                                        let jsonString = JSON.stringify(parsed);
-                                        
-                                        // FIX: Kiểm tra xem JSON string có chứa interceptText không
-                                        // Nếu không, dùng string replace để ép buộc thay thế
-                                        if (!jsonString.includes(interceptText)) {
-                                            console.error(`[ERROR] JSON string sau khi stringify KHÔNG chứa interceptText "${interceptText}"!`);
-                                            console.error(`[ERROR] JSON string: ${jsonString}`);
-                                            
-                                            // FALLBACK: Dùng string replace để ép buộc thay thế
-                                            const fieldPattern = new RegExp(`"${foundField}"\\s*:\\s*"([^"]*)"`, 'g');
-                                            const oldValueMatch = jsonString.match(fieldPattern);
-                                            if (oldValueMatch && oldValueMatch.length > 0) {
-                                                const oldValue = oldValueMatch[0].match(/:"([^"]*)"/)[1];
-                                                console.log(`[FALLBACK] Tìm thấy giá trị cũ: "${oldValue}", đang thay thế bằng "${interceptText}"`);
-                                                
-                                                // Escape đúng các ký tự đặc biệt
-                                                const escapedOldValue = oldValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                                                const escapedNewValue = interceptText
-                                                    .replace(/\\/g, '\\\\')
-                                                    .replace(/"/g, '\\"')
-                                                    .replace(/\n/g, '\\n')
-                                                    .replace(/\r/g, '\\r')
-                                                    .replace(/\t/g, '\\t');
-                                                
-                                                jsonString = jsonString.replace(
-                                                    new RegExp(`"${foundField}"\\s*:\\s*"${escapedOldValue}"`, 'g'),
-                                                    `"${foundField}":"${escapedNewValue}"`
-                                                );
-                                                
-                                                console.log(`[FALLBACK] JSON string sau khi ép buộc thay thế: ${jsonString}`);
-                                                
-                                                // Validate JSON
-                                                try {
-                                                    JSON.parse(jsonString);
-                                                    console.log(`[FALLBACK] ✅ JSON hợp lệ sau khi replace (URL-encoded)`);
-                                                } catch (e) {
-                                                    console.error(`[FALLBACK] ❌ JSON không hợp lệ sau khi replace (URL-encoded): ${e.message}`);
-                                                    // Thử tạo lại từ object
-                                                    try {
-                                                        const reParsed = JSON.parse(jsonString.replace(`"${foundField}":"${escapedNewValue}"`, `"${foundField}":"${oldValue}"`));
-                                                        reParsed[foundField] = interceptText;
-                                                        jsonString = JSON.stringify(reParsed);
-                                                        console.log(`[FALLBACK] ✅ Đã tạo lại JSON từ object (URL-encoded)`);
-                                                    } catch (e2) {
-                                                        console.error(`[FALLBACK] ❌ Không thể tạo lại JSON (URL-encoded): ${e2.message}`);
-                                                    }
-                                                }
-                                            }
+                                // Nếu payload ban đầu là URL-encoded, cần encode lại
+                                if (modified && payload.includes('data=') && payload.includes('&')) {
+                                    const urlParams = new URLSearchParams(payload);
+                                    const encodedData = btoa(JSON.stringify(parsed));
+                                    urlParams.set('data', encodedData);
+                                    const result = urlParams.toString();
+                                    
+                                    // Log đầy đủ
+                                    const textPreview = interceptText;
+                                    const logMsg1 = `🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload (field: ${foundField}) bằng chunk ${(currentIndex || 0) + 1}`;
+                                    const logMsg2 = `📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`;
+                                    
+                                    console.log(logMsg1);
+                                    console.log(logMsg2);
+                                    console.log(`[DEBUG] Text đã thay thế: ${interceptText.length} ký tự - "${interceptText}"`);
+                                    console.log(`[DEBUG] Payload sau khi thay thế (URL-encoded, ${result.length} ký tự): ${result.substring(0, 300)}...`);
+                                    
+                                    try {
+                                        logToUI(logMsg1, 'warning');
+                                        logToUI(logMsg2, 'info');
+                                        if (typeof window.addLogEntry === 'function') {
+                                            window.addLogEntry(logMsg1, 'warning');
+                                            window.addLogEntry(logMsg2, 'info');
+                                            window.addLogEntry(`[DEBUG] Payload sau khi thay thế (URL-encoded, ${result.length} ký tự): ${result}`, 'info');
                                         }
-                                        
-                                        const encodedData = btoa(jsonString);
-                                        urlParams.set('data', encodedData);
-                                        
-                                        // === TÍNH LẠI CHỮ KÝ CRC-32 ===
-                                        // Bật debug flag cho voice/clone requests
-                                        const isVoiceCloneRequest = (typeof payload === 'string' && payload.includes('voice/clone')) || 
-                                                                   (typeof jsonString === 'string' && jsonString.includes('preview_text'));
-                                        if (isVoiceCloneRequest) {
-                                            window._debugSignatureCalculation = true;
-                                        }
-                                        
-                                        const newSignature = calculateHailuoSignature(jsonString);
-                                        
-                                        // Tắt debug flag sau khi tính xong
-                                        if (isVoiceCloneRequest) {
-                                            window._debugSignatureCalculation = false;
-                                        }
-                                        
-                                        // Cập nhật chữ ký trong URL params
-                                        const oldCrcMatch = urlParams.get('ext')?.match(/crc=([-\d]+)/);
-                                        const oldCrc = oldCrcMatch ? oldCrcMatch[1] : null;
-                                        urlParams.set('ext', `crc=${newSignature}`);
-                                        
-                                        const result = urlParams.toString();
-                                        
-                                        // Log đầy đủ
-                                        const textPreview = interceptText;
-                                        const logMsg1 = `🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload (field: ${foundField}) bằng chunk ${(currentIndex || 0) + 1}`;
-                                        const logMsg2 = `📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`;
-                                        const logMsg3 = `🔐 [SIGNATURE] Chữ ký cũ: ${oldCrc || 'N/A'} → Chữ ký mới: ${newSignature}`;
-                                        
-                                        console.log(logMsg1);
-                                        console.log(logMsg2);
-                                        console.log(logMsg3);
-                                        console.log(`[DEBUG] Text đã thay thế: ${interceptText.length} ký tự - "${interceptText}"`);
-                                        console.log(`[DEBUG] Payload sau khi thay thế (URL-encoded, ${result.length} ký tự): ${result.substring(0, 300)}...`);
-                                        
-                                        // Lưu chữ ký mới vào biến global để interceptor có thể sử dụng
-                                        window._lastCalculatedSignature = newSignature;
-                                        window._lastPayloadForSignature = jsonString;
-                                        
-                                        try {
-                                            logToUI(logMsg1, 'warning');
-                                            logToUI(logMsg2, 'info');
-                                            logToUI(logMsg3, 'success');
-                                            if (typeof window.addLogEntry === 'function') {
-                                                window.addLogEntry(logMsg1, 'warning');
-                                                window.addLogEntry(logMsg2, 'info');
-                                                window.addLogEntry(logMsg3, 'success');
-                                                window.addLogEntry(`[DEBUG] Payload sau khi thay thế (URL-encoded, ${result.length} ký tự): ${result}`, 'info');
-                                            }
-                                        } catch (e) {
-                                            console.error('Lỗi khi log:', e);
-                                        }
-                                        
-                                        if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
-                                            window._interceptLoggedForChunk = currentIndex;
-                                        }
-                                        
-                                        return result;
+                                    } catch (e) {
+                                        console.error('Lỗi khi log:', e);
                                     }
+                                    
+                                    if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
+                                        window._interceptLoggedForChunk = currentIndex;
+                                    }
+                                    
+                                    return result;
+                                }
                                 
                                 if (modified) {
                                     // Hiển thị text đã được thay thế để debug (luôn log để xem text gửi đi)
@@ -1227,101 +496,21 @@
                                     console.log(`[DEBUG] - parsed object:`, JSON.stringify(parsed, null, 2));
                                     
                                     // Debug: Log payload sau khi thay thế - hiển thị full payload trong UI log
-                                    let result = JSON.stringify(parsed);
+                                    const result = JSON.stringify(parsed);
                                     const debugPayload = result; // Hiển thị full payload
                                     console.log(`[DEBUG] Payload sau khi thay thế (300 ký tự đầu): ${result.substring(0, 300)}...`);
                                     console.log(`[DEBUG] Payload sau khi thay thế (FULL): ${result}`);
                                     
-                                    // FIX: Kiểm tra xem result có chứa interceptText không
-                                    // Nếu không, có thể do object bị khóa hoặc JSON.stringify bị hook
-                                    // → Dùng string replace để ép buộc thay thế
+                                    // Kiểm tra xem result có chứa interceptText không
                                     if (!result.includes(interceptText)) {
                                         console.error(`[ERROR] Payload sau khi stringify KHÔNG chứa interceptText "${interceptText}"!`);
-                                        console.error(`[ERROR] Payload gốc: ${result}`);
+                                        console.error(`[ERROR] Payload: ${result}`);
                                         console.error(`[ERROR] parsed.${foundField}: "${parsed[foundField]}"`);
-                                        
-                                        // FALLBACK: Dùng string replace để ép buộc thay thế
-                                        // Tìm giá trị cũ của field trong JSON string
-                                        const fieldPattern = new RegExp(`"${foundField}"\\s*:\\s*"([^"]*)"`, 'g');
-                                        const oldValueMatch = result.match(fieldPattern);
-                                        if (oldValueMatch && oldValueMatch.length > 0) {
-                                            // Lấy giá trị cũ từ match đầu tiên
-                                            const oldValue = oldValueMatch[0].match(/:"([^"]*)"/)[1];
-                                            console.log(`[FALLBACK] Tìm thấy giá trị cũ: "${oldValue}", đang thay thế bằng "${interceptText}"`);
-                                            
-                                            // Escape đúng các ký tự đặc biệt cho cả oldValue và interceptText
-                                            const escapedOldValue = oldValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                                            // Escape interceptText đúng cách cho JSON string
-                                            const escapedNewValue = interceptText
-                                                .replace(/\\/g, '\\\\')  // Escape backslash trước
-                                                .replace(/"/g, '\\"')   // Escape double quotes
-                                                .replace(/\n/g, '\\n')  // Escape newline
-                                                .replace(/\r/g, '\\r')  // Escape carriage return
-                                                .replace(/\t/g, '\\t'); // Escape tab
-                                            
-                                            // Thay thế giá trị cũ bằng giá trị mới
-                                            result = result.replace(
-                                                new RegExp(`"${foundField}"\\s*:\\s*"${escapedOldValue}"`, 'g'),
-                                                `"${foundField}":"${escapedNewValue}"`
-                                            );
-                                            
-                                            console.log(`[FALLBACK] Payload sau khi ép buộc thay thế: ${result}`);
-                                            
-                                            // Validate JSON sau khi replace
-                                            try {
-                                                const testParsed = JSON.parse(result);
-                                                console.log(`[FALLBACK] ✅ JSON hợp lệ sau khi replace`);
-                                                
-                                                // Kiểm tra lại
-                                                if (result.includes(interceptText)) {
-                                                    console.log(`[FALLBACK] ✅ Thành công! Payload đã chứa interceptText`);
-                                                } else {
-                                                    console.error(`[FALLBACK] ❌ Vẫn thất bại sau khi ép buộc thay thế!`);
-                                                }
-                                            } catch (e) {
-                                                console.error(`[FALLBACK] ❌ JSON không hợp lệ sau khi replace: ${e.message}`);
-                                                console.error(`[FALLBACK] ❌ Payload: ${result}`);
-                                                // Nếu JSON không hợp lệ, thử cách khác: tạo lại object và stringify
-                                                try {
-                                                    const reParsed = JSON.parse(result.replace(`"${foundField}":"${escapedNewValue}"`, `"${foundField}":"${oldValue}"`));
-                                                    reParsed[foundField] = interceptText;
-                                                    result = JSON.stringify(reParsed);
-                                                    console.log(`[FALLBACK] ✅ Đã tạo lại JSON từ object: ${result}`);
-                                                } catch (e2) {
-                                                    console.error(`[FALLBACK] ❌ Không thể tạo lại JSON: ${e2.message}`);
-                                                }
-                                            }
-                                        } else {
-                                            console.error(`[FALLBACK] ❌ Không tìm thấy field "${foundField}" trong JSON string để thay thế!`);
-                                        }
                                     }
-                                    
-                                    // === TÍNH LẠI CHỮ KÝ CRC-32 ===
-                                    // Bật debug flag cho voice/clone requests
-                                    const isVoiceCloneRequest = (typeof payload === 'string' && payload.includes('voice/clone')) || 
-                                                               (typeof result === 'string' && result.includes('preview_text'));
-                                    if (isVoiceCloneRequest) {
-                                        window._debugSignatureCalculation = true;
-                                    }
-                                    
-                                    const newSignature = calculateHailuoSignature(result);
-                                    
-                                    // Tắt debug flag sau khi tính xong
-                                    if (isVoiceCloneRequest) {
-                                        window._debugSignatureCalculation = false;
-                                    }
-                                    
-                                    // Lưu chữ ký mới vào biến global để interceptor có thể cập nhật URL
-                                    window._lastCalculatedSignature = newSignature;
-                                    window._lastPayloadForSignature = result;
-                                    
-                                    const logMsg3 = `🔐 [SIGNATURE] Đã tính lại chữ ký CRC-32: ${newSignature}`;
-                                    console.log(logMsg3);
                                     
                                     // Log full payload vào UI
                                     if (typeof window.addLogEntry === 'function') {
-                                        window.addLogEntry(`[DEBUG] Payload sau khi thay thế (${result.length} ký tự): ${result}`, 'info');
-                                        window.addLogEntry(logMsg3, 'success');
+                                        window.addLogEntry(`[DEBUG] Payload sau khi thay thế (${result.length} ký tự): ${debugPayload}`, 'info');
                                     }
                                     
                                     console.log(`[DEBUG] Payload đã được stringify, độ dài: ${result.length} ký tự, field thay thế: ${foundField}`);
@@ -1587,419 +776,80 @@
         
         // Intercept XMLHttpRequest
         const originalXHROpen = XMLHttpRequest.prototype.open;
-        const originalXHRSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
         const originalXHRSend = XMLHttpRequest.prototype.send;
         
-        // 1. Hook Open để lưu thông tin
-        XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
-            this._method = method;
-            this._url = url; // Lưu URL gốc
-            this._async = async !== false; // Mặc định là true nếu không chỉ định
-            this._headers = {}; // Tạo kho chứa headers
-            this._interceptedUrl = url; // Giữ để tương thích với code cũ
-            
-            return originalXHROpen.apply(this, arguments);
-        };
-        
-        // 2. Hook setRequestHeader để lưu headers (QUAN TRỌNG)
-        XMLHttpRequest.prototype.setRequestHeader = function(header, value) {
-            if (!this._headers) this._headers = {};
-            this._headers[header] = value; // Lưu lại để dùng sau
-            
-            return originalXHRSetRequestHeader.apply(this, arguments);
+        XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+            this._interceptedUrl = url;
+            return originalXHROpen.apply(this, [method, url, ...rest]);
         };
         
         XMLHttpRequest.prototype.send = function(data) {
-
             // Chỉ intercept các request đến Minimax API
-
-            // Sử dụng this._url hoặc this._interceptedUrl làm fallback
-
-            const currentUrl = this._url || this._interceptedUrl || '';
-
-            
-
-            if (currentUrl && (currentUrl.includes('minimax') || currentUrl.includes('api') || currentUrl.includes('audio') || currentUrl.includes('voice'))) {
-
+            if (this._interceptedUrl && (this._interceptedUrl.includes('minimax') || this._interceptedUrl.includes('api') || this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice'))) {
                 try {
-
-                    const originalData = data;
-
-                    
-
-                    // [GIỮ NGUYÊN PHẦN SIGNATURE ANALYZER Ở ĐÂY NẾU CẦN...] 
-
-                    // === SIGNATURE ANALYZER: Thu thập dữ liệu ===
-                    if (window.SignatureAnalyzer && typeof data === 'string') {
-                        try {
-                            let parsedPayload = null;
-                            let signature = null;
-                            
-                            if (data.includes('data=') && data.includes('&')) {
-                                const urlParams = new URLSearchParams(data);
-                                const dataValue = urlParams.get('data');
-                                if (dataValue) {
-                                    try {
-                                        const decoded = atob(dataValue);
-                                        parsedPayload = JSON.parse(decoded);
-                                        // Extract CRC from ext parameter: ext=crc=123456
-                                        const extValue = urlParams.get('ext') || '';
-                                        const crcMatch = extValue.match(/crc[=:](-?\d+)/i);
-                                        if (crcMatch) {
-                                            signature = crcMatch[1];
-                                        } else {
-                                            signature = urlParams.get('signature') || urlParams.get('hash') || urlParams.get('crc') || extValue;
-                                        }
-                                    } catch (e) {}
-                                }
-                            } else {
-                                try {
-                                    parsedPayload = JSON.parse(data);
-                                    signature = parsedPayload.signature || parsedPayload.hash || parsedPayload.crc;
-                                } catch (e) {}
-                            }
-                            
-                            if (parsedPayload || signature) {
-                                const requestData = {
-                                    url: currentUrl,
-                                    method: this._interceptedMethod || 'POST',
-                                    headers: this._signatureAnalyzerHeaders || {},
-                                    payload: data,
-                                    parsedPayload: parsedPayload,
-                                    signature: signature,
-                                    timestamp: Date.now()
-                                };
-                                
-                                window.SignatureAnalyzer.collectedData.push(requestData);
-                                const captureMsg = `🔐 [SIGNATURE_ANALYZER] Request captured: ${requestData.url.substring(0, 80)}${requestData.url.length > 80 ? '...' : ''}`;
-                                console.log(captureMsg, requestData);
-                                if (typeof window.addLogEntry === 'function') {
-                                    window.addLogEntry(captureMsg, 'info');
-                                    if (signature) {
-                                        window.addLogEntry(`🔐 [SIGNATURE_ANALYZER] Signature found: ${signature.substring(0, 50)}${signature.length > 50 ? '...' : ''} (${signature.length} chars)`, 'info');
-                                    }
-                                }
-                                
-                                // Auto-analyze
-                                if (parsedPayload && signature && !requestData.analyzed) {
-                                    requestData.analyzed = true;
-                                    window.SignatureAnalyzer.analyzeSignature(parsedPayload, signature);
-                                    // Pass original payload để test trên URL-encoded string
-                                    // Gọi async nhưng không await để không block
-                                    window.SignatureAnalyzer.testAlgorithms(parsedPayload, signature, data).then(result => {
-                                        if (result) {
-                                            const foundMsg = `🔐 [SIGNATURE_ANALYZER] ✅ Algorithm found: ${result}`;
-                                            console.log(foundMsg);
-                                            if (typeof window.addLogEntry === 'function') {
-                                                window.addLogEntry(foundMsg, 'success');
-                                            }
-                                        }
-                                    }).catch(e => {
-                                        console.error('[SIGNATURE_ANALYZER] Error in testAlgorithms:', e);
-                                    });
-                                }
-                            }
-                        } catch (e) {
-                            console.error('[SIGNATURE_ANALYZER] Error capturing request:', e);
-                        }
-                    }
-                    // === END SIGNATURE ANALYZER ===
-
-
-
-                    // Xử lý payload
-
-                    const cleanedData = processPayload(data, currentUrl);
-
+                const originalData = data;
+                const cleanedData = processPayload(data, this._interceptedUrl);
                     const payloadModified = (originalData !== cleanedData);
-
                     
-
-                    // Log trạng thái
-
-                    if (currentUrl.includes('voice/clone')) {
-
-                        if (payloadModified) {
-
-                            logToUI(`📤 [INTERCEPTOR] Payload ĐÃ SỬA. Chuẩn bị Re-open...`, 'warning');
-
-                        } else {
-
-                            logToUI(`📤 [INTERCEPTOR] Payload không đổi. Gửi bình thường.`, 'info');
-
-                        }
-
-                        
-
-                        // Debug log
-
-                        console.log(`[DEBUG] Re-open check: Modified=${payloadModified}, Signature=${window._lastCalculatedSignature}, URL=${currentUrl}`);
-
-                    }
-
-
-
-                    // === RE-OPEN VỚI URL MỚI CÓ CHỮ KÝ ĐÚNG (FIXED BY GEMINI) ===
-
-                    // Điều kiện đơn giản hóa: Chỉ cần payload sửa và có chữ ký mới là CHẠY LUÔN
-
-                    if (payloadModified && window._lastCalculatedSignature) {
-
+                    // Debug: Kiểm tra cleanedData trước khi gửi
+                    if (typeof cleanedData === 'string' && cleanedData.includes('preview_text')) {
                         try {
-
-                            const oldUrl = currentUrl;
-
-                            let newUrl = oldUrl;
-
-                            
-
-                            // Cập nhật chữ ký trong URL (Hỗ trợ cả ext=crc= và ext=crc%3D)
-
-                            if (newUrl.includes('ext=crc')) {
-
-                                newUrl = newUrl.replace(/ext=crc(=|%3D)([-\d]+)/i, `ext=crc$1${window._lastCalculatedSignature}`);
-
-                            } else {
-
-                                const separator = newUrl.includes('?') ? '&' : '?';
-
-                                newUrl = `${newUrl}${separator}ext=crc=${window._lastCalculatedSignature}`;
-
-                            }
-
-                            
-
-                            if (newUrl !== oldUrl) {
-
-                                console.log(`🔄 [RE-OPEN] KÍCH HOẠT! URL Cũ: ...${oldUrl.slice(-50)}`);
-
-                                console.log(`🔄 [RE-OPEN] URL Mới: ...${newUrl.slice(-50)}`);
-
-                                
-                                // Log chi tiết về signature và payload
-                                console.log(`🔐 [RE-OPEN DEBUG] Signature cũ trong URL:`, oldUrl.match(/ext=crc(=|%3D)([-\d]+)/i)?.[2] || 'N/A');
-                                console.log(`🔐 [RE-OPEN DEBUG] Signature mới: ${window._lastCalculatedSignature}`);
-                                console.log(`🔐 [RE-OPEN DEBUG] Payload đã tính signature (200 ký tự đầu):`, window._lastPayloadForSignature ? window._lastPayloadForSignature.substring(0, 200) : 'N/A');
-                                console.log(`🔐 [RE-OPEN DEBUG] Payload sẽ gửi đi (200 ký tự đầu):`, cleanedData ? (typeof cleanedData === 'string' ? cleanedData.substring(0, 200) : JSON.stringify(cleanedData).substring(0, 200)) : 'N/A');
-                                
-                                // Kiểm tra xem payload có khớp với payload đã tính signature không
-                                if (window._lastPayloadForSignature && cleanedData) {
-                                    const payloadStr = typeof cleanedData === 'string' ? cleanedData : JSON.stringify(cleanedData);
-                                    if (payloadStr !== window._lastPayloadForSignature) {
-                                        console.warn(`⚠️ [RE-OPEN DEBUG] Payload sẽ gửi KHÁC với payload đã tính signature!`);
-                                        console.warn(`⚠️ [RE-OPEN DEBUG] Payload đã tính: ${window._lastPayloadForSignature.substring(0, 100)}...`);
-                                        console.warn(`⚠️ [RE-OPEN DEBUG] Payload sẽ gửi: ${payloadStr.substring(0, 100)}...`);
-                                        logToUI(`⚠️ [SIGNATURE] CẢNH BÁO: Payload khác với payload đã tính signature!`, 'warning');
-                                    } else {
-                                        console.log(`✅ [RE-OPEN DEBUG] Payload khớp với payload đã tính signature`);
-                                    }
+                            const parsedCheck = JSON.parse(cleanedData);
+                            if (parsedCheck.preview_text) {
+                                console.log(`[DEBUG] cleanedData trước khi gửi - preview_text: "${parsedCheck.preview_text}"`);
+                                if (window.INTERCEPT_CURRENT_TEXT && parsedCheck.preview_text !== window.INTERCEPT_CURRENT_TEXT) {
+                                    console.error(`[ERROR] cleanedData KHÔNG chứa INTERCEPT_CURRENT_TEXT!`);
+                                    console.error(`[ERROR] Expected: "${window.INTERCEPT_CURRENT_TEXT}"`);
+                                    console.error(`[ERROR] Actual: "${parsedCheck.preview_text}"`);
+                                    console.error(`[ERROR] cleanedData: ${cleanedData}`);
                                 }
-
-                                // 1. Lưu lại các thuộc tính quan trọng trước khi reset
-
-                                const savedWithCredentials = this.withCredentials;
-
-                                const savedResponseType = this.responseType;
-
-                                const savedTimeout = this.timeout;
-
-                                
-
-                                // 2. MỞ LẠI REQUEST (Reset trạng thái XHR)
-
-                                originalXHROpen.call(this, this._method || 'POST', newUrl, this._async !== false);
-
-                                
-
-                                // 3. PHỤC HỒI HEADER (Rất quan trọng)
-
-                                if (this._headers) {
-
-                                    for (const [key, val] of Object.entries(this._headers)) {
-
-                                        originalXHRSetRequestHeader.call(this, key, val);
-
-                                    }
-
-                                }
-
-                                
-
-                                // 4. PHỤC HỒI THUỘC TÍNH (Cookie, timeout...)
-
-                                // Đây là bước bạn bị thiếu trước đó
-
-                                if (savedWithCredentials) this.withCredentials = true;
-
-                                if (savedResponseType) this.responseType = savedResponseType;
-
-                                if (savedTimeout) this.timeout = savedTimeout;
-
-                                
-
-                                // Cập nhật lại URL nội bộ
-
-                                this._url = newUrl;
-
-                                this._interceptedUrl = newUrl;
-
-                                
-
-                                logToUI(`🔐 [SIGNATURE] Đã Re-open request với chữ ký mới: ${window._lastCalculatedSignature}`, 'success');
-
                             }
-
                         } catch (e) {
-
-                            console.error(`❌ [RE-OPEN] Lỗi nghiêm trọng:`, e);
-
-                            logToUI(`❌ [RE-OPEN] Lỗi: ${e.message}`, 'error');
-
+                            // Không phải JSON, bỏ qua
                         }
-
                     }
                     
-                    // Intercept response để debug
-                    const originalOnReadyStateChange = this.onreadystatechange;
-                    this.onreadystatechange = function() {
-                        if (this.readyState === 4) {
-                            console.log(`[DEBUG] XMLHttpRequest response status: ${this.status}`, this);
-                            
-                            // === SIGNATURE ANALYZER: Lưu response ===
-                            if (window.SignatureAnalyzer) {
-                                const lastRequest = window.SignatureAnalyzer.collectedData[window.SignatureAnalyzer.collectedData.length - 1];
-                                if (lastRequest && lastRequest.url === currentUrl) {
-                                    lastRequest.response = {
-                                        status: this.status,
-                                        statusText: this.statusText,
-                                        responseText: this.responseText,
-                                        headers: this.getAllResponseHeaders(),
-                                        timestamp: Date.now()
-                                    };
-                                    const responseMsg = `🔐 [SIGNATURE_ANALYZER] Response saved: status=${lastRequest.response.status}`;
-                                    console.log(responseMsg, lastRequest.response);
-                                    if (typeof window.addLogEntry === 'function') {
-                                        window.addLogEntry(responseMsg, 'info');
-                                    }
-                                }
+                    // Log cho request quan trọng (audio generation)
+                    if (this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice') || this._interceptedUrl.includes('clone')) {
+                        if (payloadModified) {
+                    // Xác minh lại payload sau khi sửa
+                    const recheck = verifyPayloadText(cleanedData);
+                    if (recheck.hasDefaultText) {
+                                logToUI(`⚠️ [NETWORK INTERCEPTOR] Vẫn còn text mặc định sau khi thay thế`, 'error');
                             }
-                            // === END SIGNATURE ANALYZER ===
-                            
-                            // Log response chi tiết cho voice/clone requests
-                            if (currentUrl && currentUrl.includes('voice/clone')) {
+                            logToUI(`📤 [NETWORK INTERCEPTOR] Đang gửi XMLHttpRequest với payload đã được thay thế`, 'info');
+                    } else {
+                            logToUI(`📤 [NETWORK INTERCEPTOR] Đang gửi XMLHttpRequest (payload không thay đổi)`, 'info');
+                        }
+                        
+                        // Intercept response để debug
+                        const originalOnReadyStateChange = this.onreadystatechange;
+                        this.onreadystatechange = function() {
+                            if (this.readyState === 4) {
+                                console.log(`[DEBUG] XMLHttpRequest response status: ${this.status}`, this);
                                 if (this.status >= 200 && this.status < 300) {
                                     logToUI(`✅ [NETWORK INTERCEPTOR] XMLHttpRequest thành công: ${this.status}`, 'info');
-                                    console.log(`[DEBUG] Response thành công cho voice/clone:`, {
-                                        status: this.status,
-                                        statusText: this.statusText,
-                                        responseLength: this.responseText ? this.responseText.length : 0,
-                                        responsePreview: this.responseText ? this.responseText.substring(0, 200) : 'N/A'
-                                    });
-                                    
-                                    // Thử parse response để xem có lỗi gì không
-                                    try {
-                                        if (this.responseText) {
-                                            const responseJson = JSON.parse(this.responseText);
-                                            console.log(`[DEBUG] Response JSON:`, responseJson);
-                                            if (responseJson.error || responseJson.message) {
-                                                logToUI(`⚠️ [NETWORK INTERCEPTOR] Response có lỗi: ${responseJson.error || responseJson.message}`, 'warning');
-                                            }
-                                        }
-                                    } catch (e) {
-                                        // Không phải JSON, có thể là binary data
-                                        console.log(`[DEBUG] Response không phải JSON (có thể là audio data)`);
-                                    }
-                                } else {
-                                    logToUI(`❌ [NETWORK INTERCEPTOR] XMLHttpRequest lỗi: ${this.status} ${this.statusText}`, 'error');
-                                    
-                                    // Log response body đầy đủ
-                                    let responseBody = 'N/A';
-                                    let responseJson = null;
-                                    try {
-                                        if (this.responseText) {
-                                            responseBody = this.responseText;
-                                            responseJson = JSON.parse(this.responseText);
-                                        }
-                                    } catch (e) {
-                                        responseBody = this.responseText || 'N/A';
-                                    }
-                                    
-                                    console.error(`[DEBUG] Response lỗi cho voice/clone:`, {
-                                        status: this.status,
-                                        statusText: this.statusText,
-                                        responseText: responseBody,
-                                        responseJson: responseJson,
-                                        headers: this.getAllResponseHeaders()
-                                    });
-                                    
-                                    // Log vào UI log
-                                    if (typeof window.addLogEntry === 'function') {
-                                        window.addLogEntry(`❌ [VOICE/CLONE ERROR] Status: ${this.status} ${this.statusText}`, 'error');
-                                        if (responseJson) {
-                                            window.addLogEntry(`❌ [VOICE/CLONE ERROR] Response: ${JSON.stringify(responseJson)}`, 'error');
-                                        } else if (responseBody && responseBody !== 'N/A') {
-                                            window.addLogEntry(`❌ [VOICE/CLONE ERROR] Response: ${responseBody.substring(0, 500)}`, 'error');
-                                        }
-                                    }
-                                    
-                                    // Nếu là lỗi 400, có thể do signature sai
-                                    if (this.status === 400) {
-                                        logToUI(`⚠️ [SIGNATURE] Có thể chữ ký không đúng! Status 400. Signature đã gửi: ${window._lastCalculatedSignature}`, 'error');
-                                        console.error(`[SIGNATURE DEBUG] Signature đã gửi: ${window._lastCalculatedSignature}`);
-                                        console.error(`[SIGNATURE DEBUG] Payload đã gửi:`, window._lastPayloadForSignature ? window._lastPayloadForSignature.substring(0, 200) : 'N/A');
-                                        console.error(`[SIGNATURE DEBUG] URL đã gửi:`, this._url || currentUrl);
-                                        
-                                        // Tính lại signature từ payload để so sánh
-                                        if (window._lastPayloadForSignature) {
-                                            const recalculated = calculateHailuoSignature(window._lastPayloadForSignature);
-                                            console.error(`[SIGNATURE DEBUG] Signature tính lại từ payload: ${recalculated}`);
-                                            if (recalculated !== window._lastCalculatedSignature) {
-                                                console.error(`[SIGNATURE DEBUG] ⚠️ Signature không khớp! Có thể payload đã thay đổi sau khi tính signature.`);
-                                            }
-                                        }
-                                        
-                                        // Log response error message nếu có
-                                        if (responseJson) {
-                                            console.error(`[SIGNATURE DEBUG] Server error message:`, responseJson);
-                                            if (typeof window.addLogEntry === 'function') {
-                                                window.addLogEntry(`⚠️ [SIGNATURE] Server error: ${JSON.stringify(responseJson)}`, 'error');
-                                            }
-                                        }
-                                    }
-                                }
-                            } else {
-                                // Log cho các request khác
-                                if (this.status >= 200 && this.status < 300) {
-                                    logToUI(`✅ [NETWORK INTERCEPTOR] XMLHttpRequest thành công: ${this.status}`, 'info');
-                                } else {
+                } else {
                                     logToUI(`❌ [NETWORK INTERCEPTOR] XMLHttpRequest lỗi: ${this.status} ${this.statusText}`, 'error');
                                 }
                             }
-                        }
-                        if (originalOnReadyStateChange) {
-                            originalOnReadyStateChange.apply(this, arguments);
-                        }
-                    };
-
-                    // Gửi request đi (với payload mới và URL mới nếu đã re-open)
-                    return originalXHRSend.call(this, cleanedData);
-
+                            if (originalOnReadyStateChange) {
+                                originalOnReadyStateChange.apply(this, arguments);
+                            }
+                        };
+                    }
                     
-
+                    // QUAN TRỌNG: Gửi request đi với payload đã được thay thế
+                return originalXHRSend.apply(this, [cleanedData]);
                 } catch (error) {
-
-                    console.error('[NETWORK INTERCEPTOR] Error:', error);
-
+                    // Nếu có lỗi khi xử lý payload, log và gửi request gốc
+                    logToUI(`❌ [NETWORK INTERCEPTOR] Lỗi khi xử lý XMLHttpRequest payload: ${error.message}. Gửi request gốc.`, 'error');
+                    console.error('[NETWORK INTERCEPTOR] XMLHttpRequest error:', error);
                     return originalXHRSend.apply(this, [data]);
-
                 }
-
             }
-
             
-
             return originalXHRSend.apply(this, [data]);
-
         };
         
         // Log khi interceptor được kích hoạt (đã ẩn để bảo mật)
