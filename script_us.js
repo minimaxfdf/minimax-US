@@ -748,6 +748,28 @@
                     if (urlStr && (urlStr.includes('audio') || urlStr.includes('voice') || urlStr.includes('clone'))) {
                         window.lastCapturedUrl = urlStr;
                         window.INTERCEPT_URL = urlStr;
+                        
+                        // Lưu lại payload đã xử lý để chunk 1 capture và dùng cho các chunk sau
+                        try {
+                            let payloadToCache = newOptions.body;
+                            if (typeof payloadToCache === 'string') {
+                                try {
+                                    payloadToCache = JSON.parse(payloadToCache);
+                                } catch (e) {
+                                    // giữ nguyên string
+                                }
+                            } else if (payloadToCache instanceof FormData) {
+                                const fdObj = {};
+                                for (const [k, v] of payloadToCache.entries()) {
+                                    fdObj[k] = v;
+                                }
+                                payloadToCache = fdObj;
+                            }
+                            window.INTERCEPT_PAYLOAD = payloadToCache;
+                            window.lastCapturedPayload = payloadToCache;
+                        } catch (e) {
+                            console.warn('Không thể cache payload:', e);
+                        }
                     }
                     
                     // QUAN TRỌNG: Gửi request đi với payload đã được thay thế và intercept response
@@ -849,6 +871,28 @@
                     if (this._interceptedUrl && (this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice') || this._interceptedUrl.includes('clone'))) {
                         window.lastCapturedUrl = this._interceptedUrl;
                         window.INTERCEPT_URL = this._interceptedUrl;
+                        
+                        // Lưu lại payload đã xử lý để chunk 1 capture và dùng cho các chunk sau
+                        try {
+                            let payloadToCache = cleanedData;
+                            if (typeof payloadToCache === 'string') {
+                                try {
+                                    payloadToCache = JSON.parse(payloadToCache);
+                                } catch (e) {
+                                    // giữ nguyên string
+                                }
+                            } else if (payloadToCache instanceof FormData) {
+                                const fdObj = {};
+                                for (const [k, v] of payloadToCache.entries()) {
+                                    fdObj[k] = v;
+                                }
+                                payloadToCache = fdObj;
+                            }
+                            window.INTERCEPT_PAYLOAD = payloadToCache;
+                            window.lastCapturedPayload = payloadToCache;
+                        } catch (e) {
+                            console.warn('Không thể cache payload (XHR):', e);
+                        }
                     }
                     
                     // QUAN TRỌNG: Gửi request đi với payload đã được thay thế
