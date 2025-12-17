@@ -744,31 +744,58 @@
                         logToUI(`📤 [NETWORK INTERCEPTOR] Đang gửi request (không có body)`, 'info');
                     }
                     
-                    // Lưu URL để sử dụng cho các chunk sau
-                    if (urlStr && (urlStr.includes('audio') || urlStr.includes('voice') || urlStr.includes('clone'))) {
+                    // Lưu URL và payload để sử dụng cho các chunk sau
+                    // Đơn giản: Lưu payload khi có preview_text hoặc text field (request audio generation)
+                    let shouldSavePayload = false;
+                    let payloadToCache = newOptions.body;
+                    
+                    try {
+                        if (typeof newOptions.body === 'string') {
+                            try {
+                                const parsed = JSON.parse(newOptions.body);
+                                // Kiểm tra có preview_text hoặc text field không
+                                if (parsed.preview_text || parsed.text) {
+                                    shouldSavePayload = true;
+                                    payloadToCache = parsed; // Dùng parsed object
+                                }
+                            } catch (e) {
+                                // Không phải JSON, giữ nguyên string
+                            }
+                        } else if (newOptions.body && typeof newOptions.body === 'object') {
+                            if (newOptions.body.preview_text || newOptions.body.text) {
+                                shouldSavePayload = true;
+                            }
+                        }
+                    } catch (e) {
+                        // Bỏ qua
+                    }
+                    
+                    // Lưu URL và payload nếu là request audio generation
+                    if (shouldSavePayload) {
                         window.lastCapturedUrl = urlStr;
                         window.INTERCEPT_URL = urlStr;
                         
-                        // Lưu lại payload đã xử lý để chunk 1 capture và dùng cho các chunk sau
-                        try {
-                            let payloadToCache = newOptions.body;
-                            if (typeof payloadToCache === 'string') {
-                                try {
-                                    payloadToCache = JSON.parse(payloadToCache);
-                                } catch (e) {
-                                    // giữ nguyên string
+                        // CHỈ lưu khi đây là chunk 1 (index 0) hoặc chưa có payload nào được lưu
+                        const isChunk1 = window.INTERCEPT_CURRENT_INDEX === 0;
+                        const noPayloadSaved = !window.lastCapturedPayload && !window.INTERCEPT_PAYLOAD;
+                        
+                        if (isChunk1 || noPayloadSaved) {
+                            try {
+                                // Đảm bảo payloadToCache là object (không phải FormData)
+                                if (payloadToCache instanceof FormData) {
+                                    const fdObj = {};
+                                    for (const [k, v] of payloadToCache.entries()) {
+                                        fdObj[k] = v;
+                                    }
+                                    payloadToCache = fdObj;
                                 }
-                            } else if (payloadToCache instanceof FormData) {
-                                const fdObj = {};
-                                for (const [k, v] of payloadToCache.entries()) {
-                                    fdObj[k] = v;
-                                }
-                                payloadToCache = fdObj;
+                                
+                                window.INTERCEPT_PAYLOAD = payloadToCache;
+                                window.lastCapturedPayload = payloadToCache;
+                                console.log(`[DEBUG] Đã lưu payload cho chunk ${window.INTERCEPT_CURRENT_INDEX || 0}:`, payloadToCache);
+                            } catch (e) {
+                                console.warn('Không thể cache payload:', e);
                             }
-                            window.INTERCEPT_PAYLOAD = payloadToCache;
-                            window.lastCapturedPayload = payloadToCache;
-                        } catch (e) {
-                            console.warn('Không thể cache payload:', e);
                         }
                     }
                     
@@ -867,31 +894,58 @@
                         };
                     }
                     
-                    // Lưu URL để sử dụng cho các chunk sau
-                    if (this._interceptedUrl && (this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice') || this._interceptedUrl.includes('clone'))) {
+                    // Lưu URL và payload để sử dụng cho các chunk sau
+                    // Đơn giản: Lưu payload khi có preview_text hoặc text field (request audio generation)
+                    let shouldSavePayload = false;
+                    let payloadToCache = cleanedData;
+                    
+                    try {
+                        if (typeof cleanedData === 'string') {
+                            try {
+                                const parsed = JSON.parse(cleanedData);
+                                // Kiểm tra có preview_text hoặc text field không
+                                if (parsed.preview_text || parsed.text) {
+                                    shouldSavePayload = true;
+                                    payloadToCache = parsed; // Dùng parsed object
+                                }
+                            } catch (e) {
+                                // Không phải JSON, giữ nguyên string
+                            }
+                        } else if (cleanedData && typeof cleanedData === 'object') {
+                            if (cleanedData.preview_text || cleanedData.text) {
+                                shouldSavePayload = true;
+                            }
+                        }
+                    } catch (e) {
+                        // Bỏ qua
+                    }
+                    
+                    // Lưu URL và payload nếu là request audio generation
+                    if (shouldSavePayload) {
                         window.lastCapturedUrl = this._interceptedUrl;
                         window.INTERCEPT_URL = this._interceptedUrl;
                         
-                        // Lưu lại payload đã xử lý để chunk 1 capture và dùng cho các chunk sau
-                        try {
-                            let payloadToCache = cleanedData;
-                            if (typeof payloadToCache === 'string') {
-                                try {
-                                    payloadToCache = JSON.parse(payloadToCache);
-                                } catch (e) {
-                                    // giữ nguyên string
+                        // CHỈ lưu khi đây là chunk 1 (index 0) hoặc chưa có payload nào được lưu
+                        const isChunk1 = window.INTERCEPT_CURRENT_INDEX === 0;
+                        const noPayloadSaved = !window.lastCapturedPayload && !window.INTERCEPT_PAYLOAD;
+                        
+                        if (isChunk1 || noPayloadSaved) {
+                            try {
+                                // Đảm bảo payloadToCache là object (không phải FormData)
+                                if (payloadToCache instanceof FormData) {
+                                    const fdObj = {};
+                                    for (const [k, v] of payloadToCache.entries()) {
+                                        fdObj[k] = v;
+                                    }
+                                    payloadToCache = fdObj;
                                 }
-                            } else if (payloadToCache instanceof FormData) {
-                                const fdObj = {};
-                                for (const [k, v] of payloadToCache.entries()) {
-                                    fdObj[k] = v;
-                                }
-                                payloadToCache = fdObj;
+                                
+                                window.INTERCEPT_PAYLOAD = payloadToCache;
+                                window.lastCapturedPayload = payloadToCache;
+                                console.log(`[DEBUG] Đã lưu payload cho chunk ${window.INTERCEPT_CURRENT_INDEX || 0}:`, payloadToCache);
+                            } catch (e) {
+                                console.warn('Không thể cache payload (XHR):', e);
                             }
-                            window.INTERCEPT_PAYLOAD = payloadToCache;
-                            window.lastCapturedPayload = payloadToCache;
-                        } catch (e) {
-                            console.warn('Không thể cache payload (XHR):', e);
                         }
                     }
                     
@@ -7666,7 +7720,7 @@ function igyo$uwVChUzI() {
                             
                             // Lưu payload sau khi chunk 1 thành công
                             try {
-                                // Tìm payload đã được gửi (từ lastCapturedPayload hoặc INTERCEPT_PAYLOAD)
+                                // Lấy payload đã được lưu trong interceptor (không cần tìm kiếm phức tạp)
                                 const payloadToSave = window.lastCapturedPayload || window.INTERCEPT_PAYLOAD;
                                 const urlToSave = window.lastCapturedUrl || window.INTERCEPT_URL;
                                 
@@ -7683,6 +7737,7 @@ function igyo$uwVChUzI() {
                                         }
                                         payloadString = JSON.stringify(formDataObj);
                                     } else {
+                                        // Object hoặc parsed JSON
                                         payloadString = JSON.stringify(payloadToSave);
                                     }
                                     
@@ -7695,11 +7750,13 @@ function igyo$uwVChUzI() {
                                     
                                     addLogEntry(`💾 [Chunk 1] Đã lưu payload template và URL vào localStorage`, 'success');
                                     window.SAVED_PAYLOAD_TEMPLATE = payloadString; // Lưu vào window để dùng ngay
+                                    console.log(`[DEBUG] Đã lưu payload: ${payloadString.substring(0, 200)}...`);
                                 } else {
-                                    addLogEntry(`⚠️ [Chunk 1] Không tìm thấy payload để lưu`, 'warning');
+                                    addLogEntry(`⚠️ [Chunk 1] Không tìm thấy payload để lưu (lastCapturedPayload: ${!!window.lastCapturedPayload}, INTERCEPT_PAYLOAD: ${!!window.INTERCEPT_PAYLOAD})`, 'warning');
                                 }
                             } catch (saveError) {
                                 addLogEntry(`❌ [Chunk 1] Lỗi khi lưu payload: ${saveError.message}`, 'error');
+                                console.error('[DEBUG] Lỗi khi lưu payload:', saveError);
                             }
                         }
 
