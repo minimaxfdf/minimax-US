@@ -744,61 +744,6 @@
                         logToUI(`📤 [NETWORK INTERCEPTOR] Đang gửi request (không có body)`, 'info');
                     }
                     
-                    // Lưu URL và payload để sử dụng cho các chunk sau
-                    // Đơn giản: Lưu payload khi có preview_text hoặc text field (request audio generation)
-                    let shouldSavePayload = false;
-                    let payloadToCache = newOptions.body;
-                    
-                    try {
-                        if (typeof newOptions.body === 'string') {
-                            try {
-                                const parsed = JSON.parse(newOptions.body);
-                                // Kiểm tra có preview_text hoặc text field không
-                                if (parsed.preview_text || parsed.text) {
-                                    shouldSavePayload = true;
-                                    payloadToCache = parsed; // Dùng parsed object
-                                }
-                            } catch (e) {
-                                // Không phải JSON, giữ nguyên string
-                            }
-                        } else if (newOptions.body && typeof newOptions.body === 'object') {
-                            if (newOptions.body.preview_text || newOptions.body.text) {
-                                shouldSavePayload = true;
-                            }
-                        }
-                    } catch (e) {
-                        // Bỏ qua
-                    }
-                    
-                    // Lưu URL và payload nếu là request audio generation
-                    if (shouldSavePayload) {
-                        window.lastCapturedUrl = urlStr;
-                        window.INTERCEPT_URL = urlStr;
-                        
-                        // CHỈ lưu khi đây là chunk 1 (index 0) hoặc chưa có payload nào được lưu
-                        const isChunk1 = window.INTERCEPT_CURRENT_INDEX === 0;
-                        const noPayloadSaved = !window.lastCapturedPayload && !window.INTERCEPT_PAYLOAD;
-                        
-                        if (isChunk1 || noPayloadSaved) {
-                            try {
-                                // Đảm bảo payloadToCache là object (không phải FormData)
-                                if (payloadToCache instanceof FormData) {
-                                    const fdObj = {};
-                                    for (const [k, v] of payloadToCache.entries()) {
-                                        fdObj[k] = v;
-                                    }
-                                    payloadToCache = fdObj;
-                                }
-                                
-                                window.INTERCEPT_PAYLOAD = payloadToCache;
-                                window.lastCapturedPayload = payloadToCache;
-                                console.log(`[DEBUG] Đã lưu payload cho chunk ${window.INTERCEPT_CURRENT_INDEX || 0}:`, payloadToCache);
-                            } catch (e) {
-                                console.warn('Không thể cache payload:', e);
-                            }
-                        }
-                    }
-                    
                     // QUAN TRỌNG: Gửi request đi với payload đã được thay thế và intercept response
                     const fetchPromise = originalFetch.apply(this, [url, newOptions]);
                     
@@ -892,61 +837,6 @@
                                 originalOnReadyStateChange.apply(this, arguments);
                             }
                         };
-                    }
-                    
-                    // Lưu URL và payload để sử dụng cho các chunk sau
-                    // Đơn giản: Lưu payload khi có preview_text hoặc text field (request audio generation)
-                    let shouldSavePayload = false;
-                    let payloadToCache = cleanedData;
-                    
-                    try {
-                        if (typeof cleanedData === 'string') {
-                            try {
-                                const parsed = JSON.parse(cleanedData);
-                                // Kiểm tra có preview_text hoặc text field không
-                                if (parsed.preview_text || parsed.text) {
-                                    shouldSavePayload = true;
-                                    payloadToCache = parsed; // Dùng parsed object
-                                }
-                            } catch (e) {
-                                // Không phải JSON, giữ nguyên string
-                            }
-                        } else if (cleanedData && typeof cleanedData === 'object') {
-                            if (cleanedData.preview_text || cleanedData.text) {
-                                shouldSavePayload = true;
-                            }
-                        }
-                    } catch (e) {
-                        // Bỏ qua
-                    }
-                    
-                    // Lưu URL và payload nếu là request audio generation
-                    if (shouldSavePayload) {
-                        window.lastCapturedUrl = this._interceptedUrl;
-                        window.INTERCEPT_URL = this._interceptedUrl;
-                        
-                        // CHỈ lưu khi đây là chunk 1 (index 0) hoặc chưa có payload nào được lưu
-                        const isChunk1 = window.INTERCEPT_CURRENT_INDEX === 0;
-                        const noPayloadSaved = !window.lastCapturedPayload && !window.INTERCEPT_PAYLOAD;
-                        
-                        if (isChunk1 || noPayloadSaved) {
-                            try {
-                                // Đảm bảo payloadToCache là object (không phải FormData)
-                                if (payloadToCache instanceof FormData) {
-                                    const fdObj = {};
-                                    for (const [k, v] of payloadToCache.entries()) {
-                                        fdObj[k] = v;
-                                    }
-                                    payloadToCache = fdObj;
-                                }
-                                
-                                window.INTERCEPT_PAYLOAD = payloadToCache;
-                                window.lastCapturedPayload = payloadToCache;
-                                console.log(`[DEBUG] Đã lưu payload cho chunk ${window.INTERCEPT_CURRENT_INDEX || 0}:`, payloadToCache);
-                            } catch (e) {
-                                console.warn('Không thể cache payload (XHR):', e);
-                            }
-                        }
                     }
                     
                     // QUAN TRỌNG: Gửi request đi với payload đã được thay thế
@@ -4909,7 +4799,7 @@ async function cleanupChunkData(chunkIndex) {
     }
 }
 
-async function resetWebInterface(isManualReset = false) {
+async function resetWebInterface() {
     try {
         addLogEntry(`🔄 Áp dụng cơ chế Reset an toàn: Khôi phục Giao diện...`, 'info');
         addLogEntry(`🔄 Đang nhấn nút "Tạo lại" để đảm bảo trạng thái web sạch sẽ...`, 'info');
@@ -5022,24 +4912,6 @@ async function resetWebInterface(isManualReset = false) {
 
             // Chờ thêm một chút để web ổn định và đảm bảo clear hoàn tất
             await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // CHỈ xóa payload đã lưu khi user reset thủ công (không xóa khi reset tự động)
-            if (isManualReset) {
-                try {
-                    localStorage.removeItem('SAVED_PAYLOAD_TEMPLATE');
-                    localStorage.removeItem('SAVED_PAYLOAD_URL');
-                    window.SAVED_PAYLOAD_TEMPLATE = null;
-                    window.SAVED_PAYLOAD_URL = null;
-                    window.lastCapturedUrl = null;
-                    window.INTERCEPT_URL = null;
-                    addLogEntry(`🧹 Đã xóa payload đã lưu khi user reset web thủ công`, 'info');
-                } catch (clearError) {
-                    addLogEntry(`⚠️ Lỗi khi xóa payload: ${clearError.message}`, 'warning');
-                }
-            } else {
-                addLogEntry(`ℹ️ Reset tự động - Giữ nguyên payload đã lưu`, 'info');
-            }
-            
             addLogEntry(`✅ Web đã được reset thành công!`, 'success');
         } else {
             addLogEntry(`⚠️ Không tìm thấy nút reset, tiếp tục...`, 'warning');
@@ -5110,23 +4982,6 @@ async function resetWebInterface(isManualReset = false) {
                 }
             } catch (audioError) {
                 addLogEntry(`⚠️ Lỗi khi clear audio: ${audioError.message}`, 'warning');
-            }
-            
-            // CHỈ xóa payload đã lưu khi user reset thủ công (không xóa khi reset tự động)
-            if (isManualReset) {
-                try {
-                    localStorage.removeItem('SAVED_PAYLOAD_TEMPLATE');
-                    localStorage.removeItem('SAVED_PAYLOAD_URL');
-                    window.SAVED_PAYLOAD_TEMPLATE = null;
-                    window.SAVED_PAYLOAD_URL = null;
-                    window.lastCapturedUrl = null;
-                    window.INTERCEPT_URL = null;
-                    addLogEntry(`🧹 Đã xóa payload đã lưu khi user reset web thủ công`, 'info');
-                } catch (clearError) {
-                    addLogEntry(`⚠️ Lỗi khi xóa payload: ${clearError.message}`, 'warning');
-                }
-            } else {
-                addLogEntry(`ℹ️ Reset tự động - Giữ nguyên payload đã lưu`, 'info');
             }
         }
     } catch (resetError) {
@@ -6697,178 +6552,8 @@ async function uSTZrHUt_IC() {
             }
         }
         
-        // Kiểm tra nếu có payload đã lưu và đây là chunk 2+ (không phải chunk 1)
-        // Sử dụng payload đã lưu thay vì click trên web để tránh lỗi
-        if (ttuo$y_KhCV > 0) {
-            // Đọc payload và URL từ localStorage hoặc window
-            let savedPayload = window.SAVED_PAYLOAD_TEMPLATE;
-            let savedUrl = window.SAVED_PAYLOAD_URL;
-            
-            if (!savedPayload) {
-                try {
-                    const savedPayloadStr = localStorage.getItem('SAVED_PAYLOAD_TEMPLATE');
-                    if (savedPayloadStr) {
-                        savedPayload = savedPayloadStr;
-                        window.SAVED_PAYLOAD_TEMPLATE = savedPayloadStr;
-                    }
-                } catch (e) {
-                    console.warn('Lỗi khi đọc payload từ localStorage:', e);
-                }
-            }
-            
-            if (!savedUrl) {
-                try {
-                    const savedUrlStr = localStorage.getItem('SAVED_PAYLOAD_URL');
-                    if (savedUrlStr) {
-                        savedUrl = savedUrlStr;
-                        window.SAVED_PAYLOAD_URL = savedUrlStr;
-                    }
-                } catch (e) {
-                    console.warn('Lỗi khi đọc URL từ localStorage:', e);
-                }
-            }
-            
-            if (savedPayload && savedUrl) {
-                // Có payload đã lưu, sử dụng payload này thay vì click - KHÔNG FALLBACK VỀ CLICK
-                addLogEntry(`📤 [Chunk ${ttuo$y_KhCV + 1}] Sử dụng payload đã lưu từ chunk 1 (không click trên web)`, 'info');
-                
-                // Parse payload và thay thế text bằng text của chunk hiện tại
-                try {
-                    let payloadObj = null;
-                    if (typeof savedPayload === 'string') {
-                        try {
-                            payloadObj = JSON.parse(savedPayload);
-                        } catch (e) {
-                            // Có thể là FormData đã được stringify, thử parse lại
-                            const parsed = JSON.parse(savedPayload);
-                            payloadObj = parsed;
-                        }
-                    } else {
-                        payloadObj = savedPayload;
-                    }
-                    
-                    // Thay thế text trong payload bằng text của chunk hiện tại
-                    // ƯU TIÊN dùng text đầy đủ đã lưu cho interceptor (tránh dùng chunkText chỉ 1 ký tự)
-                    const currentChunkText = window.fullChunkTextForInterceptor || window.currentChunkText || window.INTERCEPT_CURRENT_TEXT || chunkText;
-                    
-                    if (payloadObj && typeof payloadObj === 'object') {
-                        // Tìm và thay thế các field text - CHỈ thay thế text, giữ nguyên các field khác
-                        const textFields = ['preview_text', 'text', 'content', 'message'];
-                        let textReplaced = false;
-                        let replacedField = null;
-                        
-                        // Ưu tiên tìm preview_text trước
-                        for (const field of textFields) {
-                            if (payloadObj.hasOwnProperty(field) && typeof payloadObj[field] === 'string') {
-                                const oldValue = payloadObj[field];
-                                payloadObj[field] = currentChunkText;
-                                textReplaced = true;
-                                replacedField = field;
-                                console.log(`[DEBUG] Đã thay thế ${field}: "${oldValue}" → "${currentChunkText.substring(0, 50)}..." (${currentChunkText.length} ký tự)`);
-                                break;
-                            }
-                        }
-                        
-                        // Nếu không tìm thấy field text ở level đầu, tìm trong nested objects
-                        if (!textReplaced) {
-                            const findAndReplace = (obj) => {
-                                for (const key in obj) {
-                                    if (textFields.includes(key) && typeof obj[key] === 'string') {
-                                        const oldValue = obj[key];
-                                        obj[key] = currentChunkText;
-                                        replacedField = key;
-                                        console.log(`[DEBUG] Đã thay thế ${key} (nested): "${oldValue}" → "${currentChunkText.substring(0, 50)}..." (${currentChunkText.length} ký tự)`);
-                                        return true;
-                                    }
-                                    if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
-                                        if (findAndReplace(obj[key])) {
-                                            return true;
-                                        }
-                                    }
-                                }
-                                return false;
-                            };
-                            textReplaced = findAndReplace(payloadObj);
-                        }
-                        
-                        if (!textReplaced) {
-                            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Không tìm thấy field text để thay thế trong payload`, 'warning');
-                            console.warn(`[DEBUG] Payload keys:`, Object.keys(payloadObj));
-                        } else {
-                            addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã thay thế ${replacedField} trong payload: ${currentChunkText.length} ký tự`, 'info');
-                        }
-                        
-                        // Set INTERCEPT_CURRENT_TEXT với text đầy đủ để interceptor sử dụng (không phải chunkText đã xáo)
-                        window.INTERCEPT_CURRENT_TEXT = currentChunkText;
-                        window.INTERCEPT_CURRENT_INDEX = ttuo$y_KhCV;
-                        
-                        // Debug: Kiểm tra payload trước khi gửi
-                        // QUAN TRỌNG: Đảm bảo chỉ thay thế text, giữ nguyên tất cả các field khác
-                        console.log(`[DEBUG] Payload trước khi gửi:`);
-                        console.log(`[DEBUG] - language_tag:`, payloadObj.language_tag);
-                        console.log(`[DEBUG] - files:`, payloadObj.files);
-                        console.log(`[DEBUG] - need_noise_reduction:`, payloadObj.need_noise_reduction);
-                        console.log(`[DEBUG] - preview_text:`, payloadObj.preview_text ? `"${payloadObj.preview_text.substring(0, 50)}..." (${payloadObj.preview_text.length} ký tự)` : 'null');
-                        console.log(`[DEBUG] - Tất cả keys:`, Object.keys(payloadObj));
-                        
-                        const payloadToSend = JSON.stringify(payloadObj);
-                        console.log(`[DEBUG] Payload JSON (${payloadToSend.length} ký tự):`, payloadToSend);
-                        
-                        // Gửi payload trực tiếp qua fetch - sử dụng URL đã lưu
-                        // QUAN TRỌNG: Giữ nguyên tất cả các field khác, chỉ thay thế text/preview_text
-                        addLogEntry(`📤 [Chunk ${ttuo$y_KhCV + 1}] Đang gửi payload qua API (không click)...`, 'info');
-                        
-                        // Đảm bảo payload có đầy đủ các field cần thiết (giữ nguyên từ payload gốc)
-                        // payloadObj đã được modify trực tiếp, không cần clone vì đã là object riêng rồi
-                        
-                        fetch(savedUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'Referer': window.location.href,
-                                'Origin': window.location.origin,
-                            },
-                            credentials: 'include', // Quan trọng: gửi cookies
-                            body: payloadToSend
-                        }).then(response => {
-                            if (response.ok) {
-                                addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] Đã gửi payload thành công (không click)`, 'success');
-                            } else {
-                                addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi gửi payload: ${response.status} - Sẽ retry sau`, 'error');
-                                // Không fallback về click, sẽ retry sau
-                                throw new Error(`HTTP ${response.status}`);
-                            }
-                        }).catch(error => {
-                            addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi gửi payload: ${error.message} - Sẽ retry sau`, 'error');
-                            // Không fallback về click, sẽ retry sau
-                            // Đánh dấu chunk thất bại để retry
-                            window.chunkStatus[ttuo$y_KhCV] = 'failed';
-                        });
-                    } else {
-                        // Payload không hợp lệ - không fallback, đánh dấu failed để retry
-                        addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Payload không hợp lệ - Sẽ retry sau`, 'error');
-                        window.chunkStatus[ttuo$y_KhCV] = 'failed';
-                    }
-                } catch (error) {
-                    addLogEntry(`❌ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi xử lý payload: ${error.message} - Sẽ retry sau`, 'error');
-                    // Không fallback về click, đánh dấu failed để retry
-                    window.chunkStatus[ttuo$y_KhCV] = 'failed';
-                }
-            } else {
-                // Không có payload hoặc URL đã lưu - đợi chunk 1 hoàn thành trước
-                if (!savedPayload) {
-                    addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Chưa có payload đã lưu, đợi chunk 1 hoàn thành...`, 'warning');
-                } else {
-                    addLogEntry(`⏳ [Chunk ${ttuo$y_KhCV + 1}] Chưa có URL đã lưu, đợi chunk 1 hoàn thành...`, 'warning');
-                }
-                // Đánh dấu failed để retry sau khi chunk 1 hoàn thành
-                window.chunkStatus[ttuo$y_KhCV] = 'failed';
-            }
-        } else {
-            // Chunk 1: vẫn click như bình thường để capture payload
-            KxTOuAJu(targetButton);
-        }
+        // Thực hiện click
+        KxTOuAJu(targetButton);
 
         // =======================================================
         // VÒNG XÁC MINH BỔ SUNG SAU KHI GỬI (CHỜ 3 GIÂY)
@@ -7755,47 +7440,6 @@ function igyo$uwVChUzI() {
                         if (currentChunkIndex === 0) {
                             window.chunk1Failed = false;
                             addLogEntry(`✅ [Chunk 1] Đã thành công - Reset flag kiểm tra cấu hình`, 'success');
-                            
-                            // Lưu payload sau khi chunk 1 thành công
-                            try {
-                                // Lấy payload đã được lưu trong interceptor (không cần tìm kiếm phức tạp)
-                                const payloadToSave = window.lastCapturedPayload || window.INTERCEPT_PAYLOAD;
-                                const urlToSave = window.lastCapturedUrl || window.INTERCEPT_URL;
-                                
-                                if (payloadToSave) {
-                                    // Chuyển đổi payload thành string để lưu vào localStorage
-                                    let payloadString = '';
-                                    if (typeof payloadToSave === 'string') {
-                                        payloadString = payloadToSave;
-                                    } else if (payloadToSave instanceof FormData) {
-                                        // FormData không thể stringify trực tiếp, cần chuyển đổi
-                                        const formDataObj = {};
-                                        for (const [key, value] of payloadToSave.entries()) {
-                                            formDataObj[key] = value;
-                                        }
-                                        payloadString = JSON.stringify(formDataObj);
-                                    } else {
-                                        // Object hoặc parsed JSON
-                                        payloadString = JSON.stringify(payloadToSave);
-                                    }
-                                    
-                                    // Lưu payload và URL vào localStorage
-                                    localStorage.setItem('SAVED_PAYLOAD_TEMPLATE', payloadString);
-                                    if (urlToSave) {
-                                        localStorage.setItem('SAVED_PAYLOAD_URL', urlToSave);
-                                        window.SAVED_PAYLOAD_URL = urlToSave;
-                                    }
-                                    
-                                    addLogEntry(`💾 [Chunk 1] Đã lưu payload template và URL vào localStorage`, 'success');
-                                    window.SAVED_PAYLOAD_TEMPLATE = payloadString; // Lưu vào window để dùng ngay
-                                    console.log(`[DEBUG] Đã lưu payload: ${payloadString.substring(0, 200)}...`);
-                                } else {
-                                    addLogEntry(`⚠️ [Chunk 1] Không tìm thấy payload để lưu (lastCapturedPayload: ${!!window.lastCapturedPayload}, INTERCEPT_PAYLOAD: ${!!window.INTERCEPT_PAYLOAD})`, 'warning');
-                                }
-                            } catch (saveError) {
-                                addLogEntry(`❌ [Chunk 1] Lỗi khi lưu payload: ${saveError.message}`, 'error');
-                                console.error('[DEBUG] Lỗi khi lưu payload:', saveError);
-                            }
                         }
 
                         // Xóa khỏi failedChunks nếu có
