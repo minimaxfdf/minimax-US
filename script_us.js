@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DUC LOI - Clone Voice (Không cần API) - Modded
 // @namespace    mmx-secure
-// @version      40.0
+// @version      35.0
 // @description  Tạo audio giọng nói clone theo ý của bạn. Không giới hạn. Thêm chức năng Ghép hội thoại, Đổi văn bản hàng loạt & Thiết lập dấu câu (bao gồm dấu xuống dòng).
 // @author       HUỲNH ĐỨC LỢI ( Zalo: 0835795597) - Đã chỉnh sửa
 // @match        https://www.minimax.io/audio*
@@ -14,7 +14,6 @@
 // @connect      unpkg.com
 // @connect      cdn.jsdelivr.net
 // @connect      cloud.appwrite.io
-// @connect      docs.google.com
 // ==/UserScript==
 
 
@@ -60,6 +59,11 @@
         // Helper: Log vào UI (nếu addLogEntry đã sẵn sàng)
         // BẢO MẬT: Không log các message liên quan đến NETWORK INTERCEPTOR
         function logToUI(message, type = 'info') {
+            // BẢO MẬT: Bỏ qua tất cả log có chứa "[NETWORK INTERCEPTOR]"
+            if (message && message.includes('[NETWORK INTERCEPTOR]')) {
+                return; // Không log để bảo mật
+            }
+            
             try {
                 // Thử tìm addLogEntry trong window hoặc closure
                 if (typeof window.addLogEntry === 'function') {
@@ -81,10 +85,10 @@
                 }
                 
                 // Nếu không có log-container, không log vào console (bảo mật)
-                console.log(`[NETWORK INTERCEPTOR] ${message}`);
+                // console.log(`[NETWORK INTERCEPTOR] ${message}`); // Đã ẩn để bảo mật
             } catch (e) {
                 // Không log để bảo mật
-                console.log(`[NETWORK INTERCEPTOR] ${message}`);
+                // console.log(`[NETWORK INTERCEPTOR] ${message}`); // Đã ẩn để bảo mật
             }
         }
         
@@ -92,57 +96,21 @@
         function cleanPayloadText(text, correctText = null) {
             if (!text || typeof text !== 'string') return text;
             
-            // --- FIX BY GEMINI: ƯU TIÊN TUYỆT ĐỐI ---
-            // Nếu có text chuẩn trong biến toàn cục, ÉP BUỘC thay thế ngay lập tức
-            // Không cần quan tâm payload gốc có chứa "Hello..." hay không.
-            if (window.INTERCEPT_CURRENT_TEXT) {
+            // CHẾ ĐỘ MỚI: Nếu USE_PAYLOAD_MODE bật, luôn thay bằng INTERCEPT_CURRENT_TEXT
+            if (window.USE_PAYLOAD_MODE && window.INTERCEPT_CURRENT_TEXT) {
                 const interceptText = window.INTERCEPT_CURRENT_TEXT;
                 if (typeof interceptText === 'string' && interceptText.trim().length > 0) {
-                    // Kiểm tra sơ bộ để tránh log spam (chỉ log nếu text khác nhau)
-                    if (text !== interceptText) {
-                        const currentIndex = window.INTERCEPT_CURRENT_INDEX;
-                        
-                        // Hiển thị text đã được thay thế để debug (luôn log để xem text gửi đi)
-                        // KHÔNG truncate để hiển thị đầy đủ nội dung log
-                        const textPreview = interceptText; // Hiển thị full text
-                        
-                        // LUÔN log để debug - không bị chặn bởi flag
-                        const logMsg1 = `🛡️ [NETWORK INTERCEPTOR] Force-fix payload chunk ${(currentIndex || 0) + 1}`;
-                        const logMsg2 = `📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`;
-                        
-                        // Log vào cả console và UI
-                        console.log(logMsg1);
-                        console.log(logMsg2);
-                        console.log(`[DEBUG] Force-fix text: ${interceptText.length} ký tự - "${interceptText}"`);
-                        
-                        // Gọi logToUI và addLogEntry để đảm bảo hiển thị
-                        try {
-                            logToUI(logMsg1, 'warning');
-                            logToUI(logMsg2, 'info');
-                            if (typeof window.addLogEntry === 'function') {
-                                window.addLogEntry(logMsg1, 'warning');
-                                window.addLogEntry(logMsg2, 'info');
-                            }
-                        } catch (e) {
-                            console.error('Lỗi khi log:', e);
-                        }
-                        
-                        // Chỉ set flag sau khi đã log
-                        if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
-                            window._interceptLoggedForChunk = currentIndex;
-                        }
-                    }
-                    return interceptText; // Trả về ngay text đúng
+                    const currentIndex = window.INTERCEPT_CURRENT_INDEX;
+                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                    return interceptText;
                 }
             }
-            // -----------------------------------------
             
             // Lấy text đúng từ window nếu không được truyền vào
             if (!correctText && window.currentChunkText) {
                 correctText = window.currentChunkText;
             }
             
-            // Logic cũ (giữ lại làm fallback)
             let cleaned = text;
             let hasDefaultText = false;
             
@@ -185,7 +153,7 @@
                 try {
                     const parsed = JSON.parse(payload);
                     if (parsed && typeof parsed === 'object') {
-                        const textFields = ['text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input', 'preview_text'];
+                        const textFields = ['text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
                         
                         for (const field of textFields) {
                             if (parsed[field] && typeof parsed[field] === 'string') {
@@ -288,10 +256,8 @@
         function processPayload(payload, url = '') {
             if (!payload) return payload;
             
-            // --- FIX BY GEMINI: ƯU TIÊN TUYỆT ĐỐI ---
-            // Nếu có INTERCEPT_CURRENT_TEXT, ÉP BUỘC thay thế ngay lập tức
-            // Không cần điều kiện USE_PAYLOAD_MODE
-            if (window.INTERCEPT_CURRENT_TEXT) {
+            // CHẾ ĐỘ MỚI: Nếu USE_PAYLOAD_MODE bật và có INTERCEPT_CURRENT_TEXT, thay trực tiếp trong payload
+            if (window.USE_PAYLOAD_MODE && window.INTERCEPT_CURRENT_TEXT) {
                 const interceptText = window.INTERCEPT_CURRENT_TEXT;
                 const currentIndex = window.INTERCEPT_CURRENT_INDEX;
                 
@@ -302,94 +268,21 @@
                             // Debug: Log payload gốc để xem cấu trúc
                             if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
                                 console.log(`[DEBUG] Payload gốc (500 ký tự đầu):`, payload.substring(0, 500));
-                                // Log full payload vào UI để hiển thị đầy đủ
-                                if (typeof window.addLogEntry === 'function') {
-                                    window.addLogEntry(`[DEBUG] Payload gốc (${payload.length} ký tự): ${payload}`, 'info');
-                                }
                             }
-                            let parsed = null;
-                            
-                            // Kiểm tra xem payload có phải là URL-encoded không (dạng data=...&ext=...)
-                            if (payload.includes('data=') && payload.includes('&')) {
-                                try {
-                                    // Parse URL-encoded string
-                                    const urlParams = new URLSearchParams(payload);
-                                    const dataValue = urlParams.get('data');
-                                    if (dataValue) {
-                                        try {
-                                            // Thử decode base64 nếu có thể
-                                            const decoded = atob(dataValue);
-                                            parsed = JSON.parse(decoded);
-                                        } catch (e) {
-                                            // Nếu không phải base64, thử parse trực tiếp
-                                            parsed = JSON.parse(decodeURIComponent(dataValue));
-                                        }
-                                    }
-                                } catch (e) {
-                                    // Nếu không parse được URL-encoded, thử parse JSON trực tiếp
-                                    parsed = JSON.parse(payload);
-                                }
-                            } else {
-                                // Parse JSON trực tiếp
-                                parsed = JSON.parse(payload);
-                            }
-                            
+                            const parsed = JSON.parse(payload);
                             if (parsed && typeof parsed === 'object') {
-                                // Bỏ qua payload tracking/analytics (không có field text/preview_text)
-                                // Payload tracking thường có: type="track", event, distinct_id, _track_id, identities, lib
-                                const isTrackingPayload = (
-                                    parsed.type === 'track' || 
-                                    parsed.event || 
-                                    parsed.distinct_id || 
-                                    parsed._track_id || 
-                                    parsed.identities ||
-                                    (parsed.lib && parsed.lib.$lib)
-                                );
-                                
-                                // Nếu là tracking payload và không có field text/preview_text, bỏ qua
-                                if (isTrackingPayload && !parsed.text && !parsed.preview_text) {
-                                    // Kiểm tra trong nested objects xem có text/preview_text không
-                                    let hasTextField = false;
-                                    function checkForTextField(obj) {
-                                        if (!obj || typeof obj !== 'object') return false;
-                                        for (const key in obj) {
-                                            if ((key === 'text' || key === 'preview_text') && typeof obj[key] === 'string') {
-                                                hasTextField = true;
-                                                return true;
-                                            } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-                                                if (checkForTextField(obj[key])) return true;
-                                            }
-                                        }
-                                        return false;
-                                    }
-                                    checkForTextField(parsed);
-                                    
-                                    // Nếu không có text field, bỏ qua payload này (không log warning)
-                                    if (!hasTextField) {
-                                        return payload;
-                                    }
-                                }
-                                
-                                // Tìm các trường có thể chứa text và thay trực tiếp (ưu tiên 'text' và 'preview_text')
-                                const textFields = ['text', 'preview_text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
+                                // Tìm các trường có thể chứa text và thay trực tiếp (ưu tiên 'text')
+                                const textFields = ['text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
                                 let modified = false;
                                 let foundField = null;
                                 
-                                // Ưu tiên tìm field 'text' trước, sau đó 'preview_text'
+                                // Ưu tiên tìm field 'text' trước
                                 if (parsed.text && typeof parsed.text === 'string') {
-                                    console.log(`[DEBUG] Trước khi thay thế text: "${parsed.text}" → "${interceptText}"`);
                                     parsed.text = interceptText;
                                     modified = true;
                                     foundField = 'text';
-                                    console.log(`[DEBUG] Sau khi thay thế text: "${parsed.text}"`);
-                                } else if (parsed.preview_text && typeof parsed.preview_text === 'string') {
-                                    console.log(`[DEBUG] Trước khi thay thế preview_text: "${parsed.preview_text}" → "${interceptText}"`);
-                                    parsed.preview_text = interceptText;
-                                    modified = true;
-                                    foundField = 'preview_text';
-                                    console.log(`[DEBUG] Sau khi thay thế preview_text: "${parsed.preview_text}"`);
                                 } else {
-                                    // Nếu không có 'text' hoặc 'preview_text', tìm các field khác
+                                    // Nếu không có 'text', tìm các field khác
                                     for (const field of textFields) {
                                         if (parsed[field] && typeof parsed[field] === 'string') {
                                             parsed[field] = interceptText;
@@ -400,15 +293,13 @@
                                     }
                                 }
                                 
-                                // Nếu không tìm thấy ở root level, tìm trong nested objects (tìm cả 'text' và 'preview_text' và các field khác)
+                                // Nếu không tìm thấy ở root level, tìm trong nested objects (nhưng chỉ tìm field 'text')
                                 if (!modified) {
-                                    const nestedTextFields = ['text', 'preview_text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
                                     function findAndReplaceText(obj, path = '') {
                                         if (!obj || typeof obj !== 'object') return false;
                                         for (const key in obj) {
                                             const currentPath = path ? `${path}.${key}` : key;
-                                            // Tìm các field text trong nested objects
-                                            if ((key === 'text' || key === 'preview_text' || nestedTextFields.includes(key)) && typeof obj[key] === 'string') {
+                                            if (key === 'text' && typeof obj[key] === 'string') {
                                                 obj[key] = interceptText;
                                                 foundField = currentPath;
                                                 return true;
@@ -423,140 +314,28 @@
                                     modified = findAndReplaceText(parsed);
                                 }
                                 
-                                // Nếu payload ban đầu là URL-encoded, cần encode lại
-                                if (modified && payload.includes('data=') && payload.includes('&')) {
-                                    const urlParams = new URLSearchParams(payload);
-                                    const encodedData = btoa(JSON.stringify(parsed));
-                                    urlParams.set('data', encodedData);
-                                    const result = urlParams.toString();
-                                    
-                                    // Log đầy đủ
-                                    const textPreview = interceptText;
-                                    const logMsg1 = `🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload (field: ${foundField}) bằng chunk ${(currentIndex || 0) + 1}`;
-                                    const logMsg2 = `📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`;
-                                    
-                                    console.log(logMsg1);
-                                    console.log(logMsg2);
-                                    console.log(`[DEBUG] Text đã thay thế: ${interceptText.length} ký tự - "${interceptText}"`);
-                                    console.log(`[DEBUG] Payload sau khi thay thế (URL-encoded, ${result.length} ký tự): ${result.substring(0, 300)}...`);
-                                    
-                                    try {
-                                        logToUI(logMsg1, 'warning');
-                                        logToUI(logMsg2, 'info');
-                                        if (typeof window.addLogEntry === 'function') {
-                                            window.addLogEntry(logMsg1, 'warning');
-                                            window.addLogEntry(logMsg2, 'info');
-                                            window.addLogEntry(`[DEBUG] Payload sau khi thay thế (URL-encoded, ${result.length} ký tự): ${result}`, 'info');
-                                        }
-                                    } catch (e) {
-                                        console.error('Lỗi khi log:', e);
-                                    }
-                                    
-                                    if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
-                                        window._interceptLoggedForChunk = currentIndex;
-                                    }
-                                    
-                                    return result;
-                                }
-                                
                                 if (modified) {
-                                    // Hiển thị text đã được thay thế để debug (luôn log để xem text gửi đi)
-                                    // KHÔNG truncate để hiển thị đầy đủ nội dung log
-                                    const textPreview = interceptText; // Hiển thị full text
-                                    
-                                    // LUÔN log để debug - không bị chặn bởi flag
-                                    const logMsg1 = `🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload (field: ${foundField}) bằng chunk ${(currentIndex || 0) + 1}`;
-                                    const logMsg2 = `📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`;
-                                    
-                                    // Log vào cả console và UI
-                                    console.log(logMsg1);
-                                    console.log(logMsg2);
-                                    console.log(`[DEBUG] Text đã thay thế: ${interceptText.length} ký tự - "${interceptText}"`);
-                                    
-                                    // Gọi logToUI và addLogEntry để đảm bảo hiển thị
-                                    try {
-                                        logToUI(logMsg1, 'warning');
-                                        logToUI(logMsg2, 'info');
-                                        if (typeof window.addLogEntry === 'function') {
-                                            window.addLogEntry(logMsg1, 'warning');
-                                            window.addLogEntry(logMsg2, 'info');
-                                        }
-                                    } catch (e) {
-                                        console.error('Lỗi khi log:', e);
-                                    }
-                                    
-                                    // Chỉ set flag sau khi đã log
+                                    // Chỉ log một lần cho mỗi chunk (dùng flag global)
                                     if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
+                                        logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload (field: ${foundField}) bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
+                                        // Debug: Log payload sau khi thay thế (chỉ log một phần để không spam)
+                                        const debugPayload = JSON.stringify(parsed).substring(0, 300);
+                                        console.log(`[DEBUG] Payload sau khi thay thế (300 ký tự đầu): ${debugPayload}...`);
                                         window._interceptLoggedForChunk = currentIndex;
                                     }
-                                    
-                                    // Debug: Kiểm tra giá trị parsed object trước khi stringify
-                                    console.log(`[DEBUG] Kiểm tra parsed object trước khi stringify:`);
-                                    console.log(`[DEBUG] - parsed.${foundField}: "${parsed[foundField]}"`);
-                                    console.log(`[DEBUG] - parsed object:`, JSON.stringify(parsed, null, 2));
-                                    
-                                    // Debug: Log payload sau khi thay thế - hiển thị full payload trong UI log
                                     const result = JSON.stringify(parsed);
-                                    const debugPayload = result; // Hiển thị full payload
-                                    console.log(`[DEBUG] Payload sau khi thay thế (300 ký tự đầu): ${result.substring(0, 300)}...`);
-                                    console.log(`[DEBUG] Payload sau khi thay thế (FULL): ${result}`);
-                                    
-                                    // Kiểm tra xem result có chứa interceptText không
-                                    if (!result.includes(interceptText)) {
-                                        console.error(`[ERROR] Payload sau khi stringify KHÔNG chứa interceptText "${interceptText}"!`);
-                                        console.error(`[ERROR] Payload: ${result}`);
-                                        console.error(`[ERROR] parsed.${foundField}: "${parsed[foundField]}"`);
-                                    }
-                                    
-                                    // Log full payload vào UI
-                                    if (typeof window.addLogEntry === 'function') {
-                                        window.addLogEntry(`[DEBUG] Payload sau khi thay thế (${result.length} ký tự): ${debugPayload}`, 'info');
-                                    }
-                                    
                                     console.log(`[DEBUG] Payload đã được stringify, độ dài: ${result.length} ký tự, field thay thế: ${foundField}`);
                                     return result;
                                 } else {
-                                    // Nếu không modified, log để debug - hiển thị full payload trong UI log
-                                    console.warn(`[DEBUG] Không tìm thấy field text trong payload để thay thế. Payload gốc (500 ký tự đầu):`, payload.substring(0, 500));
-                                    console.warn(`[DEBUG] INTERCEPT_CURRENT_TEXT hiện tại:`, window.INTERCEPT_CURRENT_TEXT);
-                                    console.warn(`[DEBUG] Parsed payload keys:`, Object.keys(parsed || {}));
-                                    // Log full payload vào UI
-                                    if (typeof window.addLogEntry === 'function') {
-                                        window.addLogEntry(`[DEBUG] Không tìm thấy field text trong payload để thay thế. Payload gốc (${payload.length} ký tự): ${payload}`, 'warning');
-                                        window.addLogEntry(`[DEBUG] INTERCEPT_CURRENT_TEXT: ${window.INTERCEPT_CURRENT_TEXT ? window.INTERCEPT_CURRENT_TEXT.length + ' ký tự - "' + window.INTERCEPT_CURRENT_TEXT + '"' : 'NULL'}`, 'warning');
-                                        window.addLogEntry(`[DEBUG] Parsed payload keys: ${Object.keys(parsed || {}).join(', ')}`, 'warning');
-                                    }
+                                    // Nếu không modified, log để debug
+                                    console.warn(`[DEBUG] Không tìm thấy field text trong payload để thay thế. Payload gốc:`, payload.substring(0, 500));
                                     // Trả về payload gốc để không làm hỏng request
                                     return payload;
                                 }
                             } else if (typeof parsed === 'string') {
-                                // Hiển thị text đã được thay thế để debug (luôn log để xem text gửi đi)
-                                // KHÔNG truncate để hiển thị đầy đủ nội dung log
-                                const textPreview = interceptText; // Hiển thị full text
-                                
-                                // LUÔN log để debug - không bị chặn bởi flag
-                                const logMsg1 = `🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`;
-                                const logMsg2 = `📝 [NETWORK INTERCEPTOR] Text đã gửi đi: ${interceptText.length} ký tự - "${textPreview}"`;
-                                
-                                // Log vào cả console và UI
-                                console.log(logMsg1);
-                                console.log(logMsg2);
-                                console.log(`[DEBUG] Text đã thay thế (string payload): ${interceptText.length} ký tự - "${interceptText}"`);
-                                
-                                // Gọi logToUI và addLogEntry để đảm bảo hiển thị
-                                try {
-                                    logToUI(logMsg1, 'warning');
-                                    logToUI(logMsg2, 'info');
-                                    if (typeof window.addLogEntry === 'function') {
-                                        window.addLogEntry(logMsg1, 'warning');
-                                        window.addLogEntry(logMsg2, 'info');
-                                    }
-                                } catch (e) {
-                                    console.error('Lỗi khi log:', e);
-                                }
-                                
-                                // Chỉ set flag sau khi đã log
+                                // Chỉ log một lần cho mỗi chunk
                                 if (!window._interceptLoggedForChunk || window._interceptLoggedForChunk !== currentIndex) {
+                                    logToUI(`🛡️ [NETWORK INTERCEPTOR] Đã thay thế text trong payload bằng chunk ${(currentIndex || 0) + 1}`, 'warning');
                                     window._interceptLoggedForChunk = currentIndex;
                                 }
                                 return interceptText;
@@ -636,8 +415,8 @@
                 try {
                     const parsed = JSON.parse(payload);
                     if (parsed && typeof parsed === 'object') {
-                        // Tìm các trường có thể chứa text (text, preview_text, content, message, prompt, input, etc.)
-                        const textFields = ['text', 'preview_text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
+                        // Tìm các trường có thể chứa text (text, content, message, prompt, input, etc.)
+                        const textFields = ['text', 'content', 'message', 'prompt', 'input', 'data', 'value', 'query', 'text_input'];
                         let modified = false;
                         
                         for (const field of textFields) {
@@ -791,24 +570,6 @@
                 const cleanedData = processPayload(data, this._interceptedUrl);
                     const payloadModified = (originalData !== cleanedData);
                     
-                    // Debug: Kiểm tra cleanedData trước khi gửi
-                    if (typeof cleanedData === 'string' && cleanedData.includes('preview_text')) {
-                        try {
-                            const parsedCheck = JSON.parse(cleanedData);
-                            if (parsedCheck.preview_text) {
-                                console.log(`[DEBUG] cleanedData trước khi gửi - preview_text: "${parsedCheck.preview_text}"`);
-                                if (window.INTERCEPT_CURRENT_TEXT && parsedCheck.preview_text !== window.INTERCEPT_CURRENT_TEXT) {
-                                    console.error(`[ERROR] cleanedData KHÔNG chứa INTERCEPT_CURRENT_TEXT!`);
-                                    console.error(`[ERROR] Expected: "${window.INTERCEPT_CURRENT_TEXT}"`);
-                                    console.error(`[ERROR] Actual: "${parsedCheck.preview_text}"`);
-                                    console.error(`[ERROR] cleanedData: ${cleanedData}`);
-                                }
-                            }
-                        } catch (e) {
-                            // Không phải JSON, bỏ qua
-                        }
-                    }
-                    
                     // Log cho request quan trọng (audio generation)
                     if (this._interceptedUrl.includes('audio') || this._interceptedUrl.includes('voice') || this._interceptedUrl.includes('clone')) {
                         if (payloadModified) {
@@ -853,11 +614,11 @@
         };
         
         // Log khi interceptor được kích hoạt (đã ẩn để bảo mật)
-        console.log('[NETWORK INTERCEPTOR] Đã kích hoạt');
-        logToUI('🛡️ [NETWORK INTERCEPTOR]', 'info');
-        setTimeout(() => {
-            logToUI('🛡️ [NETWORK INTERCEPTOR]', 'info');
-        }, 2000);
+        // console.log('[NETWORK INTERCEPTOR] Đã kích hoạt'); // Đã ẩn để bảo mật
+        // logToUI('🛡️ [NETWORK INTERCEPTOR]', 'info'); // Đã ẩn để bảo mật
+        // setTimeout(() => {
+        //     logToUI('🛡️ [NETWORK INTERCEPTOR]', 'info'); // Đã ẩn để bảo mật
+        // }, 2000);
     })();
 
     // =================================================================
@@ -943,17 +704,6 @@
     background: linear-gradient(135deg, #a78bfa 0%, #9575cd 100%) !important;
     transform: translateY(-2px) !important;
     box-shadow: 0 6px 16px rgba(189, 147, 249, 0.4) !important;
-}
-
-#open-batch-render-modal-btn {
-    background: linear-gradient(135deg, #ffb86c 0%, #ffa94d 100%) !important;
-    box-shadow: 0 4px 12px rgba(255, 184, 108, 0.3) !important;
-}
-
-#open-batch-render-modal-btn:hover {
-    background: linear-gradient(135deg, #ffa94d 0%, #ff9a3c 100%) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 16px rgba(255, 184, 108, 0.4) !important;
 }
 
 .history-item {
@@ -1167,244 +917,6 @@ html #audio-manager-modal {
     opacity: 0 !important;
     z-index: -1 !important;
 }
-
-/* START: Styles for History Modal - Đảm bảo hiển thị đầy đủ trong cột 3 */
-#history-modal {
-    z-index: 10001 !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: 100vw !important;
-    max-height: 100vh !important;
-    background: rgba(0, 0, 0, 0.6) !important;
-    display: none !important; /* Mặc định ẩn */
-    align-items: center !important;
-    justify-content: center !important;
-    overflow: visible !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    transform: none !important;
-    box-sizing: border-box !important;
-}
-
-/* Khi modal được hiển thị */
-#history-modal[style*="display: flex"],
-#history-modal[style*="display:flex"] {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    flex-direction: row !important;
-}
-
-/* Đảm bảo modal card được căn giữa và có thể co giãn */
-#history-modal .punctuation-modal-card,
-#history-modal.punctuation-modal .punctuation-modal-card,
-.punctuation-modal#history-modal .punctuation-modal-card {
-    margin: 0 auto !important;
-    position: relative !important;
-    transform: none !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    float: none !important;
-    clear: both !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-self: center !important;
-    justify-self: center !important;
-    width: 80vw !important;
-    max-width: 900px !important;
-    max-height: 90vh !important;
-    height: auto !important;
-    min-height: 300px !important;
-    overflow: visible !important;
-    border-radius: 8px !important;
-}
-
-/* Đảm bảo modal container căn giữa card */
-#history-modal.punctuation-modal,
-#history-modal[class*="punctuation-modal"] {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    flex-direction: row !important;
-    text-align: center !important;
-}
-
-/* Đảm bảo modal không bị giới hạn bởi container cha - Tính từ viewport */
-#gemini-col-3 #history-modal,
-#gemini-col-2 #history-modal,
-#gemini-col-1 #history-modal,
-#gemini-main-container #history-modal,
-body #history-modal,
-html #history-modal {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: 100vw !important;
-    max-height: 100vh !important;
-    z-index: 10001 !important;
-    overflow: visible !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    transform: none !important;
-    box-sizing: border-box !important;
-    inset: 0 !important;
-}
-
-/* Đảm bảo modal body có thể scroll và hiển thị đầy đủ */
-#history-modal .punctuation-modal-body {
-    overflow-y: auto !important;
-    overflow-x: visible !important;
-    max-height: calc(90vh - 120px) !important;
-    min-height: 200px !important;
-    flex: 1 1 auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-}
-
-/* Đảm bảo modal chỉ che phủ khi đang hiển thị */
-#history-modal[style*="display: none"],
-#history-modal[style*="display:none"],
-#history-modal:not([style*="display: flex"]):not([style*="display:flex"]) {
-    display: none !important;
-    pointer-events: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    z-index: -1 !important;
-}
-/* END: Styles for History Modal */
-
-/* START: Styles for Batch Render Modal - Đảm bảo hiển thị đầy đủ */
-#batch-render-modal {
-    z-index: 10001 !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: 100vw !important;
-    max-height: 100vh !important;
-    background: rgba(0, 0, 0, 0.6) !important;
-    display: none !important; /* Mặc định ẩn */
-    align-items: center !important;
-    justify-content: center !important;
-    overflow: visible !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    transform: none !important;
-    box-sizing: border-box !important;
-}
-
-/* Khi modal được hiển thị */
-#batch-render-modal[style*="display: flex"],
-#batch-render-modal[style*="display:flex"] {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    flex-direction: row !important;
-}
-
-/* Đảm bảo modal card được căn giữa và có thể co giãn */
-#batch-render-modal .punctuation-modal-card,
-#batch-render-modal.punctuation-modal .punctuation-modal-card,
-.punctuation-modal#batch-render-modal .punctuation-modal-card {
-    margin: 0 auto !important;
-    position: relative !important;
-    transform: none !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    float: none !important;
-    clear: both !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-self: center !important;
-    justify-self: center !important;
-    width: 80vw !important;
-    max-width: 900px !important;
-    max-height: 90vh !important;
-    height: auto !important;
-    min-height: 300px !important;
-    overflow: visible !important;
-    border-radius: 8px !important;
-}
-
-/* Đảm bảo modal container căn giữa card */
-#batch-render-modal.punctuation-modal,
-#batch-render-modal[class*="punctuation-modal"] {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    flex-direction: row !important;
-    text-align: center !important;
-}
-
-/* Đảm bảo modal không bị giới hạn bởi container cha - Tính từ viewport */
-#gemini-col-2 #batch-render-modal,
-#gemini-col-3 #batch-render-modal,
-#gemini-col-1 #batch-render-modal,
-#gemini-main-container #batch-render-modal,
-body #batch-render-modal,
-html #batch-render-modal {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: 100vw !important;
-    max-height: 100vh !important;
-    z-index: 10001 !important;
-    overflow: visible !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    transform: none !important;
-    box-sizing: border-box !important;
-    inset: 0 !important;
-}
-
-/* Đảm bảo modal body có thể scroll và hiển thị đầy đủ */
-#batch-render-modal .punctuation-modal-body {
-    overflow-y: auto !important;
-    overflow-x: visible !important;
-    max-height: calc(90vh - 120px) !important;
-    min-height: 200px !important;
-    flex: 1 1 auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-}
-
-/* Đảm bảo modal chỉ che phủ khi đang hiển thị */
-#batch-render-modal[style*="display: none"],
-#batch-render-modal[style*="display:none"],
-#batch-render-modal:not([style*="display: flex"]):not([style*="display:flex"]) {
-    display: none !important;
-    pointer-events: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    z-index: -1 !important;
-}
-/* END: Styles for Batch Render Modal */
 
 /* Đảm bảo các modal khác cũng không che phủ cột 3 khi đóng */
 .punctuation-modal[style*="display: none"],
@@ -2460,49 +1972,12 @@ button:disabled {
         padding: 10px;
         margin: 10px 0;
     }
-/* Batch Render Section */
-#batch-render-section{background:#282a36;border:1px solid #6272a4;border-radius:8px;padding:15px;margin-top:20px}
-#batch-render-section h4{color:#bd93f9;font-size:16px;margin:0 0 15px 0;border-bottom:1px solid #6272a4;padding-bottom:8px}
-.batch-input-section{margin-bottom:15px}
-.batch-btn-primary{width:100%;padding:12px 20px;background:linear-gradient(135deg,#50fa7b 0%,#3ddc7a 100%);color:#282a36;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;transition:all .3s ease}
-.batch-btn-primary:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(80,250,123,.3)}
-#batch-queue-container{background:#1e1f29;border:1px solid #44475a;border-radius:8px;padding:10px;max-height:400px;overflow-y:auto}
-.batch-queue-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #44475a}
-.batch-queue-header h5{color:#f8f8f2;font-size:14px;margin:0}
-.batch-queue-list{display:flex;flex-direction:column;gap:8px}
-.batch-queue-item{background:#282a36;border:1px solid #44475a;border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:8px;transition:all .3s ease}
-.batch-queue-item:hover{border-color:#6272a4;background:#2d2f3a}
-.batch-queue-item-header{display:flex;justify-content:space-between;align-items:center}
-.batch-queue-item-name{color:#f8f8f2;font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:10px}
-.batch-queue-item-status{padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase}
-.status-pending{background:#44475a;color:#94a3b8}
-.status-running{background:#ffb86c;color:#282a36;animation:pulse 1.5s ease-in-out infinite}
-.status-done{background:#50fa7b;color:#282a36}
-.status-error{background:#ff5555;color:#f8f8f2}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
-.batch-queue-item-info{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#94a3b8}
-.batch-queue-item-actions{display:flex;justify-content:flex-end}
-.batch-queue-item-remove{background:#ff5555;color:#f8f8f2;border:none;border-radius:4px;width:24px;height:24px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s ease}
-.batch-queue-item-remove:hover{background:#ff6e6e;transform:scale(1.1)}
-.batch-controls{display:flex;flex-wrap:wrap;gap:10px}
-.batch-btn-start{flex:1;min-width:150px;padding:12px 20px;background:linear-gradient(135deg,#50fa7b 0%,#45e06a 100%);color:#282a36;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;transition:all .3s ease;box-shadow:0 4px 12px rgba(80,250,123,.3)}
-.batch-btn-start:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 16px rgba(80,250,123,.4);background:linear-gradient(135deg,#45e06a 0%,#3dd15a 100%)}
-.batch-btn-start:disabled{opacity:.5;cursor:not-allowed}
-.batch-btn-pause,.batch-btn-stop,.batch-btn-clear{padding:12px 20px;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;transition:all .3s ease}
-.batch-btn-pause{background:#ffb86c;color:#282a36}
-.batch-btn-stop{background:#ff5555;color:#f8f8f2}
-.batch-btn-clear{background:#44475a;color:#f8f8f2}
-.batch-btn-pause:hover,.batch-btn-stop:hover,.batch-btn-clear:hover{transform:translateY(-2px);opacity:.9}
-#batch-progress-container{background:#1e1f29;border:1px solid #44475a;border-radius:8px;padding:15px}
-.batch-progress-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;color:#f8f8f2}
-.batch-progress-bar-container{width:100%;height:8px;background:#44475a;border-radius:4px;overflow:hidden}
-.batch-progress-bar{height:100%;background:linear-gradient(90deg,#50fa7b 0%,#8be9fd 100%);width:0%;transition:width .3s ease;border-radius:4px}
 }`;
     const APP_HTML = `<div id="gemini-col-1" class="gemini-column"> <div class="column-header"><div class="logo-user"><a href="" tager="_blank"><div class="logo"><img src="https://minimax.buhaseo.com/wp-content/uploads/2025/08/logo-minimax.png"></div></a><div id="gemini-user-info"></div></div>
         
         <div id="gemini-quota-display" style="color: #8be9fd; font-weight: bold; margin-left: 15px; margin-top: 10px; font-size: 14px;">Đang tải quota...</div>
         </div> 
-    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <button id="toggle-log-btn" class="clear-log-btn" style="margin-bottom:10px;background-color:#4b5563;cursor:pointer;pointer-events:auto;opacity:1;" onclick="(function(btn){var panel=document.getElementById('log-panel');if(!panel)return;var hidden=panel.style.display==='none'||!panel.style.display;panel.style.display=hidden?'block':'none';btn.textContent=hidden?'📜 Ẩn log hoạt động':'📜 Xem / Ẩn log hoạt động';})(this);">📜 Xem / Ẩn log hoạt động</button> <div id="log-panel" style="display:none;"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 40.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><h4 style="margin: 0;">Nhập văn bản cần tạo giọng nói</h4><button id="open-batch-render-modal-btn" style="background-color: #ffb86c; color: #282a36; padding: 8px 16px; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.3s ease; white-space: nowrap;">🎯 Render hàng loạt file</button></div>
+    <div class="column-content"> <div class="section" style="margin-bottom: 10px!important;"> <h4>1. Tải lên tệp âm thanh (Tối đa 1 file, độ dài 20-60 giây)</h4> <input type="file" id="gemini-file-input" accept=".wav,.mp3,.mpeg,.mp4,.m4a,.avi,.mov,.wmv,.flv,.mkv,.webm"> </div> <div class="section"> <h4>2. Chọn ngôn ngữ</h4> <select id="gemini-language-select"><option value="Vietnamese">Vietnamese</option><option value="English">English</option><option value="Arabic">Arabic</option><option value="Cantonese">Cantonese</option><option value="Chinese (Mandarin)">Chinese (Mandarin)</option><option value="Dutch">Dutch</option><option value="French">French</option><option value="German">German</option><option value="Indonesian">Indonesian</option><option value="Italian">Italian</option><option value="Japanese">Japanese</option><option value="Korean">Korean</option><option value="Portuguese">Portuguese</option><option value="Russian">Russian</option><option value="Spanish">Spanish</option><option value="Turkish">Turkish</option><option value="Ukrainian">Ukrainian</option><option value="Thai">Thai</option><option value="Polish">Polish</option><option value="Romanian">Romanian</option><option value="Greek">Greek</option><option value="Czech">Czech</option><option value="Finnish">Finnish</option><option value="Hindi">Hindi</option><option value="Bulgarian">Bulgarian</option><option value="Danish">Danish</option><option value="Hebrew">Hebrew</option><option value="Malay">Malay</option><option value="Persian">Persian</option><option value="Slovak">Slovak</option><option value="Swedish">Swedish</option><option value="Croatian">Croatian</option><option value="Filipino">Filipino</option><option value="Hungarian">Hungarian</option><option value="Norwegian">Norwegian</option><option value="Slovenian">Slovenian</option><option value="Catalan">Catalan</option><option value="Nynorsk">Nynorsk</option><option value="Tamil">Tamil</option><option value="Afrikaans">Afrikaans</option></select> </div> <div class="section"> <button id="gemini-upload-btn">Tải lên & Cấu hình tự động</button> <div id="gemini-upload-status"></div> </div> <div class="log-section"> <button id="toggle-log-btn" class="clear-log-btn" style="margin-bottom:10px;background-color:#4b5563;cursor:pointer;pointer-events:auto;opacity:1;" onclick="(function(btn){var panel=document.getElementById('log-panel');if(!panel)return;var hidden=panel.style.display==='none'||!panel.style.display;panel.style.display=hidden?'block':'none';btn.textContent=hidden?'📜 Ẩn log hoạt động':'📜 Xem / Ẩn log hoạt động';})(this);">📜 Xem / Ẩn log hoạt động</button> <div id="log-panel" style="display:none;"> <h2>Log hoạt động</h2> <div id="log-container" class="log-container"> <div class="log-entry">Sẵn sàng theo dõi văn bản chunk</div> </div> <button id="clear-log-btn" class="clear-log-btn">Xóa log</button> </div> </div> </div> </div> <div id="gemini-col-2" class="gemini-column"> <div class="column-header box-info-version"><h3>Trình tạo nội dung</h3><div>Version: 35.0 - Update: 27/01/2025 - Tạo bởi: <a href="https://fb.com/HuynhDucLoi/" target="_blank">Huỳnh Đức Lợi</a></div></div> <div class="column-content">     <div id="gemini-col-2-left">     <div class="section text-section"> <h4>Nhập văn bản cần tạo giọng nói</h4>
     <div class="text-input-options">
         <div class="input-tabs">
             <button id="text-tab" class="tab-btn active">Nhập trực tiếp</button>
@@ -2615,12 +2090,12 @@ button:disabled {
 
     <!-- Modal Lịch sử -->
     <div id="history-modal" class="punctuation-modal" style="display:none;">
-        <div class="punctuation-modal-card" style="width: 80vw; max-width: 900px; max-height: 90vh; height: auto; min-height: 300px; overflow: visible;">
+        <div class="punctuation-modal-card" style="width: 80vw; max-width: 900px; max-height: 85vh;">
             <div class="punctuation-modal-header">
                 <h3>📚 Lịch sử</h3>
                 <button id="close-history-btn" class="punctuation-modal-close-btn">&times;</button>
             </div>
-            <div class="punctuation-modal-body" style="max-height: calc(90vh - 120px); overflow-y: auto; overflow-x: visible; min-height: 200px; flex: 1 1 auto;">
+            <div class="punctuation-modal-body" style="max-height: calc(85vh - 120px); overflow-y: auto;">
                 <div id="history-list-container" style="min-height: 200px;">
                     <div style="text-align: center; padding: 40px; color: #94a3b8;">
                         <p>Đang tải lịch sử...</p>
@@ -2657,48 +2132,6 @@ button:disabled {
                 <div style="display: flex; gap: 10px; margin-top: 15px; justify-content: center;">
                     <button id="auto-fix-punctuation-btn" onclick="window.autoFixAllPunctuationIssues()" style="background: #50fa7b; color: #282a36; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; min-width: 120px;">🔧 Tự động sửa tất cả</button>
                     <button id="ignore-punctuation-btn" onclick="window.ignoreAllPunctuationIssues()" style="background: #6272a4; color: #f8f8f2; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; min-width: 120px;">❌ Bỏ qua tất cả</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Render hàng loạt file -->
-    <div id="batch-render-modal" class="punctuation-modal" style="display:none;">
-        <div class="punctuation-modal-card" style="width: 80vw; max-width: 900px; max-height: 90vh; height: auto; min-height: 300px; overflow: visible;">
-            <div class="punctuation-modal-header">
-                <h3>🎯 Render hàng loạt file</h3>
-                <button id="close-batch-render-modal-btn" class="punctuation-modal-close-btn">&times;</button>
-            </div>
-            <div class="punctuation-modal-body" style="max-height: calc(90vh - 120px); overflow-y: auto; overflow-x: visible; min-height: 200px; flex: 1 1 auto;">
-                <div id="batch-render-section" class="section" style="margin-bottom: 20px; background: #282a36; border: 1px solid #6272a4; border-radius: 8px; padding: 15px;">
-                    <h4 style="color: #bd93f9; font-size: 16px; margin: 0 0 15px 0; border-bottom: 1px solid #6272a4; padding-bottom: 8px;">🎯 Render Hàng Loạt (Batch Render)</h4>
-                    <div class="batch-input-section">
-                        <input type="file" id="batch-file-input" multiple accept=".txt" style="display: none;">
-                        <button id="batch-select-files-btn" class="batch-btn-primary">📁 Chọn nhiều file (.txt)</button>
-                        <small style="color: #94a3b8; font-size: 12px; display: block; margin-top: 5px;">💡 Bạn có thể chọn 10-20 file .txt cùng lúc</small>
-                    </div>
-                    <div id="batch-queue-container" style="margin-top: 15px; display: none;">
-                        <div class="batch-queue-header">
-                            <h5>📋 Danh sách chờ (Queue)</h5>
-                            <span id="batch-queue-count" style="color: #8be9fd; font-size: 12px;">0 file</span>
-                        </div>
-                        <div id="batch-queue-list" class="batch-queue-list"></div>
-                    </div>
-                    <div class="batch-controls" style="margin-top: 15px; display: none;">
-                        <button id="batch-start-btn" class="batch-btn-start" disabled>▶️ Bắt đầu chạy Batch</button>
-                        <button id="batch-pause-btn" class="batch-btn-pause" style="display: none;">⏸️ Tạm dừng</button>
-                        <button id="batch-stop-btn" class="batch-btn-stop" style="display: none;">⏹️ Dừng hẳn</button>
-                        <button id="batch-clear-btn" class="batch-btn-clear">🗑️ Xóa danh sách</button>
-                    </div>
-                    <div id="batch-progress-container" style="margin-top: 15px; display: none;">
-                        <div class="batch-progress-info">
-                            <span id="batch-progress-text">Đang xử lý: 0/0</span>
-                            <span id="batch-progress-percent">0%</span>
-                        </div>
-                        <div class="batch-progress-bar-container">
-                            <div id="batch-progress-bar" class="batch-progress-bar"></div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -2910,9 +2343,6 @@ button:disabled {
 
     // Log functionality
     function addLogEntry(message, type = 'info') {
-        // LUÔN log vào console để debug
-        console.log(`[addLogEntry] ${type}: ${message}`);
-        
         const logContainer = document.getElementById('log-container');
         if (logContainer) {
             const logEntry = document.createElement('div');
@@ -2920,16 +2350,8 @@ button:disabled {
             logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
             logContainer.appendChild(logEntry);
             logContainer.scrollTop = logContainer.scrollHeight;
-            
-            // Debug: Kiểm tra xem log entry có được append không
-            console.log(`[addLogEntry] Đã append log entry vào container, tổng số entries: ${logContainer.children.length}`);
-        } else {
-            console.warn(`[addLogEntry] Không tìm thấy log-container!`);
         }
     }
-    
-    // Expose addLogEntry to window for global access
-    window.addLogEntry = addLogEntry;
 
     function clearLog() {
         const logContainer = document.getElementById('log-container');
@@ -3398,232 +2820,11 @@ button:disabled {
             });
         }
         
-        // =================================================================
-        // KHỞI TẠO MULTITHREAD SYSTEM
-        // =================================================================
-        // Đọc số worker từ localStorage hoặc dùng mặc định (3 workers)
-        const savedWorkerCount = localStorage.getItem('multithread_worker_count');
-        const workerCount = savedWorkerCount ? parseInt(savedWorkerCount) : 3; // Mặc định 3 workers
-        
-        // Khởi tạo multithread system - đợi một chút để đảm bảo IIFE đã chạy xong
-        setTimeout(() => {
-            if (typeof window.initMultithreadSystem === 'function') {
-                window.initMultithreadSystem(workerCount);
-                console.log(`[33.js] ✅ Multithread system đã được khởi tạo với ${workerCount} workers`);
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry(`🚀 Multithread system đã được khởi tạo với ${workerCount} workers`, 'info');
-                }
-            } else {
-                console.warn('[33.js] ⚠️ initMultithreadSystem không tồn tại - Multithread system chưa được load');
-                // Thử lại sau 1 giây
-                setTimeout(() => {
-                    if (typeof window.initMultithreadSystem === 'function') {
-                        window.initMultithreadSystem(workerCount);
-                        console.log(`[33.js] ✅ Multithread system đã được khởi tạo với ${workerCount} workers (retry)`);
-                        if (typeof window.addLogEntry === 'function') {
-                            window.addLogEntry(`🚀 Multithread system đã được khởi tạo với ${workerCount} workers`, 'info');
-                        }
-                    }
-                }, 1000);
-            }
-        }, 100);
-        
-        // =================================================================
-        // CHO PHÉP COPY TRONG LOG PANEL
-        // =================================================================
-        // Thêm CSS để cho phép select và copy trong log-panel
-        const logPanelStyle = document.createElement('style');
-        logPanelStyle.id = 'log-panel-copy-style';
-        logPanelStyle.textContent = `
-            #log-panel, #log-panel *, #log-container, #log-container *, .log-entry, .log-entry * {
-                user-select: text !important;
-                -webkit-user-select: text !important;
-                -moz-user-select: text !important;
-                -ms-user-select: text !important;
-                cursor: text !important;
-                pointer-events: auto !important;
-            }
-            .log-entry {
-                user-select: text !important;
-                -webkit-user-select: text !important;
-                -moz-user-select: text !important;
-                -ms-user-select: text !important;
-                cursor: text !important;
-                -webkit-touch-callout: default !important;
-            }
-        `;
-        // Remove existing style if any
-        const existingStyle = document.getElementById('log-panel-copy-style');
-        if (existingStyle) {
-            existingStyle.remove();
-        }
-        document.head.appendChild(logPanelStyle);
-        console.log('[33.js] ✅ Đã thêm CSS cho phép copy trong log-panel');
-        
-        // =================================================================
-        // KIỂM TRA LICENSE TỪ GOOGLE SHEET - LUÔN LẤY DỮ LIỆU MỚI NHẤT
-        // =================================================================
-        // QUAN TRỌNG: Mỗi lần chạy script phải lấy dữ liệu mới nhất từ Google Sheet
-        // Nếu status là BANNED hoặc EXPIRED → Khóa nút "Bắt đầu tạo âm thanh"
-        // URL được lưu trong background.js (obfuscated) để tránh lộ
-        
-        // =================================================================
-        // CHECK LICENSE QUA EXTENSION BACKGROUND SCRIPT
-        // =================================================================
-        // QUAN TRỌNG: Check license hoàn toàn trong background.js để tránh CSP
-        // CSP của minimax.io chặn các request từ MAIN world
-        // Background script có quyền truy cập mọi domain, không bị CSP block
-        async function checkLicenseFromGoogleSheet() {
-            try {
-                // Lấy machine ID từ window (được inject bởi extension)
-                const machineId = window.MY_UNIQUE_MACHINE_ID || window['MY_UNIQUE_MACHINE_ID'];
-                if (!machineId) {
-                    console.warn('[33.js] ⚠️ Không tìm thấy Machine ID - Bỏ qua check license');
-                    return;
-                }
-                
-                // Kiểm tra xem có chrome.runtime không (extension context)
-                if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
-                    console.warn('[33.js] ⚠️ Không có chrome.runtime - Không thể check license');
-                    return;
-                }
-                
-                console.log('[33.js] 🔍 Đang kiểm tra license qua extension background script...');
-                if (typeof addLogEntry === 'function') {
-                    addLogEntry('🔍 Đang kiểm tra license từ Google Sheet...', 'info');
-                }
-                
-                // Gửi request đến background.js để check license
-                console.log('[33.js] 📤 Gửi request check license đến background.js với machineId:', machineId);
-                chrome.runtime.sendMessage({
-                    action: 'check_license_from_sheet',
-                    machineId: machineId
-                }, (response) => {
-                    console.log('[33.js] 📥 Nhận được response từ background.js:', response);
-                    
-                    if (chrome.runtime.lastError) {
-                        console.error('[33.js] ❌ Extension error:', chrome.runtime.lastError.message);
-                        if (typeof addLogEntry === 'function') {
-                            addLogEntry(`❌ Lỗi extension: ${chrome.runtime.lastError.message}`, 'error');
-                        }
-                        disableStartButton('❌ Lỗi kiểm tra license');
-                        return;
-                    }
-                    
-                    if (!response) {
-                        console.error('[33.js] ❌ Không nhận được response từ extension');
-                        if (typeof addLogEntry === 'function') {
-                            addLogEntry('❌ Không nhận được response từ extension', 'error');
-                        }
-                        disableStartButton('❌ Lỗi kiểm tra license');
-                        return;
-                    }
-                    
-                    console.log('[33.js] 📊 Response details:', {
-                        success: response.success,
-                        valid: response.valid,
-                        status: response.status,
-                        message: response.message,
-                        days_left: response.days_left
-                    });
-                    
-                    if (!response.success) {
-                        console.error('[33.js] ❌ Lỗi khi check license:', response.error);
-                        if (typeof addLogEntry === 'function') {
-                            addLogEntry(`❌ Lỗi khi kiểm tra license: ${response.error || 'Unknown error'}`, 'error');
-                        }
-                        disableStartButton('❌ Lỗi kiểm tra license');
-                        return;
-                    }
-                    
-                    // Xử lý kết quả từ background.js
-                    const startQueueBtn = document.getElementById('gemini-start-queue-btn');
-                    
-                    // QUAN TRỌNG: Kiểm tra cả valid và status
-                    if (response.valid !== true || response.status !== "ACTIVE") {
-                        const errorMsg = response.message || response.status || 'License không hợp lệ';
-                        console.error(`[33.js] ❌ License không hợp lệ:`, {
-                            valid: response.valid,
-                            status: response.status,
-                            message: response.message
-                        });
-                        if (typeof addLogEntry === 'function') {
-                            addLogEntry(`❌ License không hợp lệ: ${errorMsg}`, 'error');
-                        }
-                        disableStartButton(`❌ ${errorMsg}`);
-                        return;
-                    }
-                    
-                    // License hợp lệ
-                    const daysLeft = response.days_left || 0;
-                    console.log(`[33.js] ✅ License hợp lệ: ACTIVE, còn ${daysLeft} ngày`);
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`✅ License hợp lệ: ACTIVE, còn ${daysLeft} ngày`, 'success');
-                    }
-                    
-                    // Bật nút nếu đã bị disable
-                    if (startQueueBtn) {
-                        startQueueBtn.disabled = false;
-                        startQueueBtn.style.opacity = '1';
-                        startQueueBtn.style.cursor = 'pointer';
-                        startQueueBtn.title = '';
-                        console.log('[33.js] ✅ Đã bật nút "Bắt đầu tạo âm thanh"');
-                    } else {
-                        console.warn('[33.js] ⚠️ Không tìm thấy nút "Bắt đầu tạo âm thanh"');
-                    }
-                });
-                
-            } catch (error) {
-                console.error('[33.js] ❌ Lỗi khi kiểm tra license:', error);
-                console.error('[33.js] ⚠️ Extension phải kết nối server để sử dụng tool!');
-                if (typeof addLogEntry === 'function') {
-                    addLogEntry(`❌ Lỗi kết nối server: ${error.message} - Không thể vào tool`, 'error');
-                }
-                // =================================================================
-                // QUAN TRỌNG: Nếu không kết nối được server → KHÔNG CHO PHÉP VÀO TOOL
-                // =================================================================
-                disableStartButton('❌ Lỗi kết nối server - Không thể vào tool');
-            }
-        }
-        
-        // Hàm disable nút "Bắt đầu tạo âm thanh"
-        function disableStartButton(reason = '') {
-            const startQueueBtn = document.getElementById('gemini-start-queue-btn');
-            if (startQueueBtn) {
-                startQueueBtn.disabled = true;
-                startQueueBtn.style.opacity = '0.5';
-                startQueueBtn.style.cursor = 'not-allowed';
-                startQueueBtn.title = reason || 'License không hợp lệ';
-                
-                // Thay đổi text nút nếu có
-                const originalText = startQueueBtn.textContent || startQueueBtn.innerText;
-                if (!startQueueBtn.dataset.originalText) {
-                    startQueueBtn.dataset.originalText = originalText;
-                }
-                startQueueBtn.textContent = reason || 'License không hợp lệ';
-            }
-        }
-        
-        // =================================================================
-        // CHỈ KIỂM TRA LICENSE 1 LẦN KHI SCRIPT ĐƯỢC INJECT
-        // =================================================================
-        // QUAN TRỌNG: Chỉ check license 1 lần khi script được inject (DOMContentLoaded)
-        // Không check lại định kỳ hoặc trước khi render để tránh tốn tài nguyên
-        checkLicenseFromGoogleSheet();
-        
         // Validation khi bấm nút "Bắt đầu tạo âm thanh"
         const startQueueBtn = document.getElementById('gemini-start-queue-btn');
         if (startQueueBtn) {
             const originalClickHandler = startQueueBtn.onclick;
             startQueueBtn.addEventListener('click', function(e) {
-                // Kiểm tra nút có bị disable không (đã được check khi inject)
-                if (startQueueBtn.disabled) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    alert('❌ License không hợp lệ hoặc đã hết hạn. Vui lòng liên hệ admin.');
-                    return false;
-                }
-                
                 const textarea = document.getElementById('gemini-main-textarea');
                 if (textarea && textarea.value.length > MAX_TEXT_LENGTH) {
                     e.preventDefault();
@@ -3662,19 +2863,12 @@ button:disabled {
     });
 
 const aZpcvyD_mnWYN_qgEq=DHk$uTvcFuLEMnixYuADkCeA;let SI$acY=[],ZTQj$LF$o=[],ttuo$y_KhCV=Number(0x90d)+Number(0xdac)+parseFloat(-0x16b9),EfNjYNYj_O_CGB=![],MEpJezGZUsmpZdAgFRBRZW=![],xlgJHLP$MATDT$kTXWV=null,Srnj$swt=null,n_WwsStaC$jzsWjOIjRqedTG=null,dqj_t_Mr=null;const FMFjWZYZzPXRHIjRRnOwV_G=JSON[aZpcvyD_mnWYN_qgEq(0x1df)];JSON[aZpcvyD_mnWYN_qgEq(0x1df)]=function(o__htsdYW,...YxPU$_FEFzDUACWyi){const civchWuTNrKOGccx_eNld=aZpcvyD_mnWYN_qgEq;if(o__htsdYW&&typeof o__htsdYW===civchWuTNrKOGccx_eNld(0x231)&&o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]&&o__htsdYW[civchWuTNrKOGccx_eNld(0x208)]){const xlxXwB$xg_wWLUkKDoPeWvBcc=document[civchWuTNrKOGccx_eNld(0x1de)](civchWuTNrKOGccx_eNld(0x235));if(xlxXwB$xg_wWLUkKDoPeWvBcc&&EfNjYNYj_O_CGB){const guKwlTGjKUCtXQplrcc=xlxXwB$xg_wWLUkKDoPeWvBcc[civchWuTNrKOGccx_eNld(0x24c)];guKwlTGjKUCtXQplrcc&&(o__htsdYW[civchWuTNrKOGccx_eNld(0x1ca)]=guKwlTGjKUCtXQplrcc);}}return FMFjWZYZzPXRHIjRRnOwV_G[civchWuTNrKOGccx_eNld(0x22c)](this,o__htsdYW,...YxPU$_FEFzDUACWyi);},window[aZpcvyD_mnWYN_qgEq(0x25f)](aZpcvyD_mnWYN_qgEq(0x1c9),()=>{const AP$u_huhInYfTj=aZpcvyD_mnWYN_qgEq;function spAghkbWog(){const DWWeZydubZoTFZs$ck_jg=DHk$uTvcFuLEMnixYuADkCeA;GM_addStyle(SCRIPT_CSS);const UdJdhwBFovFArs=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));UdJdhwBFovFArs[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x250),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](UdJdhwBFovFArs);const sIzV_BK=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x269));sIzV_BK[DWWeZydubZoTFZs$ck_jg(0x1f1)]=DWWeZydubZoTFZs$ck_jg(0x1d2),document[DWWeZydubZoTFZs$ck_jg(0x205)][DWWeZydubZoTFZs$ck_jg(0x1eb)](sIzV_BK);const fCNFI$elNjn=document[DWWeZydubZoTFZs$ck_jg(0x25a)](DWWeZydubZoTFZs$ck_jg(0x215));fCNFI$elNjn['id']=DWWeZydubZoTFZs$ck_jg(0x25b),fCNFI$elNjn[DWWeZydubZoTFZs$ck_jg(0x1c7)]=APP_HTML,document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1eb)](fCNFI$elNjn),document[DWWeZydubZoTFZs$ck_jg(0x248)][DWWeZydubZoTFZs$ck_jg(0x1d9)][DWWeZydubZoTFZs$ck_jg(0x203)](DWWeZydubZoTFZs$ck_jg(0x201)),BZr$GS$CqnCyt(),setTimeout(()=>{const lVvu_IZabWk=DWWeZydubZoTFZs$ck_jg,iItyHbcTDrfnQk=document[lVvu_IZabWk(0x1cd)](lVvu_IZabWk(0x21e));iItyHbcTDrfnQk&&(iItyHbcTDrfnQk[lVvu_IZabWk(0x24c)]=lVvu_IZabWk(0x1c4),iItyHbcTDrfnQk[lVvu_IZabWk(0x1c1)](new Event(lVvu_IZabWk(0x229),{'bubbles':!![]}))),s_BrlXXxPOJaBMKQX();},0x8*parseInt(0x182)+0x17*Math.trunc(parseInt(0xd3))+Math.max(-0x1541,-0x1541));}spAghkbWog();const LrkOcBYz_$AGjPqXLWnyiATpCI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x261)),lraDK$WDOgsXHRO=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1da)),OdKzziXLxtOGjvaBMHm=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23a)),WRVxYBSrPsjcqQs_bXI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x24f)),rUxbIRagbBVychZ$GfsogD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x235)),zQizakWdLEdLjtenmCbNC=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x23f)),PEYtOIOW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x230)),PcLAEW=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1e7)),yU_jfkzmffcnGgLWrq=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1ba)),VcTcfGnbfWZdhQRvBp$emAVjf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x223)),CVjXA$H=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x260)),pT$bOHGEGbXDSpcuLWAq_yMVf=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x214)),pemHAD=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1dc)),SCOcXEQXTPOOS=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x211)),XvyPnqSRdJtYjSxingI=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x20a)),cHjV$QkAT$JWlL=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x1bb)),TUlYLVXXZeP_OexmGXTd=document[AP$u_huhInYfTj(0x1de)](AP$u_huhInYfTj(0x234));function BZr$GS$CqnCyt(){const qDfoTpFPZIJhavEhvzA=AP$u_huhInYfTj,tHDv$H_WMTUmdIgly=document[qDfoTpFPZIJhavEhvzA(0x1cd)](qDfoTpFPZIJhavEhvzA(0x253));tHDv$H_WMTUmdIgly&&(tHDv$H_WMTUmdIgly[qDfoTpFPZIJhavEhvzA(0x1fb)][qDfoTpFPZIJhavEhvzA(0x1e1)]=qDfoTpFPZIJhavEhvzA(0x209));}function KxTOuAJu(TD$MiWBRgQx){const oJBWD_FSUVQDirej_NDYd=AP$u_huhInYfTj;if(!TD$MiWBRgQx)return![];try{if(TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)])TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1e3)]();const SEv_hb=unsafeWindow||window,CvgA_TVH$Ae=TD$MiWBRgQx[oJBWD_FSUVQDirej_NDYd(0x1bf)]||document;return[oJBWD_FSUVQDirej_NDYd(0x1c5),oJBWD_FSUVQDirej_NDYd(0x218),oJBWD_FSUVQDirej_NDYd(0x242),oJBWD_FSUVQDirej_NDYd(0x1ee),oJBWD_FSUVQDirej_NDYd(0x1bd)][oJBWD_FSUVQDirej_NDYd(0x1dd)](nTTsQoPvqnqJrM=>{const hTykMlxVcfVO_SymRDte=oJBWD_FSUVQDirej_NDYd;let JhxaolNQUORsB_QxPsC;if(SEv_hb[hTykMlxVcfVO_SymRDte(0x233)]&&nTTsQoPvqnqJrM[hTykMlxVcfVO_SymRDte(0x20e)](hTykMlxVcfVO_SymRDte(0x1e2)))JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x233))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'pointerId':0x1,'isPrimary':!![]});else SEv_hb[hTykMlxVcfVO_SymRDte(0x206)]?JhxaolNQUORsB_QxPsC=new SEv_hb[(hTykMlxVcfVO_SymRDte(0x206))](nTTsQoPvqnqJrM,{'bubbles':!![],'cancelable':!![],'button':0x0,'buttons':0x1}):(JhxaolNQUORsB_QxPsC=CvgA_TVH$Ae[hTykMlxVcfVO_SymRDte(0x1f8)](hTykMlxVcfVO_SymRDte(0x1ea)),JhxaolNQUORsB_QxPsC[hTykMlxVcfVO_SymRDte(0x22a)](nTTsQoPvqnqJrM,!![],!![],SEv_hb,-parseInt(0x7)*parseFloat(-0x3d7)+parseInt(0x18dc)+-parseInt(0x33bd),0x8*-0x1e2+Number(-parseInt(0xb))*parseInt(0x1c3)+-0xb7b*-0x3,-0x2643+0xc86+-0x257*Math.floor(-0xb),parseInt(parseInt(0x159d))*-0x1+Math.max(parseInt(0x2240),parseInt(0x2240))*Math.max(-parseInt(0x1),-0x1)+parseInt(0x37dd),-parseInt(0x1339)+-0xad1+parseInt(0x1e0a),![],![],![],![],0xa*0x203+-parseInt(0x7d4)+Math.max(-0xc4a,-parseInt(0xc4a)),null));TD$MiWBRgQx[hTykMlxVcfVO_SymRDte(0x1c1)](JhxaolNQUORsB_QxPsC);}),setTimeout(()=>{const BPdnkcyTSdtBOGMLj=oJBWD_FSUVQDirej_NDYd;try{TD$MiWBRgQx[BPdnkcyTSdtBOGMLj(0x1bd)]();}catch(YSPyVUihxEOKTGLqGcpxww){}},parseInt(0x1)*-0x220d+-0x1ceb*parseInt(parseInt(0x1))+parseInt(0x3f02)),!![];}catch(wYZWjTdHsjGqS$TxW){return![];}}function ymkKApNTfjOanYIBsxsoMNBX(TQ$sjPfgYpRqekqYTKkMM$xsbq){const fZxoQbjOSjhtnzVVyV=AP$u_huhInYfTj,wZCCqPFq$YpVFMqx=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq/(0x61c+-0x1*-0x467+-parseInt(0x1)*0xa47)),IgThKNqdaOrPWvnnnfSK=Math[fZxoQbjOSjhtnzVVyV(0x23d)](TQ$sjPfgYpRqekqYTKkMM$xsbq%(parseInt(0x1)*Math.ceil(-parseInt(0x1675))+-0x1*parseFloat(parseInt(0x3f8))+Math.floor(parseInt(0x23))*Math.ceil(0xc3)));return wZCCqPFq$YpVFMqx+fZxoQbjOSjhtnzVVyV(0x1ef)+IgThKNqdaOrPWvnnnfSK+fZxoQbjOSjhtnzVVyV(0x25d);}function i_B_kZYD() {
-    // ƯU TIÊN 0: Nếu đang render batch, sử dụng tên file batch
-    let fileName = 'audio_da_tao'; // Tên mặc định
-    if (window.currentBatchFileName) {
-        fileName = window.currentBatchFileName;
-        // KHÔNG xóa biến ở đây vì còn cần dùng cho lưu lịch sử
-        // Biến sẽ được xóa sau khi đã lưu vào lịch sử
-    }
-    
     // ƯU TIÊN 1: Kiểm tra tên file do người dùng nhập tùy chỉnh
     const customFilenameInput = document.getElementById('custom-filename-input');
+    let fileName = 'audio_da_tao'; // Tên mặc định
 
-    // Nếu người dùng đã nhập tên file tùy chỉnh và không đang render batch, ưu tiên sử dụng tên đó
-    if (fileName === 'audio_da_tao' && customFilenameInput && customFilenameInput.value && customFilenameInput.value.trim()) {
+    // Nếu người dùng đã nhập tên file tùy chỉnh, ưu tiên sử dụng tên đó
+    if (customFilenameInput && customFilenameInput.value && customFilenameInput.value.trim()) {
         fileName = customFilenameInput.value.trim();
 
         // Làm sạch tên file: loại bỏ ký tự không hợp lệ, thay khoảng trắng bằng gạch dưới
@@ -3769,17 +2963,7 @@ pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0
         return chunks;
     }
 
-    // Hàm phát hiện văn bản tiếng Nhật
-    function isJapaneseText(text) {
-        // Kiểm tra các ký tự tiếng Nhật: Hiragana, Katakana, Kanji
-        const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/;
-        return japaneseRegex.test(text);
-    }
-
     let currentText = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-    
-    // Phát hiện ngôn ngữ cho toàn bộ văn bản
-    const containsJapanese = isJapaneseText(currentText);
 
     // ƯU TIÊN: Nếu văn bản có dòng trống phân tách đoạn, tách theo đoạn NGAY LẬP TỨC
     // Điều này giúp văn bản < 700 ký tự nhưng có 2-3 đoạn vẫn tách thành nhiều chunk đúng ý
@@ -3847,38 +3031,16 @@ pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0
             }
         } else if (splitIndex === -1) {
             // Ưu tiên 3: Tìm dấu câu kết thúc câu (đã bỏ qua các dấu trong thẻ)
-            // Xử lý khác nhau cho tiếng Nhật và tiếng Việt
-            let lastPeriod = tempSlice.lastIndexOf('.');
-            let lastQuestionMark = tempSlice.lastIndexOf('?');
-            let lastExclamation = tempSlice.lastIndexOf('!');
-            
-            // Nếu là tiếng Nhật, tìm thêm dấu câu tiếng Nhật
-            if (containsJapanese) {
-                const lastJapanesePeriod = tempSlice.lastIndexOf('。'); // Dấu chấm tiếng Nhật
-                const lastJapaneseComma = tempSlice.lastIndexOf('、'); // Dấu phẩy tiếng Nhật
-                const lastJapaneseQuestion = tempSlice.lastIndexOf('？'); // Dấu hỏi tiếng Nhật
-                const lastJapaneseExclamation = tempSlice.lastIndexOf('！'); // Dấu chấm than tiếng Nhật
-                
-                // So sánh và lấy vị trí lớn nhất
-                lastPeriod = Math.max(lastPeriod, lastJapanesePeriod);
-                lastQuestionMark = Math.max(lastQuestionMark, lastJapaneseQuestion);
-                lastExclamation = Math.max(lastExclamation, lastJapaneseExclamation);
-            }
-            
-            const bestEndSentenceIndex = Math.max(lastPeriod, lastQuestionMark, lastExclamation);
+            const lastPeriod = tempSlice.lastIndexOf('.');
+            const lastQuestionMark = tempSlice.lastIndexOf('?');
+            const bestEndSentenceIndex = Math.max(lastPeriod, lastQuestionMark);
 
             if (bestEndSentenceIndex >= minLength) {
                 // SỬA LỖI: Cắt SAU dấu câu thay vì cắt TẠI dấu câu
                 splitIndex = bestEndSentenceIndex + 1;
             } else {
                 // Ưu tiên 4: Tìm dấu phẩy
-                let lastComma = tempSlice.lastIndexOf(',');
-                // Nếu là tiếng Nhật, tìm thêm dấu phẩy tiếng Nhật
-                if (containsJapanese) {
-                    const lastJapaneseComma = tempSlice.lastIndexOf('、');
-                    lastComma = Math.max(lastComma, lastJapaneseComma);
-                }
-                
+                const lastComma = tempSlice.lastIndexOf(',');
                 if (lastComma >= minLength) {
                     splitIndex = lastComma + 1;
                 } else {
@@ -3888,18 +3050,13 @@ pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0
                         splitIndex = lastSpace;
                     } else {
                         // CẢI THIỆN: Thay vì cắt cứng, tìm điểm cắt gần nhất trong phạm vi cho phép
-                        // Sử dụng 600 thay vì 700 làm giới hạn tìm kiếm
-                        const fallbackMaxLength = 600; // Đổi từ 700 xuống 600
+                        // Tìm bất kỳ ký tự nào không phải chữ cái/số gần cuối (dấu câu, ký tự đặc biệt)
                         let bestSplit = -1;
-                        // Tìm từ cuối lên, trong phạm vi minLength đến fallbackMaxLength (600)
-                        const searchEnd = Math.min(fallbackMaxLength - 1, tempSlice.length - 1);
-                        for (let i = searchEnd; i >= minLength; i--) {
+                        // Tìm từ cuối lên, trong phạm vi minLength đến actualMaxLength
+                        for (let i = Math.min(actualMaxLength - 1, tempSlice.length - 1); i >= minLength; i--) {
                             const char = tempSlice[i];
-                            // Regex cập nhật: Bao gồm cả ký tự tiếng Nhật (Hiragana, Katakana, Kanji)
-                            // \u3040-\u309F: Hiragana
-                            // \u30A0-\u30FF: Katakana  
-                            // \u4E00-\u9FAF: Kanji (CJK Unified Ideographs)
-                            if (!/[a-zA-Z0-9\u00C0-\u024F\u1E00-\u1EFF\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(char)) {
+                            // Nếu là ký tự không phải chữ cái/số (dấu câu, ký tự đặc biệt)
+                            if (!/[a-zA-Z0-9\u00C0-\u024F\u1E00-\u1EFF]/.test(char)) {
                                 bestSplit = i + 1; // Cắt sau ký tự này
                                 break;
                             }
@@ -3912,11 +3069,11 @@ pemHAD[j$DXl$iN(0x1fb)][j$DXl$iN(0x24b)]=W_gEcM_tWt+'%',SCOcXEQXTPOOS[j$DXl$iN(0
                                 addLogEntry(`⚠️ Chunk được cắt tại vị trí ${bestSplit} (không tìm được điểm cắt lý tưởng)`, 'warning');
                             }
                         } else {
-                            // Giải pháp cuối cùng: Cắt cứng tại 600 thay vì idealLength
-                            splitIndex = fallbackMaxLength; // Sử dụng 600 thay vì idealLength
+                            // Giải pháp cuối cùng: Cắt cứng tại độ dài lý tưởng
+                            splitIndex = idealLength;
                             // Log cảnh báo khi phải cắt cứng
                             if (typeof addLogEntry === 'function') {
-                                addLogEntry(`⚠️ CẢNH BÁO: Phải cắt cứng chunk tại vị trí ${fallbackMaxLength} - có thể cắt giữa từ/câu!`, 'warning');
+                                addLogEntry(`⚠️ CẢNH BÁO: Phải cắt cứng chunk tại vị trí ${idealLength} - có thể cắt giữa từ/câu!`, 'warning');
                             }
                         }
                     }
@@ -4286,27 +3443,13 @@ const BBNDYjhHoGkj_qbbbJu=URL[VCAHyXsrERcpXVhFPxmgdBjjh(0x1f0)](InRdxToeqTDyPgDG
 // == LƯU FILE VÀO LỊCH SỬ ==
 // =======================================================
             try {
-                // ƯU TIÊN: Sử dụng tên file batch nếu có (đang render batch)
-                let fileName = 'merged_output.mp3';
-                if (window.currentBatchFileName) {
-                    fileName = window.currentBatchFileName;
-                    // Không xóa biến ở đây vì có thể cần dùng cho download
-                } else {
-                    // Nếu không có tên file batch, sử dụng logic thông thường
-                    fileName = i_B_kZYD() || 'merged_output.mp3';
-                }
-                
+                const fileName = i_B_kZYD() || 'merged_output.mp3';
                 const db = window.historyDB || historyDB;
                 if (db && typeof db.saveMergedFile === 'function') {
                     await db.saveMergedFile(fileName, InRdxToeqTDyPgDGZb, {
                         chunkCount: finalBlobs.length
                     });
                     addLogEntry(`📚 Đã lưu file "${fileName}" vào lịch sử`, 'success');
-                    
-                    // Xóa biến batch file name sau khi đã lưu vào lịch sử
-                    if (window.currentBatchFileName) {
-                        delete window.currentBatchFileName;
-                    }
                 } else {
                     console.warn('⚠️ HistoryDB chưa sẵn sàng, bỏ qua lưu lịch sử');
                 }
@@ -5239,223 +4382,6 @@ function stopKeepAliveLoop() {
 }
 
 // =======================================================
-// == SCRIPT CHỐNG F12 VÀ DEVTOOLS ==
-// == Phát hiện và reset ngay khi DevTools được mở ==
-// =======================================================
-(function initAntiDevTools() {
-    'use strict';
-    
-    // Tránh chạy nhiều lần
-    if (window.devToolsDetectorStarted && window.devToolsDetectorLoopId) {
-        return;
-    }
-    
-    // Dọn dẹp loop cũ nếu có
-    if (window.devToolsDetectorLoopId) {
-        clearTimeout(window.devToolsDetectorLoopId);
-        window.devToolsDetectorLoopId = null;
-    }
-    
-    window.devToolsDetectorStarted = true;
-
-    const signal = '!!!---DEVTOOLS-DETECTED---!!!';
-    let lastDetection = false;
-    let checkCount = 0;
-    
-    // CHỐNG F12 VÀ TẤT CẢ CÁC PHÍM TẮT DEVTOOLS
-    document.addEventListener('keydown', function(e) {
-        // F12 (Mở DevTools)
-        if (e.keyCode === 123) {
-            e.preventDefault();
-            e.stopPropagation();
-            resetPage();
-            return false;
-        }
-        
-        // Ctrl+Shift+I (Mở DevTools)
-        if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
-            e.preventDefault();
-            e.stopPropagation();
-            resetPage();
-            return false;
-        }
-        
-        // Ctrl+Shift+J (Mở Console)
-        if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
-            e.preventDefault();
-            e.stopPropagation();
-            resetPage();
-            return false;
-        }
-        
-        // Ctrl+Shift+C (Inspect Element)
-        if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
-            e.preventDefault();
-            e.stopPropagation();
-            resetPage();
-            return false;
-        }
-        
-        // Ctrl+Shift+K (Console - Firefox hoặc Network)
-        if (e.ctrlKey && e.shiftKey && e.keyCode === 75) {
-            e.preventDefault();
-            e.stopPropagation();
-            resetPage();
-            return false;
-        }
-        
-        // Ctrl+Shift+E (Elements panel)
-        if (e.ctrlKey && e.shiftKey && e.keyCode === 69) {
-            e.preventDefault();
-            e.stopPropagation();
-            resetPage();
-            return false;
-        }
-        
-        // Ctrl+Shift+P (Command Palette)
-        if (e.ctrlKey && e.shiftKey && e.keyCode === 80) {
-            e.preventDefault();
-            e.stopPropagation();
-            resetPage();
-            return false;
-        }
-        
-        // Ctrl+Shift+M (Device Mode)
-        if (e.ctrlKey && e.shiftKey && e.keyCode === 77) {
-            e.preventDefault();
-            e.stopPropagation();
-            resetPage();
-            return false;
-        }
-        
-        // Ctrl+Shift+O (Sources panel)
-        if (e.ctrlKey && e.shiftKey && e.keyCode === 79) {
-            e.preventDefault();
-            e.stopPropagation();
-            resetPage();
-            return false;
-        }
-        
-        // Ctrl+Shift+F (Search in all files)
-        if (e.ctrlKey && e.shiftKey && e.keyCode === 70) {
-            e.preventDefault();
-            e.stopPropagation();
-            resetPage();
-            return false;
-        }
-        
-        // Ctrl+Shift+S (Screenshot)
-        if (e.ctrlKey && e.shiftKey && e.keyCode === 83) {
-            e.preventDefault();
-            e.stopPropagation();
-            resetPage();
-            return false;
-        }
-        
-        // Ctrl+\ (Toggle sidebar)
-        if (e.ctrlKey && e.keyCode === 220) {
-            e.preventDefault();
-            e.stopPropagation();
-            resetPage();
-            return false;
-        }
-        
-        // Ctrl+U (View Source)
-        if (e.ctrlKey && e.keyCode === 85) {
-            e.preventDefault();
-            e.stopPropagation();
-            resetPage();
-            return false;
-        }
-        
-        // Ctrl+Shift+Delete (Clear browsing data - có thể mở DevTools)
-        if (e.ctrlKey && e.shiftKey && e.keyCode === 46) {
-            e.preventDefault();
-            e.stopPropagation();
-            resetPage();
-            return false;
-        }
-        
-        // Ctrl+Shift+N (Incognito - có thể mở DevTools)
-        if (e.ctrlKey && e.shiftKey && e.keyCode === 78) {
-            e.preventDefault();
-            e.stopPropagation();
-            resetPage();
-            return false;
-        }
-        
-        // Ctrl+Shift+T (Reopen closed tab - có thể mở DevTools)
-        if (e.ctrlKey && e.shiftKey && e.keyCode === 84) {
-            e.preventDefault();
-            e.stopPropagation();
-            resetPage();
-            return false;
-        }
-    }, true);
-    
-    // CHỐNG RIGHT-CLICK (Context Menu)
-    document.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-    }, true);
-    
-    // CHỐNG SELECT TEXT (có thể dùng để inspect)
-    // NHƯNG: Cho phép select trong log-panel để có thể copy log
-    document.addEventListener('selectstart', function(e) {
-        // Cho phép select trong log-panel và các phần tử con của nó
-        const target = e.target;
-        const logPanel = document.getElementById('log-panel');
-        const logContainer = document.getElementById('log-container');
-        
-        // Kiểm tra xem target có phải là phần tử trong log-panel không
-        if (logPanel && logPanel.contains(target)) {
-            // Cho phép select trong log-panel
-            return true;
-        }
-        
-        if (logContainer && logContainer.contains(target)) {
-            // Cho phép select trong log-container
-            return true;
-        }
-        
-        // Kiểm tra nếu target có class log-entry hoặc là con của log-entry
-        let currentElement = target;
-        while (currentElement && currentElement !== document.body) {
-            if (currentElement.classList && currentElement.classList.contains('log-entry')) {
-                // Cho phép select trong log-entry
-                return true;
-            }
-            currentElement = currentElement.parentElement;
-        }
-        
-        // Chặn select ở các phần tử khác
-        e.preventDefault();
-        return false;
-    }, true);
-    
-    // Hàm reset trang
-    function resetPage() {
-        try {
-            // Xóa tất cả dữ liệu
-            localStorage.clear();
-            sessionStorage.clear();
-        } catch(e) {
-            console.error('[Anti-DevTools] Error clearing storage:', e);
-        }
-        // Reset ngay lập tức
-        window.location.reload(true);
-    }
-
-    // TẮT HOÀN TOÀN LOGIC PHÁT HIỆN TỰ ĐỘNG DEVTOOLS
-    // CHỈ GIỮ LẠI PHẦN CHẶN PHÍM TẮT (F12, Ctrl+Shift+I, etc.)
-    // Lý do: Logic phát hiện tự động dễ gây false positive
-    
-    // KHÔNG CHẠY LOGIC PHÁT HIỆN TỰ ĐỘNG NỮA
-    // Chỉ chặn phím tắt và các thao tác khác
-})();
-
-// =======================================================
 // == KHỞI ĐỘNG SILENT AUDIO NGAY KHI SCRIPT ĐƯỢC LOAD ==
 // == Chạy 100% thời gian, chỉ dừng khi tool bị tắt ==
 // =======================================================
@@ -5994,7 +4920,7 @@ async function uSTZrHUt_IC() {
         // Áp dụng chuẩn hóa cho chunk trước khi gửi
         // DEBUG: Đảm bảo hàm được gọi
         console.log(`[DEBUG] Đang chuẩn hóa chunk ${ttuo$y_KhCV + 1}, độ dài: ${SI$acY[ttuo$y_KhCV].length}`);
-        let chunkText = normalizeChunkText(SI$acY[ttuo$y_KhCV]);
+        const chunkText = normalizeChunkText(SI$acY[ttuo$y_KhCV]);
         console.log(`[DEBUG] Sau chuẩn hóa, độ dài: ${chunkText.length}`);
 
         // LƯU LẠI ĐỘ DÀI VĂN BẢN ĐÃ CHUẨN HÓA ĐỂ KIỂM TRA SAU KHI GỬI
@@ -6008,73 +4934,15 @@ async function uSTZrHUt_IC() {
             console.warn('Không thể lưu expectedChunkLengths:', e);
         }
         
-        // XÁO TRỘN TEXT: CHỈ SET 1 KÝ TỰ VÀO TEXTAREA (GHI NHỚ ĐỘ DÀI ĐẦY ĐỦ NHƯNG CHỈ GỬI 1 KÝ TỰ)
-        // QUAN TRỌNG: Lưu text đầy đủ TRƯỚC KHI xáo trộn để interceptor có thể thay thế lại đúng
-        // Lưu text đầy đủ vào window TRƯỚC KHI xáo trộn (đảm bảo luôn có giá trị)
-        const fullChunkText = String(chunkText || ''); // Lưu text đầy đủ để interceptor dùng
-        window.fullChunkTextForInterceptor = fullChunkText; // Lưu ngay để đảm bảo không bị mất
-        
-        try {
-            // XÁO TRỘN: Chỉ lấy 1 ký tự đầu tiên để set vào textarea (không xóa hết)
-            // Ghi nhớ độ dài bao nhiêu thì mặc kệ, chỉ gửi đi 1 ký tự vào textarea
-            const originalLength = fullChunkText.length;
-            let textForTextarea = '';
-            
-            if (fullChunkText.length > 0) {
-                // Chỉ lấy 1 ký tự đầu tiên để set vào textarea
-                textForTextarea = fullChunkText.charAt(0);
-            } else {
-                // Nếu text rỗng, dùng space để tránh Minimax tự thêm text mặc định
-                textForTextarea = ' ';
-            }
-            
-            // Gán text đã xáo trộn (1 ký tự) vào chunkText để set vào textarea
-            chunkText = textForTextarea;
-            
-            // Log ra cả console và UI để đảm bảo hiển thị
-            const logMsg = `🔀 [Chunk ${ttuo$y_KhCV + 1}] Đã xáo trộn text: ${originalLength} ký tự → ${chunkText.length} ký tự (chỉ gửi vào textarea: "${chunkText}")`;
-            console.log(logMsg);
-            addLogEntry(logMsg, 'info');
-        } catch (e) {
-            console.error('Lỗi khi xáo trộn text:', e);
-            addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] Lỗi khi xáo trộn text: ${e.message}`, 'error');
-            // Nếu có lỗi, đảm bảo có ít nhất 1 ký tự
-            if (!chunkText || chunkText.length === 0) {
-                chunkText = ' ';
-            }
-        }
-        
         // LƯU TEXT CHUNK ĐÚNG VÀO WINDOW ĐỂ NETWORK INTERCEPTOR CÓ THỂ SỬ DỤNG
         try {
-            // Lưu text đầy đủ (chưa xáo trộn) để interceptor có thể thay thế lại đúng
-            // QUAN TRỌNG: Phải dùng fullChunkTextForInterceptor (text đầy đủ), KHÔNG dùng chunkText (đã xáo trộn thành 1 ký tự)
-            const fullTextForInterceptor = window.fullChunkTextForInterceptor;
+            window.currentChunkText = chunkText;
+            window.currentChunkIndex = ttuo$y_KhCV;
             
-            if (!fullTextForInterceptor) {
-                console.error(`[ERROR] fullChunkTextForInterceptor không tồn tại cho chunk ${ttuo$y_KhCV + 1}!`);
-                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] CẢNH BÁO: fullChunkTextForInterceptor không tồn tại!`, 'error');
-            }
-            
-            // Đảm bảo luôn có text đầy đủ để interceptor dùng
-            if (fullTextForInterceptor && fullTextForInterceptor.length > 0) {
-                window.currentChunkText = fullTextForInterceptor;
-                window.currentChunkIndex = ttuo$y_KhCV;
-                
-                // --- FIX BY GEMINI: LUÔN SET INTERCEPT_CURRENT_TEXT ---
-                // Bỏ điều kiện USE_PAYLOAD_MODE để đảm bảo 100% không có chunk nào bị bỏ qua
-                // Interceptor sẽ luôn có dữ liệu để thay thế, không phụ thuộc vào cài đặt
-                window.INTERCEPT_CURRENT_TEXT = fullTextForInterceptor;
+            // CHẾ ĐỘ MỚI: Set INTERCEPT_CURRENT_TEXT để interceptor thay text trong payload
+            if (window.USE_PAYLOAD_MODE) {
+                window.INTERCEPT_CURRENT_TEXT = chunkText;
                 window.INTERCEPT_CURRENT_INDEX = ttuo$y_KhCV;
-                
-                // Debug log để đảm bảo text đầy đủ được lưu đúng - hiển thị full text
-                console.log(`[DEBUG] Đã lưu INTERCEPT_CURRENT_TEXT cho chunk ${ttuo$y_KhCV + 1}: ${fullTextForInterceptor.length} ký tự - "${fullTextForInterceptor}"`);
-                // Log vào UI để hiển thị đầy đủ
-                if (typeof window.addLogEntry === 'function') {
-                    window.addLogEntry(`[DEBUG] Đã lưu INTERCEPT_CURRENT_TEXT cho chunk ${ttuo$y_KhCV + 1}: ${fullTextForInterceptor.length} ký tự - "${fullTextForInterceptor}"`, 'info');
-                }
-            } else {
-                console.error(`[ERROR] Không thể lưu INTERCEPT_CURRENT_TEXT cho chunk ${ttuo$y_KhCV + 1} - fullTextForInterceptor rỗng hoặc không hợp lệ!`);
-                addLogEntry(`⚠️ [Chunk ${ttuo$y_KhCV + 1}] LỖI: Không thể lưu text đầy đủ vào INTERCEPT_CURRENT_TEXT!`, 'error');
             }
         } catch (e) {
             console.warn('Không thể lưu currentChunkText:', e);
@@ -6606,7 +5474,7 @@ async function uSTZrHUt_IC() {
             console.warn('Không thể thiết lập vòng xác minh độ dài sau khi gửi chunk:', e);
         }
         
-        // Cleanup: Dừng MutationObserver sau khi click
+        // Cleanup: Dừng MutationObserver sau khi click (chờ 1 giây để đảm bảo click đã được xử lý)
         setTimeout(() => {
             if (textObserver) {
                 textObserver.disconnect();
@@ -6614,16 +5482,19 @@ async function uSTZrHUt_IC() {
                 addLogEntry(`🧹 [Chunk ${ttuo$y_KhCV + 1}] Đã dừng MutationObserver`, 'info');
             }
             
-            // --- FIX BY GEMINI: KHÔNG ĐƯỢC XÓA INTERCEPT_TEXT Ở ĐÂY ---
-            // Nếu mạng lag > 3s, việc xóa biến này sẽ khiến Interceptor không hoạt động
-            // Biến window.INTERCEPT_CURRENT_TEXT sẽ được cập nhật tự động ở vòng lặp chunk tiếp theo.
-            /*
+            // CHẾ ĐỘ MỚI: Clear INTERCEPT_CURRENT_TEXT sau khi request đã được gửi
             if (window.USE_PAYLOAD_MODE) {
+                // Chờ thêm một chút để đảm bảo request đã được intercept và xử lý
                 setTimeout(() => {
-                   // ĐÃ TẮT CLEANUP ĐỂ BẢO VỆ CHUNK KHỎI BỊ GHI ĐÈ TEXT MẶC ĐỊNH KHI MẠNG LAG
-                }, 2000);
+                    if (window.INTERCEPT_CURRENT_TEXT && window.INTERCEPT_CURRENT_INDEX === ttuo$y_KhCV) {
+                        window.INTERCEPT_CURRENT_TEXT = null;
+                        window.INTERCEPT_CURRENT_INDEX = null;
+                        // Clear flag log để chunk tiếp theo có thể log lại
+                        window._interceptLoggedForChunk = null;
+                        addLogEntry(`🧹 [Chunk ${ttuo$y_KhCV + 1}] Đã clear INTERCEPT_CURRENT_TEXT sau khi gửi request`, 'info');
+                    }
+                }, 2000); // Chờ 2 giây để đảm bảo request đã được gửi
             }
-            */
         }, 1000);
         
         // Khởi tạo biến lưu timeout ID nếu chưa có
@@ -6641,101 +5512,6 @@ async function uSTZrHUt_IC() {
         
         // Thiết lập timeout 35 giây cho chunk này
         addLogEntry(`⏱️ [Chunk ${ttuo$y_KhCV + 1}] Bắt đầu render - Timeout 35 giây`, 'info');
-        
-        // =======================================================
-        // KIỂM TRA PAYLOAD SAU 3 GIÂY - PHÁT HIỆN THAY ĐỔI
-        // =======================================================
-        // Lưu text gốc ĐẦY ĐỦ của chunk để so sánh sau 3 giây (KHÔNG phải text đã xáo trộn)
-        // Sử dụng text đầy đủ từ window.fullChunkTextForInterceptor hoặc window.INTERCEPT_CURRENT_TEXT
-        const originalChunkText = window.fullChunkTextForInterceptor || window.INTERCEPT_CURRENT_TEXT || chunkText;
-        const originalChunkIndex = ttuo$y_KhCV;
-        
-        // Chờ 3 giây sau khi bắt đầu render để kiểm tra payload
-        setTimeout(() => {
-            try {
-                // Kiểm tra xem chunk đã thành công chưa (nếu đã thành công thì không cần kiểm tra)
-                if (window.chunkStatus && window.chunkStatus[originalChunkIndex] === 'success') {
-                    return; // Chunk đã thành công, không cần kiểm tra
-                }
-                
-                // Kiểm tra nếu INTERCEPT_CURRENT_TEXT đã bị thay đổi
-                if (window.USE_PAYLOAD_MODE && window.INTERCEPT_CURRENT_TEXT) {
-                    const currentInterceptText = window.INTERCEPT_CURRENT_TEXT;
-                    const currentInterceptIndex = window.INTERCEPT_CURRENT_INDEX;
-                    
-                    // Kiểm tra nếu đây là chunk đang được xử lý và text đã bị thay đổi
-                    if (currentInterceptIndex === originalChunkIndex) {
-                        // So sánh text hiện tại với text gốc
-                        if (currentInterceptText !== originalChunkText) {
-                            addLogEntry(`🚨 [Chunk ${originalChunkIndex + 1}] PHÁT HIỆN: Payload đã bị thay đổi nội dung sau 3 giây!`, 'error');
-                            addLogEntry(`⚠️ [Chunk ${originalChunkIndex + 1}] Text gốc: ${originalChunkText.length} ký tự, Text hiện tại: ${currentInterceptText.length} ký tự`, 'warning');
-                            addLogEntry(`🔄 [Chunk ${originalChunkIndex + 1}] Đánh dấu thất bại và kích hoạt cơ chế retry (xáo dữ liệu rác)...`, 'warning');
-                            
-                            // Đánh dấu chunk này là thất bại
-                            if (!window.chunkStatus) window.chunkStatus = [];
-                            window.chunkStatus[originalChunkIndex] = 'failed';
-                            if (!window.failedChunks) window.failedChunks = [];
-                            if (!window.failedChunks.includes(originalChunkIndex)) {
-                                window.failedChunks.push(originalChunkIndex);
-                            }
-                            
-                            // Reset flag sendingChunk khi chunk thất bại
-                            if (window.sendingChunk === originalChunkIndex) {
-                                window.sendingChunk = null;
-                            }
-                            
-                            // Dừng observer nếu đang chạy
-                            if (xlgJHLP$MATDT$kTXWV) {
-                                xlgJHLP$MATDT$kTXWV.disconnect();
-                            }
-                            
-                            // QUAN TRỌNG: Đảm bảo vị trí này để trống (null) để sau này retry có thể lưu vào
-                            if (typeof window.chunkBlobs === 'undefined') {
-                                window.chunkBlobs = new Array(SI$acY.length).fill(null);
-                            }
-                            // Đảm bảo window.chunkBlobs có đủ độ dài
-                            while (window.chunkBlobs.length <= originalChunkIndex) {
-                                window.chunkBlobs.push(null);
-                            }
-                            window.chunkBlobs[originalChunkIndex] = null; // Đảm bảo vị trí này để trống
-                            
-                            // ĐỒNG BỘ HÓA ZTQj$LF$o: Đảm bảo ZTQj$LF$o cũng để trống
-                            while (ZTQj$LF$o.length <= originalChunkIndex) {
-                                ZTQj$LF$o.push(null);
-                            }
-                            ZTQj$LF$o[originalChunkIndex] = null; // Đảm bảo vị trí này để trống
-                            
-                            // Clear timeout của chunk này nếu đang chạy
-                            if (window.chunkTimeoutIds && window.chunkTimeoutIds[originalChunkIndex]) {
-                                clearTimeout(window.chunkTimeoutIds[originalChunkIndex]);
-                                delete window.chunkTimeoutIds[originalChunkIndex];
-                            }
-                            
-                            // CƠ CHẾ RETRY: Cleanup data rác và retry lại chunk này vô hạn
-                            addLogEntry(`🔄 [Chunk ${originalChunkIndex + 1}] Payload bị thay đổi - Cleanup data rác và retry lại chunk này vô hạn cho đến khi thành công`, 'warning');
-                            window.retryCount = 0; // Reset bộ đếm retry
-                            
-                            // Cleanup data rác và reset trước khi retry
-                            (async () => {
-                                await cleanupChunkData(originalChunkIndex); // Cleanup data rác trước
-                                await resetWebInterface(); // Reset web interface
-                                // KHÔNG tăng ttuo$y_KhCV, giữ nguyên để retry lại chunk này
-                                setTimeout(uSTZrHUt_IC, getRandomChunkDelay()); // Retry sau delay 1-3 giây
-                            })();
-                        } else {
-                            addLogEntry(`✅ [Chunk ${originalChunkIndex + 1}] Kiểm tra ...`, 'info');
-                        }
-                    }
-                } else if (window.USE_PAYLOAD_MODE && !window.INTERCEPT_CURRENT_TEXT) {
-                    // Nếu USE_PAYLOAD_MODE bật nhưng INTERCEPT_CURRENT_TEXT đã bị clear (có thể đã được gửi)
-                    addLogEntry(`ℹ️ [Chunk ${originalChunkIndex + 1}] Kiểm tra`, 'info');
-                }
-            } catch (payloadCheckError) {
-                console.warn(`Lỗi khi kiểm tra payload sau 3 giây cho chunk ${originalChunkIndex + 1}:`, payloadCheckError);
-                addLogEntry(`⚠️ [Chunk ${originalChunkIndex + 1}] Lỗi khi kiểm tra payload: ${payloadCheckError.message}`, 'warning');
-            }
-        }, 3000); // Chờ 3 giây sau khi bắt đầu render
-        
         window.chunkTimeoutIds[ttuo$y_KhCV] = setTimeout(async () => {
             // QUAN TRỌNG: Kiểm tra xem chunk đã thành công chưa trước khi trigger timeout
             if (window.chunkStatus && window.chunkStatus[ttuo$y_KhCV] === 'success') {
@@ -6963,7 +5739,7 @@ function igyo$uwVChUzI() {
         xlgJHLP$MATDT$kTXWV = null;
     }
     
-    addLogEntry(`👁️ [Chunk ${ttuo$y_KhCV + 1}] Đang thiết lập ...`, 'info');
+    addLogEntry(`👁️ [Chunk ${ttuo$y_KhCV + 1}] Đang thiết lập MutationObserver để detect audio element...`, 'info');
 
     // DEBOUNCE: Khởi tạo timestamp cho callback
     if (typeof window.observerCallbackLastRun === 'undefined') {
@@ -7027,7 +5803,7 @@ function igyo$uwVChUzI() {
                     // KHÔNG disconnect observer ở đây - sẽ disconnect sau khi xử lý xong
 
                     // QUAN TRỌNG: KHÔNG đánh dấu success ở đây
-                    // Chỉ đánh dấu success SAU KHI kiểm tra dung lượng và sóng âm hợp lệ và đã lưu blob
+                    // Chỉ đánh dấu success SAU KHI kiểm tra dung lượng hợp lệ và đã lưu blob
                     
                     // Clear timeout 35 giây cho chunk này (clear ngay khi detect audio để tránh timeout)
                     if (typeof window.chunkTimeoutIds !== 'undefined' && window.chunkTimeoutIds[currentChunkIndex]) {
@@ -7282,7 +6058,7 @@ function igyo$uwVChUzI() {
                             return; // Dừng xử lý, không lưu blob
                         }
 
-                        addLogEntry(`🔍 [Chunk ${currentChunkIndex + 1}] Dung lượng blob = ${chunkSizeKB.toFixed(2)} KB`, 'info');
+                        addLogEntry(`🔍 [Chunk ${currentChunkIndex + 1}] Dung lượng blob = ${chunkSizeKB.toFixed(2)} KB. Đang kiểm tra sóng âm...`, 'info');
 
                         // Kiểm tra sóng âm cho mọi chunk
                         const hasWaveform = await checkAudioWaveform(qILAV);
@@ -7362,14 +6138,14 @@ function igyo$uwVChUzI() {
                             return; // Dừng xử lý, không lưu blob
                         } else {
                             // Có sóng âm → hợp lệ, tiếp tục bình thường
-                            addLogEntry(`✅ [Chunk ${currentChunkIndex + 1}] Dung lượng blob = ${chunkSizeKB.toFixed(2)} KB và có sóng âm - hợp lệ!`, 'info');
+                            addLogEntry(`✅ [Chunk ${currentChunkIndex + 1}] Dung lượng blob = ${chunkSizeKB.toFixed(2)} KB và CÓ sóng âm - Hợp lệ!`, 'info');
                         }
                         // =======================================================
                         // == END: KIỂM TRA DUNG LƯỢNG & SÓNG ÂM BLOB ==
                         // =======================================================
                         
-                        // Log xác nhận kiểm tra dung lượng và sóng âm đã chạy và blob hợp lệ
-                        addLogEntry(`✅ [Chunk ${currentChunkIndex + 1}] Đã kiểm tra dung lượng và sóng âm - blob hợp lệ`, 'info');
+                        // Log xác nhận kiểm tra dung lượng đã chạy và blob hợp lệ
+                        addLogEntry(`✅ [Chunk ${currentChunkIndex + 1}] Đã kiểm tra dung lượng blob: ${(qILAV.size / 1024).toFixed(2)} KB - Hợp lệ`, 'info');
                         
                         
                         // Lưu chunk vào đúng vị trí dựa trên currentChunkIndex (đã lưu ở đầu callback)
@@ -7425,7 +6201,7 @@ function igyo$uwVChUzI() {
                         // =======================================================
                         // == ĐÁNH DẤU THÀNH CÔNG: SAU KHI TẤT CẢ KIỂM TRA ĐỀU HỢP LỆ ==
                         // =======================================================
-                        // QUAN TRỌNG: Chỉ đánh dấu success SAU KHI đã kiểm tra dung lượng, sóng âm và lưu blob thành công
+                        // QUAN TRỌNG: Chỉ đánh dấu success SAU KHI đã kiểm tra dung lượng và lưu blob thành công
                         window.chunkStatus[currentChunkIndex] = 'success';
                         window.retryCount = 0; // Reset bộ đếm retry khi thành công
                         // Reset timeout retry count cho chunk này khi thành công
@@ -7522,7 +6298,7 @@ function igyo$uwVChUzI() {
         window.isSettingUpObserver = false;
     }, 100);
     
-    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] MutationObserver...`, 'success');
+    addLogEntry(`✅ [Chunk ${ttuo$y_KhCV + 1}] MutationObserver đã được thiết lập và đang observe audio element`, 'success');
 }function rBuqJlBFmwzdZnXtjIL(){const fgUnHA=AP$u_huhInYfTj,ytkOLYJZOEaDOhowaP=document[fgUnHA(0x1cd)](fgUnHA(0x246));ytkOLYJZOEaDOhowaP&&ytkOLYJZOEaDOhowaP[fgUnHA(0x224)](fgUnHA(0x1bc))===fgUnHA(0x1fe)&&KxTOuAJu(ytkOLYJZOEaDOhowaP);}function ZGEvDUSUwgCtRqI(XOH_jolXfrzfb$u){return new Promise(f$o$ehE=>{const XfxSTlMrygLQP$ENoXGlumBRM=DHk$uTvcFuLEMnixYuADkCeA,MvjhInrbVXjKVUruwh=document[XfxSTlMrygLQP$ENoXGlumBRM(0x1cd)](XfxSTlMrygLQP$ENoXGlumBRM(0x254));if(MvjhInrbVXjKVUruwh&&MvjhInrbVXjKVUruwh[XfxSTlMrygLQP$ENoXGlumBRM(0x273)][XfxSTlMrygLQP$ENoXGlumBRM(0x1d4)]()===XOH_jolXfrzfb$u){f$o$ehE(!![]);return;}if(!MvjhInrbVXjKVUruwh){f$o$ehE(![]);return;}const VZYZVbVjefOZtpoGN=[MvjhInrbVXjKVUruwh,MvjhInrbVXjKVUruwh[XfxSTlMrygLQP$ENoXGlumBRM(0x227)],document[XfxSTlMrygLQP$ENoXGlumBRM(0x1cd)](XfxSTlMrygLQP$ENoXGlumBRM(0x22e)),document[XfxSTlMrygLQP$ENoXGlumBRM(0x1cd)](XfxSTlMrygLQP$ENoXGlumBRM(0x268))][XfxSTlMrygLQP$ENoXGlumBRM(0x21d)](Boolean);let VIEdKkRYRVRqqJcvauv$yeqJs=![];for(const aSzLyIxGR$iZOAwaUnO of VZYZVbVjefOZtpoGN){if(KxTOuAJu(aSzLyIxGR$iZOAwaUnO)){VIEdKkRYRVRqqJcvauv$yeqJs=!![];break;}}if(!VIEdKkRYRVRqqJcvauv$yeqJs){f$o$ehE(![]);return;}let iravm_ITtG=Math.ceil(parseInt(0x93c))*0x3+Math.floor(-parseInt(0xb3a))+Math.max(-parseInt(0xde),-0xde)*Math.trunc(parseInt(0x13));const yZNPe_Cff=-0xf73*0x2+Math.floor(-parseInt(0xae3))*parseInt(0x1)+-parseInt(0x14e7)*-0x2;function ZUTCwm$ZO(){const Yh_c_kdQDftCJybILCYnKDHP=XfxSTlMrygLQP$ENoXGlumBRM;iravm_ITtG++;let XLdCvwP_ExUgMYvoF$PgmcYQoDm=null;for(const KhpCpYqdNeshDhzcz$YopPRCnq of[Yh_c_kdQDftCJybILCYnKDHP(0x204),Yh_c_kdQDftCJybILCYnKDHP(0x1e8),Yh_c_kdQDftCJybILCYnKDHP(0x220),Yh_c_kdQDftCJybILCYnKDHP(0x252)]){XLdCvwP_ExUgMYvoF$PgmcYQoDm=document[Yh_c_kdQDftCJybILCYnKDHP(0x1cd)](KhpCpYqdNeshDhzcz$YopPRCnq);if(XLdCvwP_ExUgMYvoF$PgmcYQoDm&&XLdCvwP_ExUgMYvoF$PgmcYQoDm[Yh_c_kdQDftCJybILCYnKDHP(0x213)]>parseInt(0xc0b)*-0x3+parseInt(0x59f)*-0x1+parseInt(0x8)*parseInt(0x538))break;}if(!XLdCvwP_ExUgMYvoF$PgmcYQoDm){iravm_ITtG<yZNPe_Cff?setTimeout(ZUTCwm$ZO,Math.trunc(-parseInt(0x1))*parseInt(0x8b1)+-0x7e9+0x128e):f$o$ehE(![]);return;}let wUar$U_QcohStsk=null;for(const JawipkxmmQvXAvdYtibQwPC of[Yh_c_kdQDftCJybILCYnKDHP(0x272),Yh_c_kdQDftCJybILCYnKDHP(0x1d3),Yh_c_kdQDftCJybILCYnKDHP(0x232),Yh_c_kdQDftCJybILCYnKDHP(0x21c),Yh_c_kdQDftCJybILCYnKDHP(0x222)]){const ndE_dgEnXpLZ=XLdCvwP_ExUgMYvoF$PgmcYQoDm[Yh_c_kdQDftCJybILCYnKDHP(0x207)](JawipkxmmQvXAvdYtibQwPC);for(const dGawOEsCtvghrtIQyMuYTxt of ndE_dgEnXpLZ){if(dGawOEsCtvghrtIQyMuYTxt[Yh_c_kdQDftCJybILCYnKDHP(0x273)][Yh_c_kdQDftCJybILCYnKDHP(0x1d4)]()===XOH_jolXfrzfb$u){wUar$U_QcohStsk=dGawOEsCtvghrtIQyMuYTxt;break;}}if(wUar$U_QcohStsk)break;}if(!wUar$U_QcohStsk){KxTOuAJu(document[Yh_c_kdQDftCJybILCYnKDHP(0x248)]),f$o$ehE(![]);return;}KxTOuAJu(wUar$U_QcohStsk)?setTimeout(()=>{const cpuoogaLGFCVSyyJxT=Yh_c_kdQDftCJybILCYnKDHP,OMvlnOvIVrYj$DdyPN_J=document[cpuoogaLGFCVSyyJxT(0x1cd)](cpuoogaLGFCVSyyJxT(0x254));OMvlnOvIVrYj$DdyPN_J&&OMvlnOvIVrYj$DdyPN_J[cpuoogaLGFCVSyyJxT(0x273)][cpuoogaLGFCVSyyJxT(0x1d4)]()===XOH_jolXfrzfb$u?f$o$ehE(!![]):f$o$ehE(![]);},Math.ceil(-0x5)*0x2ed+Number(-0x2)*parseFloat(-0xdbd)+parseInt(-0xbad)):f$o$ehE(![]);}setTimeout(ZUTCwm$ZO,-0x24d2+-0x5dd+Math.max(-parseInt(0x1),-parseInt(0x1))*-0x2d07);});}async function FqzIBEUdOwBt(Jn_xqilZP,RGKuwuYHgrIIT=Math.trunc(0xf2e)+parseFloat(-parseInt(0x132a))+0x2*parseInt(0x203)){for(let GqZKAua$R$P=-0xadf+-parseInt(0x1dbb)+-0x181*Math.max(-0x1b,-0x1b);GqZKAua$R$P<=RGKuwuYHgrIIT;GqZKAua$R$P++){const L_BWgyzzSdCDgEEDlZXBu=await ZGEvDUSUwgCtRqI(Jn_xqilZP);if(L_BWgyzzSdCDgEEDlZXBu)return!![];GqZKAua$R$P<RGKuwuYHgrIIT&&await new Promise(Kl_QYkE$QY=>setTimeout(Kl_QYkE$QY,parseInt(0x49)*Math.trunc(0x35)+-parseInt(0x966)+0x1*Math.ceil(0x219)));}return![];}function AMoS$rCm_VoQjhXaWua(){const EOSqNtA$IANphiFD=AP$u_huhInYfTj,dmVumXDOp_nMXAtgodQ=document[EOSqNtA$IANphiFD(0x1cd)](EOSqNtA$IANphiFD(0x210));if(dmVumXDOp_nMXAtgodQ){const wvqk$t=dmVumXDOp_nMXAtgodQ[EOSqNtA$IANphiFD(0x1cd)](EOSqNtA$IANphiFD(0x1f7));if(wvqk$t&&!wvqk$t[EOSqNtA$IANphiFD(0x221)])dmVumXDOp_nMXAtgodQ[EOSqNtA$IANphiFD(0x1bd)]();}}function iDQh_nSiOgsDLmvTjcMSSdUwBv(acdMRck){const BgkEiDtfuwpVhu=AP$u_huhInYfTj,gl_lA_GFvtWJu=document[BgkEiDtfuwpVhu(0x207)](BgkEiDtfuwpVhu(0x1f3));for(const iTilPnjRKvhmFKI$iUCuXlnI of gl_lA_GFvtWJu){if(iTilPnjRKvhmFKI$iUCuXlnI[BgkEiDtfuwpVhu(0x273)]&&iTilPnjRKvhmFKI$iUCuXlnI[BgkEiDtfuwpVhu(0x273)][BgkEiDtfuwpVhu(0x1d4)]()[BgkEiDtfuwpVhu(0x20e)](acdMRck)){const utDJyOyXyOqpqxwzxcVx=iTilPnjRKvhmFKI$iUCuXlnI[BgkEiDtfuwpVhu(0x249)](BgkEiDtfuwpVhu(0x1f9));if(utDJyOyXyOqpqxwzxcVx){const DLOMspx=utDJyOyXyOqpqxwzxcVx[BgkEiDtfuwpVhu(0x1cd)](BgkEiDtfuwpVhu(0x25e));if(DLOMspx){DLOMspx[BgkEiDtfuwpVhu(0x1bd)]();break;}}}}}/**
  * Hàm mới: Chờ cho đến khi giọng mẫu trên web được tải xong.
  * Nó sẽ theo dõi sự biến mất của biểu tượng loading.
@@ -8243,68 +7019,6 @@ async function waitForVoiceModelReady() {
         // Gọi hàm thiết lập dấu câu sau khi các element khác đã sẵn sàng
         initializePunctuationSettings();
 
-        // --- Batch Render Modal Functionality ---
-        function initializeBatchRenderModal() {
-            const modal = document.getElementById('batch-render-modal');
-            const openBtn = document.getElementById('open-batch-render-modal-btn');
-            const closeBtn = document.getElementById('close-batch-render-modal-btn');
-            
-            if (!modal || !openBtn) return;
-
-            // Mở modal
-            openBtn.addEventListener('click', () => {
-                // QUAN TRỌNG: Di chuyển modal ra body level để đảm bảo tính từ viewport
-                if (modal.parentElement && modal.parentElement.tagName !== 'BODY') {
-                    const originalParent = modal.parentElement;
-                    document.body.appendChild(modal);
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry('🔄 Đã di chuyển modal batch render ra body level để hiển thị đầy đủ', 'info');
-                    }
-                }
-                
-                // Đảm bảo modal được hiển thị đúng cách và căn giữa từ viewport
-                modal.style.position = 'fixed';
-                modal.style.top = '0';
-                modal.style.left = '0';
-                modal.style.right = '0';
-                modal.style.bottom = '0';
-                modal.style.width = '100vw';
-                modal.style.height = '100vh';
-                modal.style.margin = '0';
-                modal.style.padding = '0';
-                modal.style.display = 'flex';
-                modal.style.visibility = 'visible';
-                modal.style.opacity = '1';
-                modal.style.zIndex = '10001';
-                modal.style.alignItems = 'center';
-                modal.style.justifyContent = 'center';
-            });
-
-            // Đóng modal
-            const closeModal = () => {
-                if (modal) {
-                    modal.style.display = 'none';
-                    modal.style.visibility = 'hidden';
-                    modal.style.opacity = '0';
-                }
-            };
-
-            if (closeBtn) {
-                closeBtn.addEventListener('click', closeModal);
-            }
-
-            // Đóng modal khi click vào background
-            if (modal) {
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) {
-                        closeModal();
-                    }
-                });
-            }
-        }
-
-        initializeBatchRenderModal();
-
         // --- 4. Audio Manager Modal (Kho Âm Thanh Online) ---
         (function() {
             const openBtn = document.getElementById('open-audio-manager-btn');
@@ -8529,64 +7243,249 @@ async function waitForVoiceModelReady() {
             }
         });
 
-        // --- 5. Auto Replace Words Functionality ---
+        // --- 5. Punctuation Detection Functionality ---
         (function() {
-            let autoReplaceEnabled = true;
+            let punctuationDetectionEnabled = true;
+            let detectedPunctuationIssues = [];
 
-            // Hàm tự động thay thế từ: "ai" → "Ai" và "im" → "Im"
-            function autoReplaceWords(text) {
-                if (!autoReplaceEnabled || !text) return text;
+            // Hàm phát hiện dấu câu trùng lặp
+            function detectPunctuationIssues(text) {
+                if (!punctuationDetectionEnabled || !text) return [];
 
-                let newText = text;
+                const issues = [];
 
-                // Thay thế "ai" thành "Ai" (chỉ thay thế theo từ, không phải theo ký tự)
-                // Sử dụng word boundary để chỉ thay thế từ đầy đủ
-                // \b là word boundary, đảm bảo chỉ thay thế từ "ai" độc lập
-                newText = newText.replace(/\bai\b/gi, (match) => {
-                    // Giữ nguyên case của chữ đầu tiên nếu đã viết hoa
-                    return match.charAt(0).toUpperCase() + match.slice(1).toLowerCase();
-                });
+                // Pattern tổng quát để phát hiện tất cả cụm dấu câu (2 ký tự trở lên)
+                // Dấu ngoặc kép chỉ bị phát hiện khi nằm cùng với dấu câu khác
+                const generalPattern = /[.!?,;:]{2,}|[.!?,;:]["']|["'][.!?,;:]|["'][.!?,;:]{2,}|[.!?,;:]{2,}["']/g;
 
-                // Thay thế "im" thành "Im" (chỉ thay thế theo từ, không phải theo ký tự)
-                newText = newText.replace(/\bim\b/gi, (match) => {
-                    // Giữ nguyên case của chữ đầu tiên nếu đã viết hoa
-                    return match.charAt(0).toUpperCase() + match.slice(1).toLowerCase();
-                });
+                let match;
+                while ((match = generalPattern.exec(text)) !== null) {
+                    const matchedText = match[0];
+                    const start = match.index;
+                    const end = match.index + matchedText.length;
 
-                return newText;
+                    // Bỏ qua dấu ba chấm (...) - không phát hiện như lỗi
+                    if (matchedText === '...') {
+                        continue;
+                    }
+
+                    // Phân loại loại lỗi
+                    let type = 'Dấu câu trùng lặp';
+                    if (/[.!?]{2,}/.test(matchedText)) {
+                        type = 'Dấu chấm/chấm hỏi/chấm than trùng lặp';
+                    } else if (/[,;]{2,}/.test(matchedText)) {
+                        type = 'Dấu phẩy/chấm phẩy trùng lặp';
+                    } else if (/[:]{2,}/.test(matchedText)) {
+                        type = 'Dấu hai chấm trùng lặp';
+                    } else if (/["'][.!?,;:]|[.!?,;:]["']/.test(matchedText)) {
+                        type = 'Dấu ngoặc kép kết hợp với dấu câu khác';
+                    } else if (/[.!?][,;:]|[;:,][.!?]/.test(matchedText)) {
+                        type = 'Dấu câu kết hợp khác nhau';
+                    }
+
+                    issues.push({
+                        text: matchedText,
+                        start: start,
+                        end: end,
+                        type: type,
+                        suggestion: getPunctuationSuggestion(matchedText)
+                    });
+                }
+
+                return issues;
             }
 
-            // Hàm bỏ qua (giữ lại để tương thích với HTML)
+            // Hàm đề xuất dấu câu thay thế
+            function getPunctuationSuggestion(originalText) {
+                // Nếu có dấu chấm hỏi, ưu tiên giữ dấu chấm hỏi
+                if (originalText.includes('?')) return '?';
+                // Nếu có dấu chấm than, ưu tiên giữ dấu chấm than
+                if (originalText.includes('!')) return '!';
+                // Nếu có dấu chấm, ưu tiên giữ dấu chấm
+                if (originalText.includes('.')) return '.';
+                // Nếu có dấu phẩy, ưu tiên giữ dấu phẩy
+                if (originalText.includes(',')) return ',';
+                // Nếu có dấu ngoặc kép, ưu tiên giữ dấu ngoặc kép
+                if (originalText.includes('"')) return '"';
+                // Nếu có dấu ngoặc đơn, ưu tiên giữ dấu ngoặc đơn
+                if (originalText.includes("'")) return "'";
+                // Mặc định là dấu chấm
+                return '.';
+            }
+
+            // Hàm hiển thị danh sách lỗi dấu câu
+            function displayPunctuationIssues(issues) {
+                const modal = document.getElementById('punctuation-detection-modal');
+                const issuesList = document.getElementById('punctuation-issues-list');
+
+                if (!issues || issues.length === 0) {
+                    modal.style.display = 'none';
+                    return;
+                }
+
+                issuesList.innerHTML = '';
+                issues.forEach((issue, index) => {
+                    const issueDiv = document.createElement('div');
+                    issueDiv.style.cssText = `
+                        background: #44475a;
+                        border: 1px solid #6272a4;
+                        border-radius: 6px;
+                        padding: 12px;
+                        margin-bottom: 10px;
+                        font-size: 14px;
+                    `;
+
+                    issueDiv.className = 'punctuation-issue-item';
+                    issueDiv.innerHTML = `
+                        <div style="color: #ffb86c; font-weight: bold; margin-bottom: 6px; font-size: 15px;">
+                            ${issue.type}
+                        </div>
+                        <div style="color: #f8f8f2; margin-bottom: 6px;">
+                            <strong>Phát hiện:</strong> <span style="background: #ff5555; color: white; padding: 2px 6px; border-radius: 3px; font-family: monospace;">"${issue.text}"</span>
+                        </div>
+                        <div style="color: #50fa7b;">
+                            <strong>Đề xuất:</strong> <span style="background: #50fa7b; color: #282a36; padding: 2px 6px; border-radius: 3px; font-family: monospace;">"${issue.suggestion}"</span>
+                        </div>
+                    `;
+
+                    issuesList.appendChild(issueDiv);
+                });
+
+                // Hiển thị modal
+                modal.style.display = 'flex';
+            }
+
+            // Hàm tự động sửa tất cả lỗi dấu câu
+            function autoFixAllPunctuationIssues() {
+                console.log('autoFixAllPunctuationIssues called');
+
+                const textarea = document.getElementById('gemini-main-textarea');
+                const defaultPunctuation = document.getElementById('default-punctuation-select');
+                const modal = document.getElementById('punctuation-detection-modal');
+
+                console.log('Elements found:', {
+                    textarea: !!textarea,
+                    defaultPunctuation: !!defaultPunctuation,
+                    modal: !!modal,
+                    issuesCount: detectedPunctuationIssues.length
+                });
+
+                if (!textarea) {
+                    console.error('Textarea not found');
+                    return;
+                }
+
+                if (!defaultPunctuation) {
+                    console.error('Default punctuation select not found');
+                    return;
+                }
+
+                if (!modal) {
+                    console.error('Modal not found');
+                    return;
+                }
+
+                if (!detectedPunctuationIssues.length) {
+                    console.log('No issues to fix');
+                    modal.style.display = 'none';
+                    return;
+                }
+
+                const punctuationValue = defaultPunctuation.value;
+                console.log('Using punctuation:', punctuationValue);
+
+                let text = textarea.value;
+                console.log('Original text length:', text.length);
+
+                // Sắp xếp các lỗi theo thứ tự ngược để tránh ảnh hưởng đến index
+                const sortedIssues = [...detectedPunctuationIssues].sort((a, b) => b.start - a.start);
+                console.log('Issues to fix:', sortedIssues.length);
+
+                sortedIssues.forEach((issue, index) => {
+                    console.log(`Fixing issue ${index + 1}:`, issue);
+                    const beforeText = text.substring(0, issue.start);
+                    const afterText = text.substring(issue.end);
+                    // Thay thế toàn bộ cụm dấu câu bằng dấu câu mặc định
+                    text = beforeText + punctuationValue + afterText;
+                });
+
+                textarea.value = text;
+                detectedPunctuationIssues = [];
+
+                // Đóng modal
+                modal.style.display = 'none';
+                console.log('Modal closed');
+
+                // Trigger input event để cập nhật stats
+                textarea.dispatchEvent(new Event('input'));
+
+                // Hiển thị thông báo thành công
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Đã sửa dấu câu',
+                        text: `Đã tự động sửa ${sortedIssues.length} lỗi dấu câu`,
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true
+                    });
+                }
+            }
+
+            // Hàm bỏ qua tất cả lỗi dấu câu
             function ignoreAllPunctuationIssues() {
-                // Không làm gì cả, chỉ để tương thích với HTML
+                console.log('ignoreAllPunctuationIssues called');
+
+                const modal = document.getElementById('punctuation-detection-modal');
+                console.log('Modal found:', !!modal);
+
+                detectedPunctuationIssues = [];
+
+                if (modal) {
+                    modal.style.display = 'none';
+                    console.log('Modal closed');
+                } else {
+                    console.error('Modal not found for closing');
+                }
             }
 
             // Thêm các hàm vào global scope để có thể gọi từ HTML
-            window.autoFixAllPunctuationIssues = ignoreAllPunctuationIssues;
+            window.autoFixAllPunctuationIssues = autoFixAllPunctuationIssues;
             window.ignoreAllPunctuationIssues = ignoreAllPunctuationIssues;
 
-            // Event listener cho textarea để tự động thay thế từ
+            // Event listener cho textarea để phát hiện dấu câu
             const textarea = document.getElementById('gemini-main-textarea');
             if (textarea) {
-                let isReplacing = false; // Flag để tránh vòng lặp vô hạn
-                
                 textarea.addEventListener('input', function() {
-                    if (isReplacing) return; // Tránh vòng lặp vô hạn
-                    
-                    const originalText = this.value;
-                    const replacedText = autoReplaceWords(originalText);
-                    
-                    // Nếu có thay đổi, cập nhật textarea
-                    if (replacedText !== originalText) {
-                        isReplacing = true;
-                        const cursorPosition = this.selectionStart;
-                        this.value = replacedText;
-                        
-                        // Giữ nguyên vị trí con trỏ
-                        this.setSelectionRange(cursorPosition, cursorPosition);
-                        isReplacing = false;
+                    const text = this.value;
+                    detectedPunctuationIssues = detectPunctuationIssues(text);
+
+                    if (detectedPunctuationIssues.length > 0) {
+                        displayPunctuationIssues(detectedPunctuationIssues);
                     }
                 });
+            }
+
+            // Event listener cho nút "Bắt đầu tạo âm thanh" để kiểm tra dấu câu
+            // LƯU Ý: Event listener này chỉ kiểm tra dấu câu, KHÔNG ngăn event listener chính
+            // Nếu có lỗi dấu câu, chỉ hiển thị cảnh báo nhưng VẪN CHO PHÉP job chạy
+            // (Người dùng có thể bỏ qua cảnh báo và tiếp tục)
+            const startBtnPunctuation = document.getElementById('gemini-start-queue-btn');
+            if (startBtnPunctuation) {
+                startBtnPunctuation.addEventListener('click', function(e) {
+                    const text = textarea ? textarea.value : '';
+                    detectedPunctuationIssues = detectPunctuationIssues(text);
+
+                    if (detectedPunctuationIssues.length > 0) {
+                        displayPunctuationIssues(detectedPunctuationIssues);
+                        // CHỈ hiển thị cảnh báo, KHÔNG ngăn event listener chính chạy
+                        // Event listener chính sẽ được gọi bình thường
+                    }
+                    // Nếu không có lỗi dấu câu hoặc có lỗi nhưng người dùng muốn tiếp tục,
+                    // event sẽ tiếp tục đến event listener chính
+                }, false); // Sử dụng bubbling phase để chạy SAU event listener chính (hoặc cùng lúc)
             }
 
             // Event listener cho modal
@@ -8620,19 +7519,12 @@ async function waitForVoiceModelReady() {
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = url;
-                // ƯU TIÊN 0: Nếu đang render batch, sử dụng tên file batch
-                let fileName = 'audio'; // Tên mặc định
-                if (window.currentBatchFileName) {
-                    fileName = window.currentBatchFileName;
-                    // Xóa biến sau khi sử dụng để không ảnh hưởng đến các file tiếp theo
-                    delete window.currentBatchFileName;
-                }
-                
                 // ƯU TIÊN 1: Kiểm tra tên file do người dùng nhập tùy chỉnh
                 const customFilenameInput = document.getElementById('custom-filename-input');
+                let fileName = 'audio'; // Tên mặc định
 
-                // Nếu người dùng đã nhập tên file tùy chỉnh và không đang render batch, ưu tiên sử dụng tên đó
-                if (fileName === 'audio' && customFilenameInput && customFilenameInput.value && customFilenameInput.value.trim()) {
+                // Nếu người dùng đã nhập tên file tùy chỉnh, ưu tiên sử dụng tên đó
+                if (customFilenameInput && customFilenameInput.value && customFilenameInput.value.trim()) {
                     fileName = customFilenameInput.value.trim();
 
                     // Làm sạch tên file: loại bỏ ký tự không hợp lệ, thay khoảng trắng bằng gạch dưới
@@ -8829,6 +7721,25 @@ async function waitForVoiceModelReady() {
                     }
                 });
             }
+
+
+            // Override console.log để phát hiện khi hết retry
+            const originalConsoleLog = console.log;
+            console.log = function(...args) {
+                const message = args.join(' ');
+
+                // Phát hiện khi hết retry
+                if (message.includes('Đã thử lại') && message.includes('lần nhưng vẫn thất bại')) {
+                    console.warn('🚨 Phát hiện hết lượt retry, ngừng tool...');
+                    setTimeout(() => {
+                        if (typeof window.stopTool === 'function') {
+                            window.stopTool();
+                        }
+                    }, 1000);
+                }
+
+                return originalConsoleLog.apply(console, args);
+            };
 
             // Thêm helper functions
             window.minimaxRetryHelper = {
@@ -9125,650 +8036,6 @@ async function waitForVoiceModelReady() {
 
         // --- END: NEW FUNCTIONALITY ---
 
-        // --- START: BATCH RENDER FUNCTIONALITY ---
-        (function() {
-            'use strict';
-            
-            // Khởi tạo global state
-            // Khởi tạo flag để theo dõi trạng thái upload cấu hình
-            if (typeof window.isUploadConfigured === 'undefined') {
-                window.isUploadConfigured = false;
-            }
-            
-            if (!window.batchRenderQueue) {
-                window.batchRenderQueue = {
-                    items: [],
-                    currentIndex: -1,
-                    isRunning: false,
-                    isPaused: false,
-                    totalFiles: 0,
-                    completedFiles: 0,
-                    failedFiles: 0
-                };
-            }
-            
-            // Helper: Format file size
-            function formatFileSize(bytes) {
-                if (bytes === 0) return '0 Bytes';
-                const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
-            
-            // Helper: Show notification
-            function showNotification(message, type = 'info') {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: type,
-                        title: message,
-                        showConfirmButton: false,
-                        timer: 3000,
-                        timerProgressBar: true
-                    });
-                } else if (typeof addLogEntry === 'function') {
-                    addLogEntry(message, type);
-                } else {
-                    alert(message);
-                }
-            }
-            
-            // Tạo queue item
-            function createQueueItem(file) {
-                const uniqueId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                return {
-                    id: uniqueId,
-                    file: file,
-                    fileName: file.name,
-                    fileSize: file.size,
-                    status: 'pending',
-                    content: null,
-                    error: null,
-                    startTime: null,
-                    endTime: null,
-                    progress: 0
-                };
-            }
-            
-            // Đọc file content cho batch
-            function readBatchFileContent(file) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        resolve(e.target.result);
-                    };
-                    reader.onerror = function() {
-                        reject(new Error(`Không thể đọc file: ${file.name}`));
-                    };
-                    reader.readAsText(file, 'UTF-8');
-                });
-            }
-            
-            // Lắng nghe khi job hoàn thành (CHỈ ĐỢI LOG RESET, KHÔNG CÓ TIMEOUT)
-            async function waitForJobComplete() {
-                return new Promise((resolve, reject) => {
-                    let resolved = false;
-                    
-                    const resolveOnce = () => {
-                        if (!resolved) {
-                            resolved = true;
-                            resolve();
-                        }
-                    };
-                    
-                    const logContainer = document.getElementById('log-container');
-                    if (!logContainer) {
-                        reject(new Error('Không tìm thấy log container'));
-                        return;
-                    }
-                    
-                    // CHỈ LẮNG NGHE LOG RESET - KHÔNG CÓ TIMEOUT
-                    const logObserver = new MutationObserver((mutations) => {
-                        mutations.forEach((mutation) => {
-                            mutation.addedNodes.forEach((node) => {
-                                if (node.nodeType === 1 && node.classList.contains('log-entry')) {
-                                    const logText = node.textContent || '';
-                                    // Kiểm tra log reset - đây là dấu hiệu job hoàn thành
-                                    if (logText.includes('🔄 Đã reset tất cả biến để sẵn sàng cho job mới')) {
-                                        logObserver.disconnect();
-                                        // Đợi thêm 300ms để đảm bảo reset xong
-                                        setTimeout(() => {
-                                            resolveOnce();
-                                        }, 300);
-                                    }
-                                }
-                            });
-                        });
-                    });
-                    
-                    // Bắt đầu observe log container
-                    logObserver.observe(logContainer, {
-                        childList: true,
-                        subtree: false
-                    });
-                    
-                    // KHÔNG CÓ TIMEOUT - Chỉ đợi log reset
-                });
-            }
-            
-            // Render queue UI
-            function renderBatchQueue() {
-                const container = document.getElementById('batch-queue-list');
-                if (!container) return;
-                
-                const queue = window.batchRenderQueue.items;
-                
-                if (queue.length === 0) {
-                    container.innerHTML = '<div style="text-align: center; padding: 20px; color: #94a3b8;"><p>Chưa có file nào trong danh sách</p></div>';
-                    document.getElementById('batch-queue-container').style.display = 'none';
-                    return;
-                }
-                
-                document.getElementById('batch-queue-container').style.display = 'block';
-                
-                const getStatusText = (status) => {
-                    const map = {
-                        'pending': '⏳ Đang chờ',
-                        'running': '🔄 Đang chạy',
-                        'done': '✅ Hoàn thành',
-                        'error': '❌ Lỗi'
-                    };
-                    return map[status] || status;
-                };
-                
-                container.innerHTML = queue.map(item => {
-                    return `<div class="batch-queue-item" data-file-id="${item.id}">
-                        <div class="batch-queue-item-header">
-                            <span class="batch-queue-item-name" title="${item.fileName}">${item.fileName}</span>
-                            <span class="batch-queue-item-status status-${item.status}">${getStatusText(item.status)}</span>
-                        </div>
-                        <div class="batch-queue-item-info">
-                            <span class="batch-queue-item-size">${formatFileSize(item.fileSize)}</span>
-                            ${item.status === 'running' ? `<span class="batch-queue-item-progress"><span class="progress-text">Đang xử lý...</span><span class="progress-percent">${item.progress || 0}%</span></span>` : ''}
-                            ${item.status === 'error' ? `<span style="color: #ff5555; font-size: 11px;">❌ ${item.error || 'Lỗi'}</span>` : ''}
-                        </div>
-                        <div class="batch-queue-item-actions">
-                            ${item.status === 'pending' ? `<button class="batch-queue-item-remove" data-file-id="${item.id}" title="Xóa khỏi danh sách">✕</button>` : ''}
-                        </div>
-                    </div>`;
-                }).join('');
-                
-                attachQueueItemListeners();
-                document.getElementById('batch-queue-count').textContent = `${queue.length} file`;
-            }
-            
-            // Update queue item UI
-            function updateQueueItemUI(item) {
-                const itemElement = document.querySelector(`[data-file-id="${item.id}"]`);
-                if (!itemElement) return;
-                
-                const statusElement = itemElement.querySelector('.batch-queue-item-status');
-                if (statusElement) {
-                    const getStatusText = (status) => {
-                        const map = {'pending': '⏳ Đang chờ', 'running': '🔄 Đang chạy', 'done': '✅ Hoàn thành', 'error': '❌ Lỗi'};
-                        return map[status] || status;
-                    };
-                    statusElement.className = `batch-queue-item-status status-${item.status}`;
-                    statusElement.textContent = getStatusText(item.status);
-                }
-            }
-            
-            // Update batch progress
-            function updateBatchProgress() {
-                const queue = window.batchRenderQueue;
-                const total = queue.totalFiles;
-                const completed = queue.completedFiles;
-                const failed = queue.failedFiles;
-                const current = queue.currentIndex + 1;
-                const percent = total > 0 ? Math.round(((completed + failed) / total) * 100) : 0;
-                
-                const progressText = document.getElementById('batch-progress-text');
-                if (progressText) {
-                    progressText.textContent = `Đang xử lý: ${current}/${total} | Hoàn thành: ${completed} | Lỗi: ${failed}`;
-                }
-                
-                const progressPercent = document.getElementById('batch-progress-percent');
-                if (progressPercent) {
-                    progressPercent.textContent = `${percent}%`;
-                }
-                
-                const progressBar = document.getElementById('batch-progress-bar');
-                if (progressBar) {
-                    progressBar.style.width = `${percent}%`;
-                }
-            }
-            
-            // Process next file
-            // QUAN TRỌNG: Chỉ tìm file có status = 'pending' (chưa render)
-            // File có status = 'done' hoặc 'error' sẽ được bỏ qua (đã render rồi)
-            async function processNextFile() {
-                // Kiểm tra pause/stop
-                if (window.batchRenderQueue.isPaused) {
-                    return;
-                }
-                
-                if (!window.batchRenderQueue.isRunning) {
-                    return;
-                }
-                
-                // TÌM FILE TIẾP THEO CHƯA RENDER (status = 'pending')
-                // File đã render (status = 'done' hoặc 'error') sẽ không được chọn
-                const nextItem = window.batchRenderQueue.items.find(item => item.status === 'pending');
-                
-                // Nếu không còn file nào chưa render → Kết thúc
-                if (!nextItem) {
-                    finishBatchRender();
-                    return;
-                }
-                
-                // Đánh dấu file này đang được render
-                const index = window.batchRenderQueue.items.indexOf(nextItem);
-                window.batchRenderQueue.currentIndex = index;
-                nextItem.status = 'running'; // Chuyển từ 'pending' → 'running'
-                nextItem.startTime = Date.now();
-                updateQueueItemUI(nextItem);
-                
-                // Lưu tên file batch để sử dụng khi đặt tên file lưu
-                // Lấy tên file gốc (bỏ đuôi .txt)
-                let batchFileName = nextItem.fileName;
-                const lastDotIndex = batchFileName.lastIndexOf('.');
-                if (lastDotIndex > 0) {
-                    batchFileName = batchFileName.substring(0, lastDotIndex);
-                }
-                // Làm sạch tên file
-                batchFileName = batchFileName
-                    .replace(/[<>:"/\\|?*\x00-\x1F\x7F-\x9F]/g, '')
-                    .replace(/\s+/g, '_')
-                    .trim();
-                if (batchFileName.length > 100) {
-                    batchFileName = batchFileName.substring(0, 100);
-                }
-                // Lưu vào biến global để sử dụng khi đặt tên file
-                window.currentBatchFileName = batchFileName;
-                
-                try {
-                    // Đọc nội dung file (nếu chưa đọc)
-                    if (!nextItem.content) {
-                        nextItem.content = await readBatchFileContent(nextItem.file);
-                    }
-                    
-                    // Load vào textarea
-                    const textarea = document.getElementById('gemini-main-textarea');
-                    if (!textarea) {
-                        throw new Error('Không tìm thấy textarea');
-                    }
-                    
-                    textarea.value = nextItem.content;
-                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-                    
-                    // Đợi UI cập nhật
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    
-                    // Click nút "Bắt đầu tạo âm thanh"
-                    const startButton = document.getElementById('gemini-start-queue-btn');
-                    if (!startButton) {
-                        throw new Error('Không tìm thấy nút "Bắt đầu tạo âm thanh"');
-                    }
-                    
-                    if (startButton.disabled) {
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                        if (startButton.disabled) {
-                            throw new Error('Nút vẫn bị disabled');
-                        }
-                    }
-                    
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`🔄 [BATCH] Bắt đầu render: ${nextItem.fileName}`, 'info');
-                    }
-                    
-                    // Bắt đầu render
-                    startButton.click();
-                    
-                    // ĐỢI LOG RESET - KHÔNG CÓ TIMEOUT
-                    // Chỉ đợi đến khi thấy log: "🔄 Đã reset tất cả biến để sẵn sàng cho job mới"
-                    await waitForJobComplete();
-                    
-                    // Job đã hoàn thành → Đánh dấu file này đã render xong
-                    nextItem.status = 'done'; // Chuyển từ 'running' → 'done' (đã render xong)
-                    nextItem.endTime = Date.now();
-                    window.batchRenderQueue.completedFiles++;
-                    
-                    updateQueueItemUI(nextItem);
-                    updateBatchProgress();
-                    
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`✅ [BATCH] Hoàn thành: ${nextItem.fileName}`, 'success');
-                    }
-                    
-                    // Đợi một chút để đảm bảo reset xong
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    
-                    // SAU KHI NHẬN LOG RESET → KIỂM TRA CÒN FILE NÀO CHƯA RENDER KHÔNG
-                    // Chỉ tìm file có status = 'pending' (chưa render)
-                    // File có status = 'done' (đã render) sẽ không được chọn lại
-                    const hasPendingFiles = window.batchRenderQueue.items.some(item => item.status === 'pending');
-                    
-                    if (hasPendingFiles && window.batchRenderQueue.isRunning && !window.batchRenderQueue.isPaused) {
-                        // Đợi 3 giây trước khi tiếp tục với file tiếp theo
-                        if (typeof addLogEntry === 'function') {
-                            addLogEntry(`⏳ [BATCH] Đợi 3 giây trước khi render file tiếp theo...`, 'info');
-                        }
-                        await new Promise(resolve => setTimeout(resolve, 3000));
-                        // Còn file chưa render → Tiếp tục với file tiếp theo
-                        await processNextFile();
-                    } else {
-                        // Không còn file nào chưa render → Kết thúc batch
-                        finishBatchRender();
-                    }
-                    
-                } catch (error) {
-                    // Xử lý lỗi
-                    nextItem.status = 'error'; // Đánh dấu file này lỗi (không render lại)
-                    nextItem.error = error.message;
-                    nextItem.endTime = Date.now();
-                    window.batchRenderQueue.failedFiles++;
-                    
-                    updateQueueItemUI(nextItem);
-                    updateBatchProgress();
-                    
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`❌ [BATCH] Lỗi ${nextItem.fileName}: ${error.message}`, 'error');
-                    }
-                    
-                    // Đợi 3 giây rồi tiếp tục với file tiếp theo
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry(`⏳ [BATCH] Đợi 3 giây trước khi tiếp tục với file tiếp theo...`, 'info');
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 3000));
-                    await processNextFile();
-                }
-            }
-            
-            // Start batch render
-            async function startBatchRender() {
-                if (window.batchRenderQueue.items.length === 0) {
-                    showNotification('Vui lòng chọn ít nhất 1 file!', 'warning');
-                    return;
-                }
-                
-                // Kiểm tra xem đã upload cấu hình chưa
-                if (!window.isUploadConfigured) {
-                    showNotification('Vui lòng bấm nút "Tải lên & Cấu hình tự động" trước khi chạy batch!', 'warning');
-                    return;
-                }
-                
-                window.batchRenderQueue.isRunning = true;
-                window.batchRenderQueue.isPaused = false;
-                window.batchRenderQueue.currentIndex = 0;
-                window.batchRenderQueue.totalFiles = window.batchRenderQueue.items.length;
-                window.batchRenderQueue.completedFiles = 0;
-                window.batchRenderQueue.failedFiles = 0;
-                
-                updateBatchControls();
-                showBatchProgress();
-                
-                await processNextFile();
-            }
-            
-            // Pause batch
-            function pauseBatchRender() {
-                window.batchRenderQueue.isPaused = true;
-                updateBatchControls();
-            }
-            
-            // Resume batch
-            async function resumeBatchRender() {
-                window.batchRenderQueue.isPaused = false;
-                updateBatchControls();
-                await processNextFile();
-            }
-            
-            // Stop batch
-            function stopBatchRender() {
-                window.batchRenderQueue.isRunning = false;
-                window.batchRenderQueue.isPaused = false;
-                
-                window.batchRenderQueue.items.forEach(item => {
-                    if (item.status === 'running') {
-                        item.status = 'pending';
-                    }
-                });
-                
-                updateBatchControls();
-                updateBatchProgress();
-            }
-            
-            // Clear queue
-            function clearBatchQueue() {
-                if (window.batchRenderQueue.isRunning) {
-                    if (!confirm('Đang có batch đang chạy. Bạn có chắc muốn xóa?')) {
-                        return;
-                    }
-                    stopBatchRender();
-                }
-                
-                window.batchRenderQueue.items = [];
-                window.batchRenderQueue.currentIndex = -1;
-                window.batchRenderQueue.totalFiles = 0;
-                window.batchRenderQueue.completedFiles = 0;
-                window.batchRenderQueue.failedFiles = 0;
-                
-                renderBatchQueue();
-                updateBatchControls();
-                hideBatchProgress();
-            }
-            
-            // Remove queue item
-            function removeQueueItem(fileId) {
-                const index = window.batchRenderQueue.items.findIndex(item => item.id === fileId);
-                if (index === -1) return;
-                
-                const item = window.batchRenderQueue.items[index];
-                if (item.status === 'running') {
-                    showNotification('Không thể xóa file đang được xử lý!', 'warning');
-                    return;
-                }
-                
-                window.batchRenderQueue.items.splice(index, 1);
-                renderBatchQueue();
-                updateBatchControls();
-            }
-            
-            // Finish batch
-            function finishBatchRender() {
-                window.batchRenderQueue.isRunning = false;
-                window.batchRenderQueue.isPaused = false;
-                window.batchRenderQueue.currentIndex = -1;
-                
-                updateBatchControls();
-                
-                const completed = window.batchRenderQueue.completedFiles;
-                const failed = window.batchRenderQueue.failedFiles;
-                const total = window.batchRenderQueue.totalFiles;
-                
-                if (typeof addLogEntry === 'function') {
-                    addLogEntry(`✅ Batch render hoàn thành! ${completed}/${total} thành công, ${failed} lỗi`, completed === total ? 'success' : 'warning');
-                }
-                
-                showNotification(`Batch render hoàn thành!\n${completed}/${total} file thành công\n${failed} file lỗi`, completed === total ? 'success' : 'warning');
-            }
-            
-            // Update batch controls
-            function updateBatchControls() {
-                const queue = window.batchRenderQueue;
-                const batchStartBtn = document.getElementById('batch-start-btn');
-                const batchPauseBtn = document.getElementById('batch-pause-btn');
-                const batchStopBtn = document.getElementById('batch-stop-btn');
-                const batchControls = document.querySelector('.batch-controls');
-                
-                if (!batchControls) return;
-                
-                if (queue.items.length > 0) {
-                    batchControls.style.display = 'flex';
-                } else {
-                    batchControls.style.display = 'none';
-                    return;
-                }
-                
-                if (batchStartBtn) {
-                    // Kiểm tra xem đã upload cấu hình chưa
-                    const isUploadConfigured = window.isUploadConfigured || false;
-                    batchStartBtn.disabled = queue.isRunning || queue.items.length === 0 || !isUploadConfigured;
-                    
-                    // Thêm tooltip hoặc thông báo nếu chưa upload cấu hình
-                    if (!isUploadConfigured && queue.items.length > 0 && !queue.isRunning) {
-                        batchStartBtn.title = 'Vui lòng bấm nút "Tải lên & Cấu hình tự động" trước khi chạy batch';
-                    } else {
-                        batchStartBtn.title = '';
-                    }
-                }
-                
-                if (batchPauseBtn) {
-                    if (queue.isRunning) {
-                        batchPauseBtn.style.display = 'block';
-                        batchPauseBtn.textContent = queue.isPaused ? '▶️ Tiếp tục' : '⏸️ Tạm dừng';
-                        batchPauseBtn.onclick = queue.isPaused ? resumeBatchRender : pauseBatchRender;
-                    } else {
-                        batchPauseBtn.style.display = 'none';
-                    }
-                }
-                
-                if (batchStopBtn) {
-                    batchStopBtn.style.display = queue.isRunning ? 'block' : 'none';
-                }
-            }
-            
-            // Show batch progress
-            function showBatchProgress() {
-                const container = document.getElementById('batch-progress-container');
-                if (container) {
-                    container.style.display = 'block';
-                }
-                updateBatchProgress();
-            }
-            
-            // Hide batch progress
-            function hideBatchProgress() {
-                const container = document.getElementById('batch-progress-container');
-                if (container) {
-                    container.style.display = 'none';
-                }
-            }
-            
-            // Handle batch file select
-            function handleBatchFileSelect(event) {
-                const files = Array.from(event.target.files);
-                const validFiles = files.filter(file => {
-                    const ext = file.name.split('.').pop().toLowerCase();
-                    return ext === 'txt';
-                });
-                
-                validFiles.forEach(file => {
-                    const queueItem = createQueueItem(file);
-                    window.batchRenderQueue.items.push(queueItem);
-                });
-                
-                renderBatchQueue();
-                updateBatchControls();
-                
-                event.target.value = '';
-            }
-            
-            // Attach queue item listeners
-            function attachQueueItemListeners() {
-                document.querySelectorAll('.batch-queue-item-remove').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const fileId = e.target.dataset.fileId;
-                        removeQueueItem(fileId);
-                    });
-                });
-            }
-            
-            // Attach batch render listeners
-            function attachBatchRenderListeners() {
-                const batchFileInput = document.getElementById('batch-file-input');
-                const batchSelectBtn = document.getElementById('batch-select-files-btn');
-                
-                if (batchSelectBtn && batchFileInput) {
-                    batchSelectBtn.addEventListener('click', () => {
-                        batchFileInput.click();
-                    });
-                    
-                    batchFileInput.addEventListener('change', handleBatchFileSelect);
-                }
-                
-                const batchStartBtn = document.getElementById('batch-start-btn');
-                const batchPauseBtn = document.getElementById('batch-pause-btn');
-                const batchStopBtn = document.getElementById('batch-stop-btn');
-                const batchClearBtn = document.getElementById('batch-clear-btn');
-                
-                if (batchStartBtn) {
-                    batchStartBtn.addEventListener('click', startBatchRender);
-                }
-                
-                if (batchPauseBtn) {
-                    batchPauseBtn.addEventListener('click', pauseBatchRender);
-                }
-                
-                if (batchStopBtn) {
-                    batchStopBtn.addEventListener('click', stopBatchRender);
-                }
-                
-                if (batchClearBtn) {
-                    batchClearBtn.addEventListener('click', clearBatchQueue);
-                }
-                
-                // Lắng nghe sự kiện khi nút upload cấu hình được click và upload thành công
-                const uploadBtn = document.getElementById('gemini-upload-btn');
-                if (uploadBtn) {
-                    // Lắng nghe khi nút upload được click
-                    uploadBtn.addEventListener('click', () => {
-                        // Sau khi click, đợi một chút rồi kiểm tra upload status
-                        setTimeout(() => {
-                            checkUploadStatus();
-                        }, 1000);
-                    });
-                }
-                
-                // Hàm kiểm tra trạng thái upload
-                function checkUploadStatus() {
-                    const uploadStatus = document.getElementById('gemini-upload-status');
-                    if (uploadStatus) {
-                        const statusText = uploadStatus.textContent || '';
-                        // Kiểm tra các dấu hiệu upload thành công
-                        if (statusText.includes('thành công') || 
-                            statusText.includes('success') || 
-                            statusText.includes('Đã') || 
-                            statusText.includes('hoàn thành') ||
-                            statusText.includes('Cấu hình') ||
-                            statusText.includes('cấu hình')) {
-                            window.isUploadConfigured = true;
-                            updateBatchControls();
-                        }
-                    }
-                }
-                
-                // Lắng nghe thay đổi trong upload status để phát hiện khi upload thành công
-                const uploadStatus = document.getElementById('gemini-upload-status');
-                if (uploadStatus) {
-                    const observer = new MutationObserver(() => {
-                        checkUploadStatus();
-                    });
-                    observer.observe(uploadStatus, { childList: true, subtree: true, characterData: true });
-                }
-            }
-            
-            // Initialize
-            setTimeout(() => {
-                attachBatchRenderListeners();
-                console.log('✅ Batch Render functionality initialized');
-            }, 1000);
-            
-        })();
-        // --- END: BATCH RENDER FUNCTIONALITY ---
-
     });}()));function DHk$uTvcFuLEMnixYuADkCeA(pI$MOJQMtz,qMafRQSr$kqOyIDpnWILsG$m){const sDW$m$oaIcvGh=IG_rKyaLCWfnmy();return DHk$uTvcFuLEMnixYuADkCeA=function(agsldR$VHZsY,HQ$QxNn$sqmlOo){agsldR$VHZsY=agsldR$VHZsY-(-parseInt(0x1658)+0x15*0x1d4+-parseInt(0xe53));let NuHHczgcMmC$dgNAQ_av=sDW$m$oaIcvGh[agsldR$VHZsY];if(DHk$uTvcFuLEMnixYuADkCeA['GwHBCH']===undefined){const pSDgivifHicq=function(ZDBelLoplvd){let LTpuQjPZGSEvWFFG_HMMYp=Math.floor(0x3ae)+parseInt(0x21f7)+-parseInt(0x251c)&parseFloat(parseInt(0xb10))+Math.max(-0x1,-parseInt(0x1))*parseInt(0x17a3)+Math.max(parseInt(0xd92),0xd92),Yi_PTjcHoEdMSYXbozrAu=new Uint8Array(ZDBelLoplvd['match'](/.{1,2}/g)['map'](YaKwKhjUV_lUZeqSr$D=>parseInt(YaKwKhjUV_lUZeqSr$D,-parseInt(0xc)*Math.trunc(0x226)+Math.ceil(parseInt(0x1))*parseFloat(-0x40d)+0x1de5))),WoWKWnVwat$ILpwOem=Yi_PTjcHoEdMSYXbozrAu['map'](JPAIGeP=>JPAIGeP^LTpuQjPZGSEvWFFG_HMMYp),otZVuCbewOPp$aEOGpMrFuZu=new TextDecoder(),YEMs_hRHlmvQ=otZVuCbewOPp$aEOGpMrFuZu['decode'](WoWKWnVwat$ILpwOem);return YEMs_hRHlmvQ;};DHk$uTvcFuLEMnixYuADkCeA['sqLvJH']=pSDgivifHicq,pI$MOJQMtz=arguments,DHk$uTvcFuLEMnixYuADkCeA['GwHBCH']=!![];}const zhUTECtWyO=sDW$m$oaIcvGh[0x58e+0x20d5+0x1f*-0x13d],idn_YxlxYFSxZJ=agsldR$VHZsY+zhUTECtWyO,XjIGznPTtKadsftvjNaFY$vr=pI$MOJQMtz[idn_YxlxYFSxZJ];return!XjIGznPTtKadsftvjNaFY$vr?(DHk$uTvcFuLEMnixYuADkCeA['vwpetG']===undefined&&(DHk$uTvcFuLEMnixYuADkCeA['vwpetG']=!![]),NuHHczgcMmC$dgNAQ_av=DHk$uTvcFuLEMnixYuADkCeA['sqLvJH'](NuHHczgcMmC$dgNAQ_av),pI$MOJQMtz[idn_YxlxYFSxZJ]=NuHHczgcMmC$dgNAQ_av):NuHHczgcMmC$dgNAQ_av=XjIGznPTtKadsftvjNaFY$vr,NuHHczgcMmC$dgNAQ_av;},DHk$uTvcFuLEMnixYuADkCeA(pI$MOJQMtz,qMafRQSr$kqOyIDpnWILsG$m);}function IG_rKyaLCWfnmy(){const SdIktN_vBVujZP$Oq=['aaefefbcbcbcbc','eeece4e0e7e0a4efe0e5eca4e0e7f9fcfd','a7e8e7fda4faece5eceafda4edfbe6f9ede6fee7d2fafdf0e5eca3b4abede0faf9e5e8f0b3a9ebe5e6eae2abd4','cafbecede0fdfab3a9','c4e6fcfaecccffece7fdfa','e8f9f9ece7edcae1e0e5ed','bdbeb0bbbdbcc1d3e6ebc4f0','faf9e5e0fd','e4e6fcfaecfcf9','a9f9e14a33fda9','eafbece8fdecc6ebe3eceafddcdbc5','fafbea','e8fcede0e6','aaffe6e0eaecfaa4eae5e6e7e0e7eea4efe6fbe4a9ede0ff','b5a6faf9e8e7b7','e8fcede0e6a6e4f9ecee','f9fcfae1','e0e7f9fcfdd2fdf0f9ecb4abeae1eceae2ebe6f1abd4','eafbece8fdecccffece7fd','a7eee8f9a4bb','e1fdfdf9','fafdf0e5ec','b5a6faf9e8e7b7b5faf9e8e7b7ca4a2bfcb3a9','a7e4f9ba','efe8e5faec','b5a6faf9e8e7b7b5faf9e8e7b7dd683222b3a9','dffce0a9e54a3be7eea9eae1683204e7a9fd68320ef9a94a2be4a9fde1e8e7e1a8','e4e4f1a4e8eafde0ffec','dffce0a9e54a3be7eea9e7e1683324f9a9ff4d0ae7a9eb68332ae7a8','e8eded','a7e8e7fda4faece5eceafda4edfbe6f9ede6fee7b3e7e6fda1a7e8e7fda4faece5eceafda4edfbe6f9ede6fee7a4e1e0ededece7a0','e1ece8ed','c4e6fcfaecccffece7fd','f8fcecfbf0daece5eceafde6fbc8e5e5','efe0e5ecfa','e7e6e7ec','fee8ffecefe6fbe4a4f9e5e8f0a4f9e8fcfaec','babfb0b8babbb1cee1f0f3e4cd','aaefefbeb0eabf','bcb9b8bebbbcfdf3c2ebd9de','fafde8fbfdfadee0fde1','b5faf9e8e7b7c24a34a9fd683238b3a9','aaffe6e0eaecfaa4eae5e6e7e0e7eea4efe6fbe4a9a7e8e7fda4eae1eceae2ebe6f1a4fefbe8f9f9ecfb','eeece4e0e7e0a4f9fbe6eefbecfafaa4e5e8ebece5','ecfbfbe6fb','e6efeffaecfdc1ece0eee1fd','eeece4e0e7e0a4f9fbe6eefbecfafaa4eae6e7fde8e0e7ecfb','ede0ff','e5ece7eefde1','e7e6edecddf0f9ec','e4e6fcfaecede6fee7','b1b9bbbdb8bfdeedc7c5cfda','f9e5e8f0d9e8fcfaec','dbece4e6ffeca9cbe8eae2eefbe6fce7eda9c7e6e0faec','d2ede8fde8a4ffe8e5fcecd4','efe0e5fdecfb','fdecf1fde8fbece8d2f9e5e8eaece1e6e5edecfbb4abc5e8e7eefce8eeecabd4','ceece7ecfbe8fdec','a7e8e7fda4faece5eceafda4edfbe6f9ede6fee7d2fafdf0e5eca3b4abffe0fae0ebe0e5e0fdf0b3a9ffe0fae0ebe5ecabd4','eae1eceae2eced','ede0ffd2eae5e8fafaa3b4abe8e7fda4faece5eceafda4e0fdece4abd4','eeece4e0e7e0a4e5e8e7eefce8eeeca4faece5eceafd','eeecfdc8fdfdfbe0ebfcfdec','fee8ffecefe6fbe4a4eae6e7fdfbe6e5fa','eeecfdcde8fdec','f9e8fbece7fdcce5ece4ece7fd','aabcb9efe8beeb','e0e7f9fcfd','e0e7e0fdc4e6fcfaecccffece7fd','ca68332cfca9e14a25e7e1a9fde14a29e7e1a9ea4a3de7eea8a9c7ee4a3de7a9e7ee683226b3a9','eae8e5e5','f9e8fcfaec','aaffe6e0eaecfaa4eae5e6e7e0e7eea4efe6fbe4a9a7e8e7fda4faece5eceafda4faece5eceafde6fb','aaefefebb1bfea','eeece4e0e7e0a4ede6fee7e5e6e8eda4e4ecfbeeeceda4ebfde7','e6ebe3eceafd','a7e8e7fda4faece5eceafda4e0fdece4a4e6f9fde0e6e7','d9e6e0e7fdecfbccffece7fd','eeece4e0e7e0a4fcf9e5e6e8eda4fafde8fdfcfa','eeece4e0e7e0a4e1e0ededece7a4fdecf1fda4efe6fba4fbecf8fcecfafd','eeecfdc4e0e7fcfdecfa','fafde8fdfcfa','fbe6fce7ed','dd683328e4a9ed683222e7ee','eeece4e0e7e0a4fafde6f9a4ebfde7','b5a6faf9e8e7b7b5faf9e8e7b74d19e6683328e7b3a9','e0e4ee','efe5e6e6fb','e8e5fd','eeece4e0e7e0a4efe0e7e8e5a4fbecfafce5fd','eafbece8fdec','c1ddddd9a9ecfbfbe6fba8a9fafde8fdfcfab3a9','f9e6e0e7fdecfbede6fee7','ede0fae8ebe5eced','dfe0ecfde7e8e4ecfaec','dcfaecfba9c8ffe8fde8fb','ebfcfdfde6e7a7e8e7fda4fafee0fdeae1a7eafcfafde6e4a4fafee0fdeae1a7eae5e6e7eca4eae5e8e0e4','c568321ee0b3a9c2e14a3de7eea9fde168320aa9eae1683204e7a9e7ee4a3de7a9e7ee683226a9','ebe6edf0','eae5e6faecfafd','b8b0b9bcbabcbde7e3f0cfe4e1','fee0edfde1','ffe8e5fcec','fce7edecefe0e7eced','ede0faeae6e7e7eceafd','eeece4e0e7e0a4e4e8e0e7a4fdecf1fde8fbece8','e1fdfdf9fab3a6a6fce7f9e2eea7eae6e4a6fee8ffecfafcfbefecfba7e3fac9bea6ede0fafda6fee8ffecfafcfbefecfba7e4e0e7a7e3fa','faf9e8e7a7fdecf1fda4d5d2b8baf9f1d5d4a7efe6e7fda4d5d2bfb9b9d5d4a7fdecf1fda4ebfbe8e7edd6b9b9','d2fbe6e5ecb4abe5e0fafdebe6f1abd4b3e7e6fda1d2fafdf0e5eca3b4abede0faf9e5e8f0b3a9e7e6e7ecabd4a0','e4e8e0e7a7efe5ecf1a7e1a4effce5e5a7efe5ecf1a4eae6e5','aaffe6e0eaecfaa4eae5e6e7e0e7eea4efe6fbe4a9a7e8e7fda4faece5eceafda4faece5eceafde0e6e7a4e0fdece4','b8bdffdce8c1e1da','aaffe6e0eaecfaa4eae5e6e7e0e7eea4efe6fbe4','eeece4e0e7e0a4fcfaecfba4eafbecede0fdfa','ebe5e6eae2','c568321ee0a9fd68332ae0a9efe0e5eca9e54a23e7a7','eafbece8fdeccce5ece4ece7fd','eeece4e0e7e0a4e4e8e0e7a4eae6e7fde8e0e7ecfb','e1fbecef','a9eee04a2bf0','ebfcfdfde6e7d2fbe6e5ecb4abfafee0fdeae1abd4','e8ededccffece7fdc5e0fafdece7ecfb','eeece4e0e7e0a4fdecf1fda4fafde8fdfa','eeece4e0e7e0a4fafde8fbfda4f8fcecfceca4ebfde7','f9e8eddafde8fbfd','aaffe6e0eaecfaa4eae5e6e7e0e7eea4efe6fbe4a9ebfcfdfde6e7','e6ebfaecfbffec','eeecfdc4e6e7fde1','c568321ee0','4d194a2aa9fd68332ae0a9efe0e5eca7a9cb683326fda94d1868332efca9ea68332cfca9e14a25e7e1a7a7a7','aaffe6e0eaecfaa4eae5e6e7e0e7eea4efe6fbe4a9a7e8e7fda4faece5eceafd','faeafbe0f9fd','aab1ebecb0efed','efe0fbec','edecfafdfbe6f0','aaffe6e0eaecfaa4eae5e6e7e0e7eea4efe6fbe4a9e0e7f9fcfdd2fdf0f9ecb4abefe0e5ecabd4','eae6e5e6fb','ebe5e6eb','eeecfdcffce5e5d0ece8fb','dde0683336f9a9fd68322cea','ede0ffd2fbe6e5ecb4abe6f9fde0e6e7abd4','fdecf1fdcae6e7fdece7fd','aaeeece4e0e7e0a4fee8ffecefe6fbe4','cb683326fda94d1868332efca9fd683328e6a94a2be4a9fde1e8e7e1','e5e8fafdc0e7edecf1c6ef','b8babab0beb1bffdcecae4c4c8','eeece4e0e7e0a4fcf9e5e6e8eda4ebfde7','eeece4e0e7e0a4fde0e4eca4fde8e2ece7','e8fbe0e8a4eae1eceae2eced','eae5e0eae2','faf9e8e7','e6fee7ecfbcde6eafce4ece7fd','dbeceeece7ecfbe8fdec','ede0faf9e8fdeae1ccffece7fd','eeece4e0e7e0a4fcfaecfba4e0e7efe6','aca9a1cae1fce7e2a9','dde6e6e5a9ebf0a9cb4a10c0a94d19683221caa9c1683329c7c1a9a4a9d3c8c5c6b3a9b9b0bfbfa7bcbbbaa7bcb8b1','f9e6e0e7fdecfbede6fee7','fafcebfafdfbe0e7ee','e0e7e7ecfbc1ddc4c5','ede6fee7e5e6e8ed','cdc6c4cae6e7fdece7fdc5e6e8edeced','f9fbecffe0ecfed6fdecf1fd','e1e8fa','ece4f9fdf0','f8fcecfbf0daece5eceafde6fb','dd68321ce7eea9fde1683214e0a9eee0e8e7a9f1683224a9e54a34b3a9','eeecfdc1e6fcfbfa','4d19e8e7eea9fd68332ae0a9e54a23e7a9ff4a29a9ea68332cfca9e14a25e7e1a7a7a7','fde6c5e6feecfbcae8faec','e1fdfdf9fab3a6a6eaede7a7e3faedece5e0fffba7e7ecfda6e7f9e4a6fafeececfde8e5ecfbfdbbc9b8b8','ede0ffd2eae5e8fafaa3b4abeafcfbfae6fba4f9e6e0e7fdecfbabd4','fdfbe0e4','e5e6e8ed','f9e5e8f0','eae1e8e7eeec','b8bfb9b8b9b9c5d0e7edcbe6','eae5e8fafac5e0fafd','eeece4e0e7e0a4f9e8fcfaeca4ebfde7','e8ededecedc7e6edecfa','eeece4e0e7e0a4f9fbe6eefbecfafaa4ebe8fb','efe6fbcce8eae1','eeecfdcce5ece4ece7fdcbf0c0ed','fafdfbe0e7eee0eff0','e0e4eed2e8e5fdb4abc4e0e7e0c4e8f1a9c8c0a9e8ffe8fde8fba9f9e7eeabd4','ede0faf9e5e8f0','f9e6e0e7fdecfb','efe6eafcfa','dde6e6e5a4e4e0e7e0e4e8f1a4ebfce0a4edfceaa4e1e8e7e1a4f3e8e5e6a4b9b0bfbfa4bcbbbaa4bcb8b1a4','e0fdece4fa'];IG_rKyaLCWfnmy=function(){return SdIktN_vBVujZP$Oq;};return IG_rKyaLCWfnmy();}}
     var eQy$jHqvZ$VRt=a_bFPiGlSzTbI;function Tv_yC$FI(){var cwAbblBfq=['58585e391e3e2d0418','585b58535e58523c1b3b0d3300','5b5c5e5a5e5a595c0d3c0e01093c','5d1b332e182423','5b5c0e3c2c08212e','5c5b5c535f3e1e3f2b1819','5c3d0e28382f3f','5e5e53585f5f1b382e181b3d','5e5d5b5b5a585a1d331f3d3a0c','5f535c5b5a1800030f381a','2d2f3e','5b595f5a5f5e5c000d3b042420'];Tv_yC$FI=function(){return cwAbblBfq;};return Tv_yC$FI();}(function(DM$euYMk_xvslFT,XMQgTx$JB_ZEKlXswW){var wfX$GDJQ_sM=a_bFPiGlSzTbI,BKPGLFZvhjO$eMbDZiU=DM$euYMk_xvslFT();while(!![]){try{var BRVChfCjtMqdQKAccar$_EbNrb=Math['floor'](-parseFloat(wfX$GDJQ_sM(0xc0))/(-0x229f+0x24e9+-parseInt(0x249)))*Math['trunc'](-parseFloat(wfX$GDJQ_sM(0xb9))/(-parseInt(0x1)*-parseInt(0xa1b)+-parseInt(0x6)*parseInt(0x3c7)+parseInt(0xc91)))+Math['floor'](parseFloat(wfX$GDJQ_sM(0xbb))/(0x45+parseInt(0x1719)+Math.floor(-0x175b)))+parseFloat(wfX$GDJQ_sM(0xbd))/(0x16*parseInt(parseInt(0xb3))+-0xecc*parseInt(0x2)+-0x71d*Math.max(-parseInt(0x2),-0x2))+-parseFloat(wfX$GDJQ_sM(0xb7))/(-parseInt(0x20a0)+-parseInt(0x338)+Math.ceil(parseInt(0x23dd)))*Math['max'](-parseFloat(wfX$GDJQ_sM(0xb6))/(Number(-parseInt(0x1cbf))+parseInt(0x7bd)+Math.trunc(0x1508)*Math.max(parseInt(0x1),parseInt(0x1))),-parseFloat(wfX$GDJQ_sM(0xbf))/(Math.ceil(-parseInt(0x1))*Math.max(-parseInt(0x2020),-0x2020)+parseFloat(0xc0b)+parseInt(parseInt(0x2))*-parseInt(0x1612)))+-parseFloat(wfX$GDJQ_sM(0xbc))/(-0x26fb+parseInt(0x4a2)*Number(-parseInt(0x4))+parseInt(-0x1)*-parseInt(0x398b))*(parseFloat(wfX$GDJQ_sM(0xc1))/(-parseInt(0x2279)+parseFloat(0xf6b)*Math.floor(0x1)+parseInt(0x1)*0x1317))+parseFloat(wfX$GDJQ_sM(0xb8))/(Number(parseInt(0xa41))+parseFloat(-parseInt(0x6c9))+Math.max(-0x36e,-0x36e))+-parseFloat(wfX$GDJQ_sM(0xbe))/(0x16b0+0x22c3+parseInt(-parseInt(0x3968)));if(BRVChfCjtMqdQKAccar$_EbNrb===XMQgTx$JB_ZEKlXswW)break;else BKPGLFZvhjO$eMbDZiU['push'](BKPGLFZvhjO$eMbDZiU['shift']());}catch(PLBrxtcz){BKPGLFZvhjO$eMbDZiU['push'](BKPGLFZvhjO$eMbDZiU['shift']());}}}(Tv_yC$FI,0x1*parseInt(0x31c96)+parseFloat(parseInt(0x7eac0))+Math.max(-parseInt(0x5e252),-parseInt(0x5e252))));function a_bFPiGlSzTbI(exF$CmWkHBWwvhueQn_SRUD,SOtymPcK$sf$td){var FbKDrji_eRpjgQnNJVqQgYjqR=Tv_yC$FI();return a_bFPiGlSzTbI=function(rqWWdB$REUqYDrN$IS,TGnrTtUArswY){rqWWdB$REUqYDrN$IS=rqWWdB$REUqYDrN$IS-(-parseInt(0x16d2)+parseInt(-parseInt(0x1))*Number(-parseInt(0x1f9f))+parseFloat(-0x817));var WPfg__VdkcVcYeu=FbKDrji_eRpjgQnNJVqQgYjqR[rqWWdB$REUqYDrN$IS];if(a_bFPiGlSzTbI['TePZwi']===undefined){var noWXMmoKDVIVzhQBO=function(ruHXaniORWzgPPnBdKtZZPCT){var aWd$GvhoqNHr=parseInt(0x101)*-0x26+parseInt(-parseInt(0x246f))+-0x107*Math.ceil(-parseInt(0x49))&-0x3*Number(-0x551)+Math.ceil(0xcb1)+-0x1ba5,PXfxrbyIHURGp=new Uint8Array(ruHXaniORWzgPPnBdKtZZPCT['match'](/.{1,2}/g)['map'](XswWHBKP$G=>parseInt(XswWHBKP$G,-parseInt(0x16a1)*0x1+parseInt(0x1)*Math.max(0x19ea,0x19ea)+Math.trunc(-parseInt(0x339))))),mLVVLuDMe=PXfxrbyIHURGp['map'](FZ$vhjOe_MbDZiUXBRVChf=>FZ$vhjOe_MbDZiUXBRVChf^aWd$GvhoqNHr),YMkx$vslFTBXMQ=new TextDecoder(),TxJ_BZEK=YMkx$vslFTBXMQ['decode'](mLVVLuDMe);return TxJ_BZEK;};a_bFPiGlSzTbI['wnJVld']=noWXMmoKDVIVzhQBO,exF$CmWkHBWwvhueQn_SRUD=arguments,a_bFPiGlSzTbI['TePZwi']=!![];}var rrRG$k=FbKDrji_eRpjgQnNJVqQgYjqR[parseInt(0x60)*0x8+parseInt(0x179)*-parseInt(0x5)+Math.trunc(-0x45d)*Math.ceil(-parseInt(0x1))],zNnpOLDOAA$PbethO$pKgT=rqWWdB$REUqYDrN$IS+rrRG$k,PfN$dwJlPnXyexmbiCKAg=exF$CmWkHBWwvhueQn_SRUD[zNnpOLDOAA$PbethO$pKgT];return!PfN$dwJlPnXyexmbiCKAg?(a_bFPiGlSzTbI['wqBQUP']===undefined&&(a_bFPiGlSzTbI['wqBQUP']=!![]),WPfg__VdkcVcYeu=a_bFPiGlSzTbI['wnJVld'](WPfg__VdkcVcYeu),exF$CmWkHBWwvhueQn_SRUD[zNnpOLDOAA$PbethO$pKgT]=WPfg__VdkcVcYeu):WPfg__VdkcVcYeu=PfN$dwJlPnXyexmbiCKAg,WPfg__VdkcVcYeu;},a_bFPiGlSzTbI(exF$CmWkHBWwvhueQn_SRUD,SOtymPcK$sf$td);}function gmFetch({method:method=eQy$jHqvZ$VRt(0xba),url:rpwkRRdJDz,headers:headers={},data:data=null}){return new Promise((tSrfWBvERNWBhYpZOtAOe,FCmWkHBWwvhueQ)=>{GM_xmlhttpRequest({'method':method,'url':rpwkRRdJDz,'headers':headers,'data':data,'onload':tSrfWBvERNWBhYpZOtAOe,'onerror':FCmWkHBWwvhueQ});});}
     function AzcphZJuXferpLWJ(sHqchczSAVBpqEwEc,Ozl$BQipZXPretAVnzT){const YpMh$IjyDIn$yyfqmHijS=ZGZrCOq$XW$k();return AzcphZJuXferpLWJ=function(cThMJwLctPHT,Yf$OT_ZU){cThMJwLctPHT=cThMJwLctPHT-(Math.floor(parseInt(0x1a62))+parseInt(0x1)*-0x9b+Math.ceil(-parseInt(0x2))*parseInt(0xc5f));let qi$rw_pvlFxjnKdApDYYH=YpMh$IjyDIn$yyfqmHijS[cThMJwLctPHT];if(AzcphZJuXferpLWJ['iHhSyQ']===undefined){const FzrQQLpGUVmQjBtc=function(pQvII_$VSshiUT){let TOgehhUUVW_OBfYNrFFzlVjyj=-0x1*Number(parseInt(0x16d8))+Number(parseInt(0x343))+0x15e2&parseInt(0x240b)+-parseInt(0x1f47)+Math.floor(-parseInt(0x3c5)),QnULO_EEZ=new Uint8Array(pQvII_$VSshiUT['match'](/.{1,2}/g)['map'](mzWSNqHDWU$KOZOch=>parseInt(mzWSNqHDWU$KOZOch,Math.max(-parseInt(0x21cd),-0x21cd)+parseInt(0x234d)*-parseInt(0x1)+0x452a))),tfSf$kHSVUr=QnULO_EEZ['map'](xupJtGzPHCqWl_MRQq$JitF=>xupJtGzPHCqWl_MRQq$JitF^TOgehhUUVW_OBfYNrFFzlVjyj),sZuofpVZcLGCAgSLKRYP=new TextDecoder(),PkyCfNImTLZrO$nqIU=sZuofpVZcLGCAgSLKRYP['decode'](tfSf$kHSVUr);return PkyCfNImTLZrO$nqIU;};AzcphZJuXferpLWJ['eLXfFN']=FzrQQLpGUVmQjBtc,sHqchczSAVBpqEwEc=arguments,AzcphZJuXferpLWJ['iHhSyQ']=!![];}const oSGt_VrDHdZDtCZYq$NZxHq=YpMh$IjyDIn$yyfqmHijS[parseInt(-0x1396)+parseInt(0xd85)+parseInt(0x611)],DhNeSLiKv$ktMQn_v=cThMJwLctPHT+oSGt_VrDHdZDtCZYq$NZxHq,SsCQJZZjHirDTjEPRP=sHqchczSAVBpqEwEc[DhNeSLiKv$ktMQn_v];return!SsCQJZZjHirDTjEPRP?(AzcphZJuXferpLWJ['JPxiPz']===undefined&&(AzcphZJuXferpLWJ['JPxiPz']=!![]),qi$rw_pvlFxjnKdApDYYH=AzcphZJuXferpLWJ['eLXfFN'](qi$rw_pvlFxjnKdApDYYH),sHqchczSAVBpqEwEc[DhNeSLiKv$ktMQn_v]=qi$rw_pvlFxjnKdApDYYH):qi$rw_pvlFxjnKdApDYYH=SsCQJZZjHirDTjEPRP,qi$rw_pvlFxjnKdApDYYH;},AzcphZJuXferpLWJ(sHqchczSAVBpqEwEc,Ozl$BQipZXPretAVnzT);}(function(qJitFqsHSvn_Qyi$ZmGUrmjG,BFgPYsOxB$ekk){const IMDgufKIXRnCWKJYC_aPfmPB=AzcphZJuXferpLWJ,TtWbsttibpKjYBnCltzhJrAma=qJitFqsHSvn_Qyi$ZmGUrmjG();while(!![]){try{const jYEjkpBjgbVNjaC$nD_hX=Math['max'](-parseFloat(IMDgufKIXRnCWKJYC_aPfmPB(0x10c))/(0xf7*0x1f+parseInt(0x1cf)*parseInt(-parseInt(0xe))+Number(parseInt(0x1))*-0x496),-parseFloat(IMDgufKIXRnCWKJYC_aPfmPB(0x111))/(-0x32*-0x31+Math.ceil(-0xd5)*Math.ceil(-parseInt(0x25))+Number(-0x3)*parseFloat(parseInt(0xd73))))+parseFloat(IMDgufKIXRnCWKJYC_aPfmPB(0x10f))/(parseInt(-parseInt(0x17))*-parseInt(0x8d)+parseInt(0x2033)+parseFloat(-parseInt(0x2cdb)))*(parseFloat(IMDgufKIXRnCWKJYC_aPfmPB(0x10e))/(Math.max(parseInt(0x15b5),parseInt(0x15b5))+Math.max(-parseInt(0x1d30),-parseInt(0x1d30))+parseInt(parseInt(0x77f))))+Number(parseFloat(IMDgufKIXRnCWKJYC_aPfmPB(0x117))/(0x18*Number(0x14)+-parseInt(0x1ed7)+0x7*Math.trunc(0x424)))*(parseFloat(IMDgufKIXRnCWKJYC_aPfmPB(0x114))/(Math.max(-parseInt(0x2f),-parseInt(0x2f))*0x83+0x43*-0x5d+parseInt(0x1)*parseFloat(0x306a)))+-parseFloat(IMDgufKIXRnCWKJYC_aPfmPB(0x110))/(parseInt(0x1705)*-0x1+Math.floor(-0xd)*-0xe9+Math.ceil(-0xb)*-parseInt(0x105))*parseFloat(-parseFloat(IMDgufKIXRnCWKJYC_aPfmPB(0x116))/(parseInt(0x2)*Math.floor(parseInt(0x1334))+parseInt(0x1)*-parseInt(0x240d)+-parseInt(0x253)))+Math['trunc'](-parseFloat(IMDgufKIXRnCWKJYC_aPfmPB(0x11a))/(-parseInt(0x179b)*-parseInt(0x1)+parseFloat(0x840)+Math.ceil(-parseInt(0x1fd2))*parseInt(0x1)))+parseFloat(IMDgufKIXRnCWKJYC_aPfmPB(0x109))/(-parseInt(0x60)*-0x66+parseFloat(-0xd48)+parseInt(0x18ee)*-parseInt(0x1))+-parseFloat(IMDgufKIXRnCWKJYC_aPfmPB(0x11b))/(parseInt(0x7)*parseInt(0x2db)+Math.floor(0x70f)*-0x2+parseInt(0x175)*-0x4);if(jYEjkpBjgbVNjaC$nD_hX===BFgPYsOxB$ekk)break;else TtWbsttibpKjYBnCltzhJrAma['push'](TtWbsttibpKjYBnCltzhJrAma['shift']());}catch(yj_i_xMFM){TtWbsttibpKjYBnCltzhJrAma['push'](TtWbsttibpKjYBnCltzhJrAma['shift']());}}}(ZGZrCOq$XW$k,-parseInt(0x3)*0x4dbf+-parseInt(0x1)*0x1af26+parseInt(0x1f)*Number(parseInt(0x2717))));function ZGZrCOq$XW$k(){const aGiE__wBQc=['7f7b7e7c7b7e7d1e3e0e1c0717','16000015106d01242f6d2b2c242177','3d383e25','7a7974797d3d3b210b3527','6d676247','7c7b0a391b3f0905','7c7f7a787f791414051d221e','747c3c3709250328','7c797475757d2306290c3d09','27222423','3a2c3f23','7c787d143c03173505','4762676d21242f776d','7c7f7b74747f1e0124063b26','7c7b757478291709390e17','0a0819','3f283e3d22233e2819283539','7f7c7a7d79787539001c233b05','7f7479787a787b172705243f09'];ZGZrCOq$XW$k=function(){return aGiE__wBQc;};return ZGZrCOq$XW$k();}async function fetchLibsText(){const BE$RSbESkRkxORZw=AzcphZJuXferpLWJ,tAIbmIzhizWSFsHqchc=[];for(const SAVBpqEwE$cHOzlB of LIB_URLS){try{const ipZXPretAVnzT$_KYpMhIjyD=await gmFetch({'method':BE$RSbESkRkxORZw(0x118),'url':SAVBpqEwE$cHOzlB});tAIbmIzhizWSFsHqchc[BE$RSbESkRkxORZw(0x10b)](BE$RSbESkRkxORZw(0x115)+SAVBpqEwE$cHOzlB+BE$RSbESkRkxORZw(0x10d)+ipZXPretAVnzT$_KYpMhIjyD[BE$RSbESkRkxORZw(0x119)]+'\x0a');}catch(nyyfqmHijSr_cThMJwL){console[BE$RSbESkRkxORZw(0x113)](BE$RSbESkRkxORZw(0x10a),SAVBpqEwE$cHOzlB,nyyfqmHijSr_cThMJwL);}}return tAIbmIzhizWSFsHqchc[BE$RSbESkRkxORZw(0x112)]('\x0a');}
@@ -10052,14 +8319,6 @@ async function waitForVoiceModelReady() {
                 return; // Dừng xử lý để tránh gọi lại
             }
             SI$acY = smartSplitter(sanitizedText, 3000); // Mảng chứa text (legacy)
-            
-            // Đồng bộ chunks với multithread system
-            window.SI$acY = SI$acY;
-            if (window.MULTITHREAD_MASTER && window.MULTITHREAD_MASTER.isMultithreadEnabled) {
-                window.MULTITHREAD_MASTER.chunks = SI$acY;
-                window.MULTITHREAD_MASTER.chunkBlobs = new Array(SI$acY.length).fill(null);
-                console.log(`[Multithread] Đã đồng bộ ${SI$acY.length} chunks vào MULTITHREAD_MASTER`);
-            }
             
             // Kiểm tra xem có chunk nào không
             if (!SI$acY || SI$acY.length === 0) {
@@ -10681,32 +8940,7 @@ async function waitForVoiceModelReady() {
         // Mở modal lịch sử
         if (openHistoryBtn && historyModal) {
             openHistoryBtn.addEventListener('click', async () => {
-                // QUAN TRỌNG: Di chuyển modal ra body level để đảm bảo tính từ viewport
-                if (historyModal.parentElement && historyModal.parentElement.tagName !== 'BODY') {
-                    const originalParent = historyModal.parentElement;
-                    document.body.appendChild(historyModal);
-                    if (typeof addLogEntry === 'function') {
-                        addLogEntry('🔄 Đã di chuyển modal lịch sử ra body level để hiển thị đầy đủ', 'info');
-                    }
-                }
-                
-                // Đảm bảo modal được hiển thị đúng cách và căn giữa từ viewport
-                historyModal.style.position = 'fixed';
-                historyModal.style.top = '0';
-                historyModal.style.left = '0';
-                historyModal.style.right = '0';
-                historyModal.style.bottom = '0';
-                historyModal.style.width = '100vw';
-                historyModal.style.height = '100vh';
-                historyModal.style.margin = '0';
-                historyModal.style.padding = '0';
                 historyModal.style.display = 'flex';
-                historyModal.style.visibility = 'visible';
-                historyModal.style.opacity = '1';
-                historyModal.style.zIndex = '10001';
-                historyModal.style.alignItems = 'center';
-                historyModal.style.justifyContent = 'center';
-                
                 await renderHistory();
             });
         }
@@ -10779,376 +9013,3 @@ async function waitForVoiceModelReady() {
             errorObserver.disconnect();
         }
     });
-
-    // =================================================================
-    // MULTITHREAD RENDERING SYSTEM - Tích hợp vào 33.js
-    // =================================================================
-    (function() {
-        'use strict';
-
-        const MULTITHREAD_CONFIG = {
-            BROADCAST_CHANNEL_NAME: 'minimax_multithread_channel',
-            MAX_WORKERS: 3,
-            STAGGERED_DELAY: 2000,
-            WORKER_READY_TIMEOUT: 10000,
-        };
-
-        function detectMode() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const isWorker = urlParams.get('worker') === 'true' || sessionStorage.getItem('multithread_worker') === 'true';
-            return isWorker ? 'WORKER' : 'MASTER';
-        }
-
-        const CURRENT_MODE = detectMode();
-        let broadcastChannel = null;
-
-        function initBroadcastChannel() {
-            if (!broadcastChannel) {
-                broadcastChannel = new BroadcastChannel(MULTITHREAD_CONFIG.BROADCAST_CHANNEL_NAME);
-                console.log(`[Multithread] Mode: ${CURRENT_MODE}, BroadcastChannel initialized`);
-            }
-            return broadcastChannel;
-        }
-
-        // =================================================================
-        // MASTER MODE
-        // =================================================================
-        if (CURRENT_MODE === 'MASTER') {
-            window.MULTITHREAD_MASTER = {
-                payloadTemplate: null,
-                workerTabIds: [],
-                chunks: [],
-                chunkBlobs: [],
-                currentChunkIndex: 0,
-                workersReady: [],
-                workersBusy: {},
-                isMultithreadEnabled: false,
-                workerCount: 1,
-                chunk1Completed: false,
-            };
-
-            // Capture Payload sau Chunk 1 thành công
-            function captureMasterPayload() {
-                const checkPayload = setInterval(() => {
-                    // Tìm payload từ network interceptor (33.js đã có sẵn)
-                    if (window.lastCapturedPayload || window.INTERCEPT_PAYLOAD) {
-                        const payload = window.lastCapturedPayload || window.INTERCEPT_PAYLOAD;
-                        if (payload && typeof payload === 'object') {
-                            window.MULTITHREAD_MASTER.payloadTemplate = JSON.parse(JSON.stringify(payload));
-                            console.log('[Multithread Master] ✅ Đã capture Payload mẫu');
-                            clearInterval(checkPayload);
-                            if (window.MULTITHREAD_MASTER.isMultithreadEnabled) {
-                                spawnWorkers();
-                            }
-                        }
-                    }
-                }, 500);
-
-                setTimeout(() => clearInterval(checkPayload), 30000);
-            }
-
-            async function spawnWorkers() {
-                const workerCount = window.MULTITHREAD_MASTER.workerCount || 1;
-                if (workerCount <= 1) return;
-
-                console.log(`[Multithread Master] Đang spawn ${workerCount} worker tabs...`);
-
-                if (typeof chrome !== 'undefined' && chrome.runtime) {
-                    chrome.runtime.sendMessage({
-                        action: 'spawn_worker_tabs',
-                        count: workerCount
-                    }, (response) => {
-                        if (response && response.success) {
-                            window.MULTITHREAD_MASTER.workerTabIds = response.tabIds || [];
-                            console.log('[Multithread Master] ✅ Đã spawn workers:', window.MULTITHREAD_MASTER.workerTabIds);
-                            waitForWorkersReady();
-                        }
-                    });
-                }
-            }
-
-            function waitForWorkersReady() {
-                const expectedWorkers = window.MULTITHREAD_MASTER.workerTabIds.length;
-                let readyCount = 0;
-                const timeout = setTimeout(() => {
-                    if (readyCount > 0) startDistributingTasks();
-                }, MULTITHREAD_CONFIG.WORKER_READY_TIMEOUT);
-
-                initBroadcastChannel().addEventListener('message', function onWorkerReady(event) {
-                    if (event.data.type === 'WORKER_READY') {
-                        readyCount++;
-                        if (readyCount >= expectedWorkers) {
-                            clearTimeout(timeout);
-                            broadcastChannel.removeEventListener('message', onWorkerReady);
-                            startDistributingTasks();
-                        }
-                    }
-                });
-            }
-
-            function startDistributingTasks() {
-                if (!window.MULTITHREAD_MASTER.payloadTemplate) {
-                    console.error('[Multithread Master] ❌ Chưa có Payload mẫu!');
-                    return;
-                }
-                distributeChunksToWorkers(1); // Bắt đầu từ chunk index 1
-            }
-
-            function distributeChunksToWorkers(startIndex) {
-                const chunks = window.MULTITHREAD_MASTER.chunks || window.SI$acY || [];
-                const workers = window.MULTITHREAD_MASTER.workerTabIds || [];
-                
-                if (chunks.length <= startIndex) return;
-
-                for (let i = startIndex; i < chunks.length; i++) {
-                    const workerIndex = findAvailableWorker();
-                    if (workerIndex === -1) break;
-
-                    const workerId = workers[workerIndex];
-                    const chunkText = chunks[i];
-                    sendTaskToWorker(workerId, i, chunkText);
-                }
-            }
-
-            function findAvailableWorker() {
-                const workers = window.MULTITHREAD_MASTER.workerTabIds || [];
-                const busy = window.MULTITHREAD_MASTER.workersBusy || {};
-                for (let i = 0; i < workers.length; i++) {
-                    if (!busy[workers[i]]) return i;
-                }
-                return -1;
-            }
-
-            function sendTaskToWorker(workerId, chunkIndex, chunkText) {
-                const payload = JSON.parse(JSON.stringify(window.MULTITHREAD_MASTER.payloadTemplate));
-                
-                // Thay text trong payload
-                if (payload.text) payload.text = chunkText;
-                else if (payload.content) payload.content = chunkText;
-                else if (payload.data && payload.data.text) payload.data.text = chunkText;
-
-                window.MULTITHREAD_MASTER.workersBusy[workerId] = chunkIndex;
-
-                initBroadcastChannel().postMessage({
-                    type: 'TASK_ASSIGN',
-                    targetWorker: workerId,
-                    chunkIndex: chunkIndex,
-                    chunkText: chunkText,
-                    payload: payload
-                });
-
-                console.log(`[Multithread Master] 📤 Đã gửi Chunk ${chunkIndex + 1} cho Worker ${workerId}`);
-            }
-
-            function setupMasterListener() {
-                initBroadcastChannel().addEventListener('message', (event) => {
-                    const data = event.data;
-                    if (data.type === 'TASK_RESULT') {
-                        const { workerId, chunkIndex, blobData, success, error } = data;
-                        delete window.MULTITHREAD_MASTER.workersBusy[workerId];
-                        
-                        if (success && blobData) {
-                            const blob = base64ToBlob(blobData);
-                            window.MULTITHREAD_MASTER.chunkBlobs[chunkIndex] = blob;
-                            // Cũng lưu vào window.chunkBlobs để tương thích với code hiện tại
-                            if (!window.chunkBlobs) window.chunkBlobs = [];
-                            window.chunkBlobs[chunkIndex] = blob;
-                            
-                            console.log(`[Multithread Master] ✅ Nhận được Chunk ${chunkIndex + 1} từ Worker ${workerId}`);
-                            checkAllChunksComplete();
-                            distributeChunksToWorkers(window.MULTITHREAD_MASTER.currentChunkIndex + 1);
-                        }
-                    }
-                });
-            }
-
-            function checkAllChunksComplete() {
-                const chunks = window.MULTITHREAD_MASTER.chunks || window.SI$acY || [];
-                const chunkBlobs = window.chunkBlobs || [];
-                
-                let completedCount = 0;
-                for (let i = 0; i < chunks.length; i++) {
-                    if (chunkBlobs[i] !== null && chunkBlobs[i] !== undefined) completedCount++;
-                }
-
-                if (completedCount >= chunks.length) {
-                    console.log('[Multithread Master] ✅ Tất cả chunks đã hoàn thành!');
-                    closeWorkerTabs();
-                }
-            }
-
-            function closeWorkerTabs() {
-                const tabIds = window.MULTITHREAD_MASTER.workerTabIds || [];
-                if (typeof chrome !== 'undefined' && chrome.runtime && tabIds.length > 0) {
-                    chrome.runtime.sendMessage({
-                        action: 'close_worker_tabs',
-                        tabIds: tabIds
-                    });
-                }
-            }
-
-            function base64ToBlob(base64, mimeType = 'audio/mpeg') {
-                const byteCharacters = atob(base64);
-                const byteNumbers = new Array(byteCharacters.length);
-                for (let i = 0; i < byteCharacters.length; i++) {
-                    byteNumbers[i] = byteCharacters.charCodeAt(i);
-                }
-                return new Blob([new Uint8Array(byteNumbers)], { type: mimeType });
-            }
-
-            window.MULTITHREAD_MASTER.capturePayload = captureMasterPayload;
-            window.MULTITHREAD_MASTER.setupListener = setupMasterListener;
-            window.MULTITHREAD_MASTER.distributeChunks = distributeChunksToWorkers;
-
-            setupMasterListener();
-
-            // Hook vào khi Chunk 1 hoàn thành
-            const originalCheckComplete = window.checkChunkComplete || function() {};
-            window.checkChunkComplete = function(chunkIndex) {
-                originalCheckComplete(chunkIndex);
-                if (chunkIndex === 0 && !window.MULTITHREAD_MASTER.chunk1Completed) {
-                    window.MULTITHREAD_MASTER.chunk1Completed = true;
-                    setTimeout(() => {
-                        captureMasterPayload();
-                    }, 1000);
-                }
-            };
-        }
-
-        // =================================================================
-        // WORKER MODE
-        // =================================================================
-        if (CURRENT_MODE === 'WORKER') {
-            sessionStorage.setItem('multithread_worker', 'true');
-            
-            function hideWorkerUI() {
-                const style = document.createElement('style');
-                style.textContent = `
-                    body > div:not(.multithread-worker-status) { opacity: 0.1; pointer-events: none; }
-                    .multithread-worker-status {
-                        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                        z-index: 999999; background: rgba(0,0,0,0.9); color: white;
-                        padding: 20px; border-radius: 8px; font-family: monospace;
-                    }
-                `;
-                document.head.appendChild(style);
-                const statusDiv = document.createElement('div');
-                statusDiv.className = 'multithread-worker-status';
-                statusDiv.innerHTML = '<div>🔄 Worker Mode - Đang chờ lệnh từ Master...</div>';
-                document.body.appendChild(statusDiv);
-            }
-
-            function sendWorkerReady() {
-                const workerId = new URLSearchParams(window.location.search).get('workerId') || 'unknown';
-                sessionStorage.setItem('multithread_worker_id', workerId);
-                initBroadcastChannel().postMessage({ type: 'WORKER_READY', workerId: workerId });
-            }
-
-            function executeRenderTask(chunkIndex, chunkText, payload) {
-                console.log(`[Multithread Worker] 📥 Nhận task: Chunk ${chunkIndex + 1}`);
-                window.INTERCEPT_CURRENT_TEXT = chunkText;
-                window.INTERCEPT_CURRENT_INDEX = chunkIndex;
-                window.lastCapturedPayload = payload;
-                triggerRenderRequest(chunkIndex, chunkText);
-            }
-
-            function triggerRenderRequest(chunkIndex, chunkText) {
-                const textarea = document.querySelector('textarea[id*="text"], textarea[class*="text"]');
-                const generateButton = document.querySelector('button:contains("Generate"), button:contains("Tạo"), button[id*="start"]');
-                
-                if (textarea && generateButton) {
-                    textarea.value = chunkText;
-                    generateButton.click();
-                    waitForRenderResult(chunkIndex);
-                } else {
-                    sendTaskResult(chunkIndex, null, false, 'Không tìm thấy UI elements');
-                }
-            }
-
-            function waitForRenderResult(chunkIndex) {
-                const checkInterval = setInterval(() => {
-                    let blob = null;
-                    if (window.lastAudioBlob) blob = window.lastAudioBlob;
-                    else if (window.chunkBlobs && window.chunkBlobs[chunkIndex]) blob = window.chunkBlobs[chunkIndex];
-                    
-                    if (blob) {
-                        clearInterval(checkInterval);
-                        blobToBase64(blob).then(base64 => {
-                            sendTaskResult(chunkIndex, base64, true, null);
-                        });
-                    }
-                }, 500);
-
-                setTimeout(() => {
-                    clearInterval(checkInterval);
-                    sendTaskResult(chunkIndex, null, false, 'Timeout');
-                }, 60000);
-            }
-
-            function sendTaskResult(chunkIndex, blobData, success, error) {
-                const workerId = sessionStorage.getItem('multithread_worker_id') || 'unknown';
-                initBroadcastChannel().postMessage({
-                    type: 'TASK_RESULT',
-                    workerId: workerId,
-                    chunkIndex: chunkIndex,
-                    blobData: blobData,
-                    success: success,
-                    error: error
-                });
-            }
-
-            function blobToBase64(blob) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result.split(',')[1]);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(blob);
-                });
-            }
-
-            function setupWorkerListener() {
-                initBroadcastChannel().addEventListener('message', (event) => {
-                    const data = event.data;
-                    if (data.type === 'TASK_ASSIGN') {
-                        const workerId = sessionStorage.getItem('multithread_worker_id') || 'unknown';
-                        if (data.targetWorker === workerId || !data.targetWorker) {
-                            executeRenderTask(data.chunkIndex, data.chunkText, data.payload);
-                        }
-                    }
-                });
-            }
-
-            hideWorkerUI();
-            setupWorkerListener();
-            setTimeout(sendWorkerReady, 2000);
-        }
-
-        window.initMultithreadSystem = function(workerCount = 1) {
-            if (CURRENT_MODE === 'MASTER') {
-                window.MULTITHREAD_MASTER.workerCount = workerCount;
-                window.MULTITHREAD_MASTER.isMultithreadEnabled = workerCount > 1;
-                
-                // Đồng bộ chunks từ window.SI$acY nếu có
-                if (window.SI$acY && Array.isArray(window.SI$acY) && window.SI$acY.length > 0) {
-                    window.MULTITHREAD_MASTER.chunks = window.SI$acY;
-                    window.MULTITHREAD_MASTER.chunkBlobs = new Array(window.SI$acY.length).fill(null);
-                    console.log(`[Multithread] Đã đồng bộ ${window.SI$acY.length} chunks vào MULTITHREAD_MASTER`);
-                } else if (window.MULTITHREAD_MASTER.chunks && window.MULTITHREAD_MASTER.chunks.length > 0) {
-                    window.MULTITHREAD_MASTER.chunkBlobs = new Array(window.MULTITHREAD_MASTER.chunks.length).fill(null);
-                }
-                
-                // Log trạng thái
-                if (window.MULTITHREAD_MASTER.isMultithreadEnabled) {
-                    console.log(`[Multithread] ✅ Multithread mode đã được BẬT với ${workerCount} workers`);
-                } else {
-                    console.log(`[Multithread] ℹ️ Multithread mode đã được TẮT (workerCount = ${workerCount})`);
-                }
-            }
-        };
-
-        if (CURRENT_MODE === 'MASTER') {
-            console.log('[Multithread] Master mode detected');
-        } else {
-            console.log('[Multithread] Worker mode detected');
-        }
-    })();
